@@ -1,0 +1,686 @@
+package com.myxoz.life.calendar.feed
+
+import android.content.Context.MODE_PRIVATE
+import android.icu.util.Calendar
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeOut
+import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
+import androidx.compose.foundation.gestures.detectVerticalDragGestures
+import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxScope
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.offset
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.Icon
+import androidx.compose.material3.Text
+import androidx.compose.material3.ripple
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableLongStateOf
+import androidx.compose.runtime.mutableStateListOf
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.painter.Painter
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalHapticFeedback
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.max
+import androidx.compose.ui.unit.times
+import androidx.core.content.edit
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.myxoz.life.LocalAPI
+import com.myxoz.life.LocalNavController
+import com.myxoz.life.LocalSettings
+import com.myxoz.life.LocalStorage
+import com.myxoz.life.R
+import com.myxoz.life.api.API
+import com.myxoz.life.api.SyncedEvent
+import com.myxoz.life.calendar.feed.SegmentedEvent.Companion.getSegmentedEvents
+import com.myxoz.life.dbwrapper.BankingEntity
+import com.myxoz.life.dbwrapper.DaysEntity
+import com.myxoz.life.dbwrapper.centsToDisplay
+import com.myxoz.life.events.DigSocEvent
+import com.myxoz.life.events.DigSocEventComposable
+import com.myxoz.life.events.HobbyEvent
+import com.myxoz.life.events.HobbyEventComposable
+import com.myxoz.life.events.LearnEvent
+import com.myxoz.life.events.LearnEventComposable
+import com.myxoz.life.events.ProposedEvent
+import com.myxoz.life.events.SleepEvent
+import com.myxoz.life.events.SleepEventComposable
+import com.myxoz.life.events.SocialEvent
+import com.myxoz.life.events.SocialEventComposeable
+import com.myxoz.life.events.SpontEvent
+import com.myxoz.life.events.SpontEventComposable
+import com.myxoz.life.events.TravelEvent
+import com.myxoz.life.events.TravelEventComposable
+import com.myxoz.life.options.getUsageDataBetween
+import com.myxoz.life.rippleClick
+import com.myxoz.life.ui.theme.Colors
+import com.myxoz.life.ui.theme.FontColor
+import com.myxoz.life.ui.theme.FontFamily
+import com.myxoz.life.ui.theme.FontSize
+import com.myxoz.life.ui.theme.TypoStyle
+import com.myxoz.life.ui.theme.dp
+import com.myxoz.life.viewmodels.CalendarViewModel
+import com.myxoz.life.viewmodels.InspectedEventViewModel
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import org.json.JSONObject
+import java.time.LocalDate
+import java.time.ZoneId
+import kotlin.math.min
+
+const val screenTimeGoal = 1000f*3600*4f
+const val stepsGoal = 6000f
+@Composable
+fun DayComposable(
+    viewModel: CalendarViewModel,
+    inspectedEventViewModel: InspectedEventViewModel,
+    isToday: Boolean,
+    date: LocalDate,
+    fullWidth: Dp,
+){
+    val navController = LocalNavController.current
+    val storage = LocalStorage.current
+    val context = LocalContext.current
+    val density = LocalDensity.current
+    val settings = LocalSettings.current
+
+    var lastDayDragEnd by remember { mutableLongStateOf(0L) }
+    val zone = remember { ZoneId.systemDefault() }
+    val startOfDay = remember { date.atStartOfDay(zone).toEpochSecond()*1000L }
+    val endOfDay = remember { date.plusDays(1).atStartOfDay(zone).toEpochSecond()*1000L }
+    var dayEntity: DaysEntity? by remember { mutableStateOf(null) }
+    val events = remember { mutableStateListOf<SyncedEvent>() }
+    val hoursToday = remember { ((endOfDay- startOfDay) / (3600*1000)).toInt() }
+    var oneHourDp by remember { mutableStateOf(0.dp) }
+    val hourInPx = with(density) { oneHourDp.toPx() }
+    val calendar = remember { Calendar.getInstance() }
+    val bankingEntities = remember { mutableStateListOf<BankingEntity>() }
+    val width = fullWidth*.97f
+    LaunchedEffect(Unit) {
+        if (!isToday) {
+            dayEntity = storage.days.getDay(date.toEpochDay().toInt())
+        } else {
+            val calendar = Calendar.getInstance()
+            val end = calendar.timeInMillis
+            calendar.set(Calendar.MILLISECONDS_IN_DAY, 0)
+            val start = calendar.timeInMillis
+            dayEntity = DaysEntity(
+                0,
+                if(settings.features.screentime.hasAssured()) getUsageDataBetween(context, start, end).toInt() else 0,
+                if(settings.features.stepCounting.has.value) context.getSharedPreferences("steps", MODE_PRIVATE).run {
+                    getLong("saved_steps", 0L) - getLong("steps_at_midnight", 0L)
+                }.toInt()  else 0,
+                0,
+                0,
+                0
+            )
+        }
+    }
+    LaunchedEffect(viewModel.lastEventUpdateTs) {
+        with(Dispatchers.IO){
+            val dbEvents = storage.events.getEventsBetween(startOfDay, endOfDay).mapNotNull { SyncedEvent.from(
+                storage, it
+            )}
+            events.clear()
+            events.addAll(dbEvents)
+            val allSidecars = storage.bankingSidecar.getSidecarsBetween(startOfDay, endOfDay)
+            val transactionsForSidecars = storage.banking.getTransactionByIds(allSidecars.map { it.transactionId })
+            val bankingEntries = storage.banking.getTransactionsOnDay(startOfDay, endOfDay) +
+                    allSidecars.map { sidecar ->
+                        transactionsForSidecars.first { it.id == sidecar.transactionId }.copy(
+                            purposeDate = sidecar.date,
+                            fromName = sidecar.name
+                        )
+                    } +
+                    viewModel.futureBankEntries.filter { it.purposeDate!=null && it.purposeDate < endOfDay && it.purposeDate > startOfDay }
+            bankingEntities.clear()
+            bankingEntities.addAll(
+                bankingEntries
+            )
+        }
+    }
+    Column(
+        Modifier
+            .width(fullWidth)
+    ) {
+        Column(
+            Modifier
+                .height(dateBarHeight)
+                .fillMaxWidth()
+            ,
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center
+        ) {
+            Text(
+                date.dayOfMonth.toString(),
+                style = TypoStyle(if(isToday) FontColor.SELECTED else FontColor.SECONDARY, FontSize.MLARGE, FontFamily.Display)
+                    .run { this.copy(fontWeight = if(isToday) FontWeight.Bold else FontWeight.Normal) }
+            )
+            Text(
+                getWeekDayByInt(date.dayOfWeek.value - 1),
+                style = TypoStyle(if(isToday) FontColor.SELECTED else FontColor.SECONDARY, FontSize.SMALLM)
+                    .run { this.copy(fontWeight = if(isToday) FontWeight.Bold else FontWeight.Normal) }
+            )
+        }
+        Box(
+            Modifier
+                .height(fullDayBarHeight)
+        )
+        Row (
+            Modifier
+                .height(daySummaryHeight)
+                .fillMaxWidth()
+                .horizontalScroll(rememberScrollState())
+                .clip(CircleShape)
+                .rippleClick{
+                    navController.navigate("day/${date.toEpochDay()}/overview")
+                },
+            horizontalArrangement = Arrangement.spacedBy(10.dp)
+        ) {
+            val dayEntity = dayEntity
+            val screentime by settings.features.screentime.has.collectAsState()
+            val steps by settings.features.stepCounting.has.collectAsState()
+            if(dayEntity!=null) {
+                if (screentime || dayEntity.screenTimeMs != 0) {
+                    DayPill(
+                        painterResource(R.drawable.screentime),
+                        "${dayEntity.screenTimeMs / 1000 / 3600}h ${dayEntity.screenTimeMs / 1000 / 60 % 60}m",
+                        (dayEntity.screenTimeMs / screenTimeGoal).coerceIn(0f, 1f),
+                        Colors.SCREENTIME
+                    )
+                }
+                if (steps || dayEntity.steps != 0) {
+                    DayPill(
+                        painterResource(R.drawable.shoe),
+                        "${dayEntity.steps}",
+                        (dayEntity.steps / stepsGoal).coerceIn(0f, 1f),
+                        Colors.STEPS
+                    )
+                }
+            }
+        }
+        Box(
+            Modifier
+                .weight(1f)
+                .width(width)
+        ) {
+            Column(
+                Modifier
+                    .onGloballyPositioned { coordinates ->
+                        with(density) {
+                            oneHourDp = (coordinates.size.height.toDp() / hoursToday)
+                        }
+                    }
+                ,
+                verticalArrangement = Arrangement.SpaceEvenly
+            ) {
+                repeat(hoursToday){
+                    Box(
+                        Modifier
+                            .padding(vertical = 2.dp)
+                            .background(Colors.CALENDARBG, RoundedCornerShape(25))
+                            .fillMaxWidth()
+                            .weight(1f)
+                            .clickable(null, null) {
+                                inspectedEventViewModel.setInspectedEventTo(
+                                    if(inspectedEventViewModel.isEditing.value) {
+                                        inspectedEventViewModel.event.value.copyWithTimes(
+                                            start = startOfDay+it*3600*1000L,
+                                            end = startOfDay+it*3600*1000L + inspectedEventViewModel.event.value.proposed.length()
+                                        )
+                                    } else {
+                                        SyncedEvent(-1L, 0L, null, EmptyEvent(
+                                            startOfDay + it * 3600 * 1000L,
+                                            startOfDay + (it + 1) * 3600 * 1000L,
+                                            false, usl = false
+                                        )
+                                        )
+                                    }
+                                )
+                                inspectedEventViewModel.setEditing(true)
+                            }
+                    )
+                }
+            }
+            Box( // Day Content
+                Modifier
+                    .fillMaxSize()
+                    .clip(RoundedCornerShape(10.dp))
+            ) {
+                val isEditing by inspectedEventViewModel.isEditing.collectAsState()
+                val newEvent by inspectedEventViewModel.event.collectAsState()
+
+                val bankingItemSize = 1.5f
+                val bankingSizeDp = bankingItemSize*oneHourDp
+                val segments = remember(viewModel.lastEventUpdateTs, events.size, bankingEntities.size) {
+                    getSegmentedEvents(events, bankingEntities, (bankingItemSize*3600L).toLong()*1000L)
+                }
+                for(segmentedEvent in segments) {
+                    if(isEditing && segmentedEvent.event.id == newEvent.id) continue
+                    val haptic = LocalHapticFeedback.current
+                    segmentedEvent.render(oneHourDp, bankingSizeDp, startOfDay, endOfDay, width, !isEditing, {
+                        haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                        inspectedEventViewModel.setEditing(true)
+                        inspectedEventViewModel.setInspectedEventTo(
+                            segmentedEvent.event
+                        )
+                    }) {
+                        inspectedEventViewModel.setInspectedEventTo(segmentedEvent.event)
+                        navController.navigate("fullscreen_event")
+                    }
+                }
+                for(bankingEntity in bankingEntities) {
+                    if(bankingEntity.purposeDate==null) continue
+                    Box(
+                        Modifier
+                            .padding(top=max(0.dp, ((bankingEntity.purposeDate - startOfDay)/3_600_000f)*oneHourDp - bankingSizeDp/2))
+                            .height(bankingItemSize*oneHourDp)
+                            .fillMaxWidth()
+                        ,
+                        contentAlignment = Alignment.CenterEnd
+                    ){
+                        Column(
+                            Modifier
+                                .size(bankingItemSize*oneHourDp)
+                                .background(Colors.BACKGROUND.copy(.7f), CircleShape)
+                                .clip(CircleShape)
+                                .rippleClick{
+                                    if(bankingEntity.id.isBlank()) storage.prefs.edit {
+                                            putString("transactionAtHand", JSONObject()
+                                                .put("amount", bankingEntity.amountCents)
+                                                .put("timestamp", bankingEntity.purposeDate)
+                                                .put("to", bankingEntity.fromName)
+                                                .toString())
+                                        }
+                                    navController.navigate("bank/transaction/${bankingEntity.id}")
+                                }
+                            ,
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            verticalArrangement = Arrangement.Center
+                        ) {
+                            Icon(
+                                if(bankingEntity.card)
+                                    painterResource(R.drawable.pay_by_card)
+                                else
+                                    painterResource(R.drawable.gpay),
+                                "Card",
+                                Modifier
+                                    .height(oneHourDp/2)
+                                ,
+                                tint = Colors.PRIMARYFONT
+                            )
+                            Spacer(Modifier.height(2.dp))
+                            Text(bankingEntity.amountCents.centsToDisplay(),
+                                style = TypoStyle(FontColor.PRIMARY, FontSize.XSMALL))
+                            Spacer(Modifier.height(4.dp))
+                        }
+                        Box(
+                            Modifier
+                                .padding(end = bankingItemSize*.9f*oneHourDp)
+                                .background(Brush.horizontalGradient(listOf(Color.Transparent, Colors.PRIMARYFONT)), CircleShape)
+                                .width(oneHourDp)
+                                .padding(vertical = 1.dp)
+                            ,
+                        )
+                    }
+                }
+                for(event in viewModel.proposedEvents) {
+                    Box(Modifier.fillMaxHeight().fillMaxWidth().align(Alignment.CenterStart)) {
+                        event.render(oneHourDp, startOfDay, endOfDay,{viewModel.removeProposedEvent(event, context)}) {
+                            viewModel.refreshEvents()
+                        }
+                    }
+                }
+                run {
+                    val time by viewModel.minuteFlow.collectAsStateWithLifecycle()
+                    calendar.timeInMillis = time
+                    val currentHour = calendar.get(Calendar.HOUR_OF_DAY)
+                    val currentMinute = calendar.get(Calendar.MINUTE)
+                    val totalHoursFloat = (currentHour * 60 + currentMinute) / 60f
+                    if(isToday) Box(
+                        Modifier
+                            .offset(y= (-5).dp)
+                            .offset(y = totalHoursFloat*oneHourDp)
+                            .height(10.dp)
+                            .alpha(if(isEditing) .3f else .7f)
+                            .fillMaxWidth()
+                    ) {
+                        Box(
+                            Modifier
+                                .fillMaxWidth()
+                                .background(Colors.SELECTED, CircleShape)
+                                .align(Alignment.CenterStart)
+                                .height(2.dp)
+                        )
+                        Box(
+                            Modifier
+                                .background(Colors.SELECTED, CircleShape)
+                                .align(Alignment.CenterStart)
+                                .size(10.dp)
+                        )
+                    }
+                }
+                if(isEditing && newEvent.proposed.end > startOfDay && newEvent.proposed.start < endOfDay) {
+                    val gradientBottom = remember {
+                        Brush.radialGradient( listOf( Colors.SELECTED, Color.Transparent ),
+                            Offset(Float.POSITIVE_INFINITY, Float.POSITIVE_INFINITY), 100f )
+                    }
+                    val gradientTop = remember {
+                        Brush.radialGradient( listOf( Colors.SELECTED, Color.Transparent ),
+                            Offset(0f, 0f), 100f )
+                    }
+                    val bottomDragger: @Composable BoxScope.() -> Unit = @Composable {
+                        Box(
+                            Modifier
+                                .fillMaxWidth(0.4f)
+                                .height(oneHourDp * 2)
+                                .align(Alignment.BottomEnd)
+                                .background(
+                                    gradientBottom,
+                                    RoundedCornerShape(10.dp)
+                                )
+                                .pointerInput("end", lastDayDragEnd) {
+                                    var totalDrag = 0f; var ev = newEvent
+                                    this.detectVerticalDragGestures(
+                                        onDragStart = { ev = inspectedEventViewModel.event.value; totalDrag = 0f },
+                                        onDragEnd = { lastDayDragEnd = System.currentTimeMillis() }
+                                    ) { _, it ->
+                                        totalDrag += it; val offsetInMs = ((totalDrag / hourInPx * 4).toInt() * 900 * 1000L)
+                                        inspectedEventViewModel.setInspectedEventTo(ev.copyWithTimes(
+                                            start = ev.proposed.start,
+                                            end = (ev.proposed.end + offsetInMs).coerceAtLeast(ev.proposed.start + 900*1000)
+                                        ) )
+                                    }
+                                },
+                            Alignment.Center
+                        ) {}
+                    }
+                    val topDragger: @Composable BoxScope.() -> Unit = @Composable {
+                        Box(
+                            Modifier
+                                .fillMaxWidth(0.4f)
+                                .height(oneHourDp * 2)
+                                .align(Alignment.TopStart)
+                                .background( gradientTop, RoundedCornerShape(10.dp) )
+                                .pointerInput("start", lastDayDragEnd) {
+                                    var totalDrag = 0f; var ev = inspectedEventViewModel.event.value
+                                    this.detectVerticalDragGestures(
+                                        onDragStart = { ev = inspectedEventViewModel.event.value; totalDrag = 0f },
+                                        onDragEnd = { lastDayDragEnd = System.currentTimeMillis() }
+                                    ) { _, it ->
+                                        totalDrag += it; val offsetInMs =((totalDrag / hourInPx * 4).toInt() * 900 * 1000L)
+                                        inspectedEventViewModel.setInspectedEventTo(ev.copyWithTimes(
+                                            start = (ev.proposed.start + offsetInMs).coerceAtMost(ev.proposed.end - 900*1000),
+                                            end = newEvent.proposed.end
+                                        ))
+                                    }
+                                },
+                            Alignment.Center
+                        ) {}
+                    }
+                    Box(
+                        Modifier
+                            .fillMaxWidth()
+                            .padding( top = newEvent.proposed.getTopPadding(oneHourDp, startOfDay) )
+                            .clickable(null,null){
+                                navController.navigate("fullscreen_event")
+                            }
+                            .pointerInput("move_newday", lastDayDragEnd) {
+                                var totalDrag = 0f; var ev = inspectedEventViewModel.event.value
+                                this.detectVerticalDragGestures(
+                                    onDragStart = { ev = inspectedEventViewModel.event.value; totalDrag = 0f },
+                                    onDragEnd = { lastDayDragEnd = System.currentTimeMillis() }
+                                ) { _, it ->
+                                    totalDrag += it
+                                    val offsetInMs = ((totalDrag / hourInPx * 4).toInt() * 900 * 1000L)
+                                    inspectedEventViewModel.setInspectedEventTo(ev.copyWithTimes(
+                                        ev.proposed.start + offsetInMs,
+                                        ev.proposed.end + offsetInMs
+                                    ))
+                                }
+                            }
+                            .height(newEvent.proposed.getHeightDp(oneHourDp, startOfDay, endOfDay))
+                            .border(2.dp, Colors.SELECTED, RoundedCornerShape(10.dp))
+                            .background(newEvent.proposed.getBackgroundBrush(.5f), RoundedCornerShape(10.dp))
+                    ) {
+                        Box(
+                            Modifier
+                                .fillMaxSize()
+                        ) {
+                            RenderContent(newEvent.proposed, oneHourDp, startOfDay, endOfDay)
+                        }
+                        if (newEvent.proposed.start >= startOfDay) topDragger()
+                        if (newEvent.proposed.end <= endOfDay) bottomDragger()
+                    }
+                    Box(
+                        Modifier
+                            .align(Alignment.TopCenter)
+                            .offset(y= -FontSize.LARGE.size.dp + newEvent.proposed.getTopPadding(oneHourDp, startOfDay).run { if(this==1.dp) (-2).dp else this })
+                            .clickable(null,null){
+                                navController.navigate("fullscreen_event")
+                            }
+                    ) {
+                        calendar.timeInMillis = newEvent.proposed.start
+                        val currentHour = calendar.get(Calendar.HOUR_OF_DAY)
+                        val currentMinute = calendar.get(Calendar.MINUTE)
+                        Text(
+                            "${if(currentHour<=9) "0" else ""}$currentHour:${if(currentMinute<=9) "0" else ""}$currentMinute",
+                            Modifier
+                                .background(newEvent.proposed.type.color, RoundedCornerShape(50, 50, 0, 0))
+                                .padding(horizontal = 5.dp, vertical = 2.dp)
+                            ,
+                            color = newEvent.proposed.type.selectedColor,
+                            textAlign = TextAlign.Right
+                        )
+                    }
+                    Box(
+                        Modifier
+                            .align(Alignment.TopCenter)
+                            .offset(y= newEvent.proposed.getTopPadding(oneHourDp, startOfDay) + newEvent.proposed.getHeightDp(oneHourDp, startOfDay, endOfDay) - 1.dp)
+                            .clickable(null,null){
+                                navController.navigate("fullscreen_event")
+                            }
+                    ) {
+                        calendar.timeInMillis = newEvent.proposed.end
+                        val currentHour = calendar.get(Calendar.HOUR_OF_DAY)
+                        val currentMinute = calendar.get(Calendar.MINUTE)
+                        Text(
+                            "${if(currentHour<=9) "0" else ""}$currentHour:${if(currentMinute<=9) "0" else ""}$currentMinute",
+                            Modifier
+                                .background(newEvent.proposed.type.color, RoundedCornerShape(0, 0, 50, 50))
+                                .padding(horizontal = 5.dp, vertical = 2.dp)
+                            ,
+                            color = newEvent.proposed.type.selectedColor,
+                            textAlign = TextAlign.Left
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
+
+fun Int.msToDisplay(ignoreSeconds: Boolean=false): String {
+    val t = this/1000
+    val h = (t/3600)
+    val m = (t/60)%60
+    val s = t%60
+    return "" +
+            (if(h!=0) "${h}h" else "") +
+            "${if(h!=0 && m!=0) if(m<=9) " 0" else " " else ""}${if(m!=0) "${m}m" else ""}" +
+            if(!ignoreSeconds) "${if((h!=0 || m!=0) && s<=9) " 0" else " "}${s}s" else ""
+}
+
+@Composable
+fun DayPill(imageVector: Painter, text: String, progress: Float, color: Color){
+    Box(
+        Modifier
+            .height(daySummaryHeight)
+            .background(Colors.DAYPILLBG, CircleShape)
+            .widthIn(40.dp)
+            .clip(CircleShape)
+    ) {
+        Box(
+            Modifier
+                .matchParentSize()
+        ) {
+            Box(
+                Modifier
+                    .background(color, CircleShape)
+                    .fillMaxHeight()
+                    .fillMaxWidth(progress)
+            )
+        }
+        Row(
+            Modifier
+                .fillMaxSize()
+                .widthIn(40.dp)
+                .padding(horizontal = 2.dp)
+                .padding(end = 5.dp)
+        ,
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+            Icon(imageVector, null,
+                Modifier
+                    .size(daySummaryHeight)
+                    .padding(2.dp),
+                Colors.PRIMARYFONT
+            )
+            Spacer(Modifier.width(5.dp))
+            Text(text, style = TypoStyle(FontColor.PRIMARY, FontSize.SMALL).copy(fontWeight = FontWeight.Bold))
+        }
+    }
+}
+open class DefinedDurationEvent(val start: Long, val end: Long) {
+    fun length() = end - start
+    fun getBlockHeight(startOfDay: Long, endOfDay: Long): Int = (min(length(), min(endOfDay - start, end - startOfDay))/(900*1000)).toInt()
+    fun getBlockLength() = ((end - start) / (900*1000)).toInt()
+    fun getTopPadding(oneHour: Dp, startOfDay: Long) = ((this.start - startOfDay).coerceAtLeast(0L) / (3600 * 1000L).toFloat()) * oneHour + 1.dp
+    fun getHeightDp(oneHour: Dp, startOfDay: Long, endOfDay: Long) = oneHour*(min(length(), min(endOfDay - start, end - startOfDay))/(3600f*1000f)) - 1.dp
+}
+
+@OptIn(ExperimentalFoundationApi::class)
+@Composable
+fun ProposedEvent.render(oneHour: Dp, startOfDay: Long, endOfDay: Long, removeProposedEvent: ()->Unit, rerenderDay: () -> Unit){
+    var visible by remember { mutableStateOf(true) }
+    val db = LocalStorage.current
+    val api = LocalAPI.current
+    AnimatedVisibility(visible, exit = fadeOut(tween(500))) {
+        Box(
+            Modifier
+                .padding(top = getTopPadding(oneHour, startOfDay))
+                .height(getHeightDp(oneHour, startOfDay, endOfDay))
+                .background(type.color.copy(.5f), RoundedCornerShape(10.dp))
+                .fillMaxWidth()
+        ) {
+            Box(
+                Modifier.fillMaxSize().alpha(.5f)
+            ) {
+                RenderContent(this@render, oneHour, startOfDay, endOfDay)
+            }
+            Row(
+                Modifier
+                    .clip(RoundedCornerShape(10.dp)).fillMaxSize(),
+            ) {
+                val coroutine = rememberCoroutineScope()
+                Box(
+                    Modifier.fillMaxHeight().weight(1f).background(Colors.ACCEPT).clip(RoundedCornerShape(10.dp)).rippleClick{
+                        coroutine.launch {
+                            if (this@render.insertAndSyncEvent(
+                                    db,
+                                    api,
+                                    API.generateId(),
+                                    System.currentTimeMillis(),
+                                    null
+                                )
+                            ) {
+                                removeProposedEvent()
+                                rerenderDay()
+                            }
+                        }
+                    }
+                )
+                Box(
+                    Modifier.fillMaxHeight().weight(1f).background(Colors.DECLINE).clip(RoundedCornerShape(10.dp)).combinedClickable(onLongClick = {
+                        removeProposedEvent(); visible = false
+                    }){}
+                )
+            }
+        }
+    }
+}
+
+@OptIn(ExperimentalFoundationApi::class)
+@Composable
+fun SegmentedEvent.render(oneHour: Dp, bankingSizeDp: Dp, startOfDay: Long, endOfDay: Long, width: Dp, isClickEnabled: Boolean, editEvent: ()->Unit, openEventDetails: ()->Unit){
+    Box(
+        Modifier
+            .padding(
+                top = getTopPadding(oneHour, startOfDay),
+                start = if(!isLeft) width-bankingSizeDp else 0.dp
+            )
+            .height(getHeightDp(oneHour, startOfDay, endOfDay))
+            .width(if(isFullWidth) width else if(isLeft) width-bankingSizeDp else bankingSizeDp)
+            .clip(RoundedCornerShape(10.dp))
+            .combinedClickable(remember { MutableInteractionSource() }, ripple(), isClickEnabled, onClick = openEventDetails, onLongClick = editEvent)
+            .background(event.proposed.getBackgroundBrush(), RoundedCornerShape(10.dp))
+    ) {
+        if(hasContent) RenderContent(event.proposed, oneHour, startOfDay, endOfDay, !this@render.isLeft, getBlockHeight(startOfDay, endOfDay))
+    }
+}
+@Composable
+fun BoxScope.RenderContent(event: ProposedEvent, oneHour: Dp, startOfDay: Long, endOfDay: Long, isSmall: Boolean = false, blockHeight: Int = event.getBlockHeight(startOfDay, endOfDay)){
+    when(event) {
+        is EmptyEvent -> {} // Do not render content of EmptyEvents TODO ADD  SUPPORRT FOR ALL
+        is SleepEvent -> SleepEventComposable(event, oneHour, startOfDay, endOfDay, isSmall, blockHeight)
+        is SpontEvent -> SpontEventComposable(event, oneHour, startOfDay, endOfDay)
+        is HobbyEvent -> HobbyEventComposable(event, oneHour, startOfDay, endOfDay)
+        is LearnEvent -> LearnEventComposable(event, oneHour, startOfDay, endOfDay)
+        is SocialEvent -> SocialEventComposeable(event, oneHour, startOfDay, endOfDay, isSmall, blockHeight)
+        is TravelEvent -> TravelEventComposable(event, oneHour, startOfDay, endOfDay)
+        is DigSocEvent -> DigSocEventComposable(event, oneHour, startOfDay, endOfDay, isSmall, blockHeight)
+    }
+}

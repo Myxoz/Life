@@ -1,0 +1,14 @@
+*.iml
+.gradle
+/local.properties
+.DS_Store
+/build
+/captures
+.externalNativeBuild
+.cxx
+local.properties
+/.idea
+/app/src/androidTest/java/com/myxoz/life/
+/app/src/test/java/com/myxoz/life/
+app/release
+.kotlin
