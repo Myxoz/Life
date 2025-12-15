@@ -62,8 +62,28 @@ interface BankingDao {
     @Query("SELECT * FROM banking WHERE purpose_date IS NOT NULL AND purpose_date >= :start AND purpose_date < :end")
     suspend fun getTransactionsOnDay(start: Long, end: Long): List<BankingEntity>
 
-    @Query("SELECT * FROM banking WHERE (purpose_date IS NOT NULL AND purpose_date >= :start AND purpose_date < :end) OR (purpose_date IS NULL AND value_date >= :start AND value_date < :end)")
-    suspend fun getTransactionsForList(start: Long, end: Long): List<BankingEntity>
+    @Query("""
+    SELECT * FROM banking 
+    WHERE 
+    (
+        -- Logic for 'filteredTransactions': 
+        -- 1. Matches the date criteria (Purpose Date vs Value Date logic)
+        (
+            (purpose_date IS NOT NULL AND purpose_date >= :start AND purpose_date < :end) 
+            OR 
+            (purpose_date IS NULL AND value_date >= :start AND value_date < :end)
+        )
+        -- 2. Excludes transactions that have ANY sidecar
+        AND id NOT IN (SELECT transactionId FROM bankingsidecar)
+    )
+    OR 
+    (
+        -- Logic for 'transactionsForSidecars':
+        -- Include transactions linked to sidecars that exist within the date range
+        id IN (SELECT transactionId FROM bankingsidecar WHERE date >= :start AND date < :end)
+    )
+""")
+    suspend fun getCombinedTransactions(start: Long, end: Long): List<BankingEntity>
 
     @Query("SELECT * FROM banking WHERE value_date >= :start AND value_date < :end")
     suspend fun getFullDayTransactions(start: Long, end: Long): List<BankingEntity>

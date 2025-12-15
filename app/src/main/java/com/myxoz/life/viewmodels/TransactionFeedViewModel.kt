@@ -81,10 +81,6 @@ private suspend fun loadTransactionsForDate(
     val start = date.atStartOfDay(zone).toEpochSecond() * 1000L
     val end = date.plusDays(1).atStartOfDay(zone).toEpochSecond() * 1000L
     val sidecars = db.bankingSidecar.getSidecarsBetween(start, end)
-    val transactions = db.banking.getTransactionsForList(start, end)
-    val sidecarsForTransactions = db.bankingSidecar.getAllSidecars(transactions.map { it.id })
-    val filteredTransactions = transactions.filter { !sidecarsForTransactions.any {  c -> it.id == c.transactionId } }
-    val transactionsForSidecars = db.banking.getTransactionByIds(sidecars.map { it.transactionId })
-    val combinedTransactions = (filteredTransactions + transactionsForSidecars)
-    return combinedTransactions.map { it to sidecars.find { c -> c.transactionId == it.id } }.sortedByDescending { it.second?.date ?: it.first.purposeDate ?: it.first.valueDate }
+    val transactions = db.banking.getCombinedTransactions(start, end)
+    return transactions.map { it to sidecars.find { c -> c.transactionId == it.id } }.sortedByDescending { it.second?.date ?: it.first.purposeDate ?: it.first.valueDate }
 }
