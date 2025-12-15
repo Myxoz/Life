@@ -16,7 +16,7 @@ class ShareReceiverActivity : Activity() {
             if (intent?.action == Intent.ACTION_SEND && intent.type == "text/plain") {
                 val sharedText = intent.getStringExtra(Intent.EXTRA_TEXT)
                 if (!sharedText.isNullOrEmpty()) {
-                    val travelEvent = SharedRouteParser.from(sharedText, applicationContext)
+                    val travelEvent = SharedRouteParser.from(sharedText, applicationContext) ?: return@launch
 
                     // Launch MainActivity with navigation intent
                     with(Dispatchers.Main){
