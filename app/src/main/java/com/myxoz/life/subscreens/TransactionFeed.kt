@@ -10,7 +10,6 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
@@ -47,20 +46,13 @@ fun TransactionFeed(
 
     val transactionsByDate by state.transactionsByDate.collectAsState()
     val visibleDates by state.visibleDates.collectAsState()
-    val savedScroll by state.scrollPosition.collectAsState()
+    val listState = state.lazyListState
 
-    val listState = rememberLazyListState(
-        initialFirstVisibleItemIndex = savedScroll.index,
-        initialFirstVisibleItemScrollOffset = savedScroll.offset,
-    )
-
-    // Drive lazy loading + scroll state -> state holder
     LaunchedEffect(listState) {
         snapshotFlow { listState.layoutInfo.visibleItemsInfo.lastOrNull()?.index }
             .distinctUntilChanged()
             .collect { lastVisible ->
                 state.onLastVisibleIndexChanged(lastVisible)
-                state.updateScrollPosition(listState)
             }
     }
 

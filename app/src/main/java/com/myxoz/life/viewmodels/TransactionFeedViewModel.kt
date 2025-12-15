@@ -13,15 +13,11 @@ import kotlinx.coroutines.launch
 import java.time.LocalDate
 import java.time.ZoneId
 
-data class ScrollPosition(
-    val index: Int = 0,
-    val offset: Int = 0,
-)
-
 class TransactionFeedViewModel(
     private val db: StorageManager,
     private val zone: ZoneId
 ): ViewModel() {
+    val lazyListState = LazyListState()
     private val _transactionsByDate =
         MutableStateFlow<Map<LocalDate, List<Pair<BankingEntity, BankingSidecarEntity?>>>>(emptyMap())
     val transactionsByDate: StateFlow<Map<LocalDate, List<Pair<BankingEntity, BankingSidecarEntity?>>>> =
@@ -30,10 +26,6 @@ class TransactionFeedViewModel(
     private val _visibleDates =
         MutableStateFlow<List<LocalDate>>(emptyList())
     val visibleDates: StateFlow<List<LocalDate>> = _visibleDates
-
-    private val _scrollPosition =
-        MutableStateFlow(ScrollPosition())
-    val scrollPosition: StateFlow<ScrollPosition> = _scrollPosition
 
     init {
         // initial load
@@ -67,13 +59,6 @@ class TransactionFeedViewModel(
                 }
             }
         }
-    }
-
-    fun updateScrollPosition(state: LazyListState) {
-        _scrollPosition.value = ScrollPosition(
-            index = state.firstVisibleItemIndex,
-            offset = state.firstVisibleItemScrollOffset,
-        )
     }
 
     private suspend fun loadDateIfNeeded(date: LocalDate) {
