@@ -41,7 +41,6 @@ import androidx.compose.ui.unit.dp
 import androidx.navigation.compose.currentBackStackEntryAsState
 import com.myxoz.life.LifeSearch
 import com.myxoz.life.LocalAPI
-import com.myxoz.life.LocalColors
 import com.myxoz.life.LocalNavController
 import com.myxoz.life.LocalSettings
 import com.myxoz.life.LocalStorage
@@ -103,7 +102,7 @@ fun HomeComposable(calendarViewModel: CalendarViewModel, inspectedEventViewModel
                     showDayPopup = false
                 },
                 sheetState = rememberModalBottomSheetState(true),
-                containerColor = LocalColors.current.BACKGROUND
+                containerColor = Colors.BACKGROUND
             ) {
                 Column(
                     Modifier
@@ -121,7 +120,7 @@ fun HomeComposable(calendarViewModel: CalendarViewModel, inspectedEventViewModel
                             "Liffy",
                             Modifier
                                 .size(70.dp),
-                            tint = LocalColors.current.PRIMARYFONT
+                            tint = Colors.PRIMARYFONT
                         )
                         LiffyFace(70.dp)
                     }
@@ -143,7 +142,7 @@ fun HomeComposable(calendarViewModel: CalendarViewModel, inspectedEventViewModel
                         Column(
                             Modifier
                             .fillMaxWidth()
-                            .border(1.dp, LocalColors.current.TERTIARY, RoundedCornerShape(25.dp))
+                            .border(1.dp, Colors.TERTIARY, RoundedCornerShape(25.dp))
                             .padding(horizontal = 25.dp, vertical = 20.dp)
                     ) {
                         val context = LocalContext.current
@@ -195,7 +194,7 @@ fun HomeComposable(calendarViewModel: CalendarViewModel, inspectedEventViewModel
                         }
                     }
                     Spacer(Modifier.height(20.dp))
-                    HorizontalDivider(color = LocalColors.current.SECONDARY, thickness = 3.dp, modifier = Modifier.clip(CircleShape))
+                    HorizontalDivider(color = Colors.SECONDARY, thickness = 3.dp, modifier = Modifier.clip(CircleShape))
                     Spacer(Modifier)
                     val navController = LocalNavController.current
                     ActionBar(
@@ -205,7 +204,7 @@ fun HomeComposable(calendarViewModel: CalendarViewModel, inspectedEventViewModel
                         {
                             Icon(painterResource(R.drawable.close),"Close",Modifier.fillMaxSize(),Colors.SECONDARYFONT)
                         },
-                        LocalColors.current.SELECTED,
+                        Colors.SELECTED,
                         {
                             showDayPopup = false
                             navController.navigate("summarize_day")
@@ -222,7 +221,7 @@ fun HomeComposable(calendarViewModel: CalendarViewModel, inspectedEventViewModel
                         Icon(
                             painterResource(R.drawable.arrow_right),
                             "Continue",
-                            tint = LocalColors.current.PRIMARYFONT,
+                            tint = Colors.PRIMARYFONT,
                             modifier = Modifier.height(20.dp)
                         )
                     }

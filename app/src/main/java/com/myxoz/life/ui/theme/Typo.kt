@@ -27,6 +27,7 @@ enum class FontSize(val size: TextUnit) {
     XSMALL(8.sp),
     SMALL(10.sp),
     SMALLM(12.sp),
+    MEDIUMM(14.sp),
     MEDIUM(16.sp),
     LARGE(20.sp),
     MLARGE(23.sp),

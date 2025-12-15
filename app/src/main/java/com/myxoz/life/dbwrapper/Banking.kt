@@ -62,6 +62,9 @@ interface BankingDao {
     @Query("SELECT * FROM banking WHERE purpose_date IS NOT NULL AND purpose_date >= :start AND purpose_date < :end")
     suspend fun getTransactionsOnDay(start: Long, end: Long): List<BankingEntity>
 
+    @Query("SELECT * FROM banking WHERE (purpose_date IS NOT NULL AND purpose_date >= :start AND purpose_date < :end) OR (purpose_date IS NULL AND value_date >= :start AND value_date < :end)")
+    suspend fun getTransactionsForList(start: Long, end: Long): List<BankingEntity>
+
     @Query("SELECT * FROM banking WHERE value_date >= :start AND value_date < :end")
     suspend fun getFullDayTransactions(start: Long, end: Long): List<BankingEntity>
 
@@ -78,4 +81,4 @@ interface BankingDao {
     suspend fun getLastTransactionDay(): List<BankingEntity>
 }
 // Methods would be put somewhere else, but banking doesnt have a special event class so:
-fun Int.centsToDisplay(euroSign: Boolean=true) = "${if(this<0) "-" else ""}${abs(this)/100},${(abs(this)%100).toString().padStart(2, '0')}${if(euroSign) "€" else ""}"
+fun Int.formatCents(euroSign: Boolean=true) = "${if(this<0) "-" else ""}${abs(this)/100},${(abs(this)%100).toString().padStart(2, '0')}${if(euroSign) "€" else ""}"

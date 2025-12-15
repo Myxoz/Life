@@ -29,6 +29,9 @@ interface BankingSidecarDao {
     @Query("SELECT * FROM bankingsidecar WHERE transactionId = :transactionId LIMIT 1")
     suspend fun getSidecar(transactionId: String): BankingSidecarEntity?
 
+    @Query("SELECT * FROM bankingsidecar WHERE transactionId IN (:transactionId)")
+    suspend fun getAllSidecars(transactionId: List<String>): List<BankingSidecarEntity>
+
     @Query("SELECT * FROM bankingsidecar WHERE date >= :start AND date < :end")
     suspend fun getSidecarsBetween(start: Long, end: Long): List<BankingSidecarEntity>
 }

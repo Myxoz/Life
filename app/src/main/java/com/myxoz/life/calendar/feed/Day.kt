@@ -77,7 +77,7 @@ import com.myxoz.life.api.SyncedEvent
 import com.myxoz.life.calendar.feed.SegmentedEvent.Companion.getSegmentedEvents
 import com.myxoz.life.dbwrapper.BankingEntity
 import com.myxoz.life.dbwrapper.DaysEntity
-import com.myxoz.life.dbwrapper.centsToDisplay
+import com.myxoz.life.dbwrapper.formatCents
 import com.myxoz.life.events.DigSocEvent
 import com.myxoz.life.events.DigSocEventComposable
 import com.myxoz.life.events.HobbyEvent
@@ -347,14 +347,13 @@ fun DayComposable(
                                     painterResource(R.drawable.gpay),
                                 "Card",
                                 Modifier
-                                    .height(oneHourDp/2)
+                                    .height(oneHourDp/(if(bankingEntity.card) 2f else 3f))
                                 ,
                                 tint = Colors.PRIMARYFONT
                             )
-                            Spacer(Modifier.height(2.dp))
-                            Text(bankingEntity.amountCents.centsToDisplay(),
+                            Spacer(Modifier.height((if(bankingEntity.card) 2.dp else 4.dp)))
+                            Text(bankingEntity.amountCents.formatCents(),
                                 style = TypoStyle(FontColor.PRIMARY, FontSize.XSMALL))
-                            Spacer(Modifier.height(4.dp))
                         }
                         Box(
                             Modifier

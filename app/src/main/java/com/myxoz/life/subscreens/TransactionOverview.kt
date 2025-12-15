@@ -10,11 +10,13 @@ import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -46,13 +48,15 @@ import com.myxoz.life.LocalNavController
 import com.myxoz.life.LocalStorage
 import com.myxoz.life.R
 import com.myxoz.life.dbwrapper.BankingEntity
-import com.myxoz.life.dbwrapper.centsToDisplay
+import com.myxoz.life.dbwrapper.BankingSidecarEntity
+import com.myxoz.life.dbwrapper.formatCents
 import com.myxoz.life.rippleClick
 import com.myxoz.life.ui.theme.Colors
 import com.myxoz.life.ui.theme.FontColor
 import com.myxoz.life.ui.theme.FontFamily
 import com.myxoz.life.ui.theme.FontSize
 import com.myxoz.life.ui.theme.TypoStyle
+import com.myxoz.life.ui.theme.dp
 import com.myxoz.life.viewmodels.LargeDataCache
 import kotlinx.coroutines.runBlocking
 import org.json.JSONObject
@@ -105,7 +109,7 @@ fun TransactionOverview(transactionId: String, bankViewModel: LargeDataCache){
                     .padding(vertical = 20.dp)
             ) {
                 Text(
-                    transactionAtHand.amountCents.centsToDisplay(false) + " " + transactionAtHand.currency,
+                    transactionAtHand.amountCents.formatCents(false) + " " + transactionAtHand.currency,
                     Modifier
                         .fillMaxWidth(),
                     color = if (transactionAtHand.amountCents > 0) Colors.Transactions.PLUS else Colors.Transactions.MINUS,
@@ -210,7 +214,7 @@ fun MyCard(largeDataCache: LargeDataCache){
             ) {
                 Text(
                     if (showBalance) finalDailyBalance(balance).toInt()
-                        .centsToDisplay(true) else "· · · , · · €",
+                        .formatCents(true) else "· · · , · · €",
                     Modifier
                         .fillMaxWidth(),
                     color = Colors.PRIMARYFONT,
@@ -235,7 +239,7 @@ fun TransactionList(epochDay: Long) {
             db.banking.getFullDayTransactions(
                 date.atStartOfDay(zone).toEpochSecond() * 1000L,
                 date.plusDays(1).atStartOfDay(zone).toEpochSecond() * 1000L
-            )
+            ).map { it to db.bankingSidecar.getSidecar(it.id) }
         }
     }
     Scaffold(
@@ -245,13 +249,13 @@ fun TransactionList(epochDay: Long) {
         Column(
             Modifier
                 .fillMaxSize(),
-            verticalArrangement = Arrangement.spacedBy(20.dp),
+            verticalArrangement = Arrangement.spacedBy(15.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             Spacer(Modifier.height(innerPadding.calculateTopPadding()))
             bankingEntries.forEach {
                 BankingEntryComposable(it) {
-                    nav.navigate("bank/transaction/${it.id}")
+                    nav.navigate("bank/transaction/${it.first.id}")
                 }
             }
             Spacer(Modifier.height(innerPadding.calculateBottomPadding()))
@@ -260,25 +264,84 @@ fun TransactionList(epochDay: Long) {
 }
 
 @Composable
-fun BankingEntryComposable(entry: BankingEntity, onClick:  ()->Unit){
+fun BankingEntryComposable(entry: Pair<BankingEntity, BankingSidecarEntity?>, onClick:  ()->Unit){
+    val calendar = remember { Calendar.getInstance() }
     Column(
         Modifier
             .background(Colors.SECONDARY, RoundedCornerShape(25))
             .clip(RoundedCornerShape(25))
             .rippleClick{onClick()}
-            .padding(20.dp)
-            .fillMaxWidth(.9f),
+            .padding(horizontal = 20.dp, vertical = 15.dp)
+            .fillMaxWidth(.95f)
+        ,
+        verticalArrangement = Arrangement.spacedBy(10.dp)
     ) {
-        Text(
-            entry.fromName,
-            style = TypoStyle(FontColor.PRIMARY, FontSize.LARGE)
-        )
-        Text(
-            entry.amountCents.centsToDisplay(),
-            color = if(entry.amountCents > 0) Colors.Transactions.PLUS else Colors.Transactions.MINUS,
-            fontFamily = FontFamily.Display.family,
-            fontSize = FontSize.XXLARGE.size,
-        )
+        Row(
+            Modifier
+                .fillMaxWidth()
+            ,
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween,
+        ) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(4.dp)
+            ) {
+                val card = entry.first.card
+                val transfer = entry.first.transfer
+                val height = FontSize.MEDIUMM.size.dp
+                Icon(
+                    painterResource(
+                        when {
+                            card -> R.drawable.pay_by_card
+                            transfer -> R.drawable.bank_transfer
+                            else -> R.drawable.gpay
+                        }
+                    ),
+                    "Payment Type",
+                    Modifier
+                        .height(height)
+                        .width(if(!transfer && !card) height*2.5f else height),
+                    Colors.SECONDARYFONT
+                )
+                if(card || transfer) Text(
+                    if(card) "Kartenzahlung" else "Überweisung",
+                    style = TypoStyle(FontColor.SECONDARY, FontSize.MEDIUMM)
+                )
+            }
+            Text(
+                (entry.second?.date ?: entry.first.purposeDate ?: entry.first.valueDate).formatMinutes(calendar),
+                style = TypoStyle(FontColor.SECONDARY, FontSize.MEDIUMM)
+            )
+        }
+        Row(
+            Modifier
+                .fillMaxWidth()
+            ,
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+            Column(
+                Modifier
+                    .weight(1f),
+                verticalArrangement = Arrangement.spacedBy(2.dp)
+            ) {
+                Text(
+                    entry.second?.name ?: entry.first.fromName,
+                    style = TypoStyle(FontColor.PRIMARY, FontSize.LARGE)
+                )
+                Text(
+                    if(entry.second == null) entry.first.fromIban.chunked(4).joinToString(" ") else entry.first.fromName,
+                    style = TypoStyle(FontColor.SECONDARY, FontSize.SMALLM)
+                )
+            }
+            Text(
+                entry.first.amountCents.formatCents(),
+                color = if(entry.first.amountCents > 0) Colors.Transactions.PLUS else Colors.Transactions.MINUS,
+                fontFamily = FontFamily.Display.family,
+                fontSize = FontSize.XLARGE.size,
+            )
+        }
     }
 }
 
@@ -394,6 +457,10 @@ fun Long.formatTimeStamp(calendar: Calendar): String {
     return "${calendar.get(Calendar.DAY_OF_MONTH).toString().padStart(2, '0')
     }.${(calendar.get(Calendar.MONTH)+1).padStart(2, '0')}.${calendar.get(Calendar.YEAR)} ${
         calendar.get(Calendar.HOUR_OF_DAY).padStart(2, '0')}:${calendar.get(Calendar.MINUTE).padStart(2, '0')}:${calendar.get(Calendar.SECOND).padStart(2, '0')}"
+}
+fun Long.formatMinutes(calendar: Calendar): String {
+    calendar.timeInMillis = this
+    return "${calendar.get(Calendar.HOUR_OF_DAY).padStart(2, '0')}:${calendar.get(Calendar.MINUTE).padStart(2, '0')}"
 }
 fun Int.padStart(length: Int, char: Char) = toString().padStart(length, char)
 fun finalDailyBalance(transactions: List<BankingEntity>): Long {

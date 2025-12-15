@@ -127,7 +127,6 @@ class MainActivity : ComponentActivity() {
             CompositionLocalProvider(
                 LocalAPI provides api,
                 LocalNavController provides navController,
-                LocalColors provides Colors,
                 LocalStorage provides db,
                 LocalSettings provides settings,
             ) {
@@ -235,7 +234,7 @@ class MainActivity : ComponentActivity() {
                         SummarizeDay()
                     }
                     composable("transactions") {
-                        TransactionFeed(transactionFeedViewModel)
+                        TransactionFeed(transactionFeedViewModel, calendarViewModel)
                     }
                     composable("contacts") {
                         Contacts(contacsViewModel, profileInfoModel)

@@ -55,7 +55,7 @@ import com.myxoz.life.calendar.feed.msToDisplay
 import com.myxoz.life.calendar.feed.screenTimeGoal
 import com.myxoz.life.calendar.feed.stepsGoal
 import com.myxoz.life.dbwrapper.BankingEntity
-import com.myxoz.life.dbwrapper.centsToDisplay
+import com.myxoz.life.dbwrapper.formatCents
 import com.myxoz.life.diagrams.PieChart
 import com.myxoz.life.events.additionals.EventType
 import com.myxoz.life.options.getUsageDataBetween
@@ -337,7 +337,7 @@ fun BankingBlock(bankingEntries: List<BankingEntity>, openBankingMenu: ()->Unit)
         Text("Überweisungen", style = TypoStyle(FontColor.SECONDARY, FontSize.MEDIUM))
         Spacer(Modifier.height(10.dp))
         Text(
-            bankingEntries.sumOf { it.amountCents }.centsToDisplay(),
+            bankingEntries.sumOf { it.amountCents }.formatCents(),
             style = TypoStyle(FontColor.SECONDARY, FontSize.XLARGE, FontFamily.Display),
         )
     }

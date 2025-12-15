@@ -4,6 +4,7 @@ import androidx.compose.foundation.lazy.LazyListState
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.myxoz.life.dbwrapper.BankingEntity
+import com.myxoz.life.dbwrapper.BankingSidecarEntity
 import com.myxoz.life.dbwrapper.StorageManager
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -22,8 +23,8 @@ class TransactionFeedViewModel(
     private val zone: ZoneId
 ): ViewModel() {
     private val _transactionsByDate =
-        MutableStateFlow<Map<LocalDate, List<BankingEntity>>>(emptyMap())
-    val transactionsByDate: StateFlow<Map<LocalDate, List<BankingEntity>>> =
+        MutableStateFlow<Map<LocalDate, List<Pair<BankingEntity, BankingSidecarEntity?>>>>(emptyMap())
+    val transactionsByDate: StateFlow<Map<LocalDate, List<Pair<BankingEntity, BankingSidecarEntity?>>>> =
         _transactionsByDate
 
     private val _visibleDates =
@@ -91,9 +92,14 @@ private suspend fun loadTransactionsForDate(
     db: StorageManager,
     date: LocalDate,
     zone: ZoneId
-): List<BankingEntity> {
+): List<Pair<BankingEntity, BankingSidecarEntity?>> {
     val start = date.atStartOfDay(zone).toEpochSecond() * 1000L
     val end = date.plusDays(1).atStartOfDay(zone).toEpochSecond() * 1000L
-    val transactions = db.banking.getFullDayTransactions(start, end)
-    return transactions
+    val sidecars = db.bankingSidecar.getSidecarsBetween(start, end)
+    val transactions = db.banking.getTransactionsForList(start, end)
+    val sidecarsForTransactions = db.bankingSidecar.getAllSidecars(transactions.map { it.id })
+    val filteredTransactions = transactions.filter { !sidecarsForTransactions.any {  c -> it.id == c.transactionId } }
+    val transactionsForSidecars = db.banking.getTransactionByIds(sidecars.map { it.transactionId })
+    val combinedTransactions = (filteredTransactions + transactionsForSidecars)
+    return combinedTransactions.map { it to sidecars.find { c -> c.transactionId == it.id } }.sortedByDescending { it.second?.date ?: it.first.purposeDate ?: it.first.valueDate }
 }
