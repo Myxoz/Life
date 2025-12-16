@@ -138,7 +138,7 @@ abstract class Syncable(
                 }
 
                 SpecialSyncablesIds.LOCATIONS -> {
-                    val dbEntry = db.location.getLocation(entry.id) ?: return null
+                    val dbEntry = db.location.getLocationById(entry.id) ?: return null
                     Location.from(dbEntry)
                 }
 

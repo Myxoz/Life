@@ -52,6 +52,7 @@ enum class EventTag(override val id: Int, val displayName: String, val queryStri
     Studium(13, "Uni", listOf("Universität", "Studium", "Studieren"), R.drawable.study),
     Android(14, "Android", listOf(), R.drawable.android),
     ;
+    fun matches(query: String) = displayName.contains(query, true) || queryString.any { it.contains(query, true) }
     // Always add to getResource and to getTagById!!!
     companion object {
         fun getTagById(id: Int) = EventTag.entries.firstOrNull {
@@ -149,6 +150,7 @@ interface TagEvent {
             )
         }
     }
+    fun containsTagLike(query: String) = eventTags.any { it.matches(query) }
     fun JSONObject.addTags(): JSONObject = put("tags", JSONArray().apply {eventTags.forEach { put(it.id) }})
     companion object {
         fun JSONObject.getTagsFromJson() = getJSONArray("tags").run {

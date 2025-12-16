@@ -77,7 +77,7 @@ class Location(
         }
 
         suspend fun fromDB(db: StorageManager, id: Long): Location? {
-            return from(db.location.getLocation(id) ?: return null)
+            return from(db.location.getLocationById(id) ?: return null)
         }
 
         fun fromJSON(json: JSONObject): Location = Location(

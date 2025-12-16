@@ -41,7 +41,7 @@ interface LocationDao {
     suspend fun insertLocation(location: LocationEntity)
 
     @Query("SELECT * FROM location WHERE id = :id LIMIT 1")
-    suspend fun getLocation(id: Long): LocationEntity?
+    suspend fun getLocationById(id: Long): LocationEntity?
 
 
     @Query("SELECT * FROM location WHERE street = :street AND number = :number AND city = :city LIMIT 1")

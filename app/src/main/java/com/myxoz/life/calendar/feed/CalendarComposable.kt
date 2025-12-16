@@ -85,7 +85,7 @@ fun CalendarComposable(calendarViewModel: CalendarViewModel, inspectedEventViewM
     val days = calendarViewModel.days
     val listState = rememberLazyListState()
     val isEditing by inspectedEventViewModel.isEditing.collectAsState()
-    val displayedDays = calendarViewModel.dayAmount
+    val displayedDays by calendarViewModel.dayAmount.collectAsState()
     val context = LocalContext.current
     val flingBehavior = remember {
         snapFlingBehavior(

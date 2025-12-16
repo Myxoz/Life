@@ -39,7 +39,7 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.navigation.compose.currentBackStackEntryAsState
-import com.myxoz.life.LifeBottomBar
+import com.myxoz.life.search.LifeBottomBar
 import com.myxoz.life.LocalAPI
 import com.myxoz.life.LocalNavController
 import com.myxoz.life.LocalSettings

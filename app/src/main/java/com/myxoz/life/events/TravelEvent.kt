@@ -33,6 +33,7 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.times
 import com.myxoz.life.LocalStorage
+import com.myxoz.life.api.Location
 import com.myxoz.life.api.jsonObjArray
 import com.myxoz.life.dbwrapper.EventEntity
 import com.myxoz.life.dbwrapper.StorageManager
@@ -59,6 +60,8 @@ class TravelEvent(
     val to: Long,
     val vehicles: List<TimedTagLikeContainer<Vehicle>>
 ): ProposedEvent(start, end, EventType.Travel, uss, usl) {
+    var decodedFrom: Location? = null
+    var decodedTo: Location? = null
     override suspend fun saveEventSpecifics(db: StorageManager, id: Long): Boolean {
         db.travel.insertEvent(
             TravelEntity(
@@ -78,7 +81,6 @@ class TravelEvent(
         }
         return true
     }
-
     @Composable
     override fun BoxScope.RenderContent(
         oneHourDp: Dp,
@@ -89,8 +91,8 @@ class TravelEvent(
     ) {
         val db = LocalStorage.current
         val blockHeight =  getBlockHeight(startOfDay, endOfDay)
-        var fromDisplay by remember { mutableStateOf("Von") }
-        var toDisplay by remember { mutableStateOf("Nach") }
+        var fromDisplay by remember { mutableStateOf(decodedFrom?.name ?:"Von") }
+        var toDisplay by remember { mutableStateOf(decodedTo?.name ?: "Nach") }
         val density = LocalDensity.current
         val size = when(blockHeight){
             1 -> ((0.8f) * oneHourDp/4f)
@@ -102,9 +104,17 @@ class TravelEvent(
         }
         val fontSize = size.toSp(density)
         LaunchedEffect(Unit) {
-            with(Dispatchers.IO){
-                db.location.getLocation(from)?.name?.also { fromDisplay = it }
-                db.location.getLocation(to)?.name?.also { toDisplay = it }
+            if(decodedFrom == null || decodedTo == null) {
+                with(Dispatchers.IO){
+                    db.location.getLocationById(from)?.also {
+                        fromDisplay = it.name
+                        decodedFrom = Location.from(it)
+                    }
+                    db.location.getLocationById(to)?.also {
+                        toDisplay = it.name
+                        decodedTo = Location.from(it)
+                    }
+                }
             }
         }
         when(blockHeight){

@@ -131,7 +131,7 @@ class ProfileInfoModel(): ViewModel(){
     suspend fun setStateToDb(db: StorageManager) {
         val id = id.value ?: return
         val dbEntry = db.people.getPersonById(id) ?: return
-        val location = dbEntry.home?.let { db.location.getLocation(it) }?.let { Location.from(it) }
+        val location = dbEntry.home?.let { db.location.getLocationById(it) }?.let { Location.from(it) }
         val socials = db.socials.getSocialsFromPerson(id)
         platforms.value = socials.mapNotNull { PersonSyncable.Companion.Socials.from(it) }
         platformInputs.value = platforms.value.map { it.asString() }

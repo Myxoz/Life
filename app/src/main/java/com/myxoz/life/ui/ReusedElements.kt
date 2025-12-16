@@ -85,8 +85,8 @@ enum class ArrowDirection {
 fun Modifier.drawArrowBehind(direction: ArrowDirection, arrowWidth: Float, color: Color) = this.drawWithCache{
     val width = this.size.width
     val height = this.size.height
-    val pointerSize = arrowWidth/1.5f // TODO Tweak later
-    val strokeWidth = arrowWidth/3f // TODO Tweak later
+    val pointerSize = arrowWidth/1.5f
+    val strokeWidth = arrowWidth/3f
     val components = when(direction){
         ArrowDirection.Up -> arrayOf(width/2 to height-strokeWidth, width/2 to strokeWidth, -pointerSize to pointerSize)
         ArrowDirection.Right -> arrayOf(strokeWidth to height/2, width-strokeWidth to height/2, -pointerSize to -pointerSize)

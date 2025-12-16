@@ -169,9 +169,9 @@ fun DisplayEvent(fullEvent: SyncedEvent, profileInfoModel: ProfileInfoModel){
             val size = FontSize.MEDIUM.size.toDp()
             LaunchedEffect(Unit) {
                 with(Dispatchers.IO) {
-                    db.location.getLocation(fullEvent.proposed.from)
+                    db.location.getLocationById(fullEvent.proposed.from)
                         ?.also { from = Location.from(it) }
-                    db.location.getLocation(fullEvent.proposed.to)
+                    db.location.getLocationById(fullEvent.proposed.to)
                         ?.also { to = Location.from(it) }
                 }
             }

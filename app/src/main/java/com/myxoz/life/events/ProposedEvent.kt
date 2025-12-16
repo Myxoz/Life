@@ -37,12 +37,12 @@ abstract class ProposedEvent(start: Long, end: Long, val type: EventType, val us
     )
     fun toJson(): JSONObject =
         addEventSpecifics(
-        JSONObject()
-            .put("start", start)
-            .put("end", end)
-            .put("type", type.id)
-            .put("uss", uss)
-            .put("usl", usl)
+            JSONObject()
+                .put("start", start)
+                .put("end", end)
+                .put("type", type.id)
+                .put("uss", uss)
+                .put("usl", usl)
         )
     abstract fun copyWithTimes(start: Long, end: Long, uss: Boolean=this.uss, usl: Boolean=this.usl): ProposedEvent
     suspend fun saveToEventTable(db: StorageManager, id: Long, created: Long, edited: Long?){

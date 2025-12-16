@@ -11,20 +11,26 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.ripple
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.myxoz.life.api.SyncedEvent
 import com.myxoz.life.dbwrapper.BankingEntity
 import com.myxoz.life.events.additionals.EventType
+import com.myxoz.life.viewmodels.CalendarViewModel
 
 
 data class SegmentedEvent(val event: SyncedEvent, val isFullWidth: Boolean, val isLeft: Boolean, val hasContent: Boolean, val segmentStart: Long, val segmentEnd: Long): DefinedDurationEvent(segmentStart, segmentEnd) {
     @OptIn(ExperimentalFoundationApi::class)
     @Composable
-    fun Render(oneHour: Dp, bankingSizeDp: Dp, startOfDay: Long, endOfDay: Long, width: Dp, isClickEnabled: Boolean, editEvent: ()->Unit, openEventDetails: ()->Unit){
+    fun Render(calendarViewModel: CalendarViewModel, oneHour: Dp, bankingSizeDp: Dp, startOfDay: Long, endOfDay: Long, width: Dp, isClickEnabled: Boolean, editEvent: ()->Unit, openEventDetails: ()->Unit){
+        val lastUpdated by calendarViewModel.search.lastUpdated.collectAsState()
+        val isSearched = remember(lastUpdated) { calendarViewModel.search.isSearched(this.event.proposed) }
         Box(
             Modifier
                 .padding(
@@ -33,13 +39,14 @@ data class SegmentedEvent(val event: SyncedEvent, val isFullWidth: Boolean, val 
                 )
                 .height(getHeightDp(oneHour, startOfDay, endOfDay))
                 .width(if(isFullWidth) width else if(isLeft) width-bankingSizeDp else bankingSizeDp)
+                .alpha(if(isSearched) 1f else 0.3f)
                 .clip(RoundedCornerShape(10.dp))
                 .combinedClickable(remember { MutableInteractionSource() }, ripple(), isClickEnabled, onClick = openEventDetails, onLongClick = editEvent)
                 .background(event.proposed.getBackgroundBrush(), RoundedCornerShape(10.dp))
         ) {
             if(hasContent)
                 with(event.proposed) {
-                    RenderContent(oneHour, startOfDay, endOfDay, !isLeft, getBlockHeight(startOfDay, endOfDay))
+                    RenderContent(oneHour, startOfDay, endOfDay, !isLeft, this@SegmentedEvent.getBlockHeight(startOfDay, endOfDay))
                 }
         }
     }
