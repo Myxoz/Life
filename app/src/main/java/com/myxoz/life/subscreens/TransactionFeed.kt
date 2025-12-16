@@ -27,11 +27,11 @@ import com.myxoz.life.LocalNavController
 import com.myxoz.life.dbwrapper.BankingEntity
 import com.myxoz.life.dbwrapper.BankingSidecarEntity
 import com.myxoz.life.dbwrapper.formatCents
-import com.myxoz.life.rippleClick
 import com.myxoz.life.ui.theme.Colors
 import com.myxoz.life.ui.theme.FontColor
 import com.myxoz.life.ui.theme.FontSize
 import com.myxoz.life.ui.theme.TypoStyle
+import com.myxoz.life.utils.rippleClick
 import com.myxoz.life.viewmodels.CalendarViewModel
 import com.myxoz.life.viewmodels.TransactionFeedViewModel
 import kotlinx.coroutines.flow.distinctUntilChanged

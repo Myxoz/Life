@@ -6,20 +6,14 @@ import androidx.compose.ui.unit.Dp
 import com.myxoz.life.dbwrapper.EventEntity
 import com.myxoz.life.dbwrapper.SpontEntiy
 import com.myxoz.life.dbwrapper.StorageManager
+import com.myxoz.life.events.additionals.EventTag
 import com.myxoz.life.events.additionals.EventType
 import com.myxoz.life.events.additionals.RenderTagAndTitleBar
-import com.myxoz.life.events.additionals.EventTag
 import com.myxoz.life.events.additionals.TagEvent
 import com.myxoz.life.events.additionals.TagEvent.Companion.getTagsFromJson
 import com.myxoz.life.events.additionals.TitleEvent
 import com.myxoz.life.ui.theme.Colors
 import org.json.JSONObject
-
-@Composable
-fun BoxScope.SpontEventComposable(event: SpontEvent, oneHourDp: Dp, startOfDay: Long, endOfDay: Long) {
-    val blockHeight = event.getBlockHeight(startOfDay, endOfDay)
-    RenderTagAndTitleBar(event.eventTags, event.title, oneHourDp, blockHeight, Colors.Calendar.Spont.Tag, Colors.Calendar.Spont.TEXT)
-}
 
 class SpontEvent(
     start: Long,
@@ -38,6 +32,18 @@ class SpontEvent(
             )
         )
         return true
+    }
+
+    @Composable
+    override fun BoxScope.RenderContent(
+        oneHourDp: Dp,
+        startOfDay: Long,
+        endOfDay: Long,
+        isSmall: Boolean,
+        blockHeight: Int
+    ) {
+        val blockHeight = getBlockHeight(startOfDay, endOfDay)
+        RenderTagAndTitleBar(eventTags, title, oneHourDp, blockHeight, Colors.Calendar.Spont.Tag, Colors.Calendar.Spont.TEXT)
     }
 
     override suspend fun eraseEventSpecificsFromDB(db: StorageManager, id: Long) {

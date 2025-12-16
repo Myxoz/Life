@@ -68,16 +68,16 @@ import com.myxoz.life.LocalNavController
 import com.myxoz.life.LocalStorage
 import com.myxoz.life.R
 import com.myxoz.life.api.SyncedEvent
-import com.myxoz.life.calendar.ActionBar
 import com.myxoz.life.calendar.feed.msToDisplay
 import com.myxoz.life.events.DigSocEvent
 import com.myxoz.life.events.additionals.EventType
-import com.myxoz.life.rippleClick
+import com.myxoz.life.ui.ActionBar
 import com.myxoz.life.ui.theme.Colors
 import com.myxoz.life.ui.theme.FontColor
 import com.myxoz.life.ui.theme.FontSize
 import com.myxoz.life.ui.theme.TypoStyle
-import com.myxoz.life.ui.theme.dp
+import com.myxoz.life.utils.rippleClick
+import com.myxoz.life.utils.toDp
 import com.myxoz.life.viewmodels.InspectedEventViewModel
 import com.myxoz.life.viewmodels.LargeDataCache
 import com.myxoz.life.viewmodels.ProfileInfoModel
@@ -106,7 +106,7 @@ fun DisplayPerson(personId: Long, photoPicker: PhotoPicker, largeDataCache: Larg
             Modifier
                 .fillMaxSize()
         ){
-            val fontSize = FontSize.XLARGE.size.dp + 20.dp
+            val fontSize = FontSize.XLARGE.size.toDp() + 20.dp
             val topBarHeight = 300.dp + fontSize
             Column(
                 Modifier
@@ -217,7 +217,7 @@ fun DisplayPerson(personId: Long, photoPicker: PhotoPicker, largeDataCache: Larg
                         boxWidth,
                         profileInfoModel.chartUnit
                     ) {}
-                    val fontSize = FontSize.MEDIUM.size.dp
+                    val fontSize = FontSize.MEDIUM.size.toDp()
                     Column(
                         Modifier
                             .width(width),
@@ -369,7 +369,7 @@ private fun FlowRowScope.FlowRowItem(title: String, icon: Int, text: String, onC
             .padding(10.dp),
         verticalArrangement = Arrangement.spacedBy(7.dp)
     ) {
-        val iconSize = FontSize.MEDIUM.size.dp * 1.5f
+        val iconSize = FontSize.MEDIUM.size.toDp() * 1.5f
         Text(title, style = TypoStyle(FontColor.SECONDARY, FontSize.MEDIUM))
         Row(
             verticalAlignment = Alignment.CenterVertically,

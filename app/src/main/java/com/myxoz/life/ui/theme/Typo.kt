@@ -51,9 +51,6 @@ fun TypoStyle(
         fontFamily = fontFamily?.family
     )
 
-val TextUnit.dp: Dp @Composable get() = with(LocalDensity.current) { this@dp.toDp() }
-fun TextUnit.dp(density: Density): Dp = with(density) { this@dp.toDp() }
-
 //val Float.pxAsDp: Dp @Composable get() = (LocalDensity.current.density * this).dp
 object AppFont {
     val ChangeOne = FontFamily(

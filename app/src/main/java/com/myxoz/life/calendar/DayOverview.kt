@@ -50,7 +50,6 @@ import androidx.navigation.NavController
 import com.myxoz.life.LocalSettings
 import com.myxoz.life.LocalStorage
 import com.myxoz.life.R
-import com.myxoz.life.calendar.feed.getWeekDayByInt
 import com.myxoz.life.calendar.feed.msToDisplay
 import com.myxoz.life.calendar.feed.screenTimeGoal
 import com.myxoz.life.calendar.feed.stepsGoal
@@ -59,12 +58,12 @@ import com.myxoz.life.dbwrapper.formatCents
 import com.myxoz.life.diagrams.PieChart
 import com.myxoz.life.events.additionals.EventType
 import com.myxoz.life.options.getUsageDataBetween
-import com.myxoz.life.rippleClick
 import com.myxoz.life.ui.theme.Colors
 import com.myxoz.life.ui.theme.FontColor
 import com.myxoz.life.ui.theme.FontFamily
 import com.myxoz.life.ui.theme.FontSize
 import com.myxoz.life.ui.theme.TypoStyle
+import com.myxoz.life.utils.rippleClick
 import kotlinx.coroutines.delay
 import java.time.LocalDate
 import java.time.ZoneId
@@ -380,4 +379,10 @@ fun StepCounterTrigger(trigger: (Long)->Unit) {
     }
 
     trigger(steps)
+}
+fun getMonthByCalendarMonth(month: Int): String{
+    return listOf("Jan", "Feb", "Mär", "Apr", "Mai", "Juni", "Juli", "Aug", "Sep", "Okt", "Nov", "Dez")[month]
+}
+fun getWeekDayByInt(day: Int): String {
+    return listOf("Mon", "Di", "Mi", "Do", "Fr", "Sa", "So")[day]
 }

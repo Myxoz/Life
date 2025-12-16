@@ -3,8 +3,8 @@ package com.myxoz.life.sensors
 import android.content.Context
 import com.myxoz.life.dbwrapper.DatabaseProvider
 import com.myxoz.life.events.TravelEvent
-import com.myxoz.life.events.Vehicle
 import com.myxoz.life.events.additionals.TimedTagLikeContainer
+import com.myxoz.life.events.additionals.Vehicle
 import com.myxoz.life.integration.HVV
 import com.myxoz.life.viewmodels.SharingContent
 

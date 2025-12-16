@@ -16,58 +16,22 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.myxoz.life.LocalStorage
-import com.myxoz.life.R
 import com.myxoz.life.api.jsonObjArray
 import com.myxoz.life.dbwrapper.DigSocEntity
 import com.myxoz.life.dbwrapper.DigSocMappingEntity
 import com.myxoz.life.dbwrapper.EventEntity
 import com.myxoz.life.dbwrapper.StorageManager
+import com.myxoz.life.events.additionals.DigSocPlatform
 import com.myxoz.life.events.additionals.EventType
 import com.myxoz.life.events.additionals.PeopleEvent
 import com.myxoz.life.events.additionals.PeopleEvent.Companion.getPeopleFromJson
 import com.myxoz.life.events.additionals.RenderTagAndTitleBar
-import com.myxoz.life.events.additionals.TagLike
 import com.myxoz.life.events.additionals.TimedTagLikeContainer
 import com.myxoz.life.events.additionals.TitleEvent
 import com.myxoz.life.ui.theme.Colors
+import com.myxoz.life.utils.toSp
 import org.json.JSONArray
 import org.json.JSONObject
-
-@Composable
-fun BoxScope.DigSocEventComposable(event: DigSocEvent, oneHourDp: Dp, startOfDay: Long, endOfDay: Long, isSmall: Boolean, blockHeight: Int) {
-    val db = LocalStorage.current
-    var displayText by remember { mutableStateOf("") }
-    PeopleEvent.GetFullNames(db, event.people) { persons ->
-        displayText = persons.joinToString(" · ") { it.name }
-    }
-    if(isSmall){
-        Text(
-            displayText,
-            Modifier
-                .padding(all = 3.dp),
-            fontSize = (oneHourDp / 4f).toSp(),
-            color = Colors.Calendar.Social.SECONDARY,
-            overflow = TextOverflow.Ellipsis
-        )
-    } else Column(
-        Modifier
-            .align(Alignment.TopCenter)
-            .fillMaxSize()
-    ) {
-        val titleText = event.title.ifBlank { if(blockHeight <= 3) displayText else event.title }
-        RenderTagAndTitleBar(event.digSocEntries.map { it.type }, titleText, oneHourDp, blockHeight, Colors.Calendar.DigSoc.Tag, Colors.Calendar.DigSoc.TEXT)
-        if(blockHeight > 3) {
-            Text(
-                displayText,
-                Modifier
-                    .padding(start = 10.dp),
-                fontSize = (oneHourDp / 3f).toSp(),
-                color = Colors.Calendar.DigSoc.SECONDARY,
-                overflow = TextOverflow.Ellipsis
-            )
-        }
-    }
-}
 
 class DigSocEvent(
     start: Long,
@@ -93,6 +57,49 @@ class DigSocEvent(
         )
         return true
     }
+
+    @Composable
+    override fun BoxScope.RenderContent(
+        oneHourDp: Dp,
+        startOfDay: Long,
+        endOfDay: Long,
+        isSmall: Boolean,
+        blockHeight: Int
+    ) {
+        val db = LocalStorage.current
+        var displayText by remember { mutableStateOf("") }
+        PeopleEvent.GetFullNames(db, people) { persons ->
+            displayText = persons.joinToString(" · ") { it.name }
+        }
+        if(isSmall){
+            Text(
+                displayText,
+                Modifier
+                    .padding(all = 3.dp),
+                fontSize = (oneHourDp / 4f).toSp(),
+                color = Colors.Calendar.Social.SECONDARY,
+                overflow = TextOverflow.Ellipsis
+            )
+        } else Column(
+            Modifier
+                .align(Alignment.TopCenter)
+                .fillMaxSize()
+        ) {
+            val titleText = title.ifBlank { if(blockHeight <= 3) displayText else title }
+            RenderTagAndTitleBar(digSocEntries.map { it.type }, titleText, oneHourDp, blockHeight, Colors.Calendar.DigSoc.Tag, Colors.Calendar.DigSoc.TEXT)
+            if(blockHeight > 3) {
+                Text(
+                    displayText,
+                    Modifier
+                        .padding(start = 10.dp),
+                    fontSize = (oneHourDp / 3f).toSp(),
+                    color = Colors.Calendar.DigSoc.SECONDARY,
+                    overflow = TextOverflow.Ellipsis
+                )
+            }
+        }
+    }
+
     override suspend fun eraseEventSpecificsFromDB(db: StorageManager, id: Long) {
         db.digsoc.removeById(id)
         db.peopleMapping.deleteMappingByEventId(id)
@@ -135,16 +142,5 @@ class DigSocEvent(
                 db.peopleMapping.getMappingsByEventId(event.id).map { it.personId }
             )
         }
-    }
-}
-enum class DigSocPlatform(override val id: Int, override val drawable: Int): TagLike {
-    Call(1, R.drawable.phone),
-    Instagram(2, R.drawable.insta),
-    WhatsApp(3, R.drawable.whatsapp),
-    Snapchat(4, R.drawable.snap),
-    Message(5, R.drawable.message),
-    ;
-    companion object {
-        fun getById(id: Int): DigSocPlatform? = DigSocPlatform.entries.firstOrNull { it.id == id }.apply { if(this==null) println("Couldnt find app with id $id in DigSocEntry.getById") }
     }
 }

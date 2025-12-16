@@ -61,16 +61,16 @@ import com.myxoz.life.R
 import com.myxoz.life.api.API
 import com.myxoz.life.api.PersonSyncable
 import com.myxoz.life.calendar.InputField
-import com.myxoz.life.combinedRippleClick
-import com.myxoz.life.events.toPx
-import com.myxoz.life.filteredWith
-import com.myxoz.life.rippleClick
 import com.myxoz.life.ui.theme.Colors
 import com.myxoz.life.ui.theme.FontColor
 import com.myxoz.life.ui.theme.FontSize
 import com.myxoz.life.ui.theme.TypoStyle
-import com.myxoz.life.ui.theme.dp
 import com.myxoz.life.utils.MaterialShapes
+import com.myxoz.life.utils.combinedRippleClick
+import com.myxoz.life.utils.filteredWith
+import com.myxoz.life.utils.rippleClick
+import com.myxoz.life.utils.toDp
+import com.myxoz.life.utils.toPx
 import com.myxoz.life.utils.toShape
 import com.myxoz.life.viewmodels.ContactsViewModel
 import com.myxoz.life.viewmodels.ProfileInfoModel
@@ -207,10 +207,10 @@ fun Contacts(contactsViewModel: ContactsViewModel, personViewModel: ProfileInfoM
                                 val fontSize = FontSize.LARGE.size
                                 if(swipedRight) {
                                     val hasPhone = contact.phoneNumber!=null
-                                    Icon(painterResource(if(hasPhone) R.drawable.phone else R.drawable.close), "Call", Modifier.size(fontSize.dp), tint = Colors.BACKGROUND)
+                                    Icon(painterResource(if(hasPhone) R.drawable.phone else R.drawable.close), "Call", Modifier.size(fontSize.toDp()), tint = Colors.BACKGROUND)
                                     Text(if(hasPhone) "Anrufen" else "Keine Nummer hinterlegt", style = TextStyle.Default.copy(color = Colors.BACKGROUND, fontSize = fontSize))
                                 } else {
-                                    Icon(painterResource(platform?.icon?:R.drawable.close), "Call", Modifier.size(fontSize.dp), tint = Colors.BACKGROUND)
+                                    Icon(painterResource(platform?.icon?:R.drawable.close), "Call", Modifier.size(fontSize.toDp()), tint = Colors.BACKGROUND)
                                     Text(platform?.fullName?:"Keine Platform", style = TextStyle.Default.copy(color = Colors.BACKGROUND, fontSize = fontSize))
                                 }
                             }
@@ -252,7 +252,7 @@ fun Contacts(contactsViewModel: ContactsViewModel, personViewModel: ProfileInfoM
                                     horizontalArrangement = Arrangement.SpaceBetween,
                                     verticalAlignment = Alignment.CenterVertically
                                 ) {
-                                    val fontSize = FontSize.LARGE.size.dp
+                                    val fontSize = FontSize.LARGE.size.toDp()
                                     Text(contact.name, style = TypoStyle(FontColor.PRIMARY, FontSize.LARGE))
                                     if(letter!='C') {
                                         Box(Modifier
@@ -324,7 +324,7 @@ fun Contacts(contactsViewModel: ContactsViewModel, personViewModel: ProfileInfoM
                         search = it
                     }
                 }
-                val lineHeight = FontSize.LARGE.size.dp + 16.dp  * 2 /* TextFieldPadding * 2 */
+                val lineHeight = FontSize.LARGE.size.toDp() + 16.dp  * 2 /* TextFieldPadding * 2 */
                 val shape = MaterialShapes.Cookie12Sided.toShape()
                 val coroutineScope = rememberCoroutineScope()
                 Box(

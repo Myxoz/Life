@@ -8,7 +8,7 @@ import androidx.core.net.toUri
 import com.myxoz.life.calendar.getEventId
 import com.myxoz.life.dbwrapper.LocationEntity
 import com.myxoz.life.dbwrapper.StorageManager
-import com.myxoz.life.events.getStringOrNull
+import com.myxoz.life.utils.getStringOrNull
 import org.json.JSONObject
 
 class Location(

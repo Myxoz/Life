@@ -47,7 +47,6 @@ import androidx.compose.ui.unit.min
 import androidx.compose.ui.unit.times
 import com.myxoz.life.LocalStorage
 import com.myxoz.life.api.ProfilePictureSyncable
-import com.myxoz.life.combinedRippleClick
 import com.myxoz.life.dbwrapper.ProfilePictureStored
 import com.myxoz.life.ui.theme.Colors
 import com.myxoz.life.ui.theme.FontColor
@@ -55,6 +54,7 @@ import com.myxoz.life.ui.theme.FontFamily
 import com.myxoz.life.ui.theme.FontSize
 import com.myxoz.life.ui.theme.TypoStyle
 import com.myxoz.life.utils.MaterialShapes
+import com.myxoz.life.utils.combinedRippleClick
 import com.myxoz.life.utils.toShape
 import com.myxoz.life.viewmodels.ProfileInfoModel
 import kotlinx.coroutines.flow.drop

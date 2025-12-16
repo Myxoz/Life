@@ -47,6 +47,7 @@ import com.myxoz.life.R
 import com.myxoz.life.api.API
 import com.myxoz.life.dbwrapper.WaitingSyncEntity
 import com.myxoz.life.subscreens.formatTimeStamp
+import com.myxoz.life.ui.ActionBar
 import com.myxoz.life.ui.theme.Colors
 import com.myxoz.life.ui.theme.FontColor
 import com.myxoz.life.ui.theme.FontSize

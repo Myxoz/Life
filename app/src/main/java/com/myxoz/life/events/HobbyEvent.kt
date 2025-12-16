@@ -15,35 +15,16 @@ import com.myxoz.life.dbwrapper.EventEntity
 import com.myxoz.life.dbwrapper.HobbyEntiy
 import com.myxoz.life.dbwrapper.StorageManager
 import com.myxoz.life.events.additionals.DetailsEvent
+import com.myxoz.life.events.additionals.EventTag
 import com.myxoz.life.events.additionals.EventType
 import com.myxoz.life.events.additionals.RenderTagAndTitleBar
-import com.myxoz.life.events.additionals.EventTag
 import com.myxoz.life.events.additionals.TagEvent
 import com.myxoz.life.events.additionals.TagEvent.Companion.getTagsFromJson
 import com.myxoz.life.events.additionals.TitleEvent
 import com.myxoz.life.ui.theme.Colors
+import com.myxoz.life.utils.getStringOrNull
+import com.myxoz.life.utils.toSp
 import org.json.JSONObject
-
-@Composable
-fun BoxScope.HobbyEventComposable(event: HobbyEvent, oneHourDp: Dp, startOfDay: Long, endOfDay: Long) {
-    val blockHeight = event.getBlockHeight(startOfDay, endOfDay)
-    Column(
-        Modifier
-            .align(Alignment.TopCenter)
-            .fillMaxSize()
-    ) {
-        RenderTagAndTitleBar(event.eventTags, event.title, oneHourDp, blockHeight, Colors.Calendar.Hobby.Tag, Colors.Calendar.Hobby.TEXT)
-        if(blockHeight>3) Text(
-            event.details?:"",
-            Modifier
-                .padding(start = 10.dp, end = 3.dp)
-            ,
-            fontSize = (oneHourDp/3f).toSp(),
-            color = Colors.Calendar.Hobby.SECONDARY,
-            overflow = TextOverflow.Ellipsis
-        )
-    }
-}
 
 class HobbyEvent(
     start: Long,
@@ -66,6 +47,34 @@ class HobbyEvent(
         )
         return true
     }
+
+    @Composable
+    override fun BoxScope.RenderContent(
+        oneHourDp: Dp,
+        startOfDay: Long,
+        endOfDay: Long,
+        isSmall: Boolean,
+        blockHeight: Int
+    ) {
+        val blockHeight = getBlockHeight(startOfDay, endOfDay)
+        Column(
+            Modifier
+                .align(Alignment.TopCenter)
+                .fillMaxSize()
+        ) {
+            RenderTagAndTitleBar(eventTags, title, oneHourDp, blockHeight, Colors.Calendar.Hobby.Tag, Colors.Calendar.Hobby.TEXT)
+            if(blockHeight>3) Text(
+                details?:"",
+                Modifier
+                    .padding(start = 10.dp, end = 3.dp)
+                ,
+                fontSize = (oneHourDp/3f).toSp(),
+                color = Colors.Calendar.Hobby.SECONDARY,
+                overflow = TextOverflow.Ellipsis
+            )
+        }
+    }
+
     override suspend fun eraseEventSpecificsFromDB(db: StorageManager, id: Long) {
         db.tags.removeById(id)
         db.hobby.removeById(id)
@@ -98,5 +107,3 @@ class HobbyEvent(
         }
     }
 }
-fun JSONObject.getStringOrNull(name: String): String? = if(isNull(name)) null else getString(name)
-fun JSONObject.getLongOrNull(name: String): Long? = if(isNull(name)) null else getString(name).toLong()

@@ -3,7 +3,7 @@ package com.myxoz.life.viewmodels
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.myxoz.life.api.SyncedEvent
-import com.myxoz.life.calendar.feed.EmptyEvent
+import com.myxoz.life.events.EmptyEvent
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted

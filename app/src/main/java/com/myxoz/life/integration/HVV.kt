@@ -1,10 +1,10 @@
 package com.myxoz.life.integration
 
 import android.icu.util.Calendar
-import android.net.Uri
+import androidx.core.net.toUri
 import com.myxoz.life.api.Location
 import com.myxoz.life.autodetect.roundToNearest15Min
-import com.myxoz.life.events.Vehicle
+import com.myxoz.life.events.additionals.Vehicle
 import com.myxoz.life.sensors.ParsedRoute
 
 object HVV {
@@ -56,11 +56,11 @@ object HVV {
             }
         }
 
-        val url = Uri.parse(lines.lastOrNull() ?: return null)
+        val url = (lines.lastOrNull() ?: return null).toUri()
         val calendar = Calendar.getInstance()
         val startDate = url.getQueryParameter("date") ?: return null
         calendar.set(Calendar.DAY_OF_MONTH, startDate.substringBefore(".").toIntOrNull()?:return null)
-        calendar.set(Calendar.ORDINAL_MONTH, startDate.substringAfter(".").substringBefore(".").toIntOrNull()?.minus(1)?:return null)
+        calendar.set(Calendar.MONTH, startDate.substringAfter(".").substringBefore(".").toIntOrNull()?.minus(1)?:return null)
         calendar.set(Calendar.YEAR, startDate.substringAfterLast(".").toIntOrNull()?:return null)
 
         val start = if(url.getQueryParameter("startType")=="COORDINATE"){

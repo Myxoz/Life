@@ -1,11 +1,48 @@
 package com.myxoz.life.calendar.feed
 
+import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.background
+import androidx.compose.foundation.combinedClickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.ripple
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.dp
 import com.myxoz.life.api.SyncedEvent
 import com.myxoz.life.dbwrapper.BankingEntity
 import com.myxoz.life.events.additionals.EventType
 
 
 data class SegmentedEvent(val event: SyncedEvent, val isFullWidth: Boolean, val isLeft: Boolean, val hasContent: Boolean, val segmentStart: Long, val segmentEnd: Long): DefinedDurationEvent(segmentStart, segmentEnd) {
+    @OptIn(ExperimentalFoundationApi::class)
+    @Composable
+    fun Render(oneHour: Dp, bankingSizeDp: Dp, startOfDay: Long, endOfDay: Long, width: Dp, isClickEnabled: Boolean, editEvent: ()->Unit, openEventDetails: ()->Unit){
+        Box(
+            Modifier
+                .padding(
+                    top = getTopPadding(oneHour, startOfDay),
+                    start = if(!isLeft) width-bankingSizeDp else 0.dp
+                )
+                .height(getHeightDp(oneHour, startOfDay, endOfDay))
+                .width(if(isFullWidth) width else if(isLeft) width-bankingSizeDp else bankingSizeDp)
+                .clip(RoundedCornerShape(10.dp))
+                .combinedClickable(remember { MutableInteractionSource() }, ripple(), isClickEnabled, onClick = openEventDetails, onLongClick = editEvent)
+                .background(event.proposed.getBackgroundBrush(), RoundedCornerShape(10.dp))
+        ) {
+            if(hasContent)
+                with(event.proposed) {
+                    RenderContent(oneHour, startOfDay, endOfDay, !isLeft, getBlockHeight(startOfDay, endOfDay))
+                }
+        }
+    }
     companion object {
         fun getSegmentedEvents(events: List<SyncedEvent>, bankingEntries: List<BankingEntity>, bankingEntrySize: Long): List<SegmentedEvent> {
             val order = arrayOf(

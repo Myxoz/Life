@@ -39,7 +39,7 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.navigation.compose.currentBackStackEntryAsState
-import com.myxoz.life.LifeSearch
+import com.myxoz.life.LifeBottomBar
 import com.myxoz.life.LocalAPI
 import com.myxoz.life.LocalNavController
 import com.myxoz.life.LocalSettings
@@ -51,6 +51,7 @@ import com.myxoz.life.options.LiffyFace
 import com.myxoz.life.options.getUsageDataBetween
 import com.myxoz.life.subscreens.displayperson.UnmodalBottomSheet
 import com.myxoz.life.subscreens.displayperson.datePickerColors
+import com.myxoz.life.ui.ActionBar
 import com.myxoz.life.ui.theme.Colors
 import com.myxoz.life.ui.theme.FontColor
 import com.myxoz.life.ui.theme.FontFamily
@@ -94,7 +95,7 @@ fun HomeComposable(calendarViewModel: CalendarViewModel, inspectedEventViewModel
             Box(Modifier.weight(1f)) {
                 CalendarComposable(calendarViewModel, inspectedEventViewModel)
             }
-            LifeSearch { calendarViewModel.dayAmount = it }
+            LifeBottomBar(calendarViewModel)
         }
         if (showDayPopup) {
             ModalBottomSheet(

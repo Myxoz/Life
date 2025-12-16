@@ -78,15 +78,15 @@ import com.myxoz.life.LocalStorage
 import com.myxoz.life.R
 import com.myxoz.life.api.Location
 import com.myxoz.life.api.PersonSyncable
-import com.myxoz.life.calendar.Chip
 import com.myxoz.life.integration.HVV
-import com.myxoz.life.rippleClick
+import com.myxoz.life.ui.Chip
 import com.myxoz.life.ui.theme.Colors
 import com.myxoz.life.ui.theme.FontColor
 import com.myxoz.life.ui.theme.FontSize
 import com.myxoz.life.ui.theme.TypoStyle
-import com.myxoz.life.ui.theme.dp
 import com.myxoz.life.utils.PhoneNumberParser
+import com.myxoz.life.utils.rippleClick
+import com.myxoz.life.utils.toDp
 import com.myxoz.life.viewmodels.LargeDataCache
 import com.myxoz.life.viewmodels.ProfileInfoModel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -122,19 +122,19 @@ fun ProfileInfo(largeDataCache: LargeDataCache, profileInfoModel: ProfileInfoMod
         ) {
             val extendProgress by animateFloatAsState(if (isExtended) 1f else 0f, animationSpec = tween(animationDuration))
             val profileEntrySize =
-                FontSize.MEDIUM.size.dp + 4.dp + 5.dp + FontSize.LARGE.size.dp + 5.dp + FontSize.SMALL.size.dp * 2 + 4.dp // Two line small  height
+                FontSize.MEDIUM.size.toDp() + 4.dp + 5.dp + FontSize.LARGE.size.toDp() + 5.dp + FontSize.SMALL.size.toDp() * 2 + 4.dp // Two line small  height
             val location by profileInfoModel.home.collectAsState()
-            val navigationIconSize = FontSize.MEDIUM.size.dp
+            val navigationIconSize = FontSize.MEDIUM.size.toDp()
             val platforms by profileInfoModel.platforms.collectAsState()
             val iban by profileInfoModel.iban.collectAsState()
-            val platformBarHeight = FontSize.MEDIUM.size.dp + 10.dp + 4.dp + FontSize.MEDIUM.size.dp + 10.dp
+            val platformBarHeight = FontSize.MEDIUM.size.toDp() + 10.dp + 4.dp + FontSize.MEDIUM.size.toDp() + 10.dp
             val containerHight by animateDpAsState(
                 (
                         if(isExtended)
                             (if(platforms.isNotEmpty() || isEditing) platformBarHeight + 20.dp else 0.dp) +
-                            (if(iban!=null || isEditing) profileEntrySize + 20.dp else 0.dp) +
-                            (if(location!=null && !isEditing) navigationIconSize + 10.dp + 10.dp + 5.dp else 0.dp ) +
-                            20.dp + profileEntrySize /* Location */
+                                    (if(iban!=null || isEditing) profileEntrySize + 20.dp else 0.dp) +
+                                    (if(location!=null && !isEditing) navigationIconSize + 10.dp + 10.dp + 5.dp else 0.dp ) +
+                                    20.dp + profileEntrySize /* Location */
                         else
                             0.dp
                         ) +
@@ -243,7 +243,7 @@ fun ProfileInfo(largeDataCache: LargeDataCache, profileInfoModel: ProfileInfoMod
                             verticalAlignment = Alignment.CenterVertically,
                             horizontalArrangement = Arrangement.spacedBy(10.dp)
                         ) {
-                            val iconSize = FontSize.MEDIUM.size.dp
+                            val iconSize = FontSize.MEDIUM.size.toDp()
                             val height = iconSize + 10.dp + 4.dp
                             Row(
                                 Modifier.height(height),
@@ -440,7 +440,7 @@ fun ProfileInfo(largeDataCache: LargeDataCache, profileInfoModel: ProfileInfoMod
                     Spacer(Modifier.height(10.dp))
                 }
             }
-            val height = FontSize.MEDIUM.size.dp + 2.dp
+            val height = FontSize.MEDIUM.size.toDp() + 2.dp
             Row(
                 Modifier
                     .fillMaxWidth()
@@ -609,7 +609,7 @@ fun ProfileEntry(title: String, icon: Painter, text: @Composable ()->Unit){
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(10.dp)
         ) {
-            val height = FontSize.LARGE.size.dp + 5.dp + FontSize.SMALL.size.dp*2 + 4.dp // Text is not exactly fontsize small*2 for two line support
+            val height = FontSize.LARGE.size.toDp() + 5.dp + FontSize.SMALL.size.toDp()*2 + 4.dp // Text is not exactly fontsize small*2 for two line support
             Box(
                 Modifier.height(height),
                 contentAlignment = Alignment.Center

@@ -28,11 +28,11 @@ import com.myxoz.life.api.API
 import com.myxoz.life.api.Location
 import com.myxoz.life.api.PersonSyncable
 import com.myxoz.life.calendar.InputField
-import com.myxoz.life.rippleClick
 import com.myxoz.life.ui.theme.Colors
 import com.myxoz.life.ui.theme.FontColor
 import com.myxoz.life.ui.theme.FontSize
 import com.myxoz.life.ui.theme.TypoStyle
+import com.myxoz.life.utils.rippleClick
 import kotlinx.coroutines.launch
 import org.json.JSONObject
 

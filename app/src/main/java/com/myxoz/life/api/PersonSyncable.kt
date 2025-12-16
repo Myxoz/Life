@@ -9,8 +9,8 @@ import com.myxoz.life.calendar.getEventId
 import com.myxoz.life.dbwrapper.PersonEntity
 import com.myxoz.life.dbwrapper.SocialsEntity
 import com.myxoz.life.dbwrapper.StorageManager
-import com.myxoz.life.events.getLongOrNull
-import com.myxoz.life.events.getStringOrNull
+import com.myxoz.life.utils.getLongOrNull
+import com.myxoz.life.utils.getStringOrNull
 import org.json.JSONArray
 import org.json.JSONObject
 

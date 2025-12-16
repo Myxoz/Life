@@ -30,51 +30,8 @@ import com.myxoz.life.events.additionals.TagEvent
 import com.myxoz.life.events.additionals.TagEvent.Companion.getTagsFromJson
 import com.myxoz.life.events.additionals.TitleEvent
 import com.myxoz.life.ui.theme.Colors
+import com.myxoz.life.utils.toSp
 import org.json.JSONObject
-
-@Composable
-fun BoxScope.SocialEventComposeable(event: SocialEvent, oneHourDp: Dp, startOfDay: Long, endOfDay: Long, isSmall: Boolean, blockHeight: Int) {
-    val db = LocalStorage.current
-    var displayText by remember { mutableStateOf("") }
-    PeopleEvent.GetFullNames(db, event.people) { persons ->
-        displayText = persons.joinToString(" · ") { it.name }
-    }
-    if(isSmall){
-        Text(
-            displayText,
-            Modifier
-                .padding(all = 3.dp),
-            fontSize = (oneHourDp / 4f).toSp(),
-            color = Colors.Calendar.Social.SECONDARY,
-            overflow = TextOverflow.Ellipsis
-        )
-    } else Column(
-        Modifier
-            .align(Alignment.TopCenter)
-            .fillMaxSize()
-    ) {
-        RenderTagAndTitleBar(event.eventTags, event.title, oneHourDp, blockHeight, Colors.Calendar.Social.Tag, Colors.Calendar.Social.TEXT)
-        if(blockHeight>3) {
-            Text(
-                displayText,
-                Modifier
-                    .padding(start = 10.dp),
-                fontSize = (oneHourDp / 3f).toSp(),
-                color = Colors.Calendar.Social.SECONDARY,
-                overflow = TextOverflow.Ellipsis
-            )
-            Spacer(Modifier.height(3.dp))
-            Text(
-                if(event.more) "+ Weitere" else "",
-                Modifier
-                    .padding(start = 10.dp),
-                fontSize = (oneHourDp / 3f).toSp(),
-                color = Colors.Calendar.Social.SECONDARY,
-                overflow = TextOverflow.Ellipsis
-            )
-        }
-    }
-}
 
 class SocialEvent(
     start: Long,
@@ -99,6 +56,58 @@ class SocialEvent(
         savePeopleMapping(db, id, people)
         return true
     }
+
+    @Composable
+    override fun BoxScope.RenderContent(
+        oneHourDp: Dp,
+        startOfDay: Long,
+        endOfDay: Long,
+        isSmall: Boolean,
+        blockHeight: Int
+    ) {
+        val db = LocalStorage.current
+        var displayText by remember { mutableStateOf("") }
+        PeopleEvent.GetFullNames(db, people) { persons ->
+            displayText = persons.joinToString(" · ") { it.name }
+        }
+        if(isSmall){
+            Text(
+                displayText,
+                Modifier
+                    .padding(all = 3.dp),
+                fontSize = (oneHourDp / 4f).toSp(),
+                color = Colors.Calendar.Social.SECONDARY,
+                overflow = TextOverflow.Ellipsis
+            )
+        } else Column(
+            Modifier
+                .align(Alignment.TopCenter)
+                .fillMaxSize()
+        ) {
+            RenderTagAndTitleBar(eventTags, title, oneHourDp, blockHeight, Colors.Calendar.Social.Tag, Colors.Calendar.Social.TEXT)
+            if(blockHeight>3) {
+                Text(
+                    displayText,
+                    Modifier
+                        .padding(start = 10.dp),
+                    fontSize = (oneHourDp / 3f).toSp(),
+                    color = Colors.Calendar.Social.SECONDARY,
+                    overflow = TextOverflow.Ellipsis
+                )
+                Spacer(Modifier.height(3.dp))
+                Text(
+                    if(more) "+ Weitere" else "",
+                    Modifier
+                        .padding(start = 10.dp),
+                    fontSize = (oneHourDp / 3f).toSp(),
+                    color = Colors.Calendar.Social.SECONDARY,
+                    overflow = TextOverflow.Ellipsis
+                )
+            }
+        }
+
+    }
+
     override suspend fun eraseEventSpecificsFromDB(db: StorageManager, id: Long) {
         db.tags.removeById(id)
         db.social.removeById(id)

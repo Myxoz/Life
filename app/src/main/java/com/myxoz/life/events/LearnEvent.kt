@@ -14,34 +14,16 @@ import com.myxoz.life.dbwrapper.EventEntity
 import com.myxoz.life.dbwrapper.LearnEntity
 import com.myxoz.life.dbwrapper.StorageManager
 import com.myxoz.life.events.additionals.DetailsEvent
+import com.myxoz.life.events.additionals.EventTag
 import com.myxoz.life.events.additionals.EventType
 import com.myxoz.life.events.additionals.RenderTagAndTitleBar
-import com.myxoz.life.events.additionals.EventTag
 import com.myxoz.life.events.additionals.TagEvent
 import com.myxoz.life.events.additionals.TagEvent.Companion.getTagsFromJson
 import com.myxoz.life.events.additionals.TitleEvent
 import com.myxoz.life.ui.theme.Colors
+import com.myxoz.life.utils.getStringOrNull
+import com.myxoz.life.utils.toSp
 import org.json.JSONObject
-
-@Composable
-fun BoxScope.LearnEventComposable(event: LearnEvent, oneHourDp: Dp, startOfDay: Long, endOfDay: Long) {
-    val blockHeight = event.getBlockHeight(startOfDay, endOfDay)
-    Column(
-        Modifier
-            .align(Alignment.TopCenter)
-            .fillMaxSize()
-    ) {
-        RenderTagAndTitleBar(event.eventTags, event.title, oneHourDp, blockHeight, Colors.Calendar.Learn.Tag, Colors.Calendar.Learn.TEXT)
-        if(blockHeight>3) Text(
-            event.details?:"",
-            Modifier
-                .padding(start = 10.dp)
-            ,
-            fontSize = (oneHourDp/3f).toSp(),
-            color = Colors.Calendar.Learn.SECONDARY
-        )
-    }
-}
 
 class LearnEvent(
     start: Long,
@@ -64,6 +46,34 @@ class LearnEvent(
         )
         return true
     }
+
+    @Composable
+    override fun BoxScope.RenderContent(
+        oneHourDp: Dp,
+        startOfDay: Long,
+        endOfDay: Long,
+        isSmall: Boolean,
+        blockHeight: Int
+    ) {
+        val blockHeight = getBlockHeight(startOfDay, endOfDay)
+        Column(
+            Modifier
+                .align(Alignment.TopCenter)
+                .fillMaxSize()
+        ) {
+            RenderTagAndTitleBar(eventTags, title, oneHourDp, blockHeight, Colors.Calendar.Learn.Tag, Colors.Calendar.Learn.TEXT)
+            if(blockHeight>3) Text(
+                details?:"",
+                Modifier
+                    .padding(start = 10.dp)
+                ,
+                fontSize = (oneHourDp/3f).toSp(),
+                color = Colors.Calendar.Learn.SECONDARY
+            )
+        }
+
+    }
+
     override suspend fun eraseEventSpecificsFromDB(db: StorageManager, id: Long) {
         db.tags.removeById(id)
         db.learn.removeById(id)

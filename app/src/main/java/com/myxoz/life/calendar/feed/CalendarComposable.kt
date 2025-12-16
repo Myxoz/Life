@@ -56,19 +56,16 @@ import androidx.compose.ui.unit.dp
 import androidx.core.content.edit
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.myxoz.life.LocalStorage
-import com.myxoz.life.dbwrapper.StorageManager
-import com.myxoz.life.events.ProposedEvent
-import com.myxoz.life.events.additionals.EventType
-import com.myxoz.life.rippleClick
+import com.myxoz.life.calendar.getMonthByCalendarMonth
 import com.myxoz.life.ui.theme.Colors
 import com.myxoz.life.ui.theme.FontColor
 import com.myxoz.life.ui.theme.FontSize
 import com.myxoz.life.ui.theme.TypoStyle
-import com.myxoz.life.ui.theme.dp
+import com.myxoz.life.utils.rippleClick
+import com.myxoz.life.utils.toDp
 import com.myxoz.life.viewmodels.CalendarViewModel
 import com.myxoz.life.viewmodels.InspectedEventViewModel
 import kotlinx.coroutines.launch
-import org.json.JSONObject
 import java.time.LocalDate
 import kotlin.math.abs
 
@@ -238,7 +235,7 @@ fun CalendarComposable(calendarViewModel: CalendarViewModel, inspectedEventViewM
                 val currentMinute = calendar.get(Calendar.MINUTE)
                 val totalMinutes = currentHour * 60 + currentMinute
                 val totalHoursFloat = totalMinutes / 60f
-                val offset = FontSize.SMALL.size.dp / 2f
+                val offset = FontSize.SMALL.size.toDp() / 2f
                 Column(
                     Modifier
                         .onGloballyPositioned{ coordinates ->
@@ -297,19 +294,4 @@ fun CalendarComposable(calendarViewModel: CalendarViewModel, inspectedEventViewM
             }
         }
     }
-}
-fun getMonthByCalendarMonth(month: Int): String{
-    return listOf("Jan", "Feb", "Mär", "Apr", "Mai", "Juni", "Juli", "Aug", "Sep", "Okt", "Nov", "Dez")[month]
-}
-fun getWeekDayByInt(day: Int): String {
-    return listOf("Mon", "Di", "Mi", "Do", "Fr", "Sa", "So")[day]
-}
-class EmptyEvent(start: Long, end: Long, uss: Boolean, usl: Boolean): ProposedEvent(start, end, EventType.Empty, uss, usl) {
-    override suspend fun saveEventSpecifics(db: StorageManager, id: Long) = false
-    override suspend fun eraseEventSpecificsFromDB(db: StorageManager, id: Long) = Unit
-
-    override fun copyWithTimes(start: Long, end: Long, uss: Boolean, usl: Boolean) = EmptyEvent(start, end, uss, usl)
-    override fun getInvalidReason(): String = "Wähle einen anderen Eventtyp"
-
-    override fun addEventSpecifics(jsonObject: JSONObject) = jsonObject
 }

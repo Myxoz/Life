@@ -24,13 +24,13 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import com.myxoz.life.LocalNavController
 import com.myxoz.life.R
-import com.myxoz.life.rippleClick
 import com.myxoz.life.ui.theme.Colors
 import com.myxoz.life.ui.theme.FontColor
 import com.myxoz.life.ui.theme.FontFamily
 import com.myxoz.life.ui.theme.FontSize
 import com.myxoz.life.ui.theme.TypoStyle
-import com.myxoz.life.ui.theme.dp
+import com.myxoz.life.utils.rippleClick
+import com.myxoz.life.utils.toDp
 
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
@@ -75,7 +75,7 @@ fun SettingsComposable() {
                     },
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
-                    val fontSize = FontSize.DISPLAY.size.dp
+                    val fontSize = FontSize.DISPLAY.size.toDp()
                     Icon(painterResource(it.icon), it.text, Modifier.size(fontSize), Colors.SECONDARYFONT)
                     Spacer(Modifier.height(5.dp))
                     Text(it.text, style = TypoStyle(FontColor.PRIMARY, FontSize.LARGE, FontFamily.Display))

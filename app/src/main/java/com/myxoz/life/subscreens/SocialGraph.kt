@@ -43,10 +43,10 @@ import com.myxoz.life.LocalNavController
 import com.myxoz.life.LocalStorage
 import com.myxoz.life.R
 import com.myxoz.life.calendar.feed.msToDisplay
-import com.myxoz.life.events.toPx
-import com.myxoz.life.rippleClick
 import com.myxoz.life.subscreens.displayperson.ButtonGroup
 import com.myxoz.life.ui.theme.Colors
+import com.myxoz.life.utils.rippleClick
+import com.myxoz.life.utils.toPx
 import com.myxoz.life.viewmodels.ProfileInfoModel
 import com.myxoz.life.viewmodels.SocialGraphViewModel
 import kotlinx.coroutines.launch

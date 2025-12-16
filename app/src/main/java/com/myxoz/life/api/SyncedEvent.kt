@@ -6,7 +6,7 @@ import com.myxoz.life.dbwrapper.EventEntity
 import com.myxoz.life.dbwrapper.StorageManager
 import com.myxoz.life.events.ProposedEvent
 import com.myxoz.life.events.additionals.EventType
-import com.myxoz.life.events.getStringOrNull
+import com.myxoz.life.utils.getStringOrNull
 import org.json.JSONObject
 
 class SyncedEvent(

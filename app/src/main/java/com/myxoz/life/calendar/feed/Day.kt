@@ -12,7 +12,6 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.gestures.detectVerticalDragGestures
 import androidx.compose.foundation.horizontalScroll
-import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxScope
@@ -33,7 +32,6 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
-import androidx.compose.material3.ripple
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -75,32 +73,20 @@ import com.myxoz.life.R
 import com.myxoz.life.api.API
 import com.myxoz.life.api.SyncedEvent
 import com.myxoz.life.calendar.feed.SegmentedEvent.Companion.getSegmentedEvents
+import com.myxoz.life.calendar.getWeekDayByInt
 import com.myxoz.life.dbwrapper.BankingEntity
 import com.myxoz.life.dbwrapper.DaysEntity
 import com.myxoz.life.dbwrapper.formatCents
-import com.myxoz.life.events.DigSocEvent
-import com.myxoz.life.events.DigSocEventComposable
-import com.myxoz.life.events.HobbyEvent
-import com.myxoz.life.events.HobbyEventComposable
-import com.myxoz.life.events.LearnEvent
-import com.myxoz.life.events.LearnEventComposable
+import com.myxoz.life.events.EmptyEvent
 import com.myxoz.life.events.ProposedEvent
-import com.myxoz.life.events.SleepEvent
-import com.myxoz.life.events.SleepEventComposable
-import com.myxoz.life.events.SocialEvent
-import com.myxoz.life.events.SocialEventComposeable
-import com.myxoz.life.events.SpontEvent
-import com.myxoz.life.events.SpontEventComposable
-import com.myxoz.life.events.TravelEvent
-import com.myxoz.life.events.TravelEventComposable
 import com.myxoz.life.options.getUsageDataBetween
-import com.myxoz.life.rippleClick
 import com.myxoz.life.ui.theme.Colors
 import com.myxoz.life.ui.theme.FontColor
 import com.myxoz.life.ui.theme.FontFamily
 import com.myxoz.life.ui.theme.FontSize
 import com.myxoz.life.ui.theme.TypoStyle
-import com.myxoz.life.ui.theme.dp
+import com.myxoz.life.utils.rippleClick
+import com.myxoz.life.utils.toDp
 import com.myxoz.life.viewmodels.CalendarViewModel
 import com.myxoz.life.viewmodels.InspectedEventViewModel
 import kotlinx.coroutines.Dispatchers
@@ -300,7 +286,7 @@ fun DayComposable(
                 for(segmentedEvent in segments) {
                     if(isEditing && segmentedEvent.event.id == newEvent.id) continue
                     val haptic = LocalHapticFeedback.current
-                    segmentedEvent.render(oneHourDp, bankingSizeDp, startOfDay, endOfDay, width, !isEditing, {
+                    segmentedEvent.Render(oneHourDp, bankingSizeDp, startOfDay, endOfDay, width, !isEditing, {
                         haptic.performHapticFeedback(HapticFeedbackType.LongPress)
                         inspectedEventViewModel.setEditing(true)
                         inspectedEventViewModel.setInspectedEventTo(
@@ -488,7 +474,9 @@ fun DayComposable(
                             Modifier
                                 .fillMaxSize()
                         ) {
-                            RenderContent(newEvent.proposed, oneHourDp, startOfDay, endOfDay)
+                            with(newEvent.proposed){
+                                RenderContent(oneHourDp, startOfDay, endOfDay, false, getBlockHeight(startOfDay, endOfDay))
+                            }
                         }
                         if (newEvent.proposed.start >= startOfDay) topDragger()
                         if (newEvent.proposed.end <= endOfDay) bottomDragger()
@@ -496,7 +484,7 @@ fun DayComposable(
                     Box(
                         Modifier
                             .align(Alignment.TopCenter)
-                            .offset(y= -FontSize.LARGE.size.dp + newEvent.proposed.getTopPadding(oneHourDp, startOfDay).run { if(this==1.dp) (-2).dp else this })
+                            .offset(y= -FontSize.LARGE.size.toDp() + newEvent.proposed.getTopPadding(oneHourDp, startOfDay).run { if(this==1.dp) (-2).dp else this })
                             .clickable(null,null){
                                 navController.navigate("fullscreen_event")
                             }
@@ -618,7 +606,7 @@ fun ProposedEvent.render(oneHour: Dp, startOfDay: Long, endOfDay: Long, removePr
             Box(
                 Modifier.fillMaxSize().alpha(.5f)
             ) {
-                RenderContent(this@render, oneHour, startOfDay, endOfDay)
+                RenderContent(oneHour, startOfDay, endOfDay, false, getBlockHeight(startOfDay, endOfDay))
             }
             Row(
                 Modifier
@@ -649,37 +637,5 @@ fun ProposedEvent.render(oneHour: Dp, startOfDay: Long, endOfDay: Long, removePr
                 )
             }
         }
-    }
-}
-
-@OptIn(ExperimentalFoundationApi::class)
-@Composable
-fun SegmentedEvent.render(oneHour: Dp, bankingSizeDp: Dp, startOfDay: Long, endOfDay: Long, width: Dp, isClickEnabled: Boolean, editEvent: ()->Unit, openEventDetails: ()->Unit){
-    Box(
-        Modifier
-            .padding(
-                top = getTopPadding(oneHour, startOfDay),
-                start = if(!isLeft) width-bankingSizeDp else 0.dp
-            )
-            .height(getHeightDp(oneHour, startOfDay, endOfDay))
-            .width(if(isFullWidth) width else if(isLeft) width-bankingSizeDp else bankingSizeDp)
-            .clip(RoundedCornerShape(10.dp))
-            .combinedClickable(remember { MutableInteractionSource() }, ripple(), isClickEnabled, onClick = openEventDetails, onLongClick = editEvent)
-            .background(event.proposed.getBackgroundBrush(), RoundedCornerShape(10.dp))
-    ) {
-        if(hasContent) RenderContent(event.proposed, oneHour, startOfDay, endOfDay, !this@render.isLeft, getBlockHeight(startOfDay, endOfDay))
-    }
-}
-@Composable
-fun BoxScope.RenderContent(event: ProposedEvent, oneHour: Dp, startOfDay: Long, endOfDay: Long, isSmall: Boolean = false, blockHeight: Int = event.getBlockHeight(startOfDay, endOfDay)){
-    when(event) {
-        is EmptyEvent -> {} // Do not render content of EmptyEvents TODO ADD  SUPPORRT FOR ALL
-        is SleepEvent -> SleepEventComposable(event, oneHour, startOfDay, endOfDay, isSmall, blockHeight)
-        is SpontEvent -> SpontEventComposable(event, oneHour, startOfDay, endOfDay)
-        is HobbyEvent -> HobbyEventComposable(event, oneHour, startOfDay, endOfDay)
-        is LearnEvent -> LearnEventComposable(event, oneHour, startOfDay, endOfDay)
-        is SocialEvent -> SocialEventComposeable(event, oneHour, startOfDay, endOfDay, isSmall, blockHeight)
-        is TravelEvent -> TravelEventComposable(event, oneHour, startOfDay, endOfDay)
-        is DigSocEvent -> DigSocEventComposable(event, oneHour, startOfDay, endOfDay, isSmall, blockHeight)
     }
 }

@@ -39,12 +39,12 @@ import androidx.compose.ui.unit.dp
 import com.myxoz.life.LocalAPI
 import com.myxoz.life.LocalSettings
 import com.myxoz.life.R
-import com.myxoz.life.rippleClick
 import com.myxoz.life.subscreens.edgeToEdgeGradient
 import com.myxoz.life.ui.theme.Colors
 import com.myxoz.life.ui.theme.FontColor
 import com.myxoz.life.ui.theme.FontSize
 import com.myxoz.life.ui.theme.TypoStyle
+import com.myxoz.life.utils.rippleClick
 import com.myxoz.life.viewmodels.Settings
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.launch

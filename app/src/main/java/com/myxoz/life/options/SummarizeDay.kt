@@ -64,11 +64,11 @@ import com.myxoz.life.api.FullDaySyncable
 import com.myxoz.life.dbwrapper.DayScreenTimeEntity
 import com.myxoz.life.diagrams.PieChart
 import com.myxoz.life.events.additionals.EventType
-import com.myxoz.life.rippleClick
 import com.myxoz.life.ui.theme.Colors
 import com.myxoz.life.ui.theme.FontColor
 import com.myxoz.life.ui.theme.FontSize
 import com.myxoz.life.ui.theme.TypoStyle
+import com.myxoz.life.utils.rippleClick
 import java.time.LocalDate
 import java.time.ZoneId
 import kotlin.math.abs

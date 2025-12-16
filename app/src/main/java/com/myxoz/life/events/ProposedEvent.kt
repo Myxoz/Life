@@ -1,12 +1,14 @@
 package com.myxoz.life.events
 
 import android.content.Context
+import androidx.compose.foundation.layout.BoxScope
+import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.unit.Dp
 import com.myxoz.life.api.API
 import com.myxoz.life.calendar.feed.DefinedDurationEvent
-import com.myxoz.life.calendar.feed.EmptyEvent
 import com.myxoz.life.dbwrapper.EventEntity
 import com.myxoz.life.dbwrapper.StorageManager
 import com.myxoz.life.dbwrapper.WaitingSyncEntity
@@ -18,6 +20,8 @@ abstract class ProposedEvent(start: Long, end: Long, val type: EventType, val us
      * Returns true if all entries were made successful, then entering will continue. This method is expected to revert all changes if false is ever returned
      */
     abstract suspend fun saveEventSpecifics(db: StorageManager, id: Long): Boolean
+    @Composable
+    abstract fun BoxScope.RenderContent(oneHourDp: Dp, startOfDay: Long, endOfDay: Long, isSmall: Boolean, blockHeight: Int)
     protected abstract suspend fun eraseEventSpecificsFromDB(db: StorageManager, id: Long)
     suspend fun eraseFromDB(db: StorageManager, id: Long) {
         db.events.removeById(id)

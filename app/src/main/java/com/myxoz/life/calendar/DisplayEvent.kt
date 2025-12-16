@@ -1,9 +1,6 @@
 package com.myxoz.life.calendar
 
 import android.icu.util.Calendar
-import androidx.compose.animation.animateColorAsState
-import androidx.compose.animation.core.LinearEasing
-import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -32,13 +29,11 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.rotate
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.times
 import com.myxoz.life.LocalNavController
 import com.myxoz.life.LocalStorage
 import com.myxoz.life.R
@@ -48,22 +43,21 @@ import com.myxoz.life.api.SyncedEvent
 import com.myxoz.life.events.DigSocEvent
 import com.myxoz.life.events.SocialEvent
 import com.myxoz.life.events.TravelEvent
-import com.myxoz.life.events.Vehicle
 import com.myxoz.life.events.additionals.DetailsEvent
 import com.myxoz.life.events.additionals.PeopleEvent
 import com.myxoz.life.events.additionals.TagEvent
-import com.myxoz.life.events.additionals.TagLike
-import com.myxoz.life.events.additionals.TimedTagLikeContainer
+import com.myxoz.life.events.additionals.TimedTagLikeContainer.Companion.TimedTagLikeBar
 import com.myxoz.life.events.additionals.TitleEvent
 import com.myxoz.life.integration.HVV
-import com.myxoz.life.rippleClick
 import com.myxoz.life.subscreens.formatTimeStamp
+import com.myxoz.life.ui.Chip
 import com.myxoz.life.ui.theme.Colors
 import com.myxoz.life.ui.theme.FontColor
 import com.myxoz.life.ui.theme.FontFamily
 import com.myxoz.life.ui.theme.FontSize
 import com.myxoz.life.ui.theme.TypoStyle
-import com.myxoz.life.ui.theme.dp
+import com.myxoz.life.utils.rippleClick
+import com.myxoz.life.utils.toDp
 import com.myxoz.life.viewmodels.ProfileInfoModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -100,7 +94,7 @@ fun DisplayEvent(fullEvent: SyncedEvent, profileInfoModel: ProfileInfoModel){
         }
         Spacer(Modifier.height(10.dp))
         if (fullEvent.proposed is TagEvent) {
-            val tagsHeight = FontSize.SMALL.size.dp + 2.dp
+            val tagsHeight = FontSize.SMALL.size.toDp() + 2.dp
             FlowRow(
                 horizontalArrangement = Arrangement.spacedBy(10.dp)
             ) {
@@ -172,7 +166,7 @@ fun DisplayEvent(fullEvent: SyncedEvent, profileInfoModel: ProfileInfoModel){
         if (fullEvent.proposed is TravelEvent) {
             var from: Location? by remember { mutableStateOf(null) }
             var to: Location? by remember { mutableStateOf(null) }
-            val size = FontSize.MEDIUM.size.dp
+            val size = FontSize.MEDIUM.size.toDp()
             LaunchedEffect(Unit) {
                 with(Dispatchers.IO) {
                     db.location.getLocation(fullEvent.proposed.from)
@@ -232,7 +226,7 @@ fun DisplayEvent(fullEvent: SyncedEvent, profileInfoModel: ProfileInfoModel){
                             Icon(
                                 painterResource(R.drawable.hvv),
                                 "HVV",
-                                Modifier.height(FontSize.LARGE.size.dp),
+                                Modifier.height(FontSize.LARGE.size.toDp()),
                                 Colors.SECONDARYFONT
                             )
                             Text(
@@ -261,7 +255,7 @@ fun DisplayEvent(fullEvent: SyncedEvent, profileInfoModel: ProfileInfoModel){
                             Icon(
                                 painterResource(R.drawable.gmaps),
                                 "Maps",
-                                Modifier.height(FontSize.LARGE.size.dp),
+                                Modifier.height(FontSize.LARGE.size.toDp()),
                                 Colors.SECONDARYFONT
                             )
                             Text(
@@ -380,7 +374,7 @@ fun DisplayEvent(fullEvent: SyncedEvent, profileInfoModel: ProfileInfoModel){
                             Icon(
                                 painterResource(R.drawable.hvv),
                                 "HVV",
-                                Modifier.height(FontSize.LARGE.size.dp),
+                                Modifier.height(FontSize.LARGE.size.toDp()),
                                 Colors.SECONDARYFONT
                             )
                             Text(
@@ -409,7 +403,7 @@ fun DisplayEvent(fullEvent: SyncedEvent, profileInfoModel: ProfileInfoModel){
                             Icon(
                                 painterResource(R.drawable.gmaps),
                                 "Maps",
-                                Modifier.height(FontSize.LARGE.size.dp),
+                                Modifier.height(FontSize.LARGE.size.toDp()),
                                 Colors.SECONDARYFONT
                             )
                             Text(
@@ -419,86 +413,6 @@ fun DisplayEvent(fullEvent: SyncedEvent, profileInfoModel: ProfileInfoModel){
                         }
                     }
                 }
-            }
-        }
-    }
-}
-
-@Composable
-fun ActionBar(smallActionClick: (()->Unit)?, smallContent: (@Composable ()->Unit)?, color: Color, onLargeClick: ()->Unit, largeContent: @Composable ()->Unit){
-    Row(
-        horizontalArrangement = Arrangement.spacedBy(20.dp)
-    ) {
-        val gradientEnd by animateColorAsState(color, tween(2000, easing = LinearEasing))
-        if(smallContent!=null){
-            Box(
-                Modifier
-                    .size(75.dp)
-                    .background(Colors.SECONDARY, RoundedCornerShape(25))
-                    .clip(RoundedCornerShape(25))
-                    .rippleClick{
-                        smallActionClick?.invoke()
-                    }
-                    .padding(22.5.dp)
-                ,
-                contentAlignment = Alignment.Center
-            ) {
-                smallContent()
-            }
-        }
-        Box(
-            Modifier
-                .padding(bottom = 10.dp)
-                .fillMaxWidth()
-                .background(
-                    Brush.horizontalGradient(
-                        listOf(Colors.SECONDARY, gradientEnd),
-                        startX = 250f
-                    ),
-                    RoundedCornerShape(25)
-                )
-                .clip(RoundedCornerShape(25))
-                .rippleClick{
-                    onLargeClick()
-                }
-                .height(75.dp)
-            ,
-            contentAlignment = Alignment.Center
-        ) {
-            Row(
-                verticalAlignment = Alignment.CenterVertically
-            ){
-                largeContent()
-            }
-        }
-    }
-}
-
-@OptIn(ExperimentalLayoutApi::class)
-@Composable
-fun <T: TagLike> TimedTagLikeBar(tags: List<TimedTagLikeContainer<T>>){
-    val size = FontSize.MEDIUM.size.dp
-    FlowRow(
-        horizontalArrangement = Arrangement.spacedBy(3.dp)
-    ) {
-        tags.forEach {
-            Chip(
-                spacing = 5.dp
-            ) {
-                Icon(
-                    painterResource(it.type.drawable),
-                    null,
-                    Modifier.run {
-                        if (it.type == Vehicle.Bus) width(2f * size).height(
-                            size
-                        ) else size(size)
-                    },
-                    Colors.SECONDARYFONT
-                )
-                Text(
-                    TimeBasedVisualTransformation.toTransformed((it.durationMs / (60 * 1000L)).toString()),
-                    style = TypoStyle(FontColor.PRIMARY, FontSize.MEDIUM)
-                )
             }
         }
     }

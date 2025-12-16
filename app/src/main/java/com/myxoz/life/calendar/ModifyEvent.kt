@@ -17,7 +17,6 @@ import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -75,7 +74,6 @@ import androidx.compose.ui.text.input.OffsetMapping
 import androidx.compose.ui.text.input.TransformedText
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.text.rememberTextMeasurer
-import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.times
 import androidx.core.content.edit
@@ -84,12 +82,9 @@ import com.myxoz.life.LocalStorage
 import com.myxoz.life.R
 import com.myxoz.life.api.Location
 import com.myxoz.life.api.PersonSyncable
-import com.myxoz.life.calendar.feed.EmptyEvent
 import com.myxoz.life.calendar.feed.msToDisplay
-import com.myxoz.life.combinedRippleClick
-import com.myxoz.life.events.ArrowDirection
 import com.myxoz.life.events.DigSocEvent
-import com.myxoz.life.events.DigSocPlatform
+import com.myxoz.life.events.EmptyEvent
 import com.myxoz.life.events.HobbyEvent
 import com.myxoz.life.events.LearnEvent
 import com.myxoz.life.events.ProposedEvent
@@ -97,8 +92,8 @@ import com.myxoz.life.events.SleepEvent
 import com.myxoz.life.events.SocialEvent
 import com.myxoz.life.events.SpontEvent
 import com.myxoz.life.events.TravelEvent
-import com.myxoz.life.events.Vehicle
 import com.myxoz.life.events.additionals.DetailsEvent
+import com.myxoz.life.events.additionals.DigSocPlatform
 import com.myxoz.life.events.additionals.EventTag
 import com.myxoz.life.events.additionals.EventType
 import com.myxoz.life.events.additionals.PeopleEvent
@@ -106,17 +101,20 @@ import com.myxoz.life.events.additionals.TagEvent
 import com.myxoz.life.events.additionals.TagLike
 import com.myxoz.life.events.additionals.TimedTagLikeContainer
 import com.myxoz.life.events.additionals.TitleEvent
-import com.myxoz.life.events.drawArrowBehind
-import com.myxoz.life.events.toPx
-import com.myxoz.life.filteredWith
+import com.myxoz.life.events.additionals.Vehicle
 import com.myxoz.life.integration.HVV
-import com.myxoz.life.rippleClick
 import com.myxoz.life.subscreens.formatTimeStamp
+import com.myxoz.life.ui.ArrowDirection
+import com.myxoz.life.ui.Chip
+import com.myxoz.life.ui.drawArrowBehind
 import com.myxoz.life.ui.theme.Colors
 import com.myxoz.life.ui.theme.FontColor
 import com.myxoz.life.ui.theme.FontSize
 import com.myxoz.life.ui.theme.TypoStyle
-import com.myxoz.life.ui.theme.dp
+import com.myxoz.life.utils.filteredWith
+import com.myxoz.life.utils.rippleClick
+import com.myxoz.life.utils.toDp
+import com.myxoz.life.utils.toPx
 import com.myxoz.life.viewmodels.InspectedEventViewModel
 import com.myxoz.life.viewmodels.ProfileInfoModel
 import kotlinx.coroutines.launch
@@ -485,7 +483,7 @@ fun CalendarChip(
     val dotSize = 10.dp
     val fontColor by animateColorAsState(if(isSelected) type.selectedColor else Colors.SECONDARYFONT, tween(animationDuration, easing = LinearEasing))
     val progress by animateFloatAsState(if(isSelected) 1f else 0f, tween(animationDuration, easing = EaseIn))
-    val fontSize = FontSize.LARGE.size.dp
+    val fontSize = FontSize.LARGE.size.toDp()
     val offsetX = (10.dp+dotSize).toPx()
     val offsetY = (10.dp+(fontSize+4.dp-dotSize)/2).toPx()
     val defaultSize = dotSize.toPx()
@@ -565,7 +563,7 @@ fun InputField(defaultValue: String?, placeholder: String, focusRequester: Focus
 
 @Composable
 fun TagsBar(ev: TagEvent, updateEvent: (List<EventTag>)->Unit){
-    val tagsHeight = FontSize.SMALL.size.dp + 2.dp
+    val tagsHeight = FontSize.SMALL.size.toDp() + 2.dp
     val selectedTags = remember { ev.eventTags.toMutableStateList() }
     var search: String? by remember {
         mutableStateOf(null)
@@ -759,7 +757,7 @@ fun TimeBar(event: ProposedEvent, progress: Float = 0f, color: Color, openDay: (
                 )
             }
         }
-        val verticalOffset = FontSize.SMALLM.size.dp
+        val verticalOffset = FontSize.SMALLM.size.toDp()
         Box(
             Modifier
                 .align(Alignment.BottomEnd)
@@ -998,7 +996,7 @@ fun LocationBar(defaultLocation: Long, setLocation: (Long)->Unit){
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun VehicleSelection(defSelected: List<TimedTagLikeContainer<Vehicle>>, inspectViewModel: InspectedEventViewModel? = null, setVehiclesTo: (List<TimedTagLikeContainer<Vehicle>>) -> Unit){
-    val iconHeight = FontSize.MEDIUM.size.dp
+    val iconHeight = FontSize.MEDIUM.size.toDp()
     val density = LocalDensity.current
     Row(
         Modifier
@@ -1040,7 +1038,7 @@ fun VehicleSelection(defSelected: List<TimedTagLikeContainer<Vehicle>>, inspectV
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(5.dp)
             ) {
-                Icon(painterResource(R.drawable.hvv), "HVV", Modifier.size(FontSize.MEDIUM.size.dp), tint = Colors.PRIMARYFONT)
+                Icon(painterResource(R.drawable.hvv), "HVV", Modifier.size(FontSize.MEDIUM.size.toDp()), tint = Colors.PRIMARYFONT)
                 Text("Mit HVV App ermitteln", style = TypoStyle(FontColor.PRIMARY, FontSize.MEDIUM))
             }
         }
@@ -1049,7 +1047,7 @@ fun VehicleSelection(defSelected: List<TimedTagLikeContainer<Vehicle>>, inspectV
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun <T: TagLike> TimeBasedTagLikeSelection(allSelectables: List<T>, defSelection: List<TimedTagLikeContainer<T>>, setVehiclesTo: (List<TimedTagLikeContainer<T>>) -> Unit){
-    val iconHeight = FontSize.MEDIUM.size.dp
+    val iconHeight = FontSize.MEDIUM.size.toDp()
     val selectedTagLike = remember { defSelection.toMutableStateList() }
     val textMessurer = rememberTextMeasurer()
     var itemWasAdded by remember { mutableStateOf(false) }
@@ -1197,24 +1195,5 @@ class TimeBasedVisualTransformation: VisualTransformation {
         fun toTransformed(text: String): String{
             return if(text.length > 2) "${text.take(text.length-2)}h ${text.takeLast(2)}m" else "${text.takeLast(2)}m"
         }
-    }
-}
-@Composable
-fun Chip(onClick: (()->Unit)?=null, onHold: (()->Unit)?=null, spacing: Dp =0.dp, color: Color=Colors.SECONDARY, content: @Composable RowScope.()->Unit){
-    Row(
-        Modifier
-            .background(color, CircleShape)
-            .clip(CircleShape)
-            .combinedRippleClick({
-                onHold?.invoke()
-            }, onClick!=null || onHold!=null){
-                onClick?.invoke()
-            }
-            .padding(horizontal = 10.dp, vertical = 5.dp)
-        ,
-        horizontalArrangement = Arrangement.spacedBy(spacing),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        content()
     }
 }

@@ -45,12 +45,12 @@ import androidx.core.graphics.drawable.toBitmap
 import com.myxoz.life.LocalStorage
 import com.myxoz.life.calendar.feed.msToDisplay
 import com.myxoz.life.options.getMappedUsageDataBetween
-import com.myxoz.life.rippleClick
 import com.myxoz.life.ui.theme.Colors
 import com.myxoz.life.ui.theme.FontColor
 import com.myxoz.life.ui.theme.FontFamily
 import com.myxoz.life.ui.theme.FontSize
 import com.myxoz.life.ui.theme.TypoStyle
+import com.myxoz.life.utils.rippleClick
 import kotlinx.coroutines.delay
 import java.time.LocalDate
 import java.time.ZoneId

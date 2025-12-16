@@ -50,13 +50,13 @@ import com.myxoz.life.R
 import com.myxoz.life.dbwrapper.BankingEntity
 import com.myxoz.life.dbwrapper.BankingSidecarEntity
 import com.myxoz.life.dbwrapper.formatCents
-import com.myxoz.life.rippleClick
 import com.myxoz.life.ui.theme.Colors
 import com.myxoz.life.ui.theme.FontColor
 import com.myxoz.life.ui.theme.FontFamily
 import com.myxoz.life.ui.theme.FontSize
 import com.myxoz.life.ui.theme.TypoStyle
-import com.myxoz.life.ui.theme.dp
+import com.myxoz.life.utils.rippleClick
+import com.myxoz.life.utils.toDp
 import com.myxoz.life.viewmodels.LargeDataCache
 import kotlinx.coroutines.runBlocking
 import org.json.JSONObject
@@ -289,7 +289,7 @@ fun BankingEntryComposable(entry: Pair<BankingEntity, BankingSidecarEntity?>, on
             ) {
                 val card = entry.first.card
                 val transfer = entry.first.transfer
-                val height = FontSize.MEDIUMM.size.dp
+                val height = FontSize.MEDIUMM.size.toDp()
                 Icon(
                     painterResource(
                         when {

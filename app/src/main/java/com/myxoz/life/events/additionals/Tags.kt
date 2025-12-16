@@ -13,7 +13,8 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -30,8 +31,8 @@ import com.myxoz.life.R
 import com.myxoz.life.api.forEach
 import com.myxoz.life.dbwrapper.TagsDao
 import com.myxoz.life.dbwrapper.TagsEntity
-import com.myxoz.life.events.toSp
 import com.myxoz.life.ui.theme.TagColors
+import com.myxoz.life.utils.toSp
 import org.json.JSONArray
 import org.json.JSONObject
 
@@ -65,7 +66,7 @@ interface TagLike {
 @Composable
 fun RenderTagAndTitleBar(tags: List<TagLike>, title: String?, oneHourDp: Dp, blockHeight: Int, color: TagColors, textColor: Color){
     val mightNeedScaling = blockHeight in 2..4 && title != null && title.length > 10
-    var actualWidth by remember { mutableStateOf(0) }
+    var actualWidth by remember { mutableIntStateOf(0) }
     Row(
         Modifier
             .fillMaxWidth()
@@ -83,7 +84,7 @@ fun RenderTagAndTitleBar(tags: List<TagLike>, title: String?, oneHourDp: Dp, blo
             else -> oneHourDp/1.5f
         }
         val fontHeight = (.7f*height).toSp()
-        var optimalScaling by remember { mutableStateOf(1f) }
+        var optimalScaling by remember { mutableFloatStateOf(1f) }
         if(mightNeedScaling) {
             val textMessurer = rememberTextMeasurer()
             val textStyle = LocalTextStyle.current

@@ -34,13 +34,13 @@ import com.myxoz.life.LocalStorage
 import com.myxoz.life.R
 import com.myxoz.life.api.Location
 import com.myxoz.life.calendar.InputField
-import com.myxoz.life.filteredWith
-import com.myxoz.life.rippleClick
 import com.myxoz.life.subscreens.edgeToEdgeGradient
 import com.myxoz.life.ui.theme.Colors
 import com.myxoz.life.ui.theme.FontColor
 import com.myxoz.life.ui.theme.FontSize
 import com.myxoz.life.ui.theme.TypoStyle
+import com.myxoz.life.utils.filteredWith
+import com.myxoz.life.utils.rippleClick
 import kotlinx.coroutines.launch
 
 @Composable
