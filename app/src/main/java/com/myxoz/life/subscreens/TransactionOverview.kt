@@ -67,7 +67,7 @@ import java.time.ZoneId
 fun TransactionOverview(transactionId: String, bankViewModel: LargeDataCache){
     val db = LocalStorage.current
     val nav = LocalNavController.current
-    val transactionAtHand = remember { runBlocking { db.banking.getTransactionById(transactionId)?: JSONObject(db.prefs.getString("transactionAtHand", null)?:"{}").let {
+    val transactionAtHand = remember { runBlocking /* Review if not clean */ { db.banking.getTransactionById(transactionId)?: JSONObject(db.prefs.getString("transactionAtHand", null)?:"{}").let {
         BankingEntity(
             "",
             false,
@@ -84,7 +84,7 @@ fun TransactionOverview(transactionId: String, bankViewModel: LargeDataCache){
             it.getLong("timestamp"),
             it.getLong("timestamp")
         )
-    } } } // Review if not clean
+    } } }
     val transactionSidecar = remember { runBlocking { db.bankingSidecar.getSidecar(transactionId) } }
     Scaffold(
         Modifier.fillMaxSize(),

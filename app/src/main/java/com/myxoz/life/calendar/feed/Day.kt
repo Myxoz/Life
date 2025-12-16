@@ -594,11 +594,11 @@ fun DayPill(imageVector: Painter, text: String, progress: Float, color: Color){
     }
 }
 open class DefinedDurationEvent(val start: Long, val end: Long) {
-    fun length() = end - start
+    fun length() = (end - start).coerceAtLeast(15*1000L*60)
     fun getBlockHeight(startOfDay: Long, endOfDay: Long): Int = (min(length(), min(endOfDay - start, end - startOfDay))/(900*1000)).toInt()
-    fun getBlockLength() = ((end - start) / (900*1000)).toInt()
+    fun getBlockLength() = (length() / (900*1000)).toInt()
     fun getTopPadding(oneHour: Dp, startOfDay: Long) = ((this.start - startOfDay).coerceAtLeast(0L) / (3600 * 1000L).toFloat()) * oneHour + 1.dp
-    fun getHeightDp(oneHour: Dp, startOfDay: Long, endOfDay: Long) = oneHour*(min(length(), min(endOfDay - start, end - startOfDay))/(3600f*1000f)) - 1.dp
+    fun getHeightDp(oneHour: Dp, startOfDay: Long, endOfDay: Long) = oneHour*(getBlockHeight(startOfDay, endOfDay)/4f) - 1.dp
 }
 
 @OptIn(ExperimentalFoundationApi::class)
