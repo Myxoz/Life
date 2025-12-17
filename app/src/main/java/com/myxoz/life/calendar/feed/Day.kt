@@ -286,7 +286,7 @@ fun DayComposable(
                 for(segmentedEvent in segments) {
                     if(isEditing && segmentedEvent.event.id == newEvent.id) continue
                     val haptic = LocalHapticFeedback.current
-                    segmentedEvent.Render(viewModel, oneHourDp, bankingSizeDp, startOfDay, endOfDay, width, !isEditing, {
+                    segmentedEvent.Render(viewModel, events, oneHourDp, bankingSizeDp, startOfDay, endOfDay, width, !isEditing, {
                         haptic.performHapticFeedback(HapticFeedbackType.LongPress)
                         inspectedEventViewModel.setEditing(true)
                         inspectedEventViewModel.setInspectedEventTo(

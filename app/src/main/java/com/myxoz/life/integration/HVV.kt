@@ -19,7 +19,7 @@ object HVV {
             val toLine = linePart.getOrNull(2) ?: continue
             val stepContent = vehicleLine.substringAfter(")").trim()
             val vehicleType = when {
-                stepContent.startsWith("Walk", ignoreCase = true) -> Vehicle.Walk
+                stepContent.startsWith("Walk", ignoreCase = true) -> Vehicle.Gehen
                 stepContent.contains("(Bus)") -> Vehicle.Bus
                 stepContent.startsWith("S") && stepContent.contains("➔") -> Vehicle.SBahn
                 stepContent.startsWith("U") && stepContent.contains("➔") -> Vehicle.UBahn
@@ -33,8 +33,8 @@ object HVV {
                         if (minIndex != -1) {
                             val numberStr = afterWalk.take(minIndex).trim()
                             val walkMin = numberStr.toIntOrNull() ?: 0
-                            durationMap[Vehicle.Walk] =
-                                durationMap.getOrDefault(Vehicle.Walk, 0) + walkMin
+                            durationMap[Vehicle.Gehen] =
+                                durationMap.getOrDefault(Vehicle.Gehen, 0) + walkMin
                         }
                     }
                     continue

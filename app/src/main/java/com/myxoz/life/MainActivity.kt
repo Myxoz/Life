@@ -49,6 +49,7 @@ import com.myxoz.life.options.DebugScreen
 import com.myxoz.life.options.SettingsComposable
 import com.myxoz.life.options.SettingsPermissionComposable
 import com.myxoz.life.options.SummarizeDay
+import com.myxoz.life.search.AdvancedSearch
 import com.myxoz.life.subscreens.Contacts
 import com.myxoz.life.subscreens.ModifyLocation
 import com.myxoz.life.subscreens.MyCard
@@ -272,6 +273,9 @@ class MainActivity : ComponentActivity() {
                     }
                     composable("social_graph") {
                         SocialGraph(socialGraphViewModel, profileInfoModel)
+                    }
+                    composable("advanced_search") {
+                        AdvancedSearch(calendarViewModel)
                     }
                 }
                 LaunchedEffect(Unit) {

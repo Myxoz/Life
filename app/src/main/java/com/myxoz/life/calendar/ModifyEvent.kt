@@ -127,6 +127,9 @@ import java.time.ZoneId
 @Composable
 fun ModifyEvent(viewModel: InspectedEventViewModel, profileInfoModel: ProfileInfoModel){
     val nav = LocalNavController.current
+    val db = LocalStorage.current
+    val context = LocalContext.current
+    val coroutineScope = rememberCoroutineScope()
     val syncedEvent by viewModel.event.collectAsState()
     val event = syncedEvent.proposed
     val setEventTo: (ProposedEvent)->Unit = {
@@ -136,7 +139,7 @@ fun ModifyEvent(viewModel: InspectedEventViewModel, profileInfoModel: ProfileInf
         is EmptyEvent -> {}
         is SleepEvent -> {}
         is SpontEvent -> {
-            TagsBar(event) {
+            TagsBar(event.eventTags) {
                 setEventTo(
                     SpontEvent(
                         event.start,
@@ -163,7 +166,7 @@ fun ModifyEvent(viewModel: InspectedEventViewModel, profileInfoModel: ProfileInf
         }
 
         is HobbyEvent -> {
-            TagsBar(event) {
+            TagsBar(event.eventTags) {
                 setEventTo(
                     HobbyEvent(
                         event.start,
@@ -205,7 +208,7 @@ fun ModifyEvent(viewModel: InspectedEventViewModel, profileInfoModel: ProfileInf
         }
 
         is LearnEvent -> {
-            TagsBar(event) {
+            TagsBar(event.eventTags) {
                 setEventTo(
                     LearnEvent(
                         event.start,
@@ -247,7 +250,7 @@ fun ModifyEvent(viewModel: InspectedEventViewModel, profileInfoModel: ProfileInf
         }
 
         is SocialEvent -> {
-            TagsBar(event) {
+            TagsBar(event.eventTags) {
                 setEventTo(
                     SocialEvent(
                         event.start,
@@ -261,7 +264,7 @@ fun ModifyEvent(viewModel: InspectedEventViewModel, profileInfoModel: ProfileInf
                     )
                 )
             }
-            PersonBar(event, profileInfoModel, {
+            PersonBar(event.people, event.more, true, {
                 nav.navigate("contacts")
             }) { people, more ->
                 setEventTo(
@@ -294,7 +297,7 @@ fun ModifyEvent(viewModel: InspectedEventViewModel, profileInfoModel: ProfileInf
         }
 
         is DigSocEvent -> {
-            PersonBar(event, profileInfoModel, {
+            PersonBar(event.people, false, false, {
                 nav.navigate("contacts")
             }) { people, _ ->
                 setEventTo(
@@ -501,7 +504,7 @@ fun CalendarChip(
                 )
             }
             .rippleClick{
-                if(!isSelected) setBasicEvent()
+                setBasicEvent()
             }
             .padding(10.dp, 5.dp)
             .height(fontSize+4.dp)
@@ -562,9 +565,9 @@ fun InputField(defaultValue: String?, placeholder: String, focusRequester: Focus
 }
 
 @Composable
-fun TagsBar(ev: TagEvent, updateEvent: (List<EventTag>)->Unit){
+fun TagsBar(ev: List<EventTag>, updateEvent: (List<EventTag>)->Unit){
     val tagsHeight = FontSize.SMALL.size.toDp() + 2.dp
-    val selectedTags = remember { ev.eventTags.toMutableStateList() }
+    val selectedTags = remember { ev.toMutableStateList() }
     var search: String? by remember {
         mutableStateOf(null)
     }
@@ -776,13 +779,17 @@ fun TimeBar(event: ProposedEvent, progress: Float = 0f, color: Color, openDay: (
 }
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
-fun PersonBar(ev: PeopleEvent, profileInfoModel: ProfileInfoModel, openAddMenu: ()->Unit, updateEvent: (List<Long>, Boolean)->Unit){
+fun PersonBar(
+    defaultSelectedPeople: List<Long>,
+    defaultMore: Boolean,
+    isMoreEvent: Boolean,
+    openAddMenu: ()->Unit,
+    updateEvent: (List<Long>, Boolean)->Unit
+){
     val db = LocalStorage.current
-    val nav = LocalNavController.current
-    val selectedPeople = remember { ev.people.toMutableStateList() }
+    val selectedPeople = remember { defaultSelectedPeople.toMutableStateList() }
     val allPeople = remember { mutableStateListOf<PersonSyncable>() }
-    val isMoreEvent = ev is SocialEvent
-    var more by remember { mutableStateOf(if(isMoreEvent) ev.more else false) }
+    var more by remember { mutableStateOf(if(isMoreEvent) defaultMore else false) }
     LaunchedEffect(Unit) {
         val people = db.people.getAllPeople()
         allPeople.clear()
@@ -819,15 +826,9 @@ fun PersonBar(ev: PeopleEvent, profileInfoModel: ProfileInfoModel, openAddMenu: 
         ) {
             selectedPeople.forEach { person ->
                 val decPerson = allPeople.firstOrNull { it.id == person }
-                val context = LocalContext.current
-                val coroutineScope = rememberCoroutineScope()
                 Chip({
                     selectedPeople.remove(person)
                     updateEvent(selectedPeople, more)
-                }, {
-                    coroutineScope.launch {
-                        profileInfoModel.openPersonDetails(decPerson?.id?:return@launch, nav, db, context)
-                    }
                 }) {
                     Text(
                         decPerson?.name?:"NULL",
@@ -860,15 +861,9 @@ fun PersonBar(ev: PeopleEvent, profileInfoModel: ProfileInfoModel, openAddMenu: 
                 )
             }
             leftItems.forEach { person ->
-                val context = LocalContext.current
-                val coroutineScope = rememberCoroutineScope()
                 Chip({
                     selectedPeople.add(person.id)
                     updateEvent(selectedPeople, more)
-                }, {
-                    coroutineScope.launch {
-                        profileInfoModel.openPersonDetails(person.id, nav, db, context)
-                    }
                 }) {
                     Text(
                         person.name,
@@ -993,6 +988,7 @@ fun LocationBar(defaultLocation: Long, setLocation: (Long)->Unit){
         }
     }
 }
+
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun VehicleSelection(defSelected: List<TimedTagLikeContainer<Vehicle>>, inspectViewModel: InspectedEventViewModel? = null, setVehiclesTo: (List<TimedTagLikeContainer<Vehicle>>) -> Unit){
@@ -1044,6 +1040,7 @@ fun VehicleSelection(defSelected: List<TimedTagLikeContainer<Vehicle>>, inspectV
         }
     }
 }
+
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun <T: TagLike> TimeBasedTagLikeSelection(allSelectables: List<T>, defSelection: List<TimedTagLikeContainer<T>>, setVehiclesTo: (List<TimedTagLikeContainer<T>>) -> Unit){
@@ -1155,6 +1152,7 @@ fun <T: TagLike> TimeBasedTagLikeSelection(allSelectables: List<T>, defSelection
         }
     }
 }
+
 class TimeBasedVisualTransformation: VisualTransformation {
     override fun filter(text: AnnotatedString): TransformedText {
         val anotatedText = toTransformed(text.text)

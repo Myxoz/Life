@@ -38,6 +38,9 @@ interface PeopleDao {
     @Query("SELECT * FROM people WHERE id = :id LIMIT 1")
     suspend fun getPersonById(id: Long): PersonEntity?
 
+    @Query("SELECT * FROM people WHERE id IN (:ids)")
+    suspend fun getPersonsByIds(ids: List<Long>): List<PersonEntity>
+
     @Query("SELECT * FROM events AS e INNER JOIN people_mapping AS pm ON e.id = pm.event_id WHERE pm.person_id = :personId AND e.ends < :now ORDER BY e.ends DESC LIMIT 1")
     suspend fun getLastInteractionByPerson(personId: Long, now: Long): EventEntity?
 

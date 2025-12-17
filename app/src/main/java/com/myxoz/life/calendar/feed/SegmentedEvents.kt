@@ -11,14 +11,18 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.ripple
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import com.myxoz.life.LocalStorage
 import com.myxoz.life.api.SyncedEvent
 import com.myxoz.life.dbwrapper.BankingEntity
 import com.myxoz.life.events.additionals.EventType
@@ -28,9 +32,13 @@ import com.myxoz.life.viewmodels.CalendarViewModel
 data class SegmentedEvent(val event: SyncedEvent, val isFullWidth: Boolean, val isLeft: Boolean, val hasContent: Boolean, val segmentStart: Long, val segmentEnd: Long): DefinedDurationEvent(segmentStart, segmentEnd) {
     @OptIn(ExperimentalFoundationApi::class)
     @Composable
-    fun Render(calendarViewModel: CalendarViewModel, oneHour: Dp, bankingSizeDp: Dp, startOfDay: Long, endOfDay: Long, width: Dp, isClickEnabled: Boolean, editEvent: ()->Unit, openEventDetails: ()->Unit){
+    fun Render(calendarViewModel: CalendarViewModel, allEvents: List<SyncedEvent>, oneHour: Dp, bankingSizeDp: Dp, startOfDay: Long, endOfDay: Long, width: Dp, isClickEnabled: Boolean, editEvent: ()->Unit, openEventDetails: ()->Unit){
         val lastUpdated by calendarViewModel.search.lastUpdated.collectAsState()
-        val isSearched = remember(lastUpdated) { calendarViewModel.search.isSearched(this.event.proposed) }
+        var isSearched by remember { mutableStateOf(true) }
+        val db = LocalStorage.current
+        LaunchedEffect(lastUpdated) {
+            isSearched = calendarViewModel.search.isSearched(db, this@SegmentedEvent.event.proposed, allEvents)
+        }
         Box(
             Modifier
                 .padding(
@@ -115,7 +123,7 @@ data class SegmentedEvent(val event: SyncedEvent, val isFullWidth: Boolean, val 
                         seg.copy(isFullWidth = true,  isLeft = true, hasContent = true, segmentStart = longest.first, segmentEnd = longest.second)
                     )
                     for(part in parts){
-                        modifyable.add(
+                        if(part.first < seg.event.proposed.end) modifyable.add(
                             seg.copy(isFullWidth = true,  isLeft = true, hasContent = false, segmentStart = part.first, segmentEnd = part.second)
                         )
                     }

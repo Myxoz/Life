@@ -50,6 +50,7 @@ import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -139,6 +140,7 @@ fun CalendarComposable(calendarViewModel: CalendarViewModel, inspectedEventViewM
         } else {
             onDayScrolled(0)
         }
+        if(!calendarViewModel.search.isSearching()) calendarViewModel.search.reset()
         snapshotFlow { listState.firstVisibleItemIndex }
             .collect { index ->
                 onDayScrolled(index)
@@ -147,6 +149,11 @@ fun CalendarComposable(calendarViewModel: CalendarViewModel, inspectedEventViewM
 
     BackHandler(isEditing) {
         inspectedEventViewModel.setEditing(false)
+    }
+    val focusManager = LocalFocusManager.current
+    BackHandler(calendarViewModel.search.isSearching()) {
+        calendarViewModel.search.reset()
+        focusManager.clearFocus()
     }
     Row(
         Modifier
