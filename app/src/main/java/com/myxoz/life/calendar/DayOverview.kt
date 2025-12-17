@@ -105,6 +105,17 @@ fun DayOverviewComposable(navController: NavController, epochDay: Long){
                 date.plusDays(1).atStartOfDay(zone).toEpochSecond()*1000L
             )
         )
+        val total = mutableMapOf<String, Long>()
+        val startOfDay = LocalDate.ofEpochDay(epochDay).atStartOfDay(zone).toEpochSecond()*1000L
+        val endOfDay = LocalDate.ofEpochDay(epochDay).plusDays(1).atStartOfDay(zone).toEpochSecond()*1000L
+        db.events.getEventsBetween(startOfDay, endOfDay).sortedBy { it.start }.forEach {
+            val duration = it.end.coerceAtMost(endOfDay) - it.start.coerceAtLeast(startOfDay)
+            total[it.type.toString()] = total[it.type.toString()]?.plus(duration) ?: duration
+        }
+        pieChart.update(total.mapValues {
+            val cal = EventType.getById(it.key.toIntOrNull()?:return@mapValues PieChart.Companion.PieChartPart(EventType.Empty.color, 0.0))
+            PieChart.Companion.PieChartPart(cal?.color ?: EventType.Empty.color, it.value.toDouble())
+        }) //  Also in SummarizeDay
         if(isToday && settings.features.screentime.has.value) {
             val zone = ZoneId.systemDefault()
             while (true){
@@ -117,17 +128,6 @@ fun DayOverviewComposable(navController: NavController, epochDay: Long){
                 delay(1000)
             }
         }
-        val total = mutableMapOf<String, Long>()
-        val startOfDay = LocalDate.ofEpochDay(epochDay).atStartOfDay(zone).toEpochSecond()*1000L
-        val endOfDay = LocalDate.ofEpochDay(epochDay).plusDays(1).atStartOfDay(zone).toEpochSecond()*1000L
-        db.events.getEventsBetween(startOfDay, endOfDay).sortedBy { it.start }.forEach {
-            val duration = it.end.coerceAtMost(endOfDay) - it.start.coerceAtLeast(startOfDay)
-            total[it.type.toString()] = total[it.type.toString()]?.plus(duration) ?: duration
-        }
-        pieChart.update(total.mapValues {
-            val cal = EventType.getById(it.key.toIntOrNull()?:return@mapValues PieChart.Companion.PieChartPart(EventType.Empty.color, 0.0))
-            PieChart.Companion.PieChartPart(cal?.color ?: EventType.Empty.color, it.value.toDouble())
-        }) //  Also in SummarizeDay
     }
     val showSteps by settings.features.stepCounting.has.collectAsState()
     if(isToday && showSteps) StepCounterTrigger { steps = it }
