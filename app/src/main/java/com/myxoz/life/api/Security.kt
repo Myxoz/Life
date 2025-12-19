@@ -8,7 +8,6 @@ import kotlinx.coroutines.withContext
 import org.json.JSONObject
 import java.io.BufferedReader
 import java.io.InputStreamReader
-import java.net.HttpURLConnection
 import java.net.URL
 import java.net.UnknownHostException
 import java.security.KeyPairGenerator
@@ -17,6 +16,7 @@ import java.security.MessageDigest
 import java.security.PrivateKey
 import java.security.PublicKey
 import java.security.Signature
+import javax.net.ssl.HttpsURLConnection
 
 class Security(
     private val alias: String = "private_token"
@@ -29,12 +29,14 @@ class Security(
         urlString: String,
         lastUpdate: Long,
         currentTime: Long,
-        data: String
+        data: String,
+        method: API.Method,
+        offset: Int?,
     ): String? = withContext(Dispatchers.IO) {
-        val signed = generateSignedBody(lastUpdate, currentTime, data)
+        val signed = generateSignedBody(lastUpdate, currentTime, data, method, offset)
         val url = URL(urlString)
         return@withContext try {
-            val conn = (url.openConnection() as HttpURLConnection).apply {
+            val conn = (url.openConnection() as HttpsURLConnection).apply {
                 requestMethod = "POST"
                 doInput = true
                 doOutput = true
@@ -61,7 +63,9 @@ class Security(
     fun generateSignedBody(
         lastUpdate: Long,
         currentTime: Long,
-        bodyStr: String
+        bodyStr: String,
+        method: API.Method,
+        offset: Int?
     ): JSONObject {
         val sha = sha256Hex(bodyStr)
 
@@ -69,6 +73,10 @@ class Security(
             append(currentTime)
             append("\n")
             append(lastUpdate)
+            append("\n")
+            append(method.method)
+            append("\n")
+            append(offset?:-1)
             append("\n")
             append(sha)
         }
@@ -82,6 +90,8 @@ class Security(
         out.put("timestamp", currentTime)
         out.put("last_update", lastUpdate)
         out.put("signature", signatureB64)
+        out.put("method", method.method)
+        out.put("offset", offset?:-1)
         out.put("body", bodyStr)
 
         return out

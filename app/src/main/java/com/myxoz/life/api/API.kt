@@ -107,13 +107,12 @@ class API(
     }
 
     suspend fun send(method: Method, data: String, offset: Int?): String? = security.send(
-        buildString {
-            append("https://myxoz.de/life/_api.php?m=${method.method}")
-            if (offset != null) append("&o=$offset")
-        },
+        "https://myxoz.de/life/_api.php",
         lastUpdate,
         System.currentTimeMillis(),
-        data
+        data,
+        method,
+        offset
     )
 
     suspend fun testSign() = send(
