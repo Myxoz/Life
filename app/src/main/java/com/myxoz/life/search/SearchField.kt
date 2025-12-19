@@ -1,5 +1,6 @@
 package com.myxoz.life.search
 
+import androidx.navigation.NavController
 import com.myxoz.life.api.SyncedEvent
 import com.myxoz.life.dbwrapper.StorageManager
 import com.myxoz.life.events.DigSocEvent
@@ -93,6 +94,11 @@ class SearchField {
     fun isSearching(): Boolean {
         if (mode.value == SearchMode.Text) return !textInputValue.value.isNullOrEmpty()
         return selectedPeople.value.isNotEmpty() || selectedEventTypes.value.isNotEmpty()
+    }
+    inline fun openCalendarWithSearch(nav: NavController,  applied: SearchField.()->Unit){
+        applied()
+        mode.value = SearchMode.Target
+        nav.popBackStack("home", false)
     }
     enum class SearchMode{
         Target,

@@ -78,6 +78,7 @@ import com.myxoz.life.ui.theme.FontSize
 import com.myxoz.life.ui.theme.TypoStyle
 import com.myxoz.life.utils.rippleClick
 import com.myxoz.life.utils.toDp
+import com.myxoz.life.viewmodels.CalendarViewModel
 import com.myxoz.life.viewmodels.InspectedEventViewModel
 import com.myxoz.life.viewmodels.LargeDataCache
 import com.myxoz.life.viewmodels.ProfileInfoModel
@@ -86,10 +87,11 @@ import kotlinx.coroutines.launch
 import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneId
+import kotlin.math.min
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
-fun DisplayPerson(personId: Long, photoPicker: PhotoPicker, largeDataCache: LargeDataCache, profileInfoModel: ProfileInfoModel, inspectedEventViewModel: InspectedEventViewModel){
+fun ProfileFullScreen(personId: Long, photoPicker: PhotoPicker, largeDataCache: LargeDataCache, profileInfoModel: ProfileInfoModel, inspectedEventViewModel: InspectedEventViewModel, calendarViewModel: CalendarViewModel){
     val db = LocalStorage.current
     val nav = LocalNavController.current
     val coroutineScope = rememberCoroutineScope()
@@ -107,7 +109,11 @@ fun DisplayPerson(personId: Long, photoPicker: PhotoPicker, largeDataCache: Larg
                 .fillMaxSize()
         ){
             val fontSize = FontSize.XLARGE.size.toDp() + 20.dp
-            val topBarHeight = 300.dp + fontSize
+            val conf = LocalConfiguration.current
+            val smallerScreenDimension = min(conf.screenWidthDp, conf.screenHeightDp).dp
+            val isProfilePictureFullScreen by profileInfoModel.isProfilePictureFullScreen.collectAsState()
+            val maxPbSize by animateDpAsState(smallerScreenDimension * if(isProfilePictureFullScreen) 1f else 0.5f)
+            val topBarHeight = 100.dp + maxPbSize + fontSize
             Column(
                 Modifier
                     .fillMaxSize()
@@ -196,7 +202,7 @@ fun DisplayPerson(personId: Long, photoPicker: PhotoPicker, largeDataCache: Larg
                     verticalArrangement = Arrangement.spacedBy(10.dp),
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
-                    val width = LocalConfiguration.current.screenWidthDp.dp*.95f-10.dp*2
+                    val width = smallerScreenDimension*.95f-10.dp*2
                     Text("Aufteilung", style = TypoStyle(FontColor.SECONDARY, FontSize.MEDIUM), modifier = Modifier.fillMaxWidth())
                     val boxWidth = width
                     ButtonGroup(
@@ -228,9 +234,17 @@ fun DisplayPerson(personId: Long, photoPicker: PhotoPicker, largeDataCache: Larg
                         val acc = components.values.sumOf { it.value }
                         components.forEach {
                             if(it.value.value <= 0.0) return@forEach
+                            val calendar = EventType.getById(it.key.toIntOrNull()?:return@forEach)
                             Row(
                                 Modifier
                                     .fillMaxWidth()
+                                    .clip(CircleShape)
+                                    .rippleClick{
+                                        calendarViewModel.search.openCalendarWithSearch(nav){
+                                            selectedPeople.value = listOf(personId)
+                                            selectedEventTypes.value = listOf(calendar?:return@openCalendarWithSearch)
+                                        }
+                                    }
                                 ,
                                 verticalAlignment = Alignment.CenterVertically,
                                 horizontalArrangement = Arrangement.SpaceBetween
@@ -238,7 +252,6 @@ fun DisplayPerson(personId: Long, photoPicker: PhotoPicker, largeDataCache: Larg
                                 Row(
                                     verticalAlignment = Alignment.CenterVertically
                                 ) {
-                                    val calendar = EventType.getById(it.key.toIntOrNull()?:return@Row)
                                     Box(
                                         Modifier
                                             .size(fontSize)
@@ -263,6 +276,13 @@ fun DisplayPerson(personId: Long, photoPicker: PhotoPicker, largeDataCache: Larg
                         Row(
                             Modifier
                                 .fillMaxWidth()
+                                .clip(CircleShape)
+                                .rippleClick{
+                                    calendarViewModel.search.openCalendarWithSearch(nav){
+                                        selectedPeople.value = listOf(personId)
+                                        selectedEventTypes.value = EventType.order.toList()
+                                    }
+                                }
                             ,
                             verticalAlignment = Alignment.CenterVertically,
                             horizontalArrangement = Arrangement.SpaceBetween
@@ -274,7 +294,7 @@ fun DisplayPerson(personId: Long, photoPicker: PhotoPicker, largeDataCache: Larg
                                     Modifier
                                         .size(fontSize)
                                         .background(
-                                            Brush.sweepGradient(EventType.entries.mapNotNull { if(it.id!=1) it.color else null }),
+                                            Brush.sweepGradient(EventType.order.map { it.color }),
                                             CircleShape
                                         ) // Should be the same
                                 )

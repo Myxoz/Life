@@ -36,6 +36,7 @@ class ProfileInfoModel(): ViewModel(){
     val chartUnit = MutableStateFlow(1)
     val platforms = MutableStateFlow(listOf<PersonSyncable.Companion.Socials>())
     val platformInputs = MutableStateFlow(listOf<String>())
+    val isProfilePictureFullScreen = MutableStateFlow(false) /* This doesnt  belong here,  but this is my app so I dont care */
     suspend fun saveAndSync(db: StorageManager){
         val id = id.value?:throw Error("Trying to sync person with id null (before id was set)")
         val name = name.value?:throw Error("Trying to sync person without name (before name was set)")
@@ -159,6 +160,7 @@ class ProfileInfoModel(): ViewModel(){
     suspend fun openPersonDetails(personId: Long, nav: NavController, db: StorageManager, context: Context){
         isEditing.value = false
         isExtended.value = false
+        isProfilePictureFullScreen.value = false
         updateStateIfOutdated(personId, db, context)
         nav.navigate("display_person/${personId}")
     }

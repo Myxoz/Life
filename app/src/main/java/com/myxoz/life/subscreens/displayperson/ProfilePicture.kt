@@ -3,11 +3,14 @@ package com.myxoz.life.subscreens.displayperson
 import android.graphics.Bitmap
 import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -24,6 +27,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.BlurredEdgeTreatment
@@ -31,6 +35,7 @@ import androidx.compose.ui.draw.blur
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.graphics.asComposePath
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalConfiguration
@@ -45,6 +50,8 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.min
 import androidx.compose.ui.unit.times
+import androidx.graphics.shapes.Morph
+import androidx.graphics.shapes.toPath
 import com.myxoz.life.LocalStorage
 import com.myxoz.life.api.ProfilePictureSyncable
 import com.myxoz.life.dbwrapper.ProfilePictureStored
@@ -54,19 +61,20 @@ import com.myxoz.life.ui.theme.FontFamily
 import com.myxoz.life.ui.theme.FontSize
 import com.myxoz.life.ui.theme.TypoStyle
 import com.myxoz.life.utils.MaterialShapes
-import com.myxoz.life.utils.combinedRippleClick
 import com.myxoz.life.utils.toShape
 import com.myxoz.life.viewmodels.ProfileInfoModel
 import kotlinx.coroutines.flow.drop
 import kotlin.math.PI
 import kotlin.math.cos
+import kotlin.math.min
 import kotlin.math.pow
 import kotlin.math.sin
 
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
-fun ProfilePictureWithText(photoPicker: PhotoPicker, model: ProfileInfoModel, personId: Long, scrollLength: Dp, fontSize: Dp, topBarHeight: Dp, updateText: (String)-> Unit){
+fun ProfilePictureWithText(photoPicker: PhotoPicker, profileInfoViewModel: ProfileInfoModel, personId: Long, scrollLength: Dp, fontSize: Dp, topBarHeight: Dp, updateText: (String)-> Unit){
     val context = LocalContext.current
-    val processedBitmap: Bitmap? by model.picture.collectAsState()
+    val processedBitmap: Bitmap? by profileInfoViewModel.picture.collectAsState()
     val db = LocalStorage.current
     val smallPbPadding = 10.dp
     @Suppress("UnnecessaryVariable", "RedundantSuppression") // LOL
@@ -76,7 +84,7 @@ fun ProfilePictureWithText(photoPicker: PhotoPicker, model: ProfileInfoModel, pe
     val fontPadding = 20.dp
     val style = TypoStyle(FontColor.PRIMARY, FontSize.XLARGE, FontFamily.Display)
     val textMessurer = rememberTextMeasurer()
-    val name by model.name.collectAsState()
+    val name by profileInfoViewModel.name.collectAsState()
     val textWidth = with(LocalDensity.current){
         textMessurer.measure(
             name?:"Name",
@@ -92,7 +100,7 @@ fun ProfilePictureWithText(photoPicker: PhotoPicker, model: ProfileInfoModel, pe
                     ProfilePictureSyncable.deleteBitmapFile(context, personId)
                 } else {
                     ProfilePictureSyncable.saveBitmapToFile(context, it, personId)
-                    model.picture.value = it
+                    profileInfoViewModel.picture.value = it
                 }
                 db.profilePictureDao.insertProfilePicture(
                     ProfilePictureStored(
@@ -109,10 +117,13 @@ fun ProfilePictureWithText(photoPicker: PhotoPicker, model: ProfileInfoModel, pe
             .background(Colors.BACKGROUND)
             .height(progress*(maxHeight)+smallPbSize+smallPbPadding*2)
     ){
-        val screenWidth = LocalConfiguration.current.screenWidthDp.dp
-        val maxPbSize = 200.dp
+        val conf = LocalConfiguration.current
+        val smallerScreenDimension = min(conf.screenWidthDp, conf.screenHeightDp).dp
+        val isProfilePictureFullScreen by profileInfoViewModel.isProfilePictureFullScreen.collectAsState()
+        val fullScreenProgress by animateFloatAsState(if(isProfilePictureFullScreen) 1f else 0f)
+        val maxPbSize = smallerScreenDimension * (fullScreenProgress *.45f + 0.5f)
         val largePbPadding = 50.dp
-        val topLeftPbX = progress*((screenWidth-maxPbSize)/2 - smallPbPadding)+smallPbPadding
+        val topLeftPbX = progress*((LocalConfiguration.current.screenWidthDp.dp-maxPbSize)/2 - smallPbPadding)+smallPbPadding
         val topLeftPbY = progress*(largePbPadding-smallPbPadding)+smallPbPadding
         val pbSize = progress*(maxPbSize-smallPbSize)+smallPbSize
         val radius = progress*(maxPbSize+fontPadding-smallPbPadding)+smallPbPadding
@@ -128,7 +139,13 @@ fun ProfilePictureWithText(photoPicker: PhotoPicker, model: ProfileInfoModel, pe
                 .size(pbSize)
         ){
             val bitmap = processedBitmap?.asImageBitmap()
-            val shape = MaterialShapes.Cookie9Sided.toShape()
+            val morph = remember {
+                Morph(MaterialShapes.Cookie9Sided, MaterialShapes.Square)
+            }
+            val path = remember(fullScreenProgress, progress) {
+                morph.toPath((fullScreenProgress - 1 + progress).coerceIn(0f, 1f)).asComposePath()
+            }
+            val shape = path.toShape()
             if(bitmap!=null) {
                 val infiniteTransition = rememberInfiniteTransition()
                 val scale by infiniteTransition.animateFloat(
@@ -139,12 +156,12 @@ fun ProfilePictureWithText(photoPicker: PhotoPicker, model: ProfileInfoModel, pe
                         repeatMode = RepeatMode.Reverse
                     )
                 )
-                Image(
+                Image( // Blured
                     bitmap = bitmap,
                     contentDescription = null,
                     modifier = Modifier
                         .fillMaxSize()
-                        .scale(scale)
+                        .scale(scale * ((1f-fullScreenProgress)*.1f+.9f))
                         .blur(radius = 25.dp, edgeTreatment = BlurredEdgeTreatment.Unbounded)
                         .clip(shape)
                     ,
@@ -156,9 +173,11 @@ fun ProfilePictureWithText(photoPicker: PhotoPicker, model: ProfileInfoModel, pe
                     .fillMaxSize()
                     .background(Colors.SECONDARY.copy(progress), shape)
                     .clip(shape)
-                    .combinedRippleClick({
+                    .combinedClickable(null, null, true, onLongClick = {
                         photoPicker.pickPhoto()
-                    }){}
+                    }){
+                        profileInfoViewModel.isProfilePictureFullScreen.value = !profileInfoViewModel.isProfilePictureFullScreen.value
+                    }
             ){
                 if(bitmap!=null) Image(
                     bitmap = bitmap,

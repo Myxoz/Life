@@ -899,3 +899,37 @@ sealed class MaterialShapes {
         }
     }
 }
+@Composable // Custom basically 1:1 copied function for creating a shape from a Path
+fun Path.toShape(startAngle: Int = 0): Shape {
+    return remember(this, startAngle) {
+        object : Shape {
+            // Store the Path we convert from the RoundedPolygon here. The path we will be
+            // manipulating and using on the createOutline would be a copy of this to ensure we
+            // don't mutate the original.
+            private var workPath: Path? = null
+            private var lastSize = Size.Unspecified
+
+            override fun createOutline(
+                size: Size,
+                layoutDirection: LayoutDirection,
+                density: Density,
+            ): Outline {
+                if (size != lastSize || workPath == null) {
+                    lastSize = size
+                    // Create a new Path if the size has changed.
+                    workPath = Path()
+                } else {
+                    workPath!!.rewind()
+                }
+                val path = workPath!!
+                path.addPath(this@toShape)
+                val scaleMatrix = Matrix().apply { scale(x = size.width, y = size.height) }
+                // Scale and translate the path to align its center with the available size
+                // center.
+                path.transform(scaleMatrix)
+                path.translate(size.center - path.getBounds().center)
+                return Outline.Generic(path)
+            }
+        }
+    }
+}

@@ -58,8 +58,8 @@ import com.myxoz.life.subscreens.SocialGraph
 import com.myxoz.life.subscreens.TransactionFeed
 import com.myxoz.life.subscreens.TransactionList
 import com.myxoz.life.subscreens.TransactionOverview
-import com.myxoz.life.subscreens.displayperson.DisplayPerson
 import com.myxoz.life.subscreens.displayperson.PhotoPicker
+import com.myxoz.life.subscreens.displayperson.ProfileFullScreen
 import com.myxoz.life.subscreens.pick.PickExistingLocation
 import com.myxoz.life.ui.theme.Colors
 import com.myxoz.life.viewmodels.CalendarViewModel
@@ -217,7 +217,7 @@ class MainActivity : ComponentActivity() {
                         navArgument("personId") { type = NavType.LongType }
                     )){
                         val personId = it.arguments?.getLong("personId") ?: return@composable
-                        DisplayPerson(personId, photoPicker, largeDataCache, profileInfoModel, inspectedEventViewModel)
+                        ProfileFullScreen(personId, photoPicker, largeDataCache, profileInfoModel, inspectedEventViewModel, calendarViewModel)
                     }
                     composable("modify_event/add_location") {
                         ModifyLocation()
