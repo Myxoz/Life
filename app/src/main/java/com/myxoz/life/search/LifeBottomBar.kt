@@ -179,9 +179,9 @@ fun LifeBottomBar(calendarViewModel: CalendarViewModel){
                     val locationsFrom by search.locationFrom.collectAsState()
                     val locationsTo by search.locationFrom.collectAsState()
                     for (string in arrayOf(
-                        if (people.isNotEmpty()) "Mit: " + people.mapNotNull { allPeopleMap[it] }.joinToString(",") { it.name } else null,
-                        if (locationsFrom.isNotEmpty()) "Abfahrt: " + locationsFrom.mapNotNull { allLocations[it] }.joinToString(",") { it.name } else null,
-                        if (locationsTo.isNotEmpty()) "Ankunft: " + locationsTo.mapNotNull { allLocations[it] }.joinToString(",") { it.name } else null,
+                        if (people.isNotEmpty()) "Mit: " + people.mapNotNull { allPeopleMap[it] }.joinToString(", ") { it.name } else null,
+                        if (locationsFrom.isNotEmpty()) "Abfahrt: " + locationsFrom.mapNotNull { allLocations[it] }.joinToString(", ") { it.name } else null,
+                        if (locationsTo.isNotEmpty()) "Ankunft: " + locationsTo.mapNotNull { allLocations[it] }.joinToString(", ") { it.name } else null,
                     )) {
                         if(string==null) continue
                         Box(

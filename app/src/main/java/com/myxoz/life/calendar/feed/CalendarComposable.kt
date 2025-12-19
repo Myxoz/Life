@@ -57,7 +57,9 @@ import androidx.compose.ui.unit.dp
 import androidx.core.content.edit
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.myxoz.life.LocalStorage
+import com.myxoz.life.api.SyncedEvent
 import com.myxoz.life.calendar.getMonthByCalendarMonth
+import com.myxoz.life.dbwrapper.BankingEntity
 import com.myxoz.life.ui.theme.Colors
 import com.myxoz.life.ui.theme.FontColor
 import com.myxoz.life.ui.theme.FontSize
@@ -68,6 +70,7 @@ import com.myxoz.life.viewmodels.CalendarViewModel
 import com.myxoz.life.viewmodels.InspectedEventViewModel
 import kotlinx.coroutines.launch
 import java.time.LocalDate
+import java.time.ZoneId
 import kotlin.math.abs
 
 val dateBarHeight = 50.dp
@@ -76,7 +79,7 @@ val daySummaryHeight = 15.dp
 val sidebarWidth = 40.dp
 @Composable
 fun CalendarComposable(calendarViewModel: CalendarViewModel, inspectedEventViewModel: InspectedEventViewModel) {
-    val storage = LocalStorage.current
+    val db = LocalStorage.current
     val conf = LocalConfiguration.current
     val density = LocalDensity.current
     val today = LocalDate.now()
@@ -102,7 +105,19 @@ fun CalendarComposable(calendarViewModel: CalendarViewModel, inspectedEventViewM
         )
     }
     val eachDayWidth by animateFloatAsState(eachDayWidthGoal)
+    val coroutineScope = rememberCoroutineScope()
+    val zone = remember { ZoneId.systemDefault() }
+    fun preloadDay(date: LocalDate){
+        val startOfDay = date.atStartOfDay(zone).toEpochSecond()*1000L
+        val endOfDay = date.plusDays(1).atStartOfDay(zone).toEpochSecond()*1000L
+        coroutineScope.launch {
+            val dbEvents = db.events.getEventsBetween(startOfDay, endOfDay).mapNotNull { SyncedEvent.from(db, it)}
+            calendarViewModel.dayCache[date] = dbEvents
 
+            val entries = BankingEntity.getAllBankingEntriesFor(db, startOfDay, endOfDay, calendarViewModel.futureBankEntries)
+            calendarViewModel.bankingEntityCache[date] = entries
+        }
+    }
     fun onDayScrolled(index: Int) {
         val earliest = days[0]
         val latest = days.last()
@@ -112,6 +127,7 @@ fun CalendarComposable(calendarViewModel: CalendarViewModel, inspectedEventViewM
                 val newDay = earliest.minusDays(it.toLong()+1)
                 if(!days.contains(newDay)) {
                     days.add(0, newDay)
+                    preloadDay(newDay)
                 }
             }
         }
@@ -120,6 +136,7 @@ fun CalendarComposable(calendarViewModel: CalendarViewModel, inspectedEventViewM
                 val newDay = latest.plusDays(it.toLong()+1)
                 if(!days.contains(newDay)) {
                     days.add(newDay)
+                    preloadDay(newDay)
                 }
             }
         }
@@ -132,7 +149,7 @@ fun CalendarComposable(calendarViewModel: CalendarViewModel, inspectedEventViewM
 
         if(days.isEmpty()) {
             val date = LocalDate.ofEpochDay(
-                storage.prefs.getLong("visible_date", LocalDate.now().toEpochDay())
+                db.prefs.getLong("visible_date", LocalDate.now().toEpochDay())
             )
             days.add(date)
             onDayScrolled(0)
@@ -202,7 +219,7 @@ fun CalendarComposable(calendarViewModel: CalendarViewModel, inspectedEventViewM
 
                 LaunchedEffect(today) {
                     snapshotFlow { listState.firstVisibleItemIndex }.collect {
-                        storage.prefs.edit {
+                        db.prefs.edit {
                             putLong("visible_date", days[it].toEpochDay())
                         }
                     }

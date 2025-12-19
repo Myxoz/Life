@@ -52,7 +52,23 @@ data class BankingEntity(
 
     @ColumnInfo(name = "last_update")
     val lastUpdate: Long
-)
+){
+    companion object {
+        suspend fun getAllBankingEntriesFor(storage: StorageManager, startOfDay: Long, endOfDay: Long, futureEntries: List<BankingEntity>): List<BankingEntity>{
+            val allSidecars = storage.bankingSidecar.getSidecarsBetween(startOfDay, endOfDay)
+            val transactionsForSidecars = storage.banking.getTransactionByIds(allSidecars.map { it.transactionId })
+            val bankingEntries = storage.banking.getTransactionsOnDay(startOfDay, endOfDay) +
+                    allSidecars.map { sidecar ->
+                        transactionsForSidecars.first { it.id == sidecar.transactionId }.copy(
+                            purposeDate = sidecar.date,
+                            fromName = sidecar.name
+                        )
+                    } +
+                    futureEntries.filter { it.purposeDate!=null && it.purposeDate < endOfDay && it.purposeDate > startOfDay }
+            return bankingEntries
+        }
+    }
+}
 
 @Dao
 interface BankingDao {

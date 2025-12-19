@@ -42,6 +42,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.toMutableStateList
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
@@ -107,7 +108,7 @@ fun DayComposable(
     fullWidth: Dp,
 ){
     val navController = LocalNavController.current
-    val storage = LocalStorage.current
+    val db = LocalStorage.current
     val context = LocalContext.current
     val density = LocalDensity.current
     val settings = LocalSettings.current
@@ -117,16 +118,16 @@ fun DayComposable(
     val startOfDay = remember { date.atStartOfDay(zone).toEpochSecond()*1000L }
     val endOfDay = remember { date.plusDays(1).atStartOfDay(zone).toEpochSecond()*1000L }
     var dayEntity: DaysEntity? by remember { mutableStateOf(null) }
-    val events = remember { mutableStateListOf<SyncedEvent>() }
+    val events = remember { viewModel.dayCache[date]?.toMutableStateList() ?: mutableStateListOf() }
     val hoursToday = remember { ((endOfDay- startOfDay) / (3600*1000)).toInt() }
     var oneHourDp by remember { mutableStateOf(0.dp) }
     val hourInPx = with(density) { oneHourDp.toPx() }
     val calendar = remember { Calendar.getInstance() }
-    val bankingEntities = remember { mutableStateListOf<BankingEntity>() }
+    val bankingEntities = remember { viewModel.bankingEntityCache[date]?.toMutableStateList() ?: mutableStateListOf() }
     val width = fullWidth*.97f
     LaunchedEffect(Unit) {
         if (!isToday) {
-            dayEntity = storage.days.getDay(date.toEpochDay().toInt())
+            dayEntity = db.days.getDay(date.toEpochDay().toInt())
         } else {
             val calendar = Calendar.getInstance()
             val end = calendar.timeInMillis
@@ -146,25 +147,15 @@ fun DayComposable(
     }
     LaunchedEffect(viewModel.lastEventUpdateTs) {
         with(Dispatchers.IO){
-            val dbEvents = storage.events.getEventsBetween(startOfDay, endOfDay).mapNotNull { SyncedEvent.from(
-                storage, it
-            )}
+            val dbEvents = db.events.getEventsBetween(startOfDay, endOfDay).mapNotNull { SyncedEvent.from(db, it)}
+            viewModel.dayCache[date] = dbEvents
             events.clear()
             events.addAll(dbEvents)
-            val allSidecars = storage.bankingSidecar.getSidecarsBetween(startOfDay, endOfDay)
-            val transactionsForSidecars = storage.banking.getTransactionByIds(allSidecars.map { it.transactionId })
-            val bankingEntries = storage.banking.getTransactionsOnDay(startOfDay, endOfDay) +
-                    allSidecars.map { sidecar ->
-                        transactionsForSidecars.first { it.id == sidecar.transactionId }.copy(
-                            purposeDate = sidecar.date,
-                            fromName = sidecar.name
-                        )
-                    } +
-                    viewModel.futureBankEntries.filter { it.purposeDate!=null && it.purposeDate < endOfDay && it.purposeDate > startOfDay }
+
+            val entries = BankingEntity.getAllBankingEntriesFor(db, startOfDay, endOfDay, viewModel.futureBankEntries)
+            viewModel.bankingEntityCache[date] = entries
             bankingEntities.clear()
-            bankingEntities.addAll(
-                bankingEntries
-            )
+            bankingEntities.addAll(entries)
         }
     }
     Column(
@@ -313,7 +304,7 @@ fun DayComposable(
                                 .background(Colors.BACKGROUND.copy(.7f), CircleShape)
                                 .clip(CircleShape)
                                 .rippleClick{
-                                    if(bankingEntity.id.isBlank()) storage.prefs.edit {
+                                    if(bankingEntity.id.isBlank()) db.prefs.edit {
                                             putString("transactionAtHand", JSONObject()
                                                 .put("amount", bankingEntity.amountCents)
                                                 .put("timestamp", bankingEntity.purposeDate)

@@ -7,6 +7,7 @@ import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.myxoz.life.api.SyncedEvent
 import com.myxoz.life.autodetect.autoDetectEvents
 import com.myxoz.life.dbwrapper.BankingEntity
 import com.myxoz.life.dbwrapper.StorageManager
@@ -24,6 +25,8 @@ import java.time.LocalDate
 class CalendarViewModel(private val settings: Settings, private val storage: StorageManager) : ViewModel() {
     val days = mutableStateListOf<LocalDate>()
     val search = SearchField()
+    val dayCache = mutableMapOf<LocalDate, List<SyncedEvent>>()
+    val bankingEntityCache = mutableMapOf<LocalDate, List<BankingEntity>>()
     val dayAmount = MutableStateFlow(2)
     var selectDayPopup = MutableStateFlow(false)
     val proposedEvents = mutableStateListOf<ProposedEvent>()
