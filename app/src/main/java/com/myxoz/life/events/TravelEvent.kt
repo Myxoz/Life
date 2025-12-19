@@ -48,6 +48,7 @@ import com.myxoz.life.ui.theme.Colors
 import com.myxoz.life.utils.toPx
 import com.myxoz.life.utils.toSp
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import org.json.JSONArray
 import org.json.JSONObject
 
@@ -103,17 +104,15 @@ class TravelEvent(
             else -> 10.dp
         }
         val fontSize = size.toSp(density)
-        LaunchedEffect(Unit) {
-            if(decodedFrom == null || decodedTo == null) {
-                with(Dispatchers.IO){
-                    db.location.getLocationById(from)?.also {
-                        fromDisplay = it.name
-                        decodedFrom = Location.from(it)
-                    }
-                    db.location.getLocationById(to)?.also {
-                        toDisplay = it.name
-                        decodedTo = Location.from(it)
-                    }
+        LaunchedEffect(from, to) {
+            withContext(Dispatchers.IO){
+                db.location.getLocationById(from)?.also {
+                    fromDisplay = it.name
+                    decodedFrom = Location.from(it)
+                }
+                db.location.getLocationById(to)?.also {
+                    toDisplay = it.name
+                    decodedTo = Location.from(it)
                 }
             }
         }

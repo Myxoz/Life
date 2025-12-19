@@ -147,43 +147,28 @@ fun <T: TagLike> TagLikeSelection(allTags: List<T>, defaultSelectedTags: List<T>
         horizontalArrangement = Arrangement.spacedBy(10.dp),
         verticalArrangement = Arrangement.spacedBy(5.dp),
     ) {
-        selectedTags.forEach {
+        (selectedTags.map{it to true} + notSelectedTags.map{it to false}).forEach {
             Box(
                 Modifier
                     .background(Colors.SECONDARY, CircleShape)
                     .clip(CircleShape)
                     .padding(horizontal = 10.dp, vertical = 5.dp)
                     .rippleClick{
-                        selectedTags.remove(it)
-                        updateTags(selectedTags)
+                        if(it.second) {
+                            selectedTags.remove(it.first)
+                            updateTags(selectedTags)
+                        } else {
+                            selectedTags.add(it.first)
+                            updateTags(selectedTags)
+                        }
                     }
             ){
                 Icon(
-                    painterResource(it.drawable),
+                    painterResource(it.first.drawable),
                     "Icon",
                     Modifier
                         .size(height),
-                    Colors.PRIMARYFONT
-                )
-            }
-        }
-        notSelectedTags.forEach {
-            Box(
-                Modifier
-                    .background(Colors.SECONDARY, CircleShape)
-                    .clip(CircleShape)
-                    .padding(horizontal = 10.dp, vertical = 5.dp)
-                    .rippleClick{
-                        selectedTags.add(it)
-                        updateTags(selectedTags)
-                    }
-            ){
-                Icon(
-                    painterResource(it.drawable),
-                    "Icon",
-                    Modifier
-                        .size(height),
-                    Colors.SECONDARYFONT
+                    if(it.second) Colors.PRIMARYFONT else Colors.TERTIARYFONT
                 )
             }
         }

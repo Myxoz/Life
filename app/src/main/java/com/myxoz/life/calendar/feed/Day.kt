@@ -37,12 +37,10 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableLongStateOf
-import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
-import androidx.compose.runtime.toMutableStateList
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
@@ -92,6 +90,7 @@ import com.myxoz.life.viewmodels.CalendarViewModel
 import com.myxoz.life.viewmodels.InspectedEventViewModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import org.json.JSONObject
 import java.time.LocalDate
 import java.time.ZoneId
@@ -112,18 +111,18 @@ fun DayComposable(
     val context = LocalContext.current
     val density = LocalDensity.current
     val settings = LocalSettings.current
-
     var lastDayDragEnd by remember { mutableLongStateOf(0L) }
     val zone = remember { ZoneId.systemDefault() }
     val startOfDay = remember { date.atStartOfDay(zone).toEpochSecond()*1000L }
     val endOfDay = remember { date.plusDays(1).atStartOfDay(zone).toEpochSecond()*1000L }
     var dayEntity: DaysEntity? by remember { mutableStateOf(null) }
-    val events = remember { viewModel.dayCache[date]?.toMutableStateList() ?: mutableStateListOf() }
+    var events by remember { mutableStateOf(viewModel.dayCache[date]?.toList() ?: listOf()) }
     val hoursToday = remember { ((endOfDay- startOfDay) / (3600*1000)).toInt() }
     var oneHourDp by remember { mutableStateOf(0.dp) }
     val hourInPx = with(density) { oneHourDp.toPx() }
     val calendar = remember { Calendar.getInstance() }
-    val bankingEntities = remember { viewModel.bankingEntityCache[date]?.toMutableStateList() ?: mutableStateListOf() }
+    var bankingEntities by remember { mutableStateOf(viewModel.bankingEntityCache[date]?.toList() ?: listOf()) }
+    val lastUpdateTs by viewModel.lastEventUpdateTs.collectAsState()
     val width = fullWidth*.97f
     LaunchedEffect(Unit) {
         if (!isToday) {
@@ -145,17 +144,15 @@ fun DayComposable(
             )
         }
     }
-    LaunchedEffect(viewModel.lastEventUpdateTs) {
-        with(Dispatchers.IO){
+    LaunchedEffect(lastUpdateTs) {
+        withContext(Dispatchers.IO){
             val dbEvents = db.events.getEventsBetween(startOfDay, endOfDay).mapNotNull { SyncedEvent.from(db, it)}
             viewModel.dayCache[date] = dbEvents
-            events.clear()
-            events.addAll(dbEvents)
+            events = dbEvents
 
             val entries = BankingEntity.getAllBankingEntriesFor(db, startOfDay, endOfDay, viewModel.futureBankEntries)
             viewModel.bankingEntityCache[date] = entries
-            bankingEntities.clear()
-            bankingEntities.addAll(entries)
+            bankingEntities = entries
         }
     }
     Column(
@@ -271,9 +268,7 @@ fun DayComposable(
 
                 val bankingItemSize = 1.5f
                 val bankingSizeDp = bankingItemSize*oneHourDp
-                val segments = remember(viewModel.lastEventUpdateTs, events.size, bankingEntities.size) {
-                    getSegmentedEvents(events, bankingEntities, (bankingItemSize*3600L).toLong()*1000L)
-                }
+                val segments = getSegmentedEvents(events, bankingEntities, (bankingItemSize*3600L).toLong()*1000L)
                 for(segmentedEvent in segments) {
                     if(isEditing && segmentedEvent.event.id == newEvent.id) continue
                     val haptic = LocalHapticFeedback.current

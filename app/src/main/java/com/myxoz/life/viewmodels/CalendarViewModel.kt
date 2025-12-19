@@ -1,10 +1,7 @@
 package com.myxoz.life.viewmodels
 
 import android.content.Context
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateListOf
-import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.myxoz.life.api.SyncedEvent
@@ -43,8 +40,7 @@ class CalendarViewModel(private val settings: Settings, private val storage: Sto
         System.currentTimeMillis()
     )
 
-    var lastEventUpdateTs by mutableLongStateOf(0L)
-        private set
+    var lastEventUpdateTs = MutableStateFlow(0L)
 
     private var initialized = false
 
@@ -90,7 +86,7 @@ class CalendarViewModel(private val settings: Settings, private val storage: Sto
     }
 
     fun refreshEvents() {
-        lastEventUpdateTs = System.currentTimeMillis()
+        lastEventUpdateTs.value = System.currentTimeMillis()
     }
 
     fun setDay(selectedDay: LocalDate) {
