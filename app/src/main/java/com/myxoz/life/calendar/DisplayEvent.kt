@@ -44,6 +44,7 @@ import com.myxoz.life.events.DigSocEvent
 import com.myxoz.life.events.SocialEvent
 import com.myxoz.life.events.TravelEvent
 import com.myxoz.life.events.additionals.DetailsEvent
+import com.myxoz.life.events.additionals.EventType
 import com.myxoz.life.events.additionals.PeopleEvent
 import com.myxoz.life.events.additionals.TagEvent
 import com.myxoz.life.events.additionals.TimedTagLikeContainer.Companion.TimedTagLikeBar
@@ -58,14 +59,16 @@ import com.myxoz.life.ui.theme.FontSize
 import com.myxoz.life.ui.theme.TypoStyle
 import com.myxoz.life.utils.rippleClick
 import com.myxoz.life.utils.toDp
+import com.myxoz.life.viewmodels.CalendarViewModel
 import com.myxoz.life.viewmodels.ProfileInfoModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
-fun DisplayEvent(fullEvent: SyncedEvent, profileInfoModel: ProfileInfoModel){
+fun DisplayEvent(fullEvent: SyncedEvent, profileInfoModel: ProfileInfoModel, calendarViewModel: CalendarViewModel){
     val context = LocalContext.current
+    val nav = LocalNavController.current
     val db = LocalStorage.current
     Column(
         verticalArrangement = Arrangement.spacedBy(5.dp)
@@ -103,8 +106,19 @@ fun DisplayEvent(fullEvent: SyncedEvent, profileInfoModel: ProfileInfoModel){
                         Modifier
                             .padding(vertical = 5.dp)
                             .background(fullEvent.proposed.type.color, CircleShape)
+                            .clip(CircleShape)
+                            .rippleClick{
+                                calendarViewModel.search.openCalendarWithSearch(nav){
+                                    tags.value = tags.value.toMutableList().apply { add(it) }
+                                    if(selectedEventTypes.value.isEmpty())
+                                        selectedEventTypes.value = EventType.order.filter { t -> t.isTagEvent() }
+                                    else
+                                        selectedEventTypes.value = selectedEventTypes.value.filter { t -> t.isTagEvent() }
+                                            .ifEmpty { EventType.order.filter { t -> t.isTagEvent() } }
+                                }
+                            }
                             .padding(horizontal = 10.dp, vertical = 5.dp)
-                            .clip(CircleShape),
+                        ,
                         horizontalArrangement = Arrangement.spacedBy(5.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
@@ -124,7 +138,12 @@ fun DisplayEvent(fullEvent: SyncedEvent, profileInfoModel: ProfileInfoModel){
             }
         }
         if(fullEvent.proposed is DigSocEvent) {
-            TimedTagLikeBar(fullEvent.proposed.digSocEntries)
+            TimedTagLikeBar(fullEvent.proposed.digSocEntries) {
+                calendarViewModel.search.openCalendarWithSearch(nav) {
+                    selectedEventTypes.value = listOf(EventType.DigSoc)
+                    digsocPlatforms.value = digsocPlatforms.value.toMutableList().apply { add(it) }
+                }
+            }
         }
         if (fullEvent.proposed is PeopleEvent) {
             var displayedPeople by remember {
@@ -148,6 +167,18 @@ fun DisplayEvent(fullEvent: SyncedEvent, profileInfoModel: ProfileInfoModel){
                         {
                             coroutineScope.launch {
                                 profileInfoModel.openPersonDetails(it.id, nav, db, context)
+                            }
+                        }, {
+                            calendarViewModel.search.openCalendarWithSearch(nav) {
+                                selectedPeople.value =
+                                    selectedPeople.value.toMutableList().apply { add(it.id) }
+                                if (selectedEventTypes.value.isEmpty())
+                                    selectedEventTypes.value =
+                                        EventType.order.filter { t -> t.isPeopleEvent() }
+                                else
+                                    selectedEventTypes.value = selectedEventTypes.value
+                                        .filter { t -> t.isPeopleEvent() }
+                                        .ifEmpty { EventType.order.filter { t -> t.isPeopleEvent() } }
                             }
                         }
                     ) {

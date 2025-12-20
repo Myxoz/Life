@@ -31,6 +31,7 @@ class SearchField {
     val detailsQuery = MutableStateFlow("")
     val titleQuery = MutableStateFlow("")
     val digsocPlatforms = MutableStateFlow(listOf<DigSocPlatform>())
+    val isSearching = MutableStateFlow(false)
     // TODO ADD TO RESET
     fun setText(text: String?){
         val old = textInputValue.value
@@ -90,6 +91,17 @@ class SearchField {
     }
     fun wasUpdated(){
         lastUpdated.value = System.currentTimeMillis()
+        if(mode.value == SearchMode.Target){
+            if(selectedEventTypes.value.isEmpty() || selectedEventTypes.value.any { it != EventType.DigSoc }) digsocPlatforms.value = listOf()
+            if(selectedEventTypes.value.isEmpty() || selectedEventTypes.value.any { !it.isTagEvent() }) tags.value = listOf()
+            if(selectedEventTypes.value.isEmpty() || selectedEventTypes.value.any { !it.isTitleEvent() }) titleQuery.value = ""
+            if(selectedEventTypes.value.isEmpty() || selectedEventTypes.value.any { it != EventType.Travel }) {
+                locationTo.value = listOf()
+                locationFrom.value = listOf()
+                selectedVehicles.value = listOf()
+            }
+        }
+        isSearching.value = isSearching()
     }
     fun isSearching(): Boolean {
         if (mode.value == SearchMode.Text) return !textInputValue.value.isNullOrEmpty()
@@ -98,6 +110,7 @@ class SearchField {
     inline fun openCalendarWithSearch(nav: NavController,  applied: SearchField.()->Unit){
         applied()
         mode.value = SearchMode.Target
+        wasUpdated()
         nav.popBackStack("home", false)
     }
     enum class SearchMode{

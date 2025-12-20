@@ -28,13 +28,16 @@ data class TimedTagLikeContainer<T: TagLike>(val type: T, val durationMs: Long) 
     companion object {
         @Composable
         @OptIn(ExperimentalLayoutApi::class)
-        fun <T: TagLike> TimedTagLikeBar(tags: List<TimedTagLikeContainer<T>>){
+        fun <T: TagLike> TimedTagLikeBar(tags: List<TimedTagLikeContainer<T>>, onClick: ((T)->Unit)? = null){
             val size = FontSize.MEDIUM.size.toDp()
             FlowRow(
                 horizontalArrangement = Arrangement.spacedBy(3.dp)
             ) {
                 tags.forEach {
                     Chip(
+                        {
+                            onClick?.invoke(it.type)
+                        },
                         spacing = 5.dp
                     ) {
                         Icon(

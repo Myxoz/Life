@@ -143,18 +143,17 @@ class ProfileInfoModel(): ViewModel(){
         home.value = location
         iban.value = dbEntry.iban
     }
-    suspend fun updateStateIfOutdated(personId: Long, db: StorageManager, context: Context){
-        if(personId != id.value) {
+    fun updateStateIfOutdated(personId: Long, db: StorageManager, context: Context){
+        // Changed due to caching reasons
+        viewModelScope.launch {
             id.value = personId
             setStateToDb(db)
             val entry = db.profilePictureDao.getPPById(personId)
             if(entry!=null && entry.hasPP) picture.value = ProfilePictureSyncable.loadBitmapByPerson(context, personId) else picture.value = null
-            viewModelScope.launch {
-                val now = System.currentTimeMillis()
-                _lastInteraction.value = db.people.getLastInteractionByPerson(personId, now)
-                _nextInteraction.value = db.people.getNextPlanedEvent(personId, now)
-                renderPieChart(db)
-            }
+            val now = System.currentTimeMillis()
+            _lastInteraction.value = db.people.getLastInteractionByPerson(personId, now)
+            _nextInteraction.value = db.people.getNextPlanedEvent(personId, now)
+            renderPieChart(db)
         }
     }
     suspend fun openPersonDetails(personId: Long, nav: NavController, db: StorageManager, context: Context){

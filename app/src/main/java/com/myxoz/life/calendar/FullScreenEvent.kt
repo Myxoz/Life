@@ -52,6 +52,7 @@ import com.myxoz.life.ui.theme.Colors
 import com.myxoz.life.ui.theme.FontColor
 import com.myxoz.life.ui.theme.FontSize
 import com.myxoz.life.ui.theme.TypoStyle
+import com.myxoz.life.utils.rippleClick
 import com.myxoz.life.viewmodels.CalendarViewModel
 import com.myxoz.life.viewmodels.InspectedEventViewModel
 import com.myxoz.life.viewmodels.ProfileInfoModel
@@ -99,7 +100,7 @@ fun FullScreenEvent(inspectedEventViewModel: InspectedEventViewModel, profileInf
                             .fillMaxWidth(.95f),
                         verticalArrangement = Arrangement.SpaceBetween
                     ) {
-                        DisplayEvent(event, profileInfoModel)
+                        DisplayEvent(event, profileInfoModel, calendarViewModel)
                         Column(
                             Modifier.fillMaxWidth()
                         ) {
@@ -115,6 +116,12 @@ fun FullScreenEvent(inspectedEventViewModel: InspectedEventViewModel, profileInf
                                 Modifier
                                     .fillMaxWidth()
                                     .background(event.proposed.type.color, RoundedCornerShape(25))
+                                    .clip(RoundedCornerShape(25))
+                                    .rippleClick{
+                                        calendarViewModel.search.openCalendarWithSearch(nav){
+                                            selectedEventTypes.value = selectedEventTypes.value.toMutableList().apply { add(event.proposed.type) }
+                                        }
+                                    }
                                     .padding(vertical = 10.dp),
                                 contentAlignment = Alignment.Center
                             ) {

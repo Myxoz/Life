@@ -72,58 +72,46 @@ fun AdvancedSearch(calendarViewModel: CalendarViewModel){
                 val nav = LocalNavController.current
                 val selectedCalendars by search.selectedEventTypes.collectAsState()
                 if(selectedCalendars.isNotEmpty() && selectedCalendars.none { it != EventType.DigSoc }){
-                    val digsocPlatforms by calendarViewModel.search.digsocPlatforms.collectAsState()
+                    val digsocPlatforms by search.digsocPlatforms.collectAsState()
                     TagLikeSelection(DigSocPlatform.entries.toList(), digsocPlatforms){
                         search.digsocPlatforms.value = it
                     }
                 }
-                if(selectedCalendars.isNotEmpty()) {
-                    if(selectedCalendars.none { it !in arrayOf(EventType.Hobby, EventType.Social, EventType.Spont, EventType.Learn) }){
-                        val tags by calendarViewModel.search.tags.collectAsState()
-                        TagsBar(
-                            tags
-                        ) {
-                            calendarViewModel.search.tags.value = it
-                        }
-                    } else {
-                        calendarViewModel.search.tags.value = listOf()
+                if(selectedCalendars.isNotEmpty() && selectedCalendars.all { it.isTagEvent() }) {
+                    val tags by search.tags.collectAsState()
+                    TagsBar(
+                        tags
+                    ) {
+                        search.tags.value = it
                     }
                 }
-                if(selectedCalendars.isNotEmpty()) {
-                    if(selectedCalendars.none { it !in arrayOf(EventType.Hobby, EventType.Social, EventType.Spont, EventType.Learn, EventType.DigSoc) }){
-                        val title by calendarViewModel.search.titleQuery.collectAsState()
-                        InputField(
-                            title,
-                            "Title",
-                        ){
-                            calendarViewModel.search.titleQuery.value = it
-                        }
-                    } else {
-                        calendarViewModel.search.titleQuery.value = ""
+                if(selectedCalendars.isNotEmpty() && selectedCalendars.all { it.isTitleEvent() }) {
+                    val title by search.titleQuery.collectAsState()
+                    InputField(
+                        title,
+                        "Title",
+                    ){
+                        search.titleQuery.value = it
                     }
                 }
                 if(selectedCalendars.isNotEmpty() && selectedCalendars.none { it != EventType.Travel }){
-                    val from by calendarViewModel.search.locationFrom.collectAsState()
+                    val from by search.locationFrom.collectAsState()
                     MultipleLoctionBar(
                         from,
                         "Von"
                     ) {
-                        calendarViewModel.search.locationFrom.value = it
+                        search.locationFrom.value = it
                     }
                     TagLikeSelection(Vehicle.entries.toList(), search.selectedVehicles.value){
                         search.selectedVehicles.value = it
                     }
-                    val to by calendarViewModel.search.locationTo.collectAsState()
+                    val to by search.locationTo.collectAsState()
                     MultipleLoctionBar(
                         to,
                         "Nach"
                     ) {
-                        calendarViewModel.search.locationTo.value = it
+                        search.locationTo.value = it
                     }
-                } else {
-                    calendarViewModel.search.locationTo.value = listOf()
-                    calendarViewModel.search.locationFrom.value = listOf()
-                    calendarViewModel.search.selectedVehicles.value = listOf()
                 }
                 @Composable
                 fun CheckBoxRow(mutableFlow: MutableStateFlow<Boolean>, title: String){
@@ -208,6 +196,7 @@ fun AdvancedSearch(calendarViewModel: CalendarViewModel){
                         modifier = Modifier.height(20.dp)
                     )
                 }
+                search.wasUpdated()
             }
         }
     }
