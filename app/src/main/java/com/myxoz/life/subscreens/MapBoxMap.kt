@@ -863,10 +863,10 @@ class ThreeStateBottomSheetState(){
     val snapHeight = MutableStateFlow(0.dp)
     val lastVelocity = MutableStateFlow(0f)
     suspend fun expandTo(stateLevel: Int, screenHeightPx: Int, minHeightPx: Float){
-        val snapHeightPx = 0.7f * screenHeightPx
+        val snapHeightPx = 0.7f * (screenHeightPx-minHeightPx)
         val snapTarget = when (stateLevel) {
             0 -> 0f
-            1 -> snapHeightPx - minHeightPx
+            1 -> snapHeightPx
             else -> screenHeightPx.toFloat()
         }
         animate(
