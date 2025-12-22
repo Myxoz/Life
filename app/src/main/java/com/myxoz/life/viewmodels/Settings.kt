@@ -29,6 +29,14 @@ class Settings(val prefs: SharedPreferences, context: Context, activity: Activit
     val permissions = Permissions(prefs,context, activity)
     val features = Features(prefs, this@Settings.permissions)
     class Features(val prefs: SharedPreferences, permissions: Permissions){
+        /** ADD TO [all]!!! */
+        val mapBoxLocation = Feature(
+            STEP_COUNTING,
+            "MapBox Standort",
+            "Zeige den aktuellen Standort in MapBox an",
+            listOf(permissions.location),
+            prefs
+        )
         val stepCounting = Feature(
             STEP_COUNTING,
             "Schritterfassung",
@@ -79,6 +87,8 @@ class Settings(val prefs: SharedPreferences, context: Context, activity: Activit
             listOf(permissions.readNotifications),
             prefs
         )
+        val all = arrayOf(mapBoxLocation, stepCounting, callFromLife, screentime, autoDetectSleep, addNewPerson, readPaymentNotifications)
+        // NO syncWithServer
         class Feature(val spk: String, val name: String, val description: String, val reliesOn: List<Permissions.Permission>, val prefs: SharedPreferences) {
             private val _flow = MutableStateFlow(prefs.getBoolean(spk, false))
             val has = _flow.asStateFlow()
@@ -101,6 +111,18 @@ class Settings(val prefs: SharedPreferences, context: Context, activity: Activit
         }
     }
     class Permissions(val prefs: SharedPreferences, val context: Context, val activity: Activity) {
+        /** Add to [all] */
+        val location = Permission(context,"Standort",{
+            ContextCompat.checkSelfPermission(context, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED
+        }, {
+            openAppInfo()
+        }){
+            ActivityCompat.requestPermissions(
+                activity,
+                arrayOf(Manifest.permission.ACCESS_FINE_LOCATION),
+                112
+            )
+        }
         val physicalActivity = Permission(context,"Physische Aktivität",{
             ContextCompat.checkSelfPermission(context, Manifest.permission.ACTIVITY_RECOGNITION) == PackageManager.PERMISSION_GRANTED
         }, {
@@ -192,6 +214,7 @@ class Settings(val prefs: SharedPreferences, context: Context, activity: Activit
                 )
             }
         }
+        val all = arrayOf(location, usageStats, internet, phone, contacts, physicalActivity, postNotifications, readNotifications)
         class Permission(val context: Context, val name: String, val check: Permission.()-> Boolean, val onDisable: Permission.()->Unit, val onEnable: Permission.()->Unit){
             private val _flow = MutableStateFlow(check())
             val has = _flow.asStateFlow()
@@ -237,6 +260,7 @@ class Settings(val prefs: SharedPreferences, context: Context, activity: Activit
     }
     companion object {
         const val STEP_COUNTING = "step_counting"
+        const val MAPBOX_LOCATION = "mapbox_location"
         const val SYNCWITHSERVER = "syncwithserver"
         const val SCREENTIME = "screentime"
         const val READPAYMENTNOTIFICATIONS = "readpaymentnotifications"

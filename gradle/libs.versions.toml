@@ -1,5 +1,6 @@
 [versions]
 agp = "8.13.1"
+androidNdk27 = "11.17.1"
 kotlin = "2.0.21"
 coreKtx = "1.16.0"
 junit = "4.13.2"
@@ -9,12 +10,14 @@ lifecycleRuntimeKtx = "2.9.0"
 activityCompose = "1.10.1"
 composeBom = "2024.09.00"
 lifecycleViewmodelCompose = "2.7.0"
+mapsComposeNdk27 = "11.17.1"
 room = "2.6.0"
 navigationCompose = "2.9.5"
 workRuntimeKtx = "2.10.5"
 graphicsShapes = "1.1.0"
 
 [libraries]
+android-ndk27 = { module = "com.mapbox.maps:android-ndk27", version.ref = "androidNdk27" }
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
 androidx-lifecycle-viewmodel-compose = { module = "androidx.lifecycle:lifecycle-viewmodel-compose", version.ref = "lifecycleViewmodelCompose" }
 androidx-room-ktx = { module = "androidx.room:room-ktx" }
@@ -36,6 +39,8 @@ androidx-material3 = { group = "androidx.compose.material3", name = "material3" 
 androidx-navigation-compose = { group = "androidx.navigation", name = "navigation-compose", version.ref = "navigationCompose" }
 androidx-work-runtime-ktx = { group = "androidx.work", name = "work-runtime-ktx", version.ref = "workRuntimeKtx" }
 androidx-graphics-shapes = { group = "androidx.graphics", name = "graphics-shapes", version.ref = "graphicsShapes" }
+maps-compose = { module = "com.mapbox.extension:maps-compose" }
+maps-compose-ndk27 = { module = "com.mapbox.extension:maps-compose-ndk27", version.ref = "mapsComposeNdk27" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }

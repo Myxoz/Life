@@ -51,6 +51,7 @@ import com.myxoz.life.options.SettingsPermissionComposable
 import com.myxoz.life.options.SummarizeDay
 import com.myxoz.life.search.AdvancedSearch
 import com.myxoz.life.subscreens.Contacts
+import com.myxoz.life.subscreens.MapBoxMap
 import com.myxoz.life.subscreens.ModifyLocation
 import com.myxoz.life.subscreens.MyCard
 import com.myxoz.life.subscreens.ScreenTimeOverview
@@ -66,6 +67,7 @@ import com.myxoz.life.viewmodels.CalendarViewModel
 import com.myxoz.life.viewmodels.ContactsViewModel
 import com.myxoz.life.viewmodels.InspectedEventViewModel
 import com.myxoz.life.viewmodels.LargeDataCache
+import com.myxoz.life.viewmodels.MapViewModel
 import com.myxoz.life.viewmodels.ProfileInfoModel
 import com.myxoz.life.viewmodels.Settings
 import com.myxoz.life.viewmodels.SocialGraphViewModel
@@ -95,6 +97,7 @@ class MainActivity : ComponentActivity() {
     private val contacsViewModel by viewModel{ ContactsViewModel() }
     private val transactionFeedViewModel by viewModel{ TransactionFeedViewModel(db, ZoneId.systemDefault()) }
     private val socialGraphViewModel by viewModel { SocialGraphViewModel(db) }
+    private val mapViewModel by viewModel { MapViewModel() }
     private val photoPicker = PhotoPicker()
     private val imagePickerLauncher = registerForActivityResult(
         ActivityResultContracts.StartActivityForResult()
@@ -273,6 +276,18 @@ class MainActivity : ComponentActivity() {
                     }
                     composable("social_graph") {
                         SocialGraph(socialGraphViewModel, profileInfoModel)
+                    }
+                    composable(
+                        "map",
+                        exitTransition = {
+                            slideOutHorizontally { it }
+                        },
+                        enterTransition = {
+                            slideInHorizontally { it }
+                        },
+
+                    ) {
+                        MapBoxMap(mapViewModel)
                     }
                     composable("advanced_search") {
                         AdvancedSearch(calendarViewModel)

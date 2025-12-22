@@ -149,19 +149,6 @@ internal fun RoundedPolygon.toPath(
     return path
 }
 /**
- * Returns a [Path] for this [Morph].
- *
- * @param progress the [Morph]'s progress
- * @param path a [Path] to rewind and set with the new path data. In case provided, this Path would
- *   be the returned one.
- * @param startAngle the angle (in degrees) from which to begin drawing the generated path. By
- *   default, it is set to 0 degrees, meaning the [Path] begins drawing at the 3 o'clock position.
- */
-fun Morph.toPath(progress: Float, path: Path = Path(), startAngle: Int = 0): Path {
-    return this.toPath(path = path, progress = progress, startAngle = startAngle)
-}
-
-/**
  * Returns a [Path] that is remembered across compositions for this [RoundedPolygon].
  *
  * @param startAngle the angle (in degrees) from which to begin drawing the generated path. By

@@ -36,3 +36,4 @@ fun Dp.toSp(density: Density) = with(density) { this@toSp.toPx() / fontScale / t
 fun Dp.toPx() = with(LocalDensity.current) {this@toPx.toPx()}
 
 fun Dp.toPx(density: Density) = with(density) {this@toPx.toPx()}
+data class Ref<T>(var value: T)

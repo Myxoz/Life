@@ -4,6 +4,7 @@ import androidx.compose.ui.graphics.Color
 
 object Colors {
     val LIFFYCOLOR = Color(0xFFFFFFFF)
+    val APPICONBG = Color(0xFF181818)
     val BACKGROUND = Color(0xFF202020)
     val SCREENTIME = Color(0xFF4A412A)
     val DAYPILLBG = Color(0xFF6f7d82)

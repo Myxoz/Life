@@ -150,26 +150,6 @@ fun DebugScreen(){
             }) {
                 Text("Wipe whole db, click ${10 - shouldWipeDp} times")
             }
-            Button({
-                val shortcutManager = context.getSystemService(ShortcutManager::class.java)
-
-                if (shortcutManager.isRequestPinShortcutSupported) {
-                    val intent = Intent(context, MainActivity::class.java).apply {
-                        action = Intent.ACTION_VIEW
-                        putExtra("targetRoute", "contacts")
-                    }
-
-                    val shortcut = ShortcutInfo.Builder(context, "id_your_route")
-                        .setShortLabel("Life Contacts")
-                        .setIcon(Icon.createWithResource(context, R.mipmap.ic_contact))
-                        .setIntent(intent)
-                        .build()
-
-                    shortcutManager.requestPinShortcut(shortcut, null)
-                }
-            }) {
-                Text("Add shortcut")
-            }
             Text(
                 "Last steps saved: $lastSavedSteps",
                 style = TypoStyle(FontColor.PRIMARY, FontSize.MEDIUM)

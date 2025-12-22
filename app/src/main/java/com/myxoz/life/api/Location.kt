@@ -49,29 +49,32 @@ class Location(
         if (!stripCountry) append(", $country")
     }
 
-    fun toCords(): String {
-        fun toDMS(coordinate: Double, isLat: Boolean): String {
-            val abs = kotlin.math.abs(coordinate)
-            val degrees = abs.toInt()
-            val minutesFloat = (abs - degrees) * 60
-            val minutes = minutesFloat.toInt()
-            val seconds = (minutesFloat - minutes) * 60
-            val hemisphere = when {
-                isLat && coordinate >= 0 -> "N"
-                isLat && coordinate < 0 -> "S"
-                !isLat && coordinate >= 0 -> "E"
-                else -> "W"
-            }
-            return "%d°%d'%1.1f\"%s".format(degrees, minutes, seconds, hemisphere)
-        }
-
-        val latDMS = toDMS(lat, true)
-        val lonDMS = toDMS(longitude, false)
-
-        return "%.6f, %.6f (%s, %s)".format(lat, longitude, latDMS, lonDMS)
-    }
+    fun toCords() = coordinatesToString(lat, longitude)
 
     companion object : ServerSyncableCompanion {
+        fun coordinatesToString(lat: Double, longitude: Double): String {
+            return "%.6f, %.6f (${coordsToDMS(lat, longitude)})".format(lat, longitude)
+        }
+        fun coordsToDMS(lat: Double, longitude: Double): String {
+            fun toDMS(coordinate: Double, isLat: Boolean): String {
+                val abs = kotlin.math.abs(coordinate)
+                val degrees = abs.toInt()
+                val minutesFloat = (abs - degrees) * 60
+                val minutes = minutesFloat.toInt()
+                val seconds = (minutesFloat - minutes) * 60
+                val hemisphere = when {
+                    isLat && coordinate >= 0 -> "N"
+                    isLat && coordinate < 0 -> "S"
+                    !isLat && coordinate >= 0 -> "E"
+                    else -> "W"
+                }
+                return "%d°%d'%1.1f\"%s".format(degrees, minutes, seconds, hemisphere)
+            }
+
+            val latDMS = toDMS(lat, true)
+            val lonDMS = toDMS(longitude, false)
+            return "$latDMS, $lonDMS"
+        }
         override suspend fun overwriteByJson(db: StorageManager, it: JSONObject) {
             fromJSON(it).saveToDB(db)
         }

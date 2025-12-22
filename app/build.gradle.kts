@@ -40,6 +40,8 @@ android { namespace = "com.myxoz.life"
 }
 
 dependencies {
+    implementation(libs.maps.compose.ndk27)
+    implementation(libs.android.ndk27)
     implementation(libs.androidx.room.runtime)
     implementation(libs.androidx.room.ktx)
     implementation(libs.androidx.core.ktx)

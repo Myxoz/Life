@@ -73,46 +73,11 @@ fun SettingsPermissionComposable() {
                     .background(Colors.SECONDARY, RoundedCornerShape(30.dp)),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                PermissionComposable(
-                    settings.permissions.usageStats
-                ) {
-                    settings.permissions.usageStats.set(it)
-                }
-                HorizontalDivider(Modifier.padding(horizontal = 20.dp), color = Colors.DIVIDERS)
-                PermissionComposable(
-                    settings.permissions.physicalActivity
-                ) {
-                    settings.permissions.physicalActivity.set(it)
-                }
-                HorizontalDivider(Modifier.padding(horizontal = 20.dp), color = Colors.DIVIDERS)
-                PermissionComposable(
-                    settings.permissions.contacts
-                ) {
-                    settings.permissions.contacts.set(it)
-                }
-                HorizontalDivider(Modifier.padding(horizontal = 20.dp), color = Colors.DIVIDERS)
-                PermissionComposable(
-                    settings.permissions.internet
-                ) {
-                    settings.permissions.internet.set(it)
-                }
-                HorizontalDivider(Modifier.padding(horizontal = 20.dp), color = Colors.DIVIDERS)
-                PermissionComposable(
-                    settings.permissions.phone
-                ) {
-                    settings.permissions.phone.set(it)
-                }
-                HorizontalDivider(Modifier.padding(horizontal = 20.dp), color = Colors.DIVIDERS)
-                PermissionComposable(
-                    settings.permissions.readNotifications
-                ) {
-                    settings.permissions.readNotifications.set(it)
-                }
-                HorizontalDivider(Modifier.padding(horizontal = 20.dp), color = Colors.DIVIDERS)
-                PermissionComposable(
-                    settings.permissions.postNotifications
-                ) {
-                    settings.permissions.postNotifications.set(it)
+                settings.permissions.all.forEachIndexed { i, c ->
+                    if(i != 0){
+                        HorizontalDivider(Modifier.padding(horizontal = 20.dp), color = Colors.DIVIDERS)
+                    }
+                    PermissionComposable(c) { c.set(it) }
                 }
             }
             Spacer(Modifier.height(20.dp))
@@ -123,28 +88,9 @@ fun SettingsPermissionComposable() {
                     .background(Colors.SECONDARY, RoundedCornerShape(30.dp)),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                FeatureItem(settings.features.callFromLife) {
-                    settings.features.callFromLife.set(it)
-                }
-                HorizontalDivider(Modifier.padding(horizontal = 15.dp), color = Colors.DIVIDERS)
-                FeatureItem(settings.features.addNewPerson) {
-                    settings.features.addNewPerson.set(it)
-                }
-                HorizontalDivider(Modifier.padding(horizontal = 15.dp), color = Colors.DIVIDERS)
-                FeatureItem(settings.features.stepCounting) {
-                    settings.features.stepCounting.set(it)
-                }
-                HorizontalDivider(Modifier.padding(horizontal = 15.dp), color = Colors.DIVIDERS)
-                FeatureItem(settings.features.screentime) {
-                    settings.features.screentime.set(it)
-                }
-                HorizontalDivider(Modifier.padding(horizontal = 15.dp), color = Colors.DIVIDERS)
-                FeatureItem(settings.features.autoDetectSleep) {
-                    settings.features.autoDetectSleep.set(it)
-                }
-                HorizontalDivider(Modifier.padding(horizontal = 15.dp), color = Colors.DIVIDERS)
-                FeatureItem(settings.features.readPaymentNotifications) {
-                    settings.features.readPaymentNotifications.set(it)
+                settings.features.all.forEach {
+                    FeatureItem(it) { c-> it.set(c) }
+                    HorizontalDivider(Modifier.padding(horizontal = 15.dp), color = Colors.DIVIDERS)
                 }
                 HorizontalDivider(Modifier.padding(horizontal = 15.dp), color = Colors.DIVIDERS)
                 val api = LocalAPI.current

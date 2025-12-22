@@ -1,5 +1,16 @@
 package com.myxoz.life.options
 
+import android.content.Context
+import android.content.Intent
+import android.content.pm.ShortcutInfo
+import android.content.pm.ShortcutManager
+import android.graphics.Bitmap
+import android.graphics.Canvas
+import android.graphics.drawable.AdaptiveIconDrawable
+import android.graphics.drawable.ColorDrawable
+import android.graphics.drawable.Drawable
+import android.graphics.drawable.Icon
+import android.graphics.drawable.InsetDrawable
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
@@ -20,21 +31,26 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.toArgb
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
+import androidx.core.graphics.drawable.DrawableCompat
 import com.myxoz.life.LocalNavController
+import com.myxoz.life.MainActivity
 import com.myxoz.life.R
 import com.myxoz.life.ui.theme.Colors
 import com.myxoz.life.ui.theme.FontColor
 import com.myxoz.life.ui.theme.FontFamily
 import com.myxoz.life.ui.theme.FontSize
 import com.myxoz.life.ui.theme.TypoStyle
-import com.myxoz.life.utils.rippleClick
+import com.myxoz.life.utils.combinedRippleClick
 import com.myxoz.life.utils.toDp
 
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun SettingsComposable() {
+    val context = LocalContext.current
     Scaffold(
         containerColor = Colors.BACKGROUND
     ) { innerPadding ->
@@ -49,13 +65,12 @@ fun SettingsComposable() {
         ) {
             val nav = LocalNavController.current
             val all = arrayOf(
-                SubOption(R.drawable.info, "Informationen") {nav.navigate("information")},
-                SubOption(R.drawable.stats, "Statistiken") {
-                    nav.navigate("social_graph")
-                },
-                SubOption(R.drawable.pay_by_card, "Transaktionen") {nav.navigate("transactions")},
-                SubOption(R.drawable.settings, "Berechtigungen") {nav.navigate("settings/permissions")},
-                SubOption(R.drawable.contacts, "Kontakte") {nav.navigate("contacts")},
+                SubOption(R.drawable.info, "Informationen", "information"),
+                SubOption(R.drawable.graph, "Social Graph", "social_graph"),
+                SubOption(R.drawable.bank_transfer, "Transaktionen", "transactions"),
+                SubOption(R.drawable.location, "Karte", "map"),
+                SubOption(R.drawable.settings, "Berechtigungen", "settings/permissions"),
+                SubOption(R.drawable.contacts, "Kontakte", "contacts")
             )
             all.forEachIndexed { i, it ->
                 val mod = Modifier
@@ -63,8 +78,12 @@ fun SettingsComposable() {
                     .border(1.dp, Colors.TERTIARY, RoundedCornerShape(20.dp))
                     .background(Colors.SECONDARY, RoundedCornerShape(20.dp))
                     .clip(RoundedCornerShape(20.dp))
-                    .rippleClick{
-                        it.onClick()
+                    .combinedRippleClick(
+                        onHold = {
+                            it.createAndRequestShortcut(context)
+                        }
+                    ){
+                        nav.navigate(it.route)
                     }
                     .padding(vertical = 20.dp)
                 Column(
@@ -84,4 +103,47 @@ fun SettingsComposable() {
         }
     }
 }
-data class SubOption(val icon: Int, val text: String, val onClick: ()-> Unit)
+data class SubOption(val icon: Int, val text: String, val route: String) {
+    private fun adaptiveIconFromDrawables(context: Context, fg: Drawable): Icon {
+        val size = context.resources.getDimensionPixelSize(android.R.dimen.app_icon_size)
+        val renderSize = size * 4
+
+        val bg = ColorDrawable(Colors.APPICONBG.toArgb())
+        val tintedFg = DrawableCompat.wrap(fg.mutate()).apply {
+            setTint(Colors.PRIMARYFONT.toArgb())
+        }
+
+        // 25% padding total means foreground inset of 25% on each side [web:21]
+        val pad = (renderSize * 0.48f).toInt()
+        val insetFg = InsetDrawable(tintedFg, pad, pad, pad, pad)
+
+        val adaptive = AdaptiveIconDrawable(bg, insetFg)
+
+        val bitmap = Bitmap.createBitmap(renderSize, renderSize, Bitmap.Config.ARGB_8888)
+        val canvas = Canvas(bitmap)
+
+        // Full-bleed draw so background fills the entire bitmap (no outline)
+        adaptive.setBounds(0, 0, canvas.width, canvas.height)
+        adaptive.draw(canvas)
+
+        return Icon.createWithAdaptiveBitmap(bitmap)
+    }
+    fun createAndRequestShortcut(context: Context){
+        val intent = Intent(context, MainActivity::class.java).apply {
+            action = Intent.ACTION_VIEW
+            putExtra("targetRoute", route)
+        }
+
+        val shortcut = ShortcutInfo.Builder(context, route+"v6")
+            .setShortLabel(text)
+            .setIcon(adaptiveIconFromDrawables(context, context.getDrawable(icon)?:return))
+            .setIntent(intent)
+            .build()
+
+        val shortcutManager = context.getSystemService(ShortcutManager::class.java)
+
+        if (shortcutManager.isRequestPinShortcutSupported) {
+            shortcutManager.requestPinShortcut(shortcut, null)
+        }
+    }
+}

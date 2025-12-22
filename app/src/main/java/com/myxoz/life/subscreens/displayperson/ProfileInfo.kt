@@ -149,7 +149,7 @@ fun ProfileInfo(largeDataCache: LargeDataCache, profileInfoModel: ProfileInfoMod
                     .clip(RectangleShape)
             ) {
                 //val iban = "DE65430609673062465800"
-                ProfileEntry(
+                ListEntry(
                     "Voller Name",
                     painterResource(R.drawable.id_card)
                 ) {
@@ -181,7 +181,7 @@ fun ProfileInfo(largeDataCache: LargeDataCache, profileInfoModel: ProfileInfoMod
                                 }
                             }
                         }
-                    PersonEditingField(
+                    ListEditingField(
                         isEditing,
                         displayText ?: "???",
                         null,
@@ -190,7 +190,7 @@ fun ProfileInfo(largeDataCache: LargeDataCache, profileInfoModel: ProfileInfoMod
                     )
                 }
                 Spacer(Modifier.height(20.dp))
-                ProfileEntry(
+                ListEntry(
                     "Handynummer",
                     painterResource(R.drawable.phone)
                 ) {
@@ -201,7 +201,7 @@ fun ProfileInfo(largeDataCache: LargeDataCache, profileInfoModel: ProfileInfoMod
                     val fullyFormatedNumber = formatedPhone?.censorLast(censoredPlaces, " •")
                     val subtext =
                         if (!isExtended) null else phone?.let { phoneParser?.getPhoneInfo(it) }
-                    PersonEditingField(
+                    ListEditingField(
                         isEditing,
                         fullyFormatedNumber ?: "???",
                         subtext,
@@ -212,13 +212,13 @@ fun ProfileInfo(largeDataCache: LargeDataCache, profileInfoModel: ProfileInfoMod
                 }
                 if(iban!=null || isEditing)  {
                     Spacer(Modifier.height(20.dp))
-                    ProfileEntry(
+                    ListEntry(
                         "IBAN",
                         painterResource(R.drawable.pay_by_card)
                     ) {
                         val ibanInformation: String? =
                             iban?.let { if(it.length > 4) largeDataCache.getIbanInformation(it.substring(4)) else null }
-                        PersonEditingField(
+                        ListEditingField(
                             isEditing,
                             iban?.chunked(4)?.joinToString(" ") ?: "???",
                             ibanInformation,
@@ -342,12 +342,12 @@ fun ProfileInfo(largeDataCache: LargeDataCache, profileInfoModel: ProfileInfoMod
                     }
                 }
                 Spacer(Modifier.height(20.dp))
-                ProfileEntry(
+                ListEntry(
                     "Adresse",
                     painterResource(R.drawable.location),
                 ) {
                     if(!isEditing) {
-                        PersonEditingField(
+                        ListEditingField(
                             false,
                             location?.toAddress(true) ?:"???",
                             location?.toCords(),
@@ -600,7 +600,7 @@ fun ProfileInfo(largeDataCache: LargeDataCache, profileInfoModel: ProfileInfoMod
 }
 
 @Composable
-fun ProfileEntry(title: String, icon: Painter, text: @Composable ()->Unit){
+fun ListEntry(title: String, icon: Painter, text: @Composable ()->Unit){
     Column(
         verticalArrangement = Arrangement.spacedBy(5.dp)
     ) {
@@ -628,7 +628,7 @@ fun ProfileEntry(title: String, icon: Painter, text: @Composable ()->Unit){
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
-fun PersonEditingField(isEditing: Boolean, displayText: String, subtext: String?, text: MutableStateFlow<String?>, placeHolder: String, keyboardType: KeyboardType = KeyboardType.Text){
+fun ListEditingField(isEditing: Boolean, displayText: String, subtext: String?, text: MutableStateFlow<String?>, placeHolder: String, keyboardType: KeyboardType = KeyboardType.Text){
     if(isEditing) {
         val value by text.collectAsState()
         var hasFocus by remember { mutableStateOf(false) }
@@ -644,7 +644,7 @@ fun PersonEditingField(isEditing: Boolean, displayText: String, subtext: String?
                 }
                 .fillMaxWidth(),
             textStyle = TypoStyle(FontColor.PRIMARY, FontSize.LARGE),
-            maxLines = 1,
+            singleLine = true,
             keyboardOptions = KeyboardOptions(
                 capitalization = KeyboardCapitalization.Sentences,
                 imeAction = ImeAction.Done,
