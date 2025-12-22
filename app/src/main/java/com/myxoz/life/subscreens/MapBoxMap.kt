@@ -29,6 +29,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Add
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -65,6 +66,9 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.TextRange
+import androidx.compose.ui.text.input.KeyboardCapitalization
+import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
@@ -136,6 +140,7 @@ fun MapBoxMap(mapViewModel: MapViewModel){
     val selectedCoordinates by mapViewModel.selectedCoordinates.collectAsState()
     val isEditing by mapViewModel.isEditing.collectAsState()
     val state = remember { ThreeStateBottomSheetState() }
+    val minSheetHeight = FontSize.XLARGE.size.toDp() + 30.dp * 2
     var refetchLocations by remember { mutableLongStateOf(System.currentTimeMillis()) }
     BackHandler(sheetLocation!=null || selectedCoordinates != null) {
         mapViewModel.setSheetLocation(null)
@@ -300,7 +305,7 @@ fun MapBoxMap(mapViewModel: MapViewModel){
         }
         ThreeStateBottomSheet(
             state,
-            FontSize.XLARGE.size.toDp() + 30.dp * 2,
+            minSheetHeight,
             Colors.BACKGROUND,
             innerPadding
         ) {
@@ -603,9 +608,16 @@ fun MapBoxMap(mapViewModel: MapViewModel){
                     val screenHeightPx = with(LocalDensity.current) { screenHeight.toPx()  }
                     val mapBoxSearchResults by mapViewModel.mapBoxSearchResults.collectAsState()
                     val lifeSearchResults by mapViewModel.lifeSearchResults.collectAsState()
-                    val lifeQuery by mapViewModel.lifeQuery.collectAsState()
-                    LaunchedEffect(lifeQuery) {
-                        val query = lifeQuery ?: return@LaunchedEffect
+                    var lifeQueryValue by remember {
+                        mutableStateOf(
+                            TextFieldValue(
+                                text = mapViewModel.lifeQuery.value ?: "",
+                                selection = TextRange((mapViewModel.lifeQuery.value ?: "").length)
+                            )
+                        )
+                    }
+                    LaunchedEffect(lifeQueryValue.text) {
+                        val query = lifeQueryValue.text.takeIf { it.isNotBlank() } ?: return@LaunchedEffect
                         val locations = db.location.getAllLocations().map { Location.from(it) }
                         mapViewModel.lifeSearchResults.value = locations.filteredWith(query, {
                             it.toAddress()
@@ -623,10 +635,12 @@ fun MapBoxMap(mapViewModel: MapViewModel){
                         var hasFocus by remember { mutableStateOf(false) }
                         val focusManager = LocalFocusManager.current
                         val focusRequester = remember { FocusRequester() }
+                        val density = LocalDensity.current
                         BasicTextField(
-                            lifeQuery?:"",
+                            lifeQueryValue,
                             {
-                                mapViewModel.lifeQuery.value = it
+                                lifeQueryValue = it
+                                mapViewModel.lifeQuery.value = it.text
                             },
                             Modifier
                                 .padding(vertical = 5.dp)
@@ -635,7 +649,12 @@ fun MapBoxMap(mapViewModel: MapViewModel){
                                 .clip(RoundedCornerShape(10.dp))
                                 .rippleClick{
                                     coroutineScope.launch {
-                                        state.expandTo(1, screenHeightPx.toInt())
+                                        state.expandTo(1, screenHeightPx.toInt(), with(density) {minSheetHeight.toPx()})
+                                        val text = mapViewModel.lifeQuery.value ?: ""
+                                        lifeQueryValue = lifeQueryValue.copy(
+                                            text = text,
+                                            selection = TextRange(text.length)
+                                        )
                                         focusRequester.requestFocus()
                                     }
                                 }
@@ -647,6 +666,7 @@ fun MapBoxMap(mapViewModel: MapViewModel){
                             ,
                             textStyle = TypoStyle(FontColor.PRIMARY, FontSize.LARGE),
                             cursorBrush = SolidColor(Colors.PRIMARYFONT),
+                            keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Sentences),
                             enabled = progress != 0f
                         ) { innerTextField ->
                             if(hasFocus || mapViewModel.lifeQuery.value!=null) {
@@ -842,11 +862,11 @@ class ThreeStateBottomSheetState(){
     val height = MutableStateFlow(0.dp)
     val snapHeight = MutableStateFlow(0.dp)
     val lastVelocity = MutableStateFlow(0f)
-    suspend fun expandTo(stateLevel: Int, screenHeightPx: Int){
+    suspend fun expandTo(stateLevel: Int, screenHeightPx: Int, minHeightPx: Float){
         val snapHeightPx = 0.7f * screenHeightPx
         val snapTarget = when (stateLevel) {
             0 -> 0f
-            1 -> snapHeightPx
+            1 -> snapHeightPx - minHeightPx
             else -> screenHeightPx.toFloat()
         }
         animate(
