@@ -55,6 +55,8 @@ import com.myxoz.life.ui.theme.FontColor
 import com.myxoz.life.ui.theme.FontFamily
 import com.myxoz.life.ui.theme.FontSize
 import com.myxoz.life.ui.theme.TypoStyle
+import com.myxoz.life.utils.formatMinutes
+import com.myxoz.life.utils.formatTimeStamp
 import com.myxoz.life.utils.rippleClick
 import com.myxoz.life.utils.toDp
 import com.myxoz.life.viewmodels.LargeDataCache
@@ -452,17 +454,6 @@ fun BankCard(from: String, fromIBAN: String, largeDataCache: LargeDataCache?) {
     }
 }
 
-fun Long.formatTimeStamp(calendar: Calendar): String {
-    calendar.timeInMillis = this
-    return "${calendar.get(Calendar.DAY_OF_MONTH).toString().padStart(2, '0')
-    }.${(calendar.get(Calendar.MONTH)+1).padStart(2, '0')}.${calendar.get(Calendar.YEAR)} ${
-        calendar.get(Calendar.HOUR_OF_DAY).padStart(2, '0')}:${calendar.get(Calendar.MINUTE).padStart(2, '0')}:${calendar.get(Calendar.SECOND).padStart(2, '0')}"
-}
-fun Long.formatMinutes(calendar: Calendar): String {
-    calendar.timeInMillis = this
-    return "${calendar.get(Calendar.HOUR_OF_DAY).padStart(2, '0')}:${calendar.get(Calendar.MINUTE).padStart(2, '0')}"
-}
-fun Int.padStart(length: Int, char: Char) = toString().padStart(length, char)
 fun finalDailyBalance(transactions: List<BankingEntity>): Long {
     if (transactions.isEmpty()) error("No transactions")
 

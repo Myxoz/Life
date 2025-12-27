@@ -2,14 +2,12 @@ package com.myxoz.life.options
 
 import android.content.Context
 import android.content.Context.MODE_PRIVATE
-import android.content.Intent
-import android.content.pm.ShortcutInfo
-import android.content.pm.ShortcutManager
-import android.graphics.drawable.Icon
 import android.hardware.Sensor
 import android.hardware.SensorEvent
 import android.hardware.SensorEventListener
 import android.hardware.SensorManager
+import android.icu.util.Calendar
+import android.provider.CallLog
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -22,9 +20,11 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableLongStateOf
+import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -34,15 +34,15 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.core.content.edit
 import com.myxoz.life.LocalAPI
+import com.myxoz.life.LocalSettings
 import com.myxoz.life.LocalStorage
-import com.myxoz.life.MainActivity
-import com.myxoz.life.R
 import com.myxoz.life.api.PersonSyncable
 import com.myxoz.life.api.Syncable
 import com.myxoz.life.ui.theme.Colors
 import com.myxoz.life.ui.theme.FontColor
 import com.myxoz.life.ui.theme.FontSize
 import com.myxoz.life.ui.theme.TypoStyle
+import com.myxoz.life.utils.formatTimeStamp
 import com.myxoz.life.viewmodels.ContactsViewModel
 import kotlinx.coroutines.launch
 import java.io.File
@@ -64,6 +64,7 @@ fun DebugScreen(){
             val coroutineScope = rememberCoroutineScope()
             val prefs = remember { context.getSharedPreferences("steps", MODE_PRIVATE) }
             val sprefs = remember { context.getSharedPreferences("MainActivity", MODE_PRIVATE) }
+            val features = LocalSettings.current.features
             var lastSavedSteps by remember { mutableLongStateOf(prefs.getLong("saved_steps", 0L)) }
             var stepsAtMidnight by remember {
                 mutableLongStateOf(
@@ -165,6 +166,9 @@ fun DebugScreen(){
             StepCounterText {
                 Text("Steps live: $it", style = TypoStyle(FontColor.PRIMARY, FontSize.MEDIUM))
             }
+            if(features.autoDetectCalls.hasAssured()){
+                CallLogDumpDebug()
+            }
         }
     }
 }
@@ -198,4 +202,84 @@ fun StepCounterText(content: @Composable (Long)->Unit) {
     }
 
     content(steps)
+}
+@Composable
+fun CallLogDumpDebug() {
+    val context = LocalContext.current
+    val callLogs = remember { mutableStateListOf<String>() }
+
+    LaunchedEffect(Unit) {
+        val resolver = context.contentResolver
+        val cursor = resolver.query(
+            CallLog.Calls.CONTENT_URI,
+            null,
+            null,
+            null,
+            "${CallLog.Calls.DATE} DESC"
+        )
+
+        cursor?.use {
+            val calendar = Calendar.getInstance()
+
+            while (it.moveToNext()) {
+                val number = it.getString(it.getColumnIndexOrThrow(CallLog.Calls.NUMBER))
+                val name = it.getString(it.getColumnIndexOrThrow(CallLog.Calls.CACHED_NAME))
+                val type = it.getInt(it.getColumnIndexOrThrow(CallLog.Calls.TYPE))
+                val duration = it.getLong(it.getColumnIndexOrThrow(CallLog.Calls.DURATION))
+                val date = it.getLong(it.getColumnIndexOrThrow(CallLog.Calls.DATE))
+                val countryIso = it.getString(it.getColumnIndexOrThrow(CallLog.Calls.COUNTRY_ISO))
+                val isRead = it.getInt(it.getColumnIndexOrThrow(CallLog.Calls.IS_READ))
+                val features = it.getInt(it.getColumnIndexOrThrow(CallLog.Calls.FEATURES))
+                val accountId = it.getString(it.getColumnIndexOrThrow(CallLog.Calls.PHONE_ACCOUNT_ID))
+                val accountComponent = it.getString(it.getColumnIndexOrThrow(CallLog.Calls.PHONE_ACCOUNT_COMPONENT_NAME))
+                val postDial = it.getString(it.getColumnIndexOrThrow(CallLog.Calls.POST_DIAL_DIGITS))
+                val viaNumber = it.getString(it.getColumnIndexOrThrow(CallLog.Calls.VIA_NUMBER))
+                val presentation = it.getInt(it.getColumnIndexOrThrow(CallLog.Calls.NUMBER_PRESENTATION))
+                val geocodedLocation = it.getString(it.getColumnIndexOrThrow(CallLog.Calls.GEOCODED_LOCATION))
+                val dataUsage = it.getLong(it.getColumnIndexOrThrow(CallLog.Calls.DATA_USAGE))
+                val transcription = it.getString(it.getColumnIndexOrThrow(CallLog.Calls.TRANSCRIPTION))
+                val missedReason = it.getInt(it.getColumnIndexOrThrow(CallLog.Calls.MISSED_REASON))
+                if (duration == 0L) continue
+                if (number.isNullOrBlank()) continue
+                calendar.timeInMillis = date
+                val formattedTime = date.formatTimeStamp(calendar)
+
+                callLogs.add(
+                    """
+    Number: $number
+    Name: $name
+    Type: $type
+    Duration: ${duration / 60}m ${duration % 60}s
+    Date: $formattedTime
+    Country ISO: $countryIso
+    Geo: $geocodedLocation
+    Read: $isRead
+    Features: $features
+    Presentation: $presentation
+    Account ID: $accountId
+    Account Component: $accountComponent
+    Via: $viaNumber
+    Post Dial: $postDial
+    Data Usage: $dataUsage
+    Missed Reason: $missedReason
+    Transcription: $transcription
+    --------------------------------
+    """.trimIndent()
+                )
+            }
+        }
+    }
+
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(12.dp)
+    ) {
+        callLogs.forEach {
+            Text(
+                text = it,
+                style = TypoStyle(FontColor.PRIMARY, FontSize.MEDIUM)
+            )
+        }
+    }
 }

@@ -75,7 +75,7 @@ abstract class ProposedEvent(start: Long, end: Long, val type: EventType, val us
         }
     }
 
-    open fun ignoreProposed(db: StorageManager, context: Context) {}
+    open fun ignoreProposed(context: Context) {/* no-op */}
     abstract fun getInvalidReason(): String?
     fun overlaps(other: DefinedDurationEvent): Boolean = start < other.end && end > other.start
 

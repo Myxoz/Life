@@ -50,13 +50,13 @@ import com.myxoz.life.events.additionals.TagEvent
 import com.myxoz.life.events.additionals.TimedTagLikeContainer.Companion.TimedTagLikeBar
 import com.myxoz.life.events.additionals.TitleEvent
 import com.myxoz.life.integration.HVV
-import com.myxoz.life.subscreens.formatTimeStamp
 import com.myxoz.life.ui.Chip
 import com.myxoz.life.ui.theme.Colors
 import com.myxoz.life.ui.theme.FontColor
 import com.myxoz.life.ui.theme.FontFamily
 import com.myxoz.life.ui.theme.FontSize
 import com.myxoz.life.ui.theme.TypoStyle
+import com.myxoz.life.utils.formatTimeStamp
 import com.myxoz.life.utils.rippleClick
 import com.myxoz.life.utils.toDp
 import com.myxoz.life.viewmodels.CalendarViewModel

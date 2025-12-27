@@ -30,8 +30,15 @@ class Settings(val prefs: SharedPreferences, context: Context, activity: Activit
     val features = Features(prefs, this@Settings.permissions)
     class Features(val prefs: SharedPreferences, permissions: Permissions){
         /** ADD TO [all]!!! */
+        val autoDetectCalls = Feature(
+            AUTO_DETECT_CALLS,
+            "Anruferfassung",
+            "Automatische Vorschläge für Anrufe im Kalender basierend auf deinen vergangenen Telefonaten",
+            listOf(permissions.readCallLogs),
+            prefs
+        )
         val mapBoxLocation = Feature(
-            STEP_COUNTING,
+            MAPBOX_LOCATION,
             "MapBox Standort",
             "Zeige den aktuellen Standort in MapBox an",
             listOf(permissions.location),
@@ -87,7 +94,7 @@ class Settings(val prefs: SharedPreferences, context: Context, activity: Activit
             listOf(permissions.readNotifications),
             prefs
         )
-        val all = arrayOf(mapBoxLocation, stepCounting, callFromLife, screentime, autoDetectSleep, addNewPerson, readPaymentNotifications)
+        val all = arrayOf(mapBoxLocation, stepCounting, callFromLife, screentime, autoDetectSleep, addNewPerson, readPaymentNotifications, autoDetectCalls)
         // NO syncWithServer
         class Feature(val spk: String, val name: String, val description: String, val reliesOn: List<Permissions.Permission>, val prefs: SharedPreferences) {
             private val _flow = MutableStateFlow(prefs.getBoolean(spk, false))
@@ -120,6 +127,17 @@ class Settings(val prefs: SharedPreferences, context: Context, activity: Activit
             ActivityCompat.requestPermissions(
                 activity,
                 arrayOf(Manifest.permission.ACCESS_FINE_LOCATION),
+                112
+            )
+        }
+        val readCallLogs = Permission(context,"Anrufliste",{
+            ContextCompat.checkSelfPermission(context, Manifest.permission.READ_CALL_LOG) == PackageManager.PERMISSION_GRANTED
+        }, {
+            openAppInfo()
+        }){
+            ActivityCompat.requestPermissions(
+                activity,
+                arrayOf(Manifest.permission.READ_CALL_LOG),
                 112
             )
         }
@@ -214,7 +232,7 @@ class Settings(val prefs: SharedPreferences, context: Context, activity: Activit
                 )
             }
         }
-        val all = arrayOf(location, usageStats, internet, phone, contacts, physicalActivity, postNotifications, readNotifications)
+        val all = arrayOf(location, usageStats, internet, phone, contacts, physicalActivity, postNotifications, readNotifications, readCallLogs)
         class Permission(val context: Context, val name: String, val check: Permission.()-> Boolean, val onDisable: Permission.()->Unit, val onEnable: Permission.()->Unit){
             private val _flow = MutableStateFlow(check())
             val has = _flow.asStateFlow()
@@ -260,6 +278,7 @@ class Settings(val prefs: SharedPreferences, context: Context, activity: Activit
     }
     companion object {
         const val STEP_COUNTING = "step_counting"
+        const val AUTO_DETECT_CALLS = "autodetectcalls"
         const val MAPBOX_LOCATION = "mapbox_location"
         const val SYNCWITHSERVER = "syncwithserver"
         const val SCREENTIME = "screentime"

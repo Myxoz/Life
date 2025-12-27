@@ -3,9 +3,9 @@ package com.myxoz.life.integration
 import android.icu.util.Calendar
 import androidx.core.net.toUri
 import com.myxoz.life.api.Location
-import com.myxoz.life.autodetect.roundToNearest15Min
 import com.myxoz.life.events.additionals.Vehicle
 import com.myxoz.life.sensors.ParsedRoute
+import com.myxoz.life.utils.roundToNearest15Min
 
 object HVV {
     fun parseTransitRoute(input: String): ParsedRoute? {

@@ -19,6 +19,7 @@ import com.myxoz.life.ui.theme.Colors
 import com.myxoz.life.ui.theme.FontColor
 import com.myxoz.life.ui.theme.FontSize
 import com.myxoz.life.ui.theme.TypoStyle
+import com.myxoz.life.utils.formatMinutesToVisual
 import com.myxoz.life.utils.toDp
 import org.json.JSONObject
 
@@ -51,7 +52,7 @@ data class TimedTagLikeContainer<T: TagLike>(val type: T, val durationMs: Long) 
                             Colors.SECONDARYFONT
                         )
                         Text(
-                            TimeBasedVisualTransformation.toTransformed((it.durationMs / (60 * 1000L)).toString()),
+                            TimeBasedVisualTransformation.toTransformed((it.durationMs / (60 * 1000L)).formatMinutesToVisual()),
                             style = TypoStyle(FontColor.PRIMARY, FontSize.MEDIUM)
                         )
                     }

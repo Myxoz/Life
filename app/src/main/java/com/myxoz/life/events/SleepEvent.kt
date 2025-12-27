@@ -1,7 +1,6 @@
 package com.myxoz.life.events
 
 import android.content.Context
-import android.content.Context.MODE_PRIVATE
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.Row
@@ -18,8 +17,9 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.times
-import androidx.core.content.edit
 import com.myxoz.life.R
+import com.myxoz.life.autodetect.AutoDetect
+import com.myxoz.life.autodetect.AutoDetectSleep
 import com.myxoz.life.dbwrapper.EventEntity
 import com.myxoz.life.dbwrapper.StorageManager
 import com.myxoz.life.events.additionals.EventType
@@ -27,7 +27,7 @@ import com.myxoz.life.ui.theme.Colors
 import com.myxoz.life.utils.toSp
 import org.json.JSONObject
 
-class SleepEvent(start: Long, end: Long, uss: Boolean, usl: Boolean): ProposedEvent(start, end, EventType.Sleep, uss, usl) {
+class SleepEvent(start: Long, end: Long, uss: Boolean, usl: Boolean): ProposedEvent(start, end, EventType.Sleep, uss, usl), AutoDetect.AutoDetectEvent {
     override suspend fun saveEventSpecifics(db: StorageManager, id: Long): Boolean = true
 
     @Composable
@@ -67,14 +67,7 @@ class SleepEvent(start: Long, end: Long, uss: Boolean, usl: Boolean): ProposedEv
     override suspend fun eraseEventSpecificsFromDB(db: StorageManager, id: Long) = Unit
     override fun addEventSpecifics(jsonObject: JSONObject): JSONObject = jsonObject // No specific parts
     override fun copyWithTimes(start: Long, end: Long, uss: Boolean, usl: Boolean) = SleepEvent(start, end, uss, usl)
-    override fun ignoreProposed(db: StorageManager, context: Context) {
-        val declinedSleep = context.getSharedPreferences("autodetect", MODE_PRIVATE)
-        val declinedSleepSet = (declinedSleep.getStringSet("declined_sleep", null) ?: setOf<String>()).toMutableSet()
-        declinedSleepSet.add("$start;$end")
-        declinedSleep.edit {
-            putStringSet("declined_sleep", declinedSleepSet)
-        }
-    }
+    override fun ignoreProposed(context: Context) = ingoreAutoDetectable(this, AutoDetectSleep.SPK, context)
 
     override fun getInvalidReason(): String? = null // Sleep cant be invalid
 

@@ -103,7 +103,6 @@ import com.myxoz.life.events.additionals.TimedTagLikeContainer
 import com.myxoz.life.events.additionals.TitleEvent
 import com.myxoz.life.events.additionals.Vehicle
 import com.myxoz.life.integration.HVV
-import com.myxoz.life.subscreens.formatTimeStamp
 import com.myxoz.life.ui.ArrowDirection
 import com.myxoz.life.ui.Chip
 import com.myxoz.life.ui.drawArrowBehind
@@ -112,6 +111,8 @@ import com.myxoz.life.ui.theme.FontColor
 import com.myxoz.life.ui.theme.FontSize
 import com.myxoz.life.ui.theme.TypoStyle
 import com.myxoz.life.utils.filteredWith
+import com.myxoz.life.utils.formatMinutesToVisual
+import com.myxoz.life.utils.formatTimeStamp
 import com.myxoz.life.utils.rippleClick
 import com.myxoz.life.utils.toDp
 import com.myxoz.life.utils.toPx
@@ -1070,7 +1071,7 @@ fun <T: TagLike> TimeBasedTagLikeSelection(allSelectables: List<T>, defSelection
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(3.dp)
                 ){
-                    var text by remember { mutableStateOf((item.durationMs/(60*1000L)).takeIf { it!=0L }?.toString()?:"") }
+                    var text by remember { mutableStateOf((item.durationMs/(60*1000L)).takeIf { it!=0L }?.formatMinutesToVisual()?:"") }
                     var layoutComplete by remember { mutableStateOf(false) }
                     LaunchedEffect(Unit) {
                         if(itemWasAdded) focusRequester.requestFocus()

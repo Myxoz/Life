@@ -5,17 +5,19 @@ import androidx.compose.runtime.mutableStateListOf
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.myxoz.life.api.SyncedEvent
-import com.myxoz.life.autodetect.autoDetectEvents
+import com.myxoz.life.autodetect.AutoDetect
 import com.myxoz.life.dbwrapper.BankingEntity
 import com.myxoz.life.dbwrapper.StorageManager
 import com.myxoz.life.events.ProposedEvent
 import com.myxoz.life.search.SearchField
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import org.json.JSONArray
 import java.time.LocalDate
 
@@ -49,8 +51,9 @@ class CalendarViewModel(private val settings: Settings, private val storage: Sto
         initialized = true
 
         viewModelScope.launch {
-            // Load proposed events
-            proposedEvents.addAll(autoDetectEvents(context, settings))
+            withContext(Dispatchers.IO) {
+                proposedEvents.addAll(AutoDetect.autoDetectEvents(context, settings, storage))
+            }
 
             // Load future bank entries
             val payments = JSONArray(storage.prefs.getString("payments", null) ?: "[]")
@@ -82,7 +85,7 @@ class CalendarViewModel(private val settings: Settings, private val storage: Sto
 
     fun removeProposedEvent(event: ProposedEvent, context: Context) {
         proposedEvents.remove(event)
-        event.ignoreProposed(storage, context)
+        event.ignoreProposed(context)
     }
 
     fun refreshEvents() {

@@ -1,5 +1,6 @@
 package com.myxoz.life.events
 
+import android.content.Context
 import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
@@ -17,6 +18,8 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.myxoz.life.LocalStorage
 import com.myxoz.life.api.jsonObjArray
+import com.myxoz.life.autodetect.AutoDetect
+import com.myxoz.life.autodetect.AutoDetectCall
 import com.myxoz.life.dbwrapper.DigSocEntity
 import com.myxoz.life.dbwrapper.DigSocMappingEntity
 import com.myxoz.life.dbwrapper.EventEntity
@@ -41,7 +44,7 @@ class DigSocEvent(
     val digSocEntries: List<TimedTagLikeContainer<DigSocPlatform>>,
     override val title: String,
     override val people: List<Long>
-): ProposedEvent(start, end, EventType.DigSoc, uss, usl), TitleEvent, PeopleEvent
+): ProposedEvent(start, end, EventType.DigSoc, uss, usl), TitleEvent, PeopleEvent, AutoDetect.AutoDetectEvent
 {
     override suspend fun saveEventSpecifics(db: StorageManager, id: Long): Boolean {
         db.digsoc.insertEvent(
@@ -111,6 +114,7 @@ class DigSocEvent(
         .put("mapping", JSONArray().apply { digSocEntries.forEach { put(it.timedTagLikeToJson()) } })
 
     override fun copyWithTimes(start: Long, end: Long, uss: Boolean, usl: Boolean) = DigSocEvent(start, end, uss, usl, digSocEntries, title, people)
+    override fun ignoreProposed(context: Context) = ingoreAutoDetectable(this, AutoDetectCall.SPK, context)
     override fun getInvalidReason(): String? =
         if(digSocEntries.isEmpty())
             "Wähle mindestens eine Platform aus"
