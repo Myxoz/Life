@@ -18,6 +18,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.produceState
@@ -55,6 +56,11 @@ fun PickExistingLocation(){
         mutableStateOf(allLocations)
     }
     val coroutineScope = rememberCoroutineScope()
+    LaunchedEffect(allLocations) {
+        if(allLocations.isEmpty()) return@LaunchedEffect
+        val filter = nav.previousBackStackEntry?.savedStateHandle?.get<String?>("pequery")?:return@LaunchedEffect
+        filtered = allLocations.filteredWith(filter, {it.toAddress(true)}) { it.name }
+    }
     Scaffold(
         containerColor = Colors.BACKGROUND,
     ) { innerPadding ->
@@ -85,6 +91,7 @@ fun PickExistingLocation(){
                                 }
                             }
                             .padding(horizontal = 15.dp, vertical = 15.dp)
+                            .fillMaxWidth()
                         ,
                         horizontalArrangement = Arrangement.spacedBy(15.dp),
                         verticalAlignment = Alignment.CenterVertically
@@ -119,7 +126,7 @@ fun PickExistingLocation(){
                     .padding(10.dp)
             ){
                 InputField(
-                    null,
+                    nav.previousBackStackEntry?.savedStateHandle?.get("pequery"),
                     "Suchen"
                 ) { filter ->
                     filtered = allLocations.filteredWith(filter, {it.toAddress(true)}) { it.name }

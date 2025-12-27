@@ -49,8 +49,6 @@ object AutoDetectCall {
                 if (acc.isEmpty()) return@fold acc.apply { add(call) }
                 val last = acc.last()
                 if (call.number == last.number && call.start <= last.start + last.duration * 1000L + 15 * 60 * 1000L) {
-                    println(call)
-                    println(last)
                     acc[acc.size - 1] = last.copy(duration = last.duration + call.duration)
                 } else {
                     acc.add(call)

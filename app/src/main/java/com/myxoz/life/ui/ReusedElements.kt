@@ -1,13 +1,21 @@
 package com.myxoz.life.ui
 
+import android.annotation.SuppressLint
+import androidx.activity.compose.PredictiveBackHandler
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.animate
 import androidx.compose.animation.core.tween
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
+import androidx.compose.foundation.gestures.detectVerticalDragGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.RowScope
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -15,7 +23,12 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -24,11 +37,21 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.layout.Layout
+import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.times
 import com.myxoz.life.ui.theme.Colors
 import com.myxoz.life.utils.combinedRippleClick
 import com.myxoz.life.utils.rippleClick
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.launch
+import kotlin.math.pow
 
 @Composable
 fun ActionBar(smallActionClick: (()->Unit)?, smallContent: (@Composable ()->Unit)?, color: Color, onLargeClick: ()->Unit, largeContent: @Composable ()->Unit){
@@ -137,5 +160,149 @@ fun Chip(onClick: (()->Unit)?=null, onHold: (()->Unit)?=null, spacing: Dp =0.dp,
         verticalAlignment = Alignment.CenterVertically
     ) {
         content()
+    }
+}
+@SuppressLint("StateFlowValueCalledInComposition")
+@OptIn(ExperimentalFoundationApi::class)
+@Composable
+fun ThreeStateBottomSheet(
+    state: ThreeStateBottomSheetState,
+    minHeight: Dp,
+    color: Color,
+    innerPadding: PaddingValues,
+    content: @Composable () -> Unit,
+) {
+    val screenHeightDp = LocalConfiguration.current.screenHeightDp.dp + 1.dp /* Because rounded down */
+    Box(
+        Modifier
+            .fillMaxSize(),
+        contentAlignment = Alignment.BottomCenter
+    ) {
+        val density = LocalDensity.current
+        var maxHeight by remember { mutableStateOf(0.dp) }
+        val offset by state.offset.collectAsState()
+        val minHeightPx = with(density) { minHeight.toPx() }
+        val screenHeightPx = with(density) { screenHeightDp.toPx()  } - minHeightPx
+        val heightDp = with(density) {minHeight + offset.toDp()}.coerceIn(minHeight, screenHeightDp)
+        val coroutineScope = rememberCoroutineScope()
+        val lastVelocity by state.lastVelocity.collectAsState()
+        val snapHeightPx = 0.7f * screenHeightPx
+        fun getSnapTarget(): Float{
+            if(lastVelocity > 0f  && offset < snapHeightPx) return 0f
+            if((lastVelocity > 0f && offset > snapHeightPx && offset <= screenHeightPx) || (lastVelocity < 0f && offset < snapHeightPx)) return snapHeightPx
+            return screenHeightPx
+        }
+        val snapHeightDp = with(density) { snapHeightPx.toDp() }
+        state.snapHeight.value = minHeight + snapHeightDp
+        state.height.value = heightDp
+        state.progress.value = (offset / snapHeightPx).coerceIn(0f, 1f)
+        val shape = remember {
+            RoundedCornerShape(topStart = 20.dp, topEnd = 20.dp)
+        }
+        PredictiveBackHandler(offset!=0f) {
+            val ititialOffset = offset
+            it.collect { prog ->
+                state.offset.value = ititialOffset * (1-prog.progress.pow(0.5f) * .25f)
+            }
+            state.expandTo(0, screenHeightPx.toInt(), minHeightPx)
+        }
+        Box(
+            Modifier
+                .fillMaxWidth()
+                .height(heightDp)
+                .background(color, shape)
+                .clip(shape)
+                .pointerInput(Unit){
+                    detectVerticalDragGestures(
+                        onDragEnd = {
+                            coroutineScope.launch {
+                                animate(
+                                    offset,
+                                    getSnapTarget(),
+                                    lastVelocity,
+                                ){ a, _ ->
+                                    state.offset.value = a
+                                }
+                            }
+                        },
+                    ){ _, d ->
+                        state.lastVelocity.value = d
+                        state.offset.value += -d
+                    }
+                }
+                .rippleClick(offset == 0f){
+                    coroutineScope.launch {
+                        animate(0f, snapHeightPx){ a, _ -> state.offset.value = a }
+                    }
+                }
+                .padding(
+                    bottom = (1f-(offset/snapHeightPx).coerceIn(0f, 1f))*innerPadding.calculateBottomPadding(),
+                    top = (((offset-snapHeightPx)/(screenHeightPx-snapHeightPx)).coerceIn(0f, 1f))*innerPadding.calculateTopPadding()
+                )
+        ) {
+            MeasuredSheetContent(
+                {maxHeight = it}
+            ){
+                content()
+            }
+        }
+    }
+}
+class ThreeStateBottomSheetState{
+    val progress = MutableStateFlow(0f)
+    val offset = MutableStateFlow(0f)
+    val height = MutableStateFlow(0.dp)
+    val snapHeight = MutableStateFlow(0.dp)
+    val lastVelocity = MutableStateFlow(0f)
+    suspend fun expandTo(stateLevel: Int, screenHeightPx: Int, minHeightPx: Float){
+        val snapHeightPx = 0.7f * (screenHeightPx-minHeightPx)
+        val snapTarget = when (stateLevel) {
+            0 -> 0f
+            1 -> snapHeightPx
+            else -> screenHeightPx.toFloat()
+        }
+        animate(
+            offset.value,
+            snapTarget,
+            lastVelocity.value,
+        ){ a, v ->
+            offset.value = a
+            lastVelocity.value = v
+            progress.value = (offset.value / snapHeightPx).coerceIn(0f, 1f)
+        }
+        offset.value = snapTarget
+        lastVelocity.value = 0f
+        progress.value = (snapTarget / snapHeightPx).coerceIn(0f, 1f)
+        println("${offset.value} ${lastVelocity.value} ${progress.value}")
+    }
+}
+
+@Suppress("COMPOSE_APPLIER_CALL_MISMATCH")
+@Composable
+fun MeasuredSheetContent(
+    onHeightChanged: (Dp) -> Unit,
+    content: @Composable () -> Unit
+) {
+    val density = LocalDensity.current
+    Layout(
+        content = {
+            Column(
+                modifier = Modifier.onGloballyPositioned { coordinates ->
+                    val heightPx = coordinates.size.height
+                    val heightDp = with(density) { heightPx.toDp() }
+                    onHeightChanged(heightDp)
+                }
+            ) {
+                content()
+            }
+        }
+    ) { measurables, constraints ->
+        val placeable = measurables.first().measure(
+            constraints.copy(maxHeight = Constraints.Infinity)
+        )
+
+        layout(width = constraints.maxWidth, height = constraints.maxHeight) {
+            placeable.placeRelative(0, 0)
+        }
     }
 }

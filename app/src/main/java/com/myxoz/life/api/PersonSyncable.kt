@@ -165,11 +165,7 @@ class PersonSyncable(
             )
             ;
 
-            fun openPlatform(context: Context, handle: String, phoneNumber: String?) {
-                with(PlatformOpener(context, handle, phoneNumber)) {
-                    openApp()
-                }
-            }
+            fun openPlatform(context: Context, handle: String, phoneNumber: String?) = PlatformOpener(context, handle, phoneNumber).openApp()
 
             private class PlatformOpener(
                 val context: Context,

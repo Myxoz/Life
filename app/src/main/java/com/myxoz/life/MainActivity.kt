@@ -77,6 +77,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import org.json.JSONArray
 import org.json.JSONObject
 import java.time.LocalDate
@@ -97,7 +98,7 @@ class MainActivity : ComponentActivity() {
     private val contacsViewModel by viewModel{ ContactsViewModel() }
     private val transactionFeedViewModel by viewModel{ TransactionFeedViewModel(db, ZoneId.systemDefault()) }
     private val socialGraphViewModel by viewModel { SocialGraphViewModel(db) }
-    private val mapViewModel by viewModel { MapViewModel() }
+    private val mapViewModel by viewModel { MapViewModel(prefs) }
     private val photoPicker = PhotoPicker()
     private val imagePickerLauncher = registerForActivityResult(
         ActivityResultContracts.StartActivityForResult()
@@ -150,7 +151,7 @@ class MainActivity : ComponentActivity() {
                     if(!settings.features.stepCounting.has.value){
                         db.proposedSteps.clearAll() // Not recording is expensive, we just discard all proposedSteps each time
                     }
-                    with(Dispatchers.IO){
+                    withContext(Dispatchers.IO){
                         val payments = prefs.getString("payments", null)?:"[]"
                         val json = JSONArray(payments).jsonObjArray.toMutableList()
                         for(payment in json.toList()){

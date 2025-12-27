@@ -1062,11 +1062,11 @@ fun <T: TagLike> TimeBasedTagLikeSelection(allSelectables: List<T>, defSelection
                     Modifier
                         .background(Colors.SECONDARY, CircleShape)
                         .clip(CircleShape)
-                        .padding(horizontal = 10.dp, vertical = 5.dp)
                         .rippleClick{
                             selectedTagLike.removeIf { it.type == item.type}
                             setVehiclesTo(selectedTagLike)
                         }
+                        .padding(horizontal = 10.dp, vertical = 5.dp)
                     ,
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(3.dp)
@@ -1129,7 +1129,6 @@ fun <T: TagLike> TimeBasedTagLikeSelection(allSelectables: List<T>, defSelection
                     Modifier
                         .background(Colors.SECONDARY, CircleShape)
                         .clip(CircleShape)
-                        .padding(horizontal = 10.dp, vertical = 5.dp)
                         .rippleClick{
                             selectedTagLike.add(TimedTagLikeContainer(
                                 item,
@@ -1138,6 +1137,7 @@ fun <T: TagLike> TimeBasedTagLikeSelection(allSelectables: List<T>, defSelection
                             setVehiclesTo(selectedTagLike)
                             itemWasAdded=true
                         }
+                        .padding(horizontal = 10.dp, vertical = 5.dp)
                     ,
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(3.dp)

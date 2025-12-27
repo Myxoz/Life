@@ -71,6 +71,7 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.core.net.toUri
 import androidx.lifecycle.Observer
+import androidx.lifecycle.SavedStateHandle
 import androidx.navigation.NavController
 import com.myxoz.life.LocalNavController
 import com.myxoz.life.LocalSettings
@@ -257,8 +258,12 @@ fun ProfileInfo(largeDataCache: LargeDataCache, profileInfoModel: ProfileInfoMod
                                             Modifier
                                                 .background(Colors.TERTIARY, CircleShape)
                                                 .clip(CircleShape)
-                                                .rippleClick(isExtended){
-                                                    it.platform.openPlatform(context, it.handle, profileInfoModel.phone.value)
+                                                .rippleClick(isExtended) {
+                                                    it.platform.openPlatform(
+                                                        context,
+                                                        it.handle,
+                                                        profileInfoModel.phone.value
+                                                    )
                                                 }
                                                 .padding(vertical = 5.dp, horizontal = 10.dp)
                                                 .height(iconSize + 4.dp)
@@ -297,8 +302,9 @@ fun ProfileInfo(largeDataCache: LargeDataCache, profileInfoModel: ProfileInfoMod
                                                 Modifier
                                                     .size(iconSize)
                                                     .clip(CircleShape)
-                                                    .rippleClick{
-                                                        val cp = profileInfoModel.platformInputs.value.toMutableList()
+                                                    .rippleClick {
+                                                        val cp =
+                                                            profileInfoModel.platformInputs.value.toMutableList()
                                                         cp.removeAt(i)
                                                         profileInfoModel.platformInputs.value = cp
                                                     }
@@ -324,8 +330,9 @@ fun ProfileInfo(largeDataCache: LargeDataCache, profileInfoModel: ProfileInfoMod
                                         Modifier
                                             .background(Colors.TERTIARY, CircleShape)
                                             .clip(CircleShape)
-                                            .rippleClick{
-                                                val cp = profileInfoModel.platformInputs.value.toMutableList()
+                                            .rippleClick {
+                                                val cp =
+                                                    profileInfoModel.platformInputs.value.toMutableList()
                                                 cp.add("")
                                                 profileInfoModel.platformInputs.value = cp
                                             }
@@ -395,7 +402,7 @@ fun ProfileInfo(largeDataCache: LargeDataCache, profileInfoModel: ProfileInfoMod
                         Modifier
                             .border(2.dp, Colors.TERTIARY, CircleShape)
                             .clip(CircleShape)
-                            .rippleClick{
+                            .rippleClick {
                                 Location.openLink(
                                     context,
                                     HVV.constructLink(
@@ -421,7 +428,7 @@ fun ProfileInfo(largeDataCache: LargeDataCache, profileInfoModel: ProfileInfoMod
                         Modifier
                             .border(2.dp, Colors.TERTIARY, CircleShape)
                             .clip(CircleShape)
-                            .rippleClick{
+                            .rippleClick {
                                 Location.openInGoogleMaps(context, profileInfoModel.home.value)
                             }
                             .padding(horizontal = 10.dp, vertical = 5.dp)
@@ -527,7 +534,7 @@ fun ProfileInfo(largeDataCache: LargeDataCache, profileInfoModel: ProfileInfoMod
                     .offset(x = -offset)
                     .padding(10.dp)
                     .clip(CircleShape)
-                    .rippleClick{
+                    .rippleClick {
                         coroutineScope.launch {
                             profileInfoModel.setStateToDb(db)
                             profileInfoModel.isEditing.value = false
@@ -554,7 +561,7 @@ fun ProfileInfo(largeDataCache: LargeDataCache, profileInfoModel: ProfileInfoMod
                 .padding(10.dp)
                 .clip(CircleShape)
                 .rippleClick {
-                    if(isEditing) {
+                    if (isEditing) {
                         coroutineScope.launch {
                             profileInfoModel.saveAndSync(db)
                             focusManager.clearFocus(true)
@@ -639,7 +646,7 @@ fun ListEditingField(isEditing: Boolean, displayText: String, subtext: String?, 
                 text.value = it
             },
             Modifier
-                .onFocusChanged{
+                .onFocusChanged {
                     hasFocus = it.hasFocus
                 }
                 .fillMaxWidth(),
@@ -683,16 +690,38 @@ fun ListEditingField(isEditing: Boolean, displayText: String, subtext: String?, 
 }
 fun String.censorLast(amount: Int, censor: String) = substring(0, (length - amount).coerceIn(0, length))+substring((length - amount).coerceIn(0, length)).map { c -> if(!c.isWhitespace()) censor else c }.joinToString("")
 
-fun <T> NavController.navigateForResult(route: String, key: String, onComplete: (T)->Unit){
+fun <T> NavController.navigateForResult(route: String, key: String, addAditonalContext: (NavigateForResultAditionalContext.()->Unit)? = null, onComplete: (T)->Unit){
+    println("Navigating for result in $key")
     val handle = currentBackStackEntry?.savedStateHandle ?: return
+    handle.remove<T>(key)
     val data = handle.getLiveData<T>(key)
+    val additionalContext = if(addAditonalContext!=null) NavigateForResultAditionalContext(handle).apply { addAditonalContext() } else null
     navigate(route)
     val observer = object: Observer<T> {
         override fun onChanged(value: T) {
+            println("Received result for $key")
             onComplete(value)
             data.removeObserver(this)
-            handle.remove<String?>(key)
+            handle.remove<T>(key)
+            additionalContext?.clean()
         }
     }
     data.observeForever(observer)
+}
+class NavigateForResultAditionalContext(val savedStateHandle: SavedStateHandle){
+    private val addedKeys = mutableSetOf<String>()
+    fun set(key: String, value: String) {
+        savedStateHandle[key] = value
+        addedKeys.add(key)
+    }
+    fun remove(key: String){
+        savedStateHandle.remove<String?>(key)
+        addedKeys.remove(key)
+    }
+    fun setOrRemove(key: String, value: String?) = if(value == null) remove(key) else set(key, value)
+    fun clean(){
+        for (key in addedKeys) {
+            savedStateHandle.remove<String>(key)
+        }
+    }
 }

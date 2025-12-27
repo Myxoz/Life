@@ -1,15 +1,21 @@
 package com.myxoz.life.viewmodels
 
+import android.content.SharedPreferences
+import androidx.core.content.edit
 import androidx.lifecycle.ViewModel
 import com.mapbox.geojson.Point
+import com.mapbox.maps.CameraState
+import com.mapbox.maps.extension.compose.animation.viewport.MapViewportState
 import com.myxoz.life.api.API
 import com.myxoz.life.api.Location
+import com.myxoz.life.ui.ThreeStateBottomSheetState
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 
-class MapViewModel: ViewModel() {
+class MapViewModel(val prefs: SharedPreferences): ViewModel() {
     private val _sheetLocation = MutableStateFlow<Location?>(null)
     val sheetLocation = _sheetLocation.asStateFlow()
+    val sheetState = ThreeStateBottomSheetState()
     val selectedCoordinates = MutableStateFlow<Point?>(null)
     var lifeSearchResults = MutableStateFlow<List<Location>?>(null)
     var mapBoxSearchResults = MutableStateFlow<List<Location>?>(null)
@@ -23,6 +29,25 @@ class MapViewModel: ViewModel() {
     val numberInput = MutableStateFlow<String?>(null)
     val cityCountryInput = MutableStateFlow<String?>(null)
     val lifeQuery = MutableStateFlow<String?>(null)
+    val cameraOptions: MapViewportState by lazy {
+        MapViewportState().apply {
+            setCameraOptions {
+                zoom(prefs.getFloat("map_zoom", 10f).toDouble())
+                center(Point.fromLngLat(prefs.getFloat("map_center_long", 9.9872f).toDouble(), prefs.getFloat("map_center_lat", 53.5488f).toDouble()))
+                pitch(prefs.getFloat("map_pitch", 10f).toDouble())
+                bearing(prefs.getFloat("map_bearing", 10f).toDouble())
+            }
+        }
+    }
+    fun saveCameraPosition(state: CameraState){
+        prefs.edit {
+            putFloat("map_zoom", state.zoom.toFloat())
+            putFloat("map_center_long", state.center.longitude().toFloat())
+            putFloat("map_center_lat", state.center.latitude().toFloat())
+            putFloat("map_pitch", state.pitch.toFloat())
+            putFloat("map_bearing", state.bearing.toFloat())
+        }
+    }
     fun setInputValuesByLocation(location: Location){
         nameInput.value = location.name
         numberInput.value = location.number

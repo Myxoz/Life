@@ -7,6 +7,7 @@ import com.myxoz.life.api.forEach
 import com.myxoz.life.dbwrapper.PeopleMappingEntity
 import com.myxoz.life.dbwrapper.StorageManager
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import org.json.JSONArray
 import org.json.JSONObject
 
@@ -27,7 +28,7 @@ interface PeopleEvent {
         @Composable
         fun GetFullNames(db: StorageManager, list: List<Long>, onDone: (List<PersonSyncable>)->Unit){
             LaunchedEffect(list) {
-                with(Dispatchers.IO){
+                withContext(Dispatchers.IO){
                     onDone(list
                         .mapNotNull { db.people.getPersonById(it) }
                         .map { PersonSyncable.from(db, it) }

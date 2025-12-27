@@ -236,7 +236,7 @@ fun DisplayTimeBlock(timeInMs: Long?, openScreenTime: ()->Unit){
             .border(1.dp, Colors.TERTIARY,  RoundedCornerShape(25.dp))
             .background(Colors.SECONDARY, RoundedCornerShape(25.dp))
             .clip(RoundedCornerShape(25.dp))
-            .rippleClick(function = openScreenTime)
+            .rippleClick(run = openScreenTime)
             .padding(20.dp)
     ) {
         Text("Bildschirmzeit", style = TypoStyle(FontColor.SECONDARY, FontSize.MEDIUM))
@@ -330,7 +330,7 @@ fun BankingBlock(bankingEntries: List<BankingEntity>, openBankingMenu: ()->Unit)
             .border(1.dp, Colors.TERTIARY,  RoundedCornerShape(25.dp))
             .background(Colors.SECONDARY, RoundedCornerShape(25.dp))
             .clip(RoundedCornerShape(25.dp))
-            .rippleClick(function = openBankingMenu)
+            .rippleClick(run = openBankingMenu)
             .padding(20.dp)
     ) {
         Text("Überweisungen", style = TypoStyle(FontColor.SECONDARY, FontSize.MEDIUM))

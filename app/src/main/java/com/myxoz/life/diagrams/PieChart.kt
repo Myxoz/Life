@@ -95,9 +95,7 @@ class PieChart(){
         data class PieChartPart(val color: Color, val value: Double)
         fun build(builder: PieChartBuilder.()->Unit): Map<String, PieChartPart>{
             val pieChartBuilder = PieChartBuilder()
-            with(pieChartBuilder){
-                builder()
-            }
+            pieChartBuilder.builder()
             return pieChartBuilder.parts
         }
         class PieChartBuilder {

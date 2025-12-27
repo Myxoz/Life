@@ -1,22 +1,18 @@
 package com.myxoz.life.subscreens
 
-import android.annotation.SuppressLint
 import android.widget.Toast
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.core.animate
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.scaleIn
 import androidx.compose.animation.scaleOut
-import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
-import androidx.compose.foundation.gestures.detectVerticalDragGestures
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -40,12 +36,12 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableDoubleStateOf
 import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
@@ -58,31 +54,27 @@ import androidx.compose.ui.graphics.Matrix
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.asComposePath
 import androidx.compose.ui.graphics.toArgb
-import androidx.compose.ui.input.pointer.pointerInput
-import androidx.compose.ui.layout.Layout
-import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.TextRange
+import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.text.input.TextFieldValue
-import androidx.compose.ui.unit.Constraints
-import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.times
 import androidx.graphics.shapes.Morph
 import androidx.graphics.shapes.toPath
+import androidx.lifecycle.viewModelScope
 import com.mapbox.geojson.Point
 import com.mapbox.maps.CameraOptions
 import com.mapbox.maps.EdgeInsets
 import com.mapbox.maps.MapboxExperimental
-import com.mapbox.maps.extension.compose.ComposeMapInitOptions
 import com.mapbox.maps.extension.compose.MapEffect
 import com.mapbox.maps.extension.compose.MapboxMap
-import com.mapbox.maps.extension.compose.animation.viewport.rememberMapViewportState
 import com.mapbox.maps.extension.compose.annotation.generated.PointAnnotation
 import com.mapbox.maps.extension.compose.annotation.generated.PolygonAnnotationGroup
 import com.mapbox.maps.extension.compose.annotation.rememberIconImage
@@ -96,6 +88,7 @@ import com.mapbox.maps.plugin.annotation.generated.PolygonAnnotationOptions
 import com.mapbox.maps.plugin.gestures.OnMapClickListener
 import com.mapbox.maps.plugin.locationcomponent.createDefault2DPuck
 import com.mapbox.maps.plugin.locationcomponent.location
+import com.myxoz.life.LocalNavController
 import com.myxoz.life.LocalSettings
 import com.myxoz.life.LocalStorage
 import com.myxoz.life.R
@@ -104,6 +97,8 @@ import com.myxoz.life.api.jsonObjArray
 import com.myxoz.life.integration.MapBoxAPI
 import com.myxoz.life.subscreens.displayperson.ListEditingField
 import com.myxoz.life.subscreens.displayperson.ListEntry
+import com.myxoz.life.subscreens.displayperson.navigateForResult
+import com.myxoz.life.ui.ThreeStateBottomSheet
 import com.myxoz.life.ui.theme.Colors
 import com.myxoz.life.ui.theme.FontColor
 import com.myxoz.life.ui.theme.FontFamily
@@ -119,7 +114,9 @@ import com.myxoz.life.utils.toShape
 import com.myxoz.life.utils.transformed
 import com.myxoz.life.viewmodels.MapViewModel
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.drop
+import kotlinx.coroutines.flow.filterNotNull
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import org.json.JSONObject
 import kotlin.math.asin
@@ -128,41 +125,29 @@ import kotlin.math.cos
 import kotlin.math.ln
 import kotlin.math.sin
 
-
 @Suppress("COMPOSE_APPLIER_CALL_MISMATCH")
-@OptIn(MapboxExperimental::class, ExperimentalMaterial3Api::class)
+@OptIn(MapboxExperimental::class, ExperimentalMaterial3Api::class,
+    com.mapbox.annotation.MapboxExperimental::class
+)
 @Composable
 fun MapBoxMap(mapViewModel: MapViewModel){
+    val nav = LocalNavController.current
     val screenHeight = LocalConfiguration.current.screenHeightDp.dp
     var sheetHeight by remember { mutableStateOf(0.dp) }
     var selectCoordsOnMap by remember { mutableStateOf(false) }
     val sheetLocation by mapViewModel.sheetLocation.collectAsState()
     val selectedCoordinates by mapViewModel.selectedCoordinates.collectAsState()
     val isEditing by mapViewModel.isEditing.collectAsState()
-    val state = remember { ThreeStateBottomSheetState() }
+    val state = mapViewModel.sheetState
     val minSheetHeight = FontSize.XLARGE.size.toDp() + 30.dp * 2
     var refetchLocations by remember { mutableLongStateOf(System.currentTimeMillis()) }
-    BackHandler(sheetLocation!=null || selectedCoordinates != null) {
-        mapViewModel.setSheetLocation(null)
-        mapViewModel.decodedLocation.value = null
-        selectCoordsOnMap = false
-        mapViewModel.isEditing.value = false
-    }
     Scaffold(
         containerColor = Colors.BACKGROUND
     ) { innerPadding ->
         val snapHeight by state.snapHeight.collectAsState()
         val db = LocalStorage.current
         var allLocations by remember { mutableStateOf(listOf<Location>()) }
-        var zoom by remember { mutableDoubleStateOf(10.0) }
-        val viewPortState = rememberMapViewportState {
-            setCameraOptions {
-                zoom(zoom)
-                center(Point.fromLngLat(9.9872, 53.5488))
-                pitch(0.0)
-                bearing(0.0)
-            }
-        }
+        val viewPortState = mapViewModel.cameraOptions
         var mapBoxInitialRender by remember { mutableStateOf(false) }
         val coroutineScope = rememberCoroutineScope()
         LaunchedEffect(refetchLocations) {
@@ -172,13 +157,6 @@ fun MapBoxMap(mapViewModel: MapViewModel){
         MapboxMap(
             Modifier
                 .fillMaxWidth(),
-            composeMapInitOptions = with(LocalDensity.current) {
-                remember {
-                    ComposeMapInitOptions(density).apply {
-                        // What to do here?
-                    }
-                }
-            },
             mapViewportState = viewPortState,
             attribution = { Attribution(Modifier.padding(innerPadding).padding(bottom = shrunkArea)) },
             logo = { Logo(Modifier.padding(innerPadding).padding(bottom = shrunkArea)) },
@@ -222,6 +200,9 @@ fun MapBoxMap(mapViewModel: MapViewModel){
                 it.location.puckBearingEnabled = true
                 it.location.locationPuck = createDefault2DPuck(withBearing = true)
                 it.location.puckBearing = PuckBearing.HEADING
+                it.mapboxMap.subscribeCameraChangedCoalesced { state ->
+                    mapViewModel.saveCameraPosition(state.cameraState)
+                }
             }
             val density = LocalDensity.current
             val shrunkAreaPx = with(density) { shrunkArea.toPx().toDouble() }
@@ -313,6 +294,12 @@ fun MapBoxMap(mapViewModel: MapViewModel){
                 state.height.collect {
                     sheetHeight = it
                 }
+            }
+            BackHandler(sheetLocation!=null || selectedCoordinates != null) {
+                mapViewModel.setSheetLocation(null)
+                mapViewModel.decodedLocation.value = null
+                selectCoordsOnMap = false
+                mapViewModel.isEditing.value = false
             }
             Column(
                 Modifier
@@ -617,7 +604,9 @@ fun MapBoxMap(mapViewModel: MapViewModel){
                         )
                     }
                     LaunchedEffect(lifeQueryValue.text) {
-                        val query = lifeQueryValue.text.takeIf { it.isNotBlank() } ?: return@LaunchedEffect
+                        val query = lifeQueryValue.text.takeIf { it.isNotBlank() } ?: return@LaunchedEffect Unit.apply {
+                            mapViewModel.lifeSearchResults.value = null
+                        }
                         val locations = db.location.getAllLocations().map { Location.from(it) }
                         mapViewModel.lifeSearchResults.value = locations.filteredWith(query, {
                             it.toAddress()
@@ -636,6 +625,11 @@ fun MapBoxMap(mapViewModel: MapViewModel){
                         val focusManager = LocalFocusManager.current
                         val focusRequester = remember { FocusRequester() }
                         val density = LocalDensity.current
+                        BackHandler(lifeQueryValue.text.isNotEmpty()) {
+                            focusManager.clearFocus()
+                            mapViewModel.lifeQuery.value = null
+                            lifeQueryValue = TextFieldValue("")
+                        }
                         BasicTextField(
                             lifeQueryValue,
                             {
@@ -647,6 +641,10 @@ fun MapBoxMap(mapViewModel: MapViewModel){
                                 .background(Colors.SECONDARY, RoundedCornerShape(10.dp))
                                 .fillMaxWidth()
                                 .clip(RoundedCornerShape(10.dp))
+                                .focusRequester(focusRequester)
+                                .onFocusChanged {
+                                    hasFocus = it.hasFocus || it.isFocused || it.isCaptured
+                                }
                                 .rippleClick{
                                     coroutineScope.launch {
                                         state.expandTo(1, screenHeightPx.toInt(), with(density) {minSheetHeight.toPx()})
@@ -658,16 +656,12 @@ fun MapBoxMap(mapViewModel: MapViewModel){
                                         focusRequester.requestFocus()
                                     }
                                 }
-                                .onFocusChanged {
-                                    hasFocus = it.hasFocus || it.isFocused || it.isCaptured
-                                }
-                                .focusRequester(focusRequester)
                                 .padding(horizontal = 15.dp, vertical = 10.dp)
                             ,
                             textStyle = TypoStyle(FontColor.PRIMARY, FontSize.LARGE),
                             cursorBrush = SolidColor(Colors.PRIMARYFONT),
                             keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Sentences),
-                            enabled = progress != 0f
+                            enabled = progress > 0.1f
                         ) { innerTextField ->
                             if(hasFocus || mapViewModel.lifeQuery.value!=null) {
                                 innerTextField()
@@ -679,43 +673,89 @@ fun MapBoxMap(mapViewModel: MapViewModel){
                             }
                         }
                     }
-                    Text(
-                        "Life Search",
+                    val screenWidthPx = with(LocalDensity.current) { LocalConfiguration.current.screenWidthDp.dp.toPx() }
+                    fun selectLocation(location: Location, newComposition: Boolean){
+                        mapViewModel.setSheetLocation(location)
+                        val targetMetersOnScreen = 2 * location.radiusM / .002f // TODO TWEAK
+
+                        val metersPerPixel = targetMetersOnScreen / screenWidthPx
+                        val zoom = ln(EARTH_R * cos(Math.toRadians(location.lat)) / metersPerPixel) / ln(2.0)
+                        mapViewModel.viewModelScope.launch {
+                            snapshotFlow { mapViewModel.cameraOptions.cameraState }
+                                .filterNotNull()
+                                .let { if(newComposition) it.drop(1) else it }
+                                .first()
+                            mapViewModel.cameraOptions.flyTo(
+                                cameraOptions = CameraOptions.Builder()
+                                    .center(Point.fromLngLat(location.longitude, location.lat))
+                                    .zoom(zoom.coerceIn(0.0, 22.0))
+                                    .bearing(0.0)
+                                    .pitch(0.0)
+                                    .build()
+                            )
+                        }
+                    }
+                    Row(
                         Modifier
+                            .fillMaxWidth()
                             .offset(y = (1-progress)*10.dp)
                         ,
-                        style = TypoStyle(FontColor.SECONDARY, FontSize.MEDIUMM)
-                    )
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Text(
+                            "Life Search",
+                            style = TypoStyle(FontColor.SECONDARY, FontSize.MEDIUMM)
+                        )
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(5.dp)
+                        ) {
+                            Text(
+                                "Alle",
+                                Modifier
+                                    .rippleClick{
+                                        nav.navigateForResult<String?>(
+                                            "pick/existing/location",
+                                            "pelocation",
+                                            {
+                                                setOrRemove("pequery", mapViewModel.lifeQuery.value)
+                                            }
+                                        ) {
+                                            selectLocation(Location.fromJSON(JSONObject(it?:return@navigateForResult)), true)
+                                        }
+                                    }
+                                ,
+                                style = TypoStyle(FontColor.TERTIARY, FontSize.MEDIUMM)
+                            )
+                            Icon(painterResource(R.drawable.arrow_right), "All", Modifier.size(FontSize.MEDIUMM.size.toDp()), Colors.TERTIARYFONT)
+                        }
+                    }
                     Spacer(Modifier.height(10.dp))
                     Column(
                         Modifier
                             .fillMaxWidth()
-                            .background(Colors.SECONDARY, RoundedCornerShape(15.dp))
+                            .then(
+                                if(lifeSearchResults.isNullOrEmpty())
+                                    Modifier.border(2.dp, Colors.SECONDARY, RoundedCornerShape(15.dp))
+                                else
+                                    Modifier.background(Colors.SECONDARY, RoundedCornerShape(15.dp))
+                            )
                     ) {
-                        val screenWidthPx = with(LocalDensity.current) { LocalConfiguration.current.screenWidthDp.dp.toPx() }
+                        if(lifeSearchResults.isNullOrEmpty()) {
+                            Text(
+                                if(lifeSearchResults==null) "Suche etwas" else "Keine Ergebnisse",
+                                Modifier.padding(vertical = 15.dp).fillMaxWidth(),
+                                style = TypoStyle(FontColor.SECONDARY, FontSize.LARGE).copy(fontStyle = FontStyle.Italic),
+                                textAlign = TextAlign.Center
+                            )
+                        }
                         lifeSearchResults?.forEach {
                             Row(
                                 Modifier
                                     .clip(RoundedCornerShape(15.dp))
                                     .fillMaxWidth()
                                     .rippleClick{
-                                        mapViewModel.setSheetLocation(it)
-                                        // ZOOM INTO THE LOCATION HERE
-                                        coroutineScope.launch {
-                                            val targetMetersOnScreen = 2 * it.radiusM / .002f //  TODO TWEAK
-
-                                            val metersPerPixel = targetMetersOnScreen / screenWidthPx
-                                            val zoom = ln(EARTH_R * cos(Math.toRadians(it.lat)) / metersPerPixel) / ln(2.0)
-
-                                            viewPortState.flyTo(
-                                                cameraOptions = CameraOptions.Builder()
-                                                    .center(Point.fromLngLat(it.longitude, it.lat))
-                                                    .zoom(zoom.coerceIn(0.0, 22.0))
-                                                    .bearing(0.0)
-                                                    .pitch(0.0)
-                                                    .build()
-                                            )
-                                        }
+                                        selectLocation(it, false)
                                     }
                                     .padding(horizontal = 15.dp, vertical = 15.dp)
                                 ,
@@ -776,136 +816,4 @@ private fun circleRing(
 
     ring += ring.first() // close ring
     return ring
-}
-@SuppressLint("StateFlowValueCalledInComposition")
-@OptIn(ExperimentalFoundationApi::class)
-@Composable
-fun ThreeStateBottomSheet(
-    state: ThreeStateBottomSheetState,
-    minHeight: Dp,
-    color: Color,
-    innerPadding: PaddingValues,
-    content: @Composable () -> Unit,
-) {
-    val screenHeightDp = LocalConfiguration.current.screenHeightDp.dp + 1.dp /* Because rounded down */
-    Box(
-        Modifier
-            .fillMaxSize(),
-        contentAlignment = Alignment.BottomCenter
-    ) {
-        val density = LocalDensity.current
-        var maxHeight by remember { mutableStateOf(0.dp) }
-        val offset by state.offset.collectAsState()
-        val minHeightPx = with(density) { minHeight.toPx() }
-        val screenHeightPx = with(density) { screenHeightDp.toPx()  } - minHeightPx
-        val heightDp = with(density) {minHeight + offset.toDp()}.coerceIn(minHeight, screenHeightDp)
-        val coroutineScope = rememberCoroutineScope()
-        val lastVelocity by state.lastVelocity.collectAsState()
-        val snapHeightPx = 0.7f * screenHeightPx
-        fun getSnapTarget(): Float{
-            if(lastVelocity > 0f  && offset < snapHeightPx) return 0f
-            if((lastVelocity > 0f && offset > snapHeightPx && offset <= screenHeightPx) || (lastVelocity < 0f && offset < snapHeightPx)) return snapHeightPx
-            return screenHeightPx
-        }
-        val snapHeightDp = with(density) { snapHeightPx.toDp() }
-        state.snapHeight.value = minHeight + snapHeightDp
-        state.height.value = heightDp
-        state.progress.value = (offset / snapHeightPx).coerceIn(0f, 1f)
-        val shape = remember {
-            RoundedCornerShape(topStart = 20.dp, topEnd = 20.dp)
-        }
-        Box(
-            Modifier
-                .fillMaxWidth()
-                .height(heightDp)
-                .background(color, shape)
-                .clip(shape)
-                .pointerInput(Unit){
-                    detectVerticalDragGestures(
-                        onDragEnd = {
-                            coroutineScope.launch {
-                                animate(
-                                    offset,
-                                    getSnapTarget(),
-                                    lastVelocity,
-                                ){ a, _ ->
-                                    state.offset.value = a
-                                }
-                            }
-                        },
-                    ){ _, d ->
-                        state.lastVelocity.value = d
-                        state.offset.value += -d
-                    }
-                }
-                .rippleClick(offset == 0f){
-                    coroutineScope.launch {
-                        animate(0f, snapHeightPx){ a, _ -> state.offset.value = a }
-                    }
-                }
-                .padding(
-                    bottom = (1f-(offset/snapHeightPx).coerceIn(0f, 1f))*innerPadding.calculateBottomPadding(),
-                    top = (((offset-snapHeightPx)/(screenHeightPx-snapHeightPx)).coerceIn(0f, 1f))*innerPadding.calculateTopPadding()
-                )
-        ) {
-            MeasuredSheetContent(
-                {maxHeight = it}
-            ){
-                content()
-            }
-        }
-    }
-}
-class ThreeStateBottomSheetState(){
-    val progress = MutableStateFlow(0f)
-    val offset = MutableStateFlow(0f)
-    val height = MutableStateFlow(0.dp)
-    val snapHeight = MutableStateFlow(0.dp)
-    val lastVelocity = MutableStateFlow(0f)
-    suspend fun expandTo(stateLevel: Int, screenHeightPx: Int, minHeightPx: Float){
-        val snapHeightPx = 0.7f * (screenHeightPx-minHeightPx)
-        val snapTarget = when (stateLevel) {
-            0 -> 0f
-            1 -> snapHeightPx
-            else -> screenHeightPx.toFloat()
-        }
-        animate(
-            offset.value,
-            snapTarget,
-            lastVelocity.value,
-        ){ a, _ ->
-            offset.value = a
-        }
-    }
-}
-
-@Suppress("COMPOSE_APPLIER_CALL_MISMATCH")
-@Composable
-fun MeasuredSheetContent(
-    onHeightChanged: (Dp) -> Unit,
-    content: @Composable () -> Unit
-) {
-    val density = LocalDensity.current
-
-    Layout(
-        content = {
-            Column(
-                modifier = Modifier.onGloballyPositioned { coordinates ->
-                    val heightPx = coordinates.size.height
-                    val heightDp = with(density) { heightPx.toDp() }
-                    onHeightChanged(heightDp)
-                }
-            ) {
-                content()
-            }
-        }
-    ) { measurables, constraints ->
-        val placeable = measurables.first().measure(
-            constraints.copy(maxHeight = Constraints.Infinity)
-        )
-
-        layout(width = constraints.maxWidth, height = constraints.maxHeight) {
-            placeable.placeRelative(0, 0)
-        }
-    }
 }

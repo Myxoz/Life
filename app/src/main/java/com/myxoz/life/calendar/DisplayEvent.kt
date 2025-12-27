@@ -63,6 +63,7 @@ import com.myxoz.life.viewmodels.CalendarViewModel
 import com.myxoz.life.viewmodels.ProfileInfoModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
@@ -199,7 +200,7 @@ fun DisplayEvent(fullEvent: SyncedEvent, profileInfoModel: ProfileInfoModel, cal
             var to: Location? by remember { mutableStateOf(null) }
             val size = FontSize.MEDIUM.size.toDp()
             LaunchedEffect(Unit) {
-                with(Dispatchers.IO) {
+                withContext(Dispatchers.IO) {
                     db.location.getLocationById(fullEvent.proposed.from)
                         ?.also { from = Location.from(it) }
                     db.location.getLocationById(fullEvent.proposed.to)

@@ -15,7 +15,7 @@ import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.sp
 
 @Composable
-fun Modifier.rippleClick(enabled: Boolean=true, function: ()->Unit): Modifier = this.clickable( remember { MutableInteractionSource() }, ripple(), onClick = function, enabled = enabled)
+fun Modifier.rippleClick(enabled: Boolean=true, run: ()->Unit): Modifier = this.clickable( remember { MutableInteractionSource() }, ripple(), onClick = run, enabled = enabled)
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
