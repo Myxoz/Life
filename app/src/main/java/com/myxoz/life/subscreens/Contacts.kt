@@ -7,6 +7,7 @@ import android.provider.ContactsContract
 import android.widget.Toast
 import androidx.compose.animation.core.Animatable
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.gestures.Orientation
 import androidx.compose.foundation.gestures.draggable
 import androidx.compose.foundation.gestures.rememberDraggableState
@@ -15,6 +16,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -102,6 +104,7 @@ fun Contacts(contactsViewModel: ContactsViewModel, personViewModel: ProfileInfoM
             val deviceContacts by contactsViewModel.deviceContacts.collectAsState()
             val hasContactPermission by settings.features.addNewPerson.has.collectAsState()
             var search by remember { mutableStateOf("") }
+            val showIcons by contactsViewModel.showIcons.collectAsState()
             val ordering = remember {
                 arrayOf('F', '*', 'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z', 'C')
             }
@@ -172,17 +175,18 @@ fun Contacts(contactsViewModel: ContactsViewModel, personViewModel: ProfileInfoM
                                     },
                                     Orientation.Horizontal,
                                     onDragStopped = {
-                                        if(swipedRight) {
+                                        if (swipedRight) {
                                             /* Empirically set this */
-                                            if(it > 1000f && contact.phoneNumber != null) {
+                                            if (it > 1000f && contact.phoneNumber != null) {
                                                 val number = ("tel:" + contact.phoneNumber).toUri()
-                                                val intent = Intent(if (settings.features.callFromLife.hasAssured()) Intent.ACTION_CALL else Intent.ACTION_DIAL)
+                                                val intent =
+                                                    Intent(if (settings.features.callFromLife.hasAssured()) Intent.ACTION_CALL else Intent.ACTION_DIAL)
                                                 intent.setData(number)
                                                 intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
                                                 context.startActivity(intent)
                                             }
                                         } else {
-                                            if(it < -1000f && platform != null) {
+                                            if (it < -1000f && platform != null) {
                                                 platform.openPlatform(
                                                     context,
                                                     contact.socials[0].handle,
@@ -198,7 +202,10 @@ fun Contacts(contactsViewModel: ContactsViewModel, personViewModel: ProfileInfoM
                             Row(
                                 Modifier
                                     .matchParentSize()
-                                    .background(if(offsetX.value == 0f) Colors.SECONDARY else if(swipedRight) if(contact.phoneNumber!=null) Colors.Transactions.PLUS else Colors.PRIMARYFONT else platform?.color ?: Colors.PRIMARYFONT, shape)
+                                    .background(
+                                        if (offsetX.value == 0f) Colors.SECONDARY else if (swipedRight) if (contact.phoneNumber != null) Colors.Transactions.PLUS else Colors.PRIMARYFONT else platform?.color
+                                            ?: Colors.PRIMARYFONT, shape
+                                    )
                                     .padding(horizontal = 10.dp)
                                 ,
                                 verticalAlignment = Alignment.CenterVertically,
@@ -218,29 +225,52 @@ fun Contacts(contactsViewModel: ContactsViewModel, personViewModel: ProfileInfoM
                                 Modifier
                                     .fillMaxSize()
                                     .offset { IntOffset(offsetX.value.roundToInt(), 0) }
-                                    .alpha(1-(abs(offsetX.value)/screenWidthPx*2).coerceIn(0f, 1f))
+                                    .alpha(
+                                        1 - (abs(offsetX.value) / screenWidthPx * 2).coerceIn(
+                                            0f,
+                                            1f
+                                        )
+                                    )
                                     .background(Colors.SECONDARY, shape)
                             ) {
                                 Row(
                                     Modifier
                                         .clip(shape)
                                         .fillMaxWidth()
-                                        .rippleClick{
-                                            if(contact.id != 0L) {
+                                        .rippleClick {
+                                            if (contact.id != 0L) {
                                                 coroutineScope.launch {
-                                                    personViewModel.openPersonDetails(contact.id, nav, db, context)
+                                                    personViewModel.openPersonDetails(
+                                                        contact.id,
+                                                        nav,
+                                                        db,
+                                                        context
+                                                    )
                                                 }
                                             } else {
                                                 // Open existing contact by number
-                                                val phoneNumber = contact.phoneNumber?:return@rippleClick
-                                                val uri = Uri.withAppendedPath(ContactsContract.PhoneLookup.CONTENT_FILTER_URI, Uri.encode(phoneNumber))
-                                                val cursor = context.contentResolver.query(uri,
+                                                val phoneNumber =
+                                                    contact.phoneNumber ?: return@rippleClick
+                                                val uri = Uri.withAppendedPath(
+                                                    ContactsContract.PhoneLookup.CONTENT_FILTER_URI,
+                                                    Uri.encode(phoneNumber)
+                                                )
+                                                val cursor = context.contentResolver.query(
+                                                    uri,
                                                     arrayOf(ContactsContract.PhoneLookup._ID),
-                                                    null, null, null)
+                                                    null, null, null
+                                                )
                                                 if (cursor != null && cursor.moveToFirst()) {
-                                                    val contactId = cursor.getLong(cursor.getColumnIndexOrThrow(ContactsContract.PhoneLookup._ID))
+                                                    val contactId = cursor.getLong(
+                                                        cursor.getColumnIndexOrThrow(
+                                                            ContactsContract.PhoneLookup._ID
+                                                        )
+                                                    )
                                                     cursor.close()
-                                                    val contactUri = ContentUris.withAppendedId(ContactsContract.Contacts.CONTENT_URI, contactId)
+                                                    val contactUri = ContentUris.withAppendedId(
+                                                        ContactsContract.Contacts.CONTENT_URI,
+                                                        contactId
+                                                    )
                                                     val intent = Intent(Intent.ACTION_VIEW)
                                                     intent.setData(contactUri)
                                                     context.startActivity(intent)
@@ -253,20 +283,60 @@ fun Contacts(contactsViewModel: ContactsViewModel, personViewModel: ProfileInfoM
                                     verticalAlignment = Alignment.CenterVertically
                                 ) {
                                     val fontSize = FontSize.LARGE.size.toDp()
-                                    Text(contact.name, style = TypoStyle(FontColor.PRIMARY, FontSize.LARGE))
+                                    Row(
+                                        Modifier
+                                            .fillMaxHeight()
+                                            .weight(1f),
+                                       verticalAlignment = Alignment.CenterVertically,
+                                        horizontalArrangement = Arrangement.spacedBy(6.dp)
+                                    ) {
+                                        Text(
+                                            contact.name,
+                                            Modifier,
+                                            style = TypoStyle(FontColor.PRIMARY, FontSize.LARGE)
+                                        )
+                                        if(!showIcons) return@Row
+                                        val textSize = FontSize.LARGE.size.toDp()
+                                        val icons = remember {
+                                            val list = mutableListOf(
+                                                contact.home?.let { R.drawable.house },
+                                                contact.iban?.let { R.drawable.pay_with_card },
+                                                contact.phoneNumber?.let { R.drawable.phone },
+                                                contact.fullName?.let { R.drawable.id_card },
+                                                contact.birthday?.let { R.drawable.birthday },
+                                            )
+                                            list.addAll(contact.socials.map { it.platform.icon })
+                                            list
+                                        }
+                                        Row(
+                                            verticalAlignment = Alignment.CenterVertically,
+                                            horizontalArrangement = Arrangement.spacedBy(2.dp)
+                                        ) {
+                                            for (i in icons) {
+                                                if(i == null) continue
+                                                Icon(painterResource(i), null, Modifier.size(textSize * .8f), tint = Colors.TERTIARYFONT)
+                                            }
+                                        }
+                                    }
                                     if(letter!='C') {
                                         Box(Modifier
                                             .size(fontSize)
-                                            .background(if(letter=='F') Colors.PRIMARYFONT else Colors.TERTIARYFONT, MaterialShapes.VerySunny.toShape())
+                                            .background(
+                                                if (letter == 'F') Colors.PRIMARYFONT else Colors.TERTIARYFONT,
+                                                MaterialShapes.Flower.toShape()
+                                            )
                                             .clip(CircleShape)
-                                            .rippleClick{
-                                                if(letter!='F' && !favoriteIds.contains(contact.id)){
+                                            .rippleClick {
+                                                if (letter != 'F' && !favoriteIds.contains(contact.id)) {
                                                     favoriteIds.add(contact.id)
                                                 } else {
                                                     favoriteIds.remove(contact.id)
                                                 }
                                                 db.prefs.edit {
-                                                    putStringSet("favorite_people", favoriteIds.map { it.toString() }.toSet())
+                                                    putStringSet(
+                                                        "favorite_people",
+                                                        favoriteIds.map { it.toString() }.toSet()
+                                                    )
                                                 }
                                             }
                                         )
@@ -274,7 +344,7 @@ fun Contacts(contactsViewModel: ContactsViewModel, personViewModel: ProfileInfoM
                                         Box(Modifier
                                             .size(fontSize)
                                             .clip(CircleShape)
-                                            .rippleClick{
+                                            .rippleClick {
                                                 coroutineScope.launch {
                                                     PersonSyncable(
                                                         API.generateId(),
@@ -300,7 +370,9 @@ fun Contacts(contactsViewModel: ContactsViewModel, personViewModel: ProfileInfoM
                     item(key = "header_$letter") { // Due to reverse  Layout
                         Text(
                             when(letter){ 'F' -> "Favoriten"; 'C' -> "Kontakte"; else -> letter.uppercase()},
-                            Modifier.fillMaxWidth(.95f).padding(top = 20.dp, bottom = 5.dp),
+                            Modifier
+                                .fillMaxWidth(.95f)
+                                .padding(top = 20.dp, bottom = 5.dp),
                             style = TypoStyle(FontColor.SECONDARY, FontSize.LARGE)
                         )
                     }
@@ -335,7 +407,7 @@ fun Contacts(contactsViewModel: ContactsViewModel, personViewModel: ProfileInfoM
                         .clip(shape)
                         .combinedRippleClick(
                             {
-                                if(search.isNotBlank()) {
+                                if (search.isNotBlank()) {
                                     coroutineScope.launch {
                                         PersonSyncable(
                                             API.generateId(),
@@ -348,18 +420,52 @@ fun Contacts(contactsViewModel: ContactsViewModel, personViewModel: ProfileInfoM
                                             listOf(),
                                         ).saveAndSync(db)
                                         contactsViewModel.refetchLifeContacts(db)
-                                        Toast.makeText(context, "Erstellt!", Toast.LENGTH_LONG).show()
+                                        Toast.makeText(context, "Erstellt!", Toast.LENGTH_LONG)
+                                            .show()
                                     }
                                 } else {
-                                    Toast.makeText(context, "Gib einen Namen ein", Toast.LENGTH_LONG).show()
+                                    Toast.makeText(
+                                        context,
+                                        "Gib einen Namen ein",
+                                        Toast.LENGTH_LONG
+                                    ).show()
                                 }
                             }
-                        ){
-                            Toast.makeText(context, "Halte gedrückt zum erstellen", Toast.LENGTH_LONG).show()
+                        ) {
+                            Toast.makeText(
+                                context,
+                                "Halte gedrückt zum erstellen",
+                                Toast.LENGTH_LONG
+                            ).show()
                         }
                 ) {
                     Icon(Icons.Rounded.Add, "New", Modifier.fillMaxSize(), Colors.PRIMARYFONT)
                 }
+            }
+        }
+        Box(
+            Modifier.fillMaxSize()
+        ) {
+            Box(
+                Modifier
+                    .align(Alignment.TopEnd)
+                    .padding(innerPadding)
+                    .padding(10.dp)
+                    .background(Colors.SECONDARY, CircleShape)
+                    .border(1.dp, Colors.TERTIARYFONT, CircleShape)
+                    .clip(CircleShape)
+                    .rippleClick {
+                        contactsViewModel.showIcons.value = !contactsViewModel.showIcons.value
+                    }
+                    .padding(10.dp)
+            ) {
+                val visible by contactsViewModel.showIcons.collectAsState()
+                Icon(
+                    painterResource(if(visible) R.drawable.visible else R.drawable.visible_off),
+                    "Toggle Icons",
+                    Modifier.size(20.dp),
+                    tint = Colors.SECONDARYFONT
+                )
             }
         }
     }

@@ -215,7 +215,7 @@ fun ProfileInfo(largeDataCache: LargeDataCache, profileInfoModel: ProfileInfoMod
                     Spacer(Modifier.height(20.dp))
                     ListEntry(
                         "IBAN",
-                        painterResource(R.drawable.pay_by_card)
+                        painterResource(R.drawable.pay_with_card)
                     ) {
                         val ibanInformation: String? =
                             iban?.let { if(it.length > 4) largeDataCache.getIbanInformation(it.substring(4)) else null }

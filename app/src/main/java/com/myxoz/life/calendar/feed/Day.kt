@@ -314,7 +314,7 @@ fun DayComposable(
                         ) {
                             Icon(
                                 if(bankingEntity.card)
-                                    painterResource(R.drawable.pay_by_card)
+                                    painterResource(R.drawable.pay_with_card)
                                 else
                                     painterResource(R.drawable.gpay),
                                 "Card",

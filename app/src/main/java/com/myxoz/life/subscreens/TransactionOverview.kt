@@ -295,7 +295,7 @@ fun BankingEntryComposable(entry: Pair<BankingEntity, BankingSidecarEntity?>, on
                 Icon(
                     painterResource(
                         when {
-                            card -> R.drawable.pay_by_card
+                            card -> R.drawable.pay_with_card
                             transfer -> R.drawable.bank_transfer
                             else -> R.drawable.gpay
                         }

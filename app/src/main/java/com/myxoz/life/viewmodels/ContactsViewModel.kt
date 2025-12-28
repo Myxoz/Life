@@ -12,6 +12,7 @@ import com.myxoz.life.api.PersonSyncable.Companion as Person
 class ContactsViewModel: ViewModel() {
     val deviceContacts = MutableStateFlow(listOf<PersonSyncable>())
     var lifeContacts = MutableStateFlow(listOf<PersonSyncable>())
+    var showIcons = MutableStateFlow(false)
     var scrollDistance = 0
     /**
     * Call only from Dispatcher.IO else massive lag spikes, fetches all device contacts and udpates old ones, if size changes

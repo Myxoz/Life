@@ -223,9 +223,9 @@ class PersonSyncable(
                 dbEntry.iban,
                 dbEntry.home,
                 dbEntry.birthday,
-                socials.mapNotNull {
+                getOrderedSocials(socials.mapNotNull {
                     Socials.from(it)
-                }
+                })
             )
         }
 
