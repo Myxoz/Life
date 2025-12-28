@@ -75,6 +75,9 @@ abstract class ServerSyncable(val calendarId: Int) {
                 Syncable.SpecialSyncablesIds.PROFILEPICTURE -> {
                     ProfilePictureSyncable.overwriteByJson(db, it)
                 }
+                Syncable.SpecialSyncablesIds.COMMITS -> {
+                    CommitSyncable.overwriteByJson(db, it)
+                }
 
                 else -> {
                     SyncedEvent.overwriteByJson(db, it)
@@ -188,5 +191,6 @@ abstract class Syncable(
         const val LOCATIONS = 53
         const val BANKINGSIDECAR = 54
         const val PROFILEPICTURE = 55
+        const val COMMITS = 56
     }
 }

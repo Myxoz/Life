@@ -5,7 +5,7 @@ import android.content.SharedPreferences
 class StorageManager(db: AppDatabase, sharedPrefs: SharedPreferences) {
     val cleanupDb = db.databaseCleanupDao()
     val prefs = sharedPrefs
-    // All DAOs cached here
+    val commits = db.commitsDao()
     val banking = db.bankingDao()
     val waitingSync = db.waitingSyncDao()
     val dayScreenTime = db.dayScreenTimeDao()

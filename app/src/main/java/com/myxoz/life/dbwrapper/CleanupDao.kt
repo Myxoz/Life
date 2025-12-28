@@ -59,6 +59,9 @@ interface DatabaseCleanupDao {
 
     @Query("DELETE FROM digsoc")
     suspend fun clearDigSoc()
+
+    @Query("DELETE FROM commits")
+    suspend fun clearCommits()
     @Transaction
     suspend fun clearAllExceptPersistent() {
         clearBanking()
@@ -79,5 +82,6 @@ interface DatabaseCleanupDao {
         clearProfilePictureKnowledge()
         clearDigSoc()
         clearDigSocMapping()
+        clearCommits()
     }
 }

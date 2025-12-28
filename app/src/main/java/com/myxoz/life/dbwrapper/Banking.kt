@@ -58,8 +58,8 @@ data class BankingEntity(
             val allSidecars = storage.bankingSidecar.getSidecarsBetween(startOfDay, endOfDay)
             val transactionsForSidecars = storage.banking.getTransactionByIds(allSidecars.map { it.transactionId })
             val bankingEntries = storage.banking.getTransactionsOnDay(startOfDay, endOfDay) +
-                    allSidecars.map { sidecar ->
-                        transactionsForSidecars.first { it.id == sidecar.transactionId }.copy(
+                    allSidecars.mapNotNull { sidecar ->
+                        transactionsForSidecars.find { it.id == sidecar.transactionId }?.copy(
                             purposeDate = sidecar.date,
                             fromName = sidecar.name
                         )

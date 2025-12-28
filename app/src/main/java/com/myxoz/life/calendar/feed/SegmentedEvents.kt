@@ -24,7 +24,6 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.myxoz.life.LocalStorage
 import com.myxoz.life.api.SyncedEvent
-import com.myxoz.life.dbwrapper.BankingEntity
 import com.myxoz.life.events.additionals.EventType
 import com.myxoz.life.viewmodels.CalendarViewModel
 
@@ -59,7 +58,7 @@ data class SegmentedEvent(val event: SyncedEvent, val isFullWidth: Boolean, val 
         }
     }
     companion object {
-        fun getSegmentedEvents(events: List<SyncedEvent>, bankingEntries: List<BankingEntity>, bankingEntrySize: Long): List<SegmentedEvent> {
+        fun getSegmentedEvents(events: List<SyncedEvent>, bankingEntries: List<InstantEvent>, instantEventDisplaySize: Long): List<SegmentedEvent> {
             val order = arrayOf(
                 EventType.Travel,
                 EventType.Learn,
@@ -86,8 +85,8 @@ data class SegmentedEvent(val event: SyncedEvent, val isFullWidth: Boolean, val 
                 modifyable.forEachIndexed { i, it ->
                     if(it.event.proposed.overlaps(
                             DefinedDurationEvent(
-                                event.purposeDate!! - bankingEntrySize / 2,
-                                event.purposeDate + bankingEntrySize / 2
+                                event.timestamp - instantEventDisplaySize / 2,
+                                event.timestamp + instantEventDisplaySize / 2
                             )
                         )) {
                         modifyable[i] = it.copy(isFullWidth = false)  // Does not set left or right align

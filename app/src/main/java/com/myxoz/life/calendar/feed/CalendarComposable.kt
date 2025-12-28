@@ -59,7 +59,6 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.myxoz.life.LocalStorage
 import com.myxoz.life.api.SyncedEvent
 import com.myxoz.life.calendar.getMonthByCalendarMonth
-import com.myxoz.life.dbwrapper.BankingEntity
 import com.myxoz.life.ui.theme.Colors
 import com.myxoz.life.ui.theme.FontColor
 import com.myxoz.life.ui.theme.FontSize
@@ -114,8 +113,8 @@ fun CalendarComposable(calendarViewModel: CalendarViewModel, inspectedEventViewM
             val dbEvents = db.events.getEventsBetween(startOfDay, endOfDay).mapNotNull { SyncedEvent.from(db, it)}
             calendarViewModel.dayCache[date] = dbEvents
 
-            val entries = BankingEntity.getAllBankingEntriesFor(db, startOfDay, endOfDay, calendarViewModel.futureBankEntries)
-            calendarViewModel.bankingEntityCache[date] = entries
+            val mix = InstantEvent.getEntriesForDay(db, startOfDay, endOfDay, calendarViewModel)
+            calendarViewModel.instantEventCache[date] = mix
         }
     }
     fun onDayScrolled(index: Int) {

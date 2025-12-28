@@ -62,7 +62,6 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.max
 import androidx.compose.ui.unit.times
-import androidx.core.content.edit
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.myxoz.life.LocalAPI
 import com.myxoz.life.LocalNavController
@@ -73,9 +72,7 @@ import com.myxoz.life.api.API
 import com.myxoz.life.api.SyncedEvent
 import com.myxoz.life.calendar.feed.SegmentedEvent.Companion.getSegmentedEvents
 import com.myxoz.life.calendar.getWeekDayByInt
-import com.myxoz.life.dbwrapper.BankingEntity
 import com.myxoz.life.dbwrapper.DaysEntity
-import com.myxoz.life.dbwrapper.formatCents
 import com.myxoz.life.events.EmptyEvent
 import com.myxoz.life.events.ProposedEvent
 import com.myxoz.life.options.getUsageDataBetween
@@ -91,7 +88,6 @@ import com.myxoz.life.viewmodels.InspectedEventViewModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import org.json.JSONObject
 import java.time.LocalDate
 import java.time.ZoneId
 import kotlin.math.min
@@ -121,7 +117,7 @@ fun DayComposable(
     var oneHourDp by remember { mutableStateOf(0.dp) }
     val hourInPx = with(density) { oneHourDp.toPx() }
     val calendar = remember { Calendar.getInstance() }
-    var bankingEntities by remember { mutableStateOf(viewModel.bankingEntityCache[date]?.toList() ?: listOf()) }
+    var instantEvents by remember { mutableStateOf(viewModel.instantEventCache[date]?.toList() ?: listOf()) }
     val lastUpdateTs by viewModel.lastEventUpdateTs.collectAsState()
     val width = fullWidth*.97f
     LaunchedEffect(Unit) {
@@ -150,9 +146,9 @@ fun DayComposable(
             viewModel.dayCache[date] = dbEvents
             events = dbEvents
 
-            val entries = BankingEntity.getAllBankingEntriesFor(db, startOfDay, endOfDay, viewModel.futureBankEntries)
-            viewModel.bankingEntityCache[date] = entries
-            bankingEntities = entries
+            val mix = InstantEvent.getEntriesForDay(db, startOfDay, endOfDay, viewModel)
+            viewModel.instantEventCache[date] = mix
+            instantEvents = mix
         }
     }
     Column(
@@ -266,9 +262,9 @@ fun DayComposable(
                 val isEditing by inspectedEventViewModel.isEditing.collectAsState()
                 val newEvent by inspectedEventViewModel.event.collectAsState()
 
-                val bankingItemSize = 1.5f
-                val bankingSizeDp = bankingItemSize*oneHourDp
-                val segments = getSegmentedEvents(events, bankingEntities, (bankingItemSize*3600L).toLong()*1000L)
+                val instantEventDisplaySize = 1.5f
+                val bankingSizeDp = instantEventDisplaySize*oneHourDp
+                val segments = getSegmentedEvents(events, instantEvents, (instantEventDisplaySize*3600L).toLong()*1000L)
                 for(segmentedEvent in segments) {
                     if(isEditing && segmentedEvent.event.id == newEvent.id) continue
                     val haptic = LocalHapticFeedback.current
@@ -283,53 +279,41 @@ fun DayComposable(
                         navController.navigate("fullscreen_event")
                     }
                 }
-                for(bankingEntity in bankingEntities) {
-                    if(bankingEntity.purposeDate==null) continue
+                for(instantEvent in instantEvents) {
                     Box(
                         Modifier
-                            .padding(top=max(0.dp, ((bankingEntity.purposeDate - startOfDay)/3_600_000f)*oneHourDp - bankingSizeDp/2))
-                            .height(bankingItemSize*oneHourDp)
+                            .padding(top=max(0.dp, ((instantEvent.timestamp - startOfDay)/3_600_000f)*oneHourDp - bankingSizeDp/2))
+                            .height(instantEventDisplaySize*oneHourDp)
                             .fillMaxWidth()
                         ,
                         contentAlignment = Alignment.CenterEnd
                     ){
                         Column(
                             Modifier
-                                .size(bankingItemSize*oneHourDp)
+                                .size(instantEventDisplaySize*oneHourDp)
                                 .background(Colors.BACKGROUND.copy(.7f), CircleShape)
                                 .clip(CircleShape)
                                 .rippleClick{
-                                    if(bankingEntity.id.isBlank()) db.prefs.edit {
-                                            putString("transactionAtHand", JSONObject()
-                                                .put("amount", bankingEntity.amountCents)
-                                                .put("timestamp", bankingEntity.purposeDate)
-                                                .put("to", bankingEntity.fromName)
-                                                .toString())
-                                        }
-                                    navController.navigate("bank/transaction/${bankingEntity.id}")
+                                    instantEvent.openDetails(
+                                        navController
+                                    )
                                 }
                             ,
                             horizontalAlignment = Alignment.CenterHorizontally,
                             verticalArrangement = Arrangement.Center
                         ) {
                             Icon(
-                                if(bankingEntity.card)
-                                    painterResource(R.drawable.pay_with_card)
-                                else
-                                    painterResource(R.drawable.gpay),
+                                painterResource(instantEvent.icon),
                                 "Card",
-                                Modifier
-                                    .height(oneHourDp/(if(bankingEntity.card) 2f else 3f))
-                                ,
+                                Modifier.height(oneHourDp/(if(instantEvent.icon == R.drawable.gpay) 3f else 2f)),
                                 tint = Colors.PRIMARYFONT
                             )
-                            Spacer(Modifier.height((if(bankingEntity.card) 2.dp else 4.dp)))
-                            Text(bankingEntity.amountCents.formatCents(),
-                                style = TypoStyle(FontColor.PRIMARY, FontSize.XSMALL))
+                            Spacer(Modifier.height((if(instantEvent.icon == R.drawable.pay_with_card) 2.dp else 4.dp)))
+                            Text(instantEvent.subText, style = TypoStyle(FontColor.PRIMARY, FontSize.XSMALL))
                         }
                         Box(
                             Modifier
-                                .padding(end = bankingItemSize*.9f*oneHourDp)
+                                .padding(end = instantEventDisplaySize*.9f*oneHourDp)
                                 .background(Brush.horizontalGradient(listOf(Color.Transparent, Colors.PRIMARYFONT)), CircleShape)
                                 .width(oneHourDp)
                                 .padding(vertical = 1.dp)

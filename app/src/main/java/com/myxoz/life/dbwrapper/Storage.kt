@@ -7,7 +7,7 @@ import androidx.room.RoomDatabase
 import androidx.room.migration.Migration
 import androidx.sqlite.db.SupportSQLiteDatabase
 
-const val currVer = 31
+const val currVer = 32
 val migration = object : Migration(currVer-1, currVer) {
     override fun migrate(db: SupportSQLiteDatabase) {
         // Create the new dayscreentime table
@@ -15,14 +15,23 @@ val migration = object : Migration(currVer-1, currVer) {
         ///*
         db.execSQL(
             """
-            CREATE TABLE IF NOT EXISTS `digsocmapping` (
-                `event_id` INTEGER NOT NULL,
-                `app` INTEGER NOT NULL,
-                `duration_ms` INTEGER NOT NULL,
-                PRIMARY KEY(event_id, app)
+            CREATE TABLE IF NOT EXISTS commits (
+                repo_owner TEXT NOT NULL,
+                repo_name TEXT NOT NULL,
+                commit_sha TEXT NOT NULL PRIMARY KEY,
+                commit_message TEXT,
+                commit_author TEXT,
+                commit_email TEXT,
+                commit_date INTEGER,
+                additions INTEGER DEFAULT 0,
+                deletions INTEGER DEFAULT 0,
+                files_changed INTEGER DEFAULT 0,
+                files_json TEXT,
+                commit_url TEXT,
+                updated INTEGER NOT NULL
             )
-            """
-        .trimIndent())
+            """.trimIndent()
+        )
         //*/
         //db.execSQL("UPDATE people SET home = (SELECT location.id FROM location WHERE location.homeof = people.id) WHERE EXISTS (SELECT 1 FROM location WHERE location.homeof = people.id)")
         //db.execSQL("ALTER TABLE location DROP COLUMN homeof")
@@ -51,10 +60,12 @@ val migration = object : Migration(currVer-1, currVer) {
         SocialsEntity::class,
         DigSocEntity::class,
         DigSocMappingEntity::class,
+        CommitEntity::class,
     ],
     version = currVer,
     exportSchema = true
 ) abstract class AppDatabase : RoomDatabase() {
+    abstract fun commitsDao(): CommitDao
     abstract fun digsocMappingDao(): DigSocMappingDao
     abstract fun digsocDao(): DigSocDao
     abstract fun peopleDao(): PeopleDao
@@ -120,10 +131,10 @@ object DatabaseProvider {
  *
  * Guide to create new Syncable:
  * 7. Create a new Syncable: Syncable in [com.myxoz.life.api]
- * 8. Add to [com.myxoz.life.api.ServerSyncable.overwriteByJson]
- * 9. Add to [com.myxoz.life.api.Syncable.from]
+ * 8. Add to [com.myxoz.life.api.Syncable.SpecialSyncablesIds] and then [com.myxoz.life.api.ServerSyncable.overwriteByJson]
+ * 9. Add to [com.myxoz.life.api.Syncable.from] (only when also syncable)
  * 10. Go to serverside ( sshvim myxoz:~/myxoz.de/life/_api.php )
- * 11. Add to delete from db
- * 12. Add to insert to db
- * 13. Add to read from db
+ * 11. Add to delete from db (only when also syncable) (SRMDB)
+ * 12. Add to insert to db (only when also syncable) (SSTDB)
+ * 13. Add to read from db (SRFDB)
  **/
