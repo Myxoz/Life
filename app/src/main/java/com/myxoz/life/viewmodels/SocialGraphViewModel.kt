@@ -18,6 +18,7 @@ class SocialGraphViewModel(val db: StorageManager): ViewModel() {
     var addMyself = MutableStateFlow(false)
     var showTimes = MutableStateFlow(false)
     val nodes = MutableStateFlow(mapOf<Long, SocialGraphNode>())
+    val selectedNode = MutableStateFlow<Long?>(null)
     val dateRange = MutableStateFlow(2)
     private fun mergeNodes(newMap: Map<Long, SocialGraphNode>){
         val oldNodes = nodes.value

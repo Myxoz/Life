@@ -152,7 +152,7 @@ fun SocialGraph(socialGraphViewModel: SocialGraphViewModel, profileInforModel: P
     }
 
     var hoveredNode by remember { mutableStateOf<SocialGraphNode?>(null) }
-    var selectedNode by remember { mutableStateOf<SocialGraphNode?>(null) } // If you want click persistence
+    val selectedNode by socialGraphViewModel.selectedNode.collectAsState()
 
     // Helper to convert Screen Coordinates -> Graph Coordinates
     fun hitTest(pointerPosition: Offset, panOffset: Offset, zoomScale: Float): SocialGraphNode? {
@@ -206,7 +206,7 @@ fun SocialGraph(socialGraphViewModel: SocialGraphViewModel, profileInforModel: P
                     detectTapGestures { tapOffset ->
                         val clicked = hitTest(tapOffset, offset, scale)
                         if (clicked != null) {
-                            if (selectedNode?.personId == clicked.personId) {
+                            if (selectedNode == clicked.personId) {
                                 if (clicked.personId == 0L) return@detectTapGestures
                                 coroutineScope.launch {
                                     profileInforModel.openPersonDetails(
@@ -218,10 +218,10 @@ fun SocialGraph(socialGraphViewModel: SocialGraphViewModel, profileInforModel: P
                                 }
                                 return@detectTapGestures
                             }
-                            selectedNode = clicked
+                            socialGraphViewModel.selectedNode.value = clicked.personId
                             println("Clicked on: ${clicked.name}")
                         } else {
-                            selectedNode = null // Deselect if clicking empty space
+                            socialGraphViewModel.selectedNode.value = null // Deselect if clicking empty space
                         }
                     }
                 }
@@ -237,7 +237,7 @@ fun SocialGraph(socialGraphViewModel: SocialGraphViewModel, profileInforModel: P
                 )
                 scale(scale, pivot = Offset.Zero)
             }) {
-                val activeNode = hoveredNode ?: selectedNode
+                val activeNode = hoveredNode?.personId ?: selectedNode
                 val isDimmedMode = activeNode != null
                 fun GraphEdge.drawEdge(color: Color) {
                     drawLine(
@@ -251,7 +251,7 @@ fun SocialGraph(socialGraphViewModel: SocialGraphViewModel, profileInforModel: P
                 nodes.values.forEach { node ->
                     node.edges.forEach { edge ->
                         val otherNode = if (edge.nodeA.personId == node.personId) edge.nodeB else edge.nodeA
-                        val isRelevantEdge = node.personId == activeNode?.personId || otherNode.personId == activeNode?.personId
+                        val isRelevantEdge = node.personId == activeNode || otherNode.personId == activeNode
                         if (otherNode.personId <= node.personId) return@forEach
                         if (!isDimmedMode) {
                             edge.drawEdge(Colors.SocialGraphColors.EDGE)
@@ -278,9 +278,9 @@ fun SocialGraph(socialGraphViewModel: SocialGraphViewModel, profileInforModel: P
                     }
                 nodes.values.forEach { node ->
                     val isConnected = activeNode != null && node.edges.any {
-                        it.nodeA.personId == activeNode.personId || it.nodeB.personId == activeNode.personId
+                        it.nodeA.personId == activeNode || it.nodeB.personId == activeNode
                     }
-                    val isSelf = node.personId == activeNode?.personId
+                    val isSelf = node.personId == activeNode
                     val nodeColor = when {
                         isSelf -> Colors.SocialGraphColors.SELECTED_NODE
                         isConnected -> Colors.SocialGraphColors.RELEVANT_NODE

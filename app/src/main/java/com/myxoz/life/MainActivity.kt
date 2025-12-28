@@ -221,7 +221,7 @@ class MainActivity : ComponentActivity() {
                         navArgument("personId") { type = NavType.LongType }
                     )){
                         val personId = it.arguments?.getLong("personId") ?: return@composable
-                        ProfileFullScreen(personId, photoPicker, largeDataCache, profileInfoModel, inspectedEventViewModel, calendarViewModel)
+                        ProfileFullScreen(personId, photoPicker, largeDataCache, profileInfoModel, inspectedEventViewModel, calendarViewModel, socialGraphViewModel)
                     }
                     composable("modify_event/add_location") {
                         ModifyLocation()

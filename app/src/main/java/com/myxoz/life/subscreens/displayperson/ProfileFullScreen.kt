@@ -82,6 +82,7 @@ import com.myxoz.life.viewmodels.CalendarViewModel
 import com.myxoz.life.viewmodels.InspectedEventViewModel
 import com.myxoz.life.viewmodels.LargeDataCache
 import com.myxoz.life.viewmodels.ProfileInfoModel
+import com.myxoz.life.viewmodels.SocialGraphViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.launch
 import java.time.Instant
@@ -91,7 +92,15 @@ import kotlin.math.min
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
-fun ProfileFullScreen(personId: Long, photoPicker: PhotoPicker, largeDataCache: LargeDataCache, profileInfoModel: ProfileInfoModel, inspectedEventViewModel: InspectedEventViewModel, calendarViewModel: CalendarViewModel){
+fun ProfileFullScreen(
+    personId: Long,
+    photoPicker: PhotoPicker,
+    largeDataCache: LargeDataCache,
+    profileInfoModel: ProfileInfoModel,
+    inspectedEventViewModel: InspectedEventViewModel,
+    calendarViewModel: CalendarViewModel,
+    socialGraphViewModel: SocialGraphViewModel
+){
     val db = LocalStorage.current
     val nav = LocalNavController.current
     val coroutineScope = rememberCoroutineScope()
@@ -122,7 +131,7 @@ fun ProfileFullScreen(personId: Long, photoPicker: PhotoPicker, largeDataCache: 
                 verticalArrangement = Arrangement.spacedBy(15.dp)
             ) {
                 Spacer(Modifier.height(topBarHeight+innerPadding.calculateTopPadding()))
-                ProfileInfo(largeDataCache, profileInfoModel)
+                ProfileInfo(largeDataCache, profileInfoModel, socialGraphViewModel)
                 Row(
                     Modifier
                         .fillMaxWidth(.95f)

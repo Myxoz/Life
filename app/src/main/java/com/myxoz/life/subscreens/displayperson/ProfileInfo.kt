@@ -90,14 +90,16 @@ import com.myxoz.life.utils.rippleClick
 import com.myxoz.life.utils.toDp
 import com.myxoz.life.viewmodels.LargeDataCache
 import com.myxoz.life.viewmodels.ProfileInfoModel
+import com.myxoz.life.viewmodels.SocialGraphViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.launch
 import org.json.JSONObject
+import kotlin.math.min
 import kotlin.math.roundToInt
 
 private const val animationDuration = 300 // Default Compose Speed
 @Composable
-fun ProfileInfo(largeDataCache: LargeDataCache, profileInfoModel: ProfileInfoModel){
+fun ProfileInfo(largeDataCache: LargeDataCache, profileInfoModel: ProfileInfoModel, socialGraphViewModel: SocialGraphViewModel){
     val coroutineScope = rememberCoroutineScope()
     val db = LocalStorage.current
     val nav = LocalNavController.current
@@ -502,10 +504,11 @@ fun ProfileInfo(largeDataCache: LargeDataCache, profileInfoModel: ProfileInfoMod
                     }
                 }
                 AnimatedVisibility(
-                    !isEditing && platforms.isNotEmpty(),
+                    !isEditing,
                     enter = fadeIn(tween(animationDuration)) + expandHorizontally(tween(animationDuration)),
                     exit = fadeOut(tween(animationDuration)) + shrinkHorizontally(tween(animationDuration))
                 ) {
+                    val icon = platforms.getOrNull(0)?.platform?.icon ?: return@AnimatedVisibility
                     val context = LocalContext.current
                     Chip(
                         {
@@ -513,11 +516,54 @@ fun ProfileInfo(largeDataCache: LargeDataCache, profileInfoModel: ProfileInfoMod
                         },
                         color = Colors.TERTIARY
                     ) {
-                        Text(
-                            "Nachricht",
+                        Box(
                             Modifier.animateContentSize(tween(animationDuration)),
-                            style = TypoStyle(FontColor.PRIMARY, FontSize.MEDIUM)
-                        )
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text(
+                                "",
+                                style = TypoStyle(FontColor.PRIMARY, FontSize.MEDIUM)
+                            )
+                            Icon(
+                                painterResource(icon),
+                                "Message",
+                                Modifier.size(FontSize.MEDIUM.size.toDp()),
+                                Colors.PRIMARYFONT
+                            )
+                        }
+                    }
+                }
+                val lastInteraction by profileInfoModel.lastInteraction.collectAsState()
+                if(lastInteraction!=null) {
+                    Chip(
+                        {
+                            val li = lastInteraction ?: return@Chip
+                            socialGraphViewModel.selectedNode.value = profileInfoModel.id.value
+                            socialGraphViewModel.dateRange.value = min(
+                                socialGraphViewModel.dateRange.value,
+                                when((System.currentTimeMillis()-li.end)/(1000L*3600L*24L)) {
+                                    in Int.MIN_VALUE..6 -> 3
+                                    in 6..29 -> 2
+                                    in 29..356 -> 1
+                                    else -> 0
+                                }
+                            )
+                            nav.navigate("social_graph")
+                        },
+                        color = Colors.TERTIARY
+                    ) {
+                        Box(
+                            Modifier.animateContentSize(tween(animationDuration)),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text("", style = TypoStyle(FontColor.PRIMARY, FontSize.MEDIUM))
+                            Icon(
+                                painterResource(R.drawable.graph),
+                                "Social Graph",
+                                Modifier.size(FontSize.MEDIUM.size.toDp()),
+                                Colors.PRIMARYFONT
+                            )
+                        }
                     }
                 }
                 Spacer(Modifier.weight(1f))
