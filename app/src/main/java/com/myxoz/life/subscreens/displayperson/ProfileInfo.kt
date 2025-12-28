@@ -387,7 +387,29 @@ fun ProfileInfo(largeDataCache: LargeDataCache, profileInfoModel: ProfileInfoMod
                                 color = Colors.TERTIARY
                             ) {
                                 Text(if(location!=null) "Ändern" else "Hinzufügen", style = TypoStyle(FontColor.PRIMARY, FontSize.MEDIUM))
-                                Icon(Icons.AutoMirrored.Rounded.KeyboardArrowRight, "Continue", tint = Colors.PRIMARYFONT)
+                                Icon(
+                                    Icons.AutoMirrored.Rounded.KeyboardArrowRight,
+                                    "Continue",
+                                    Modifier.size(FontSize.MEDIUM.size.toDp()),
+                                    tint = Colors.PRIMARYFONT
+                                )
+                            }
+                            if(location != null) {
+                                Spacer(Modifier.width(5.dp))
+                                Chip(
+                                    {
+                                        profileInfoModel.home.value = null
+                                    },
+                                    color = Colors.TERTIARY
+                                ) {
+                                    Text("", style = TypoStyle(FontColor.PRIMARY, FontSize.MEDIUM))
+                                    Icon(
+                                        painterResource(R.drawable.delete),
+                                        "Remove",
+                                        Modifier.size(FontSize.MEDIUM.size.toDp()),
+                                        tint = Colors.PRIMARYFONT
+                                    )
+                                }
                             }
                         }
                     }

@@ -47,15 +47,16 @@ class Settings(val prefs: SharedPreferences, context: Context, activity: Activit
         val stepCounting = Feature(
             STEP_COUNTING,
             "Schritterfassung",
-            "Schritterfassung im Kalenderfeed, als auch in der Tageszusammenfassung",
+            "Schritterfassung im Kalenderfeed, als auch in der Tageszusammenfassung, braucht eine " +
+                    "Vordergrundbenachrichtigung, um zu funktionieren, deaktiviere wenn dann die Benachrichtigungskategorie, aber nicht generell Benachrichtigungen",
             listOf(permissions.physicalActivity, permissions.postNotifications),
             prefs
         )
         val callFromLife = Feature(
             CALL_FROM_LIFE,
             "Anrufe aus Life",
-            "Auf der Profilseite kann nach dem Klick auf \"Anrufen\" direkt angerufen werden, wenn diese Option aus ist," +
-                    " wird man in die Telefonapp weitergeleitet, mit der Nummer des Kontaktes bereits eingetippt",
+            "Anrufe können direkt aus der App ausgeführt werden, andernfalls" +
+                    " wird man in die Telefonapp mit eingetippter Nummer weitergeleitet",
             listOf(permissions.phone),
             prefs
         )
@@ -83,7 +84,8 @@ class Settings(val prefs: SharedPreferences, context: Context, activity: Activit
         val addNewPerson = Feature(
             ADDNEWPERSON,
             "Kontaktvorschläge",
-            "Beim Hinzufügen einer neuen Person können die gespeicherten Kontakte durchsucht werden",
+            "In den Kontakten werden über den Life Kontakten zusätzliche Kontakte deines Handys angezigt, " +
+                    "zudem wird erkannt, ob Life Kontakte in den Telefonkontakten gespeichert sind und ein Vorschlag zum Einspeichern auf der Profilseite gemacht",
             listOf(permissions.contacts),
             prefs
         )
