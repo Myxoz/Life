@@ -41,7 +41,7 @@ class InstantEvent(
                     it.repoName,
                     it.commitDate?:return@mapNotNull null,
                 ) { nav ->
-                    nav.navigate("information") //  TODO FIX
+                    nav.navigate("commits/commit/${it.commitSha}")
                 }
             }
             val mix = entries + commits

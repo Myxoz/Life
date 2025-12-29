@@ -7,31 +7,31 @@ import androidx.room.RoomDatabase
 import androidx.room.migration.Migration
 import androidx.sqlite.db.SupportSQLiteDatabase
 
-const val currVer = 32
+const val currVer = 33
 val migration = object : Migration(currVer-1, currVer) {
     override fun migrate(db: SupportSQLiteDatabase) {
         // Create the new dayscreentime table
         //db.execSQL("ALTER TABLE people ADD COLUMN birthday INTEGER")
         ///*
-        db.execSQL(
-            """
-            CREATE TABLE IF NOT EXISTS commits (
-                repo_owner TEXT NOT NULL,
-                repo_name TEXT NOT NULL,
-                commit_sha TEXT NOT NULL PRIMARY KEY,
-                commit_message TEXT,
-                commit_author TEXT,
-                commit_email TEXT,
-                commit_date INTEGER,
-                additions INTEGER DEFAULT 0,
-                deletions INTEGER DEFAULT 0,
-                files_changed INTEGER DEFAULT 0,
-                files_json TEXT,
-                commit_url TEXT,
-                updated INTEGER NOT NULL
-            )
-            """.trimIndent()
-        )
+//        db.execSQL(
+//            """
+//            CREATE TABLE IF NOT EXISTS commits (
+//                repo_owner TEXT NOT NULL,
+//                repo_name TEXT NOT NULL,
+//                commit_sha TEXT NOT NULL PRIMARY KEY,
+//                commit_message TEXT,
+//                commit_author TEXT,
+//                commit_email TEXT,
+//                commit_date INTEGER,
+//                additions INTEGER DEFAULT 0,
+//                deletions INTEGER DEFAULT 0,
+//                files_changed INTEGER DEFAULT 0,
+//                files_json TEXT,
+//                commit_url TEXT,
+//                updated INTEGER NOT NULL
+//            )
+//            """.trimIndent()
+//        )
         //*/
         //db.execSQL("UPDATE people SET home = (SELECT location.id FROM location WHERE location.homeof = people.id) WHERE EXISTS (SELECT 1 FROM location WHERE location.homeof = people.id)")
         //db.execSQL("ALTER TABLE location DROP COLUMN homeof")

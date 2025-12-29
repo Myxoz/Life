@@ -3,7 +3,6 @@ package com.myxoz.life.api
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
-import androidx.annotation.MainThread
 import androidx.core.net.toUri
 import com.myxoz.life.calendar.getEventId
 import com.myxoz.life.dbwrapper.LocationEntity
@@ -101,15 +100,6 @@ class Location(
             en.ssid, en.street, en.number, en.city,
             en.country, en.id
         )
-
-        @MainThread
-        fun openLink(context: Context, link: String) {
-            println("Opening link: $link")
-            val uri = link.toUri()
-            val intent = Intent(Intent.ACTION_VIEW, uri)
-            intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK
-            context.startActivity(intent)
-        }
 
         fun openInGoogleMaps(context: Context, location: Location?) = openInGoogleMaps(
             context,

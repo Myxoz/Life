@@ -9,6 +9,7 @@ import com.myxoz.life.calendar.getEventId
 import com.myxoz.life.dbwrapper.PersonEntity
 import com.myxoz.life.dbwrapper.SocialsEntity
 import com.myxoz.life.dbwrapper.StorageManager
+import com.myxoz.life.utils.AndroidUtils
 import com.myxoz.life.utils.getLongOrNull
 import com.myxoz.life.utils.getStringOrNull
 import org.json.JSONArray
@@ -173,7 +174,7 @@ class PersonSyncable(
                 val phoneNumber: String?
             ) {
                 fun web(url: String) {
-                    Location.openLink(context, url)
+                    AndroidUtils.openLink(context, url)
                 }
 
                 fun intent(componentName: ComponentName, extras: List<Pair<String, String>>) {

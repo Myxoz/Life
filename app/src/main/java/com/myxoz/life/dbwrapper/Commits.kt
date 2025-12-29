@@ -65,6 +65,14 @@ interface CommitDao {
     @Query("SELECT * FROM commits WHERE commit_date > :start AND commit_date <= :ends ORDER BY commit_date DESC")
     suspend fun getCommitsForDay(start: Long, ends: Long): List<CommitEntity>
 
+    @Query("""SELECT c.* FROM commits c JOIN (
+        SELECT repo_owner, repo_name, MAX(commit_date) AS max_date FROM commits GROUP BY repo_owner, repo_name
+        ) latest ON c.repo_owner = latest.repo_owner AND c.repo_name = latest.repo_name AND c.commit_date = latest.max_date;""")
+    suspend fun getAllRepos(): List<CommitEntity>
+
+    @Query("SELECT * FROM commits WHERE repo_name = :repoName")
+    suspend fun getAllForRepo(repoName: String): List<CommitEntity>
+
     @Query("SELECT * FROM commits WHERE commit_sha = :sha LIMIT 1")
     suspend fun getBySha(sha: String): CommitEntity?
 }

@@ -65,6 +65,7 @@ fun SettingsComposable() {
         ) {
             val nav = LocalNavController.current
             val all = arrayOf(
+                SubOption(R.drawable.github, "Repositories", "commits/repos"),
                 SubOption(R.drawable.info, "Informationen", "information"),
                 SubOption(R.drawable.graph, "Social Graph", "social_graph"),
                 SubOption(R.drawable.bank_transfer, "Transaktionen", "transactions"),

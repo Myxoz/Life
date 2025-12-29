@@ -56,6 +56,7 @@ import com.myxoz.life.ui.theme.FontColor
 import com.myxoz.life.ui.theme.FontFamily
 import com.myxoz.life.ui.theme.FontSize
 import com.myxoz.life.ui.theme.TypoStyle
+import com.myxoz.life.utils.AndroidUtils
 import com.myxoz.life.utils.formatTimeStamp
 import com.myxoz.life.utils.rippleClick
 import com.myxoz.life.utils.toDp
@@ -243,7 +244,7 @@ fun DisplayEvent(fullEvent: SyncedEvent, profileInfoModel: ProfileInfoModel, cal
                                 .background(Colors.TERTIARY, CircleShape)
                                 .clip(CircleShape)
                                 .rippleClick {
-                                    Location.openLink(
+                                    AndroidUtils.openLink(
                                         context,
                                         HVV.constructLink(null, from)
                                             .apply { println(this) })
@@ -330,7 +331,7 @@ fun DisplayEvent(fullEvent: SyncedEvent, profileInfoModel: ProfileInfoModel, cal
                         Box(
                             Modifier.clip(CircleShape)
                                 .background(Colors.TERTIARY, CircleShape).rippleClick {
-                                    Location.openLink(
+                                    AndroidUtils.openLink(
                                         context, HVV.constructLink(
                                             from,
                                             to,
@@ -391,7 +392,7 @@ fun DisplayEvent(fullEvent: SyncedEvent, profileInfoModel: ProfileInfoModel, cal
                                 .background(Colors.TERTIARY, CircleShape)
                                 .clip(CircleShape)
                                 .rippleClick {
-                                    Location.openLink(
+                                    AndroidUtils.openLink(
                                         context,
                                         HVV.constructLink(null, to)
                                             .apply { println(this) })

@@ -25,11 +25,11 @@ class CommitSyncable(
 ) : ServerSyncable(Syncable.SpecialSyncablesIds.BANKING) {
     companion object : ServerSyncableCompanion {
         class CommitModification(
-            filename: String,
-            additions: Int,
-            deletions: Int,
-            changes: Int,
-            status: String,
+            val filename: String,
+            val additions: Int,
+            val deletions: Int,
+            val changes: Int,
+            val status: String,
         )
         override suspend fun overwriteByJson(db: StorageManager, it: JSONObject) {
             db.commits.insert(
@@ -50,7 +50,7 @@ class CommitSyncable(
                 )
             )
         }
-        fun from(db: StorageManager, en: CommitEntity) = CommitSyncable(
+        fun from(en: CommitEntity) = CommitSyncable(
                 en.repoOwner,
                 en.repoName,
                 en.commitSha,

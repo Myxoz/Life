@@ -59,6 +59,9 @@ import com.myxoz.life.subscreens.SocialGraph
 import com.myxoz.life.subscreens.TransactionFeed
 import com.myxoz.life.subscreens.TransactionList
 import com.myxoz.life.subscreens.TransactionOverview
+import com.myxoz.life.subscreens.commits.FullScreenCommit
+import com.myxoz.life.subscreens.commits.FullScreenRepo
+import com.myxoz.life.subscreens.commits.FullScreenRepos
 import com.myxoz.life.subscreens.displayperson.PhotoPicker
 import com.myxoz.life.subscreens.displayperson.ProfileFullScreen
 import com.myxoz.life.subscreens.pick.PickExistingLocation
@@ -293,6 +296,19 @@ class MainActivity : ComponentActivity() {
                     composable("advanced_search") {
                         AdvancedSearch(calendarViewModel)
                     }
+
+                    composable("commits/commit/{sha}") {
+                        val sha = it.arguments?.getString("sha") ?: return@composable
+                        FullScreenCommit(sha)
+                    }
+                    composable("commits/repos") {
+                        FullScreenRepos()
+                    }
+                    composable("commits/repo/{name}") {
+                        val name = it.arguments?.getString("name") ?: return@composable
+                        FullScreenRepo(name)
+                    }
+
                 }
                 LaunchedEffect(Unit) {
                     if(stashedRoute!=null) {

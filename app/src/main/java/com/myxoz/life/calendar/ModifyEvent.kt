@@ -110,6 +110,7 @@ import com.myxoz.life.ui.theme.Colors
 import com.myxoz.life.ui.theme.FontColor
 import com.myxoz.life.ui.theme.FontSize
 import com.myxoz.life.ui.theme.TypoStyle
+import com.myxoz.life.utils.AndroidUtils
 import com.myxoz.life.utils.filteredWith
 import com.myxoz.life.utils.formatMinutesToVisual
 import com.myxoz.life.utils.formatTimeStamp
@@ -1026,7 +1027,7 @@ fun VehicleSelection(defSelected: List<TimedTagLikeContainer<Vehicle>>, inspectV
                             if(event.proposed !is TravelEvent) return@launch
                             val from = Location.fromDB(db, event.proposed.from)
                             val to = Location.fromDB(db, event.proposed.to)
-                            Location.openLink(context, HVV.constructLink(from, to, (event.proposed.start-15*1000L*60L).formatTimeStamp(calendar)))
+                            AndroidUtils.openLink(context, HVV.constructLink(from, to, (event.proposed.start-15*1000L*60L).formatTimeStamp(calendar)))
                         }
                     }
                     .border(2.dp, Colors.TERTIARY, CircleShape)

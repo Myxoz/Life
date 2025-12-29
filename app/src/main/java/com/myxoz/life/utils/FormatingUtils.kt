@@ -18,3 +18,7 @@ fun Long.roundToNearest15Min(): Long {
     return ((this + block / 2) / block) * block
 }
 fun Long.formatMinutesToVisual() = "${this / 60}${(this%60).toInt().padStart(2,'0')}"
+
+fun Int?.plural(s: String) = if(this == 1) "" else s
+operator fun Int.plus(other: Boolean) = this + (if(other) 1 else 0)
+operator fun Boolean.plus(other: Boolean) = if(this && other) 2 else if(this || other) 1 else 0

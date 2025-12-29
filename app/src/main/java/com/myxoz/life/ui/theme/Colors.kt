@@ -3,6 +3,7 @@ package com.myxoz.life.ui.theme
 import androidx.compose.ui.graphics.Color
 
 object Colors {
+    val GITHUB  = Color(0xFFE2E9E4)
     val LIFFYCOLOR = Color(0xFFFFFFFF)
     val APPICONBG = Color(0xFF181818)
     val BACKGROUND = Color(0xFF202020)
@@ -29,6 +30,11 @@ object Colors {
     object Transactions {
         val MINUS = Color(0xFFFF8080)
         val PLUS = Color(0xFF80FF80)
+    }
+    object Commits {
+        val DELETION = Color(0xFFFF8080)
+        val ADDITION = Color(0xFF80FF80)
+        val CHANGE = Color(0xFF80AFFF)
     }
 
     object Permissions {

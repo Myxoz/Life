@@ -85,6 +85,7 @@ import com.myxoz.life.ui.theme.Colors
 import com.myxoz.life.ui.theme.FontColor
 import com.myxoz.life.ui.theme.FontSize
 import com.myxoz.life.ui.theme.TypoStyle
+import com.myxoz.life.utils.AndroidUtils
 import com.myxoz.life.utils.PhoneNumberParser
 import com.myxoz.life.utils.rippleClick
 import com.myxoz.life.utils.toDp
@@ -427,7 +428,7 @@ fun ProfileInfo(largeDataCache: LargeDataCache, profileInfoModel: ProfileInfoMod
                             .border(2.dp, Colors.TERTIARY, CircleShape)
                             .clip(CircleShape)
                             .rippleClick {
-                                Location.openLink(
+                                AndroidUtils.openLink(
                                     context,
                                     HVV.constructLink(
                                         null,
