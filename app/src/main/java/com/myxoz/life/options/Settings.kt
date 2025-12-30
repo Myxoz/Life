@@ -14,6 +14,7 @@ import android.graphics.drawable.InsetDrawable
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
@@ -23,7 +24,9 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
@@ -31,9 +34,13 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.rotate
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.unit.dp
 import androidx.core.graphics.drawable.DrawableCompat
 import com.myxoz.life.LocalNavController
@@ -46,24 +53,28 @@ import com.myxoz.life.ui.theme.FontSize
 import com.myxoz.life.ui.theme.TypoStyle
 import com.myxoz.life.utils.combinedRippleClick
 import com.myxoz.life.utils.toDp
+import java.time.LocalDate
 
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun SettingsComposable() {
     val context = LocalContext.current
+    val nav = LocalNavController.current
     Scaffold(
         containerColor = Colors.BACKGROUND
     ) { innerPadding ->
+        val currentDate = LocalDate.now()
         FlowRow(
             Modifier
                 .fillMaxSize()
                 .padding(innerPadding)
+                .verticalScroll(rememberScrollState())
             ,
             maxItemsInEachRow = 2,
             verticalArrangement = Arrangement.Bottom,
             horizontalArrangement = Arrangement.End
         ) {
-            val nav = LocalNavController.current
+            val isWrapped = currentDate.dayOfYear < 20
             val all = arrayOf(
                 SubOption(R.drawable.github, "Repositories", "commits/repos"),
                 SubOption(R.drawable.info, "Informationen", "information"),
@@ -71,8 +82,65 @@ fun SettingsComposable() {
                 SubOption(R.drawable.bank_transfer, "Transaktionen", "transactions"),
                 SubOption(R.drawable.location, "Karte", "map"),
                 SubOption(R.drawable.settings, "Berechtigungen", "settings/permissions"),
-                SubOption(R.drawable.contacts, "Kontakte", "contacts")
+                SubOption(R.drawable.contacts, "Kontakte", "contacts"),
+                SubOption(R.drawable.contacts, "Kontakte", "contacts"),
             )
+            if(isWrapped) {
+                val gradient = Brush.linearGradient(
+                    listOf(Color(0xFF1BA1E3), Color(0xFF5489D6), Color(0xFF9B72CB), Color(0xFFD96570), Color(0xFFF49C46))
+                )
+                Column(
+                    Modifier
+                        .run{
+                            if(all.size % 2 == 1) {
+                                Modifier.weight(1f)
+                            } else {
+                                Modifier.fillMaxWidth()
+                            }
+                        }
+                        .padding(8.dp)
+                        .border(1.dp, gradient, RoundedCornerShape(20.dp))
+                        .background(Colors.SECONDARY, RoundedCornerShape(20.dp))
+                        .clip(RoundedCornerShape(20.dp))
+                        .combinedRippleClick{
+                            nav.navigate("life_wrapped")
+                        }
+                        .padding(vertical = 20.dp)
+                    ,
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    val fontSize = FontSize.DISPLAY.size.toDp()
+                    Box {
+                        Column(
+                            Modifier
+                                .size(fontSize)
+                            ,
+                            verticalArrangement = Arrangement.Center,
+                            horizontalAlignment = Alignment.CenterHorizontally
+                        ) {
+                            val style = TextStyle.Default.copy(
+                                brush  = gradient,
+                                fontSize = FontSize.DISPLAY.size/2,
+                                fontFamily = FontFamily.Display.family
+                            )
+                            Text(
+                                "20"
+                                ,
+                                style = style
+                            )
+                            Text(
+                                currentDate.year.minus(1).toString().takeLast(2),
+                                Modifier
+                                    .rotate(180f)
+                                ,
+                                style = style
+                            )
+                        }
+                    }
+                    Spacer(Modifier.height(5.dp))
+                    Text("Wrapped", style = TypoStyle(FontColor.PRIMARY, FontSize.LARGE, FontFamily.Display))
+                }
+            }
             all.forEachIndexed { i, it ->
                 val mod = Modifier
                     .padding(8.dp)
@@ -88,7 +156,7 @@ fun SettingsComposable() {
                     }
                     .padding(vertical = 20.dp)
                 Column(
-                    if(i==0 && all.size % 2 != 0) {
+                    if(i==0 && !isWrapped && all.size % 2 != 0) {
                         mod.fillMaxWidth()
                     } else {
                         mod.weight(1f)

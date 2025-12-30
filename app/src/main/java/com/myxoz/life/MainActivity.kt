@@ -65,6 +65,8 @@ import com.myxoz.life.subscreens.commits.FullScreenRepos
 import com.myxoz.life.subscreens.displayperson.PhotoPicker
 import com.myxoz.life.subscreens.displayperson.ProfileFullScreen
 import com.myxoz.life.subscreens.pick.PickExistingLocation
+import com.myxoz.life.subscreens.wrapped.LifeWrappedScreen
+import com.myxoz.life.subscreens.wrapped.ReactiveScreensaverBackground
 import com.myxoz.life.ui.theme.Colors
 import com.myxoz.life.viewmodels.CalendarViewModel
 import com.myxoz.life.viewmodels.ContactsViewModel
@@ -307,6 +309,9 @@ class MainActivity : ComponentActivity() {
                     composable("commits/repo/{name}") {
                         val name = it.arguments?.getString("name") ?: return@composable
                         FullScreenRepo(name)
+                    }
+                    composable("life_wrapped") {
+                        LifeWrappedScreen()
                     }
 
                 }

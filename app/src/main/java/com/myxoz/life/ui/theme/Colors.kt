@@ -4,6 +4,7 @@ import androidx.compose.ui.graphics.Color
 
 object Colors {
     val GITHUB  = Color(0xFFE2E9E4)
+    val GITHUBBG = Color(0xFF1f6feb)
     val LIFFYCOLOR = Color(0xFFFFFFFF)
     val APPICONBG = Color(0xFF181818)
     val BACKGROUND = Color(0xFF202020)

@@ -2,7 +2,7 @@ package com.myxoz.life.events.additionals
 
 import com.myxoz.life.R
 
-enum class Vehicle(override val id: Int, override val drawable: Int): TagLike{
+enum class Vehicle(override val id: Int, override val drawable: Int): TagLike{ // TODO CHange Taglike and include display name
     Gehen(1, R.drawable.walk),
     Fahrrad(2, R.drawable.bike),
     Auto(3, R.drawable.car),

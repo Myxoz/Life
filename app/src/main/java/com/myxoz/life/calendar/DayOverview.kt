@@ -63,6 +63,7 @@ import com.myxoz.life.ui.theme.FontColor
 import com.myxoz.life.ui.theme.FontFamily
 import com.myxoz.life.ui.theme.FontSize
 import com.myxoz.life.ui.theme.TypoStyle
+import com.myxoz.life.utils.formatMToDistance
 import com.myxoz.life.utils.rippleClick
 import kotlinx.coroutines.delay
 import java.time.LocalDate
@@ -317,7 +318,7 @@ fun DisplayStepsBlock(steps: Long?){
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
             Text("Schritte", style = TypoStyle(FontColor.PRIMARY, FontSize.MEDIUM).copy(fontWeight = FontWeight.Bold))
-            Text("${if(steps!=null) "ca. ${(steps*.7).toInt().mToDistance()} · " else ""}${((steps?:0L)/ stepsGoal *100).toInt()}%", style = TypoStyle(FontColor.PRIMARY, FontSize.MEDIUM).copy(fontWeight = FontWeight.Bold))
+            Text("${if(steps!=null) "ca. ${(steps*.7).toInt().formatMToDistance()} · " else ""}${((steps?:0L)/ stepsGoal *100).toInt()}%", style = TypoStyle(FontColor.PRIMARY, FontSize.MEDIUM).copy(fontWeight = FontWeight.Bold))
         }
     }
 }
@@ -342,13 +343,6 @@ fun BankingBlock(bankingEntries: List<BankingEntity>, openBankingMenu: ()->Unit)
     }
 }
 
-fun Int.mToDistance(): String =
-    when(this) {
-        in 0..1000 -> "${this}m"
-        in 1000..10_000 -> "${this/1000},${(this/10)%100} km"
-        in 10_000..100_000 -> "${this/1000},${(this/100)%10} km"
-        else -> "${this}m"
-    }
 @Composable
 fun StepCounterTrigger(trigger: (Long)->Unit) {
     val context = LocalContext.current

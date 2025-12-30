@@ -50,6 +50,11 @@ interface PeopleDao {
     @Query("SELECT * FROM people")
     suspend fun getAllPeople(): List<PersonEntity>
 
+    @Query("""SELECT * FROM events e INNER JOIN people_mapping AS pm ON e.id = pm.event_id WHERE pm.person_id IN (:people) AND e.start = (
+            SELECT MIN(e2.start) FROM events e2 JOIN people_mapping pm2 ON e2.id = pm2.event_id WHERE pm2.person_id = pm.person_id)""")
+    suspend fun getFirstEventsFor(people: List<Long>): List<EventEntity>
+
+
     @Delete
     suspend fun deletePerson(person: PersonEntity)
 }

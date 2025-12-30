@@ -34,4 +34,8 @@ interface DaysDao {
 
     @Query("SELECT * FROM days ORDER BY date DESC LIMIT :n")
     suspend fun getLastNDays(n: Int): List<DaysEntity>
+
+    @Query("SELECT * FROM days WHERE date > :start AND date < :ends")
+    suspend fun getDaysBetween(start: Long, ends: Long): List<DaysEntity>
+
 }

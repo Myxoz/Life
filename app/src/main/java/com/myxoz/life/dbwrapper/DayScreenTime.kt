@@ -23,4 +23,7 @@ interface DayScreenTimeDao {
 
     @Query("SELECT * FROM dayscreentime WHERE date = :date")
     suspend fun getScreenTimesByDay(date: Long): List<DayScreenTimeEntity>
+
+    @Query("SELECT * FROM dayscreentime WHERE date > :start AND date < :ends")
+    suspend fun getScreenTimesByRange(start: Long, ends: Long): List<DayScreenTimeEntity>
 }

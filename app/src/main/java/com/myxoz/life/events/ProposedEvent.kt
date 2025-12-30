@@ -80,15 +80,15 @@ abstract class ProposedEvent(start: Long, end: Long, val type: EventType, val us
     fun overlaps(other: DefinedDurationEvent): Boolean = start < other.end && end > other.start
 
     companion object {
-        suspend fun from(api: StorageManager, event: EventEntity): ProposedEvent? =
+        suspend fun from(db: StorageManager, event: EventEntity): ProposedEvent? =
             when (event.type) {
-                EventType.Sleep.id -> { SleepEvent.from(api, event) }
-                EventType.Spont.id -> { SpontEvent.from(api, event) }
-                EventType.Hobby.id -> { HobbyEvent.from(api, event) }
-                EventType.Learn.id -> { LearnEvent.from(api, event) }
-                EventType.Social.id -> { SocialEvent.from(api, event) }
-                EventType.Travel.id -> { TravelEvent.from(api, event) }
-                EventType.DigSoc.id -> { DigSocEvent.from(api, event) }
+                EventType.Sleep.id -> { SleepEvent.from(db, event) }
+                EventType.Spont.id -> { SpontEvent.from(db, event) }
+                EventType.Hobby.id -> { HobbyEvent.from(db, event) }
+                EventType.Learn.id -> { LearnEvent.from(db, event) }
+                EventType.Social.id -> { SocialEvent.from(db, event) }
+                EventType.Travel.id -> { TravelEvent.from(db, event) }
+                EventType.DigSoc.id -> { DigSocEvent.from(db, event) }
                 else -> { null }
             }
         fun getProposedEventByJson(json: JSONObject): ProposedEvent? {

@@ -5,7 +5,7 @@ import com.myxoz.life.ui.theme.Colors
 
 enum class EventType(val id: Int, val color: Color, val selectedColor: Color, val calendarName: String){
     Empty(1, Colors.SELECTED, Color.White, "DEBUG"),
-    Sleep(2, Colors.Calendar.Sleep.BG, Color.White, "Sleep"),
+    Sleep(2, Colors.Calendar.Sleep.BG, Color.White, "Schlaf"),
     Spont(3, Colors.Calendar.Spont.BG, Color.Black, "Spontan"),
     Hobby(4, Colors.Calendar.Hobby.BG, Color.White, "Hobby"),
     Learn(5, Colors.Calendar.Learn.BG, Color.White, "Lernen"),
