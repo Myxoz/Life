@@ -36,21 +36,23 @@ import com.myxoz.life.utils.toSp
 import org.json.JSONArray
 import org.json.JSONObject
 
-enum class EventTag(override val id: Int, val displayName: String, val queryString: List<String>, override val drawable: Int): TagLike {
-    Party(1, "Feier", listOf("Party", "Feiern", "Geburtstagsfeier"), R.drawable.party),
-    Eat(2, "Essen", listOf("Futtern", "Snack", "Snacken", "Frühstück", "Mittagessen", "Abendessen", "Fooden"), R.drawable.food),
-    Cards(3, "Gesellschafsspiele", listOf("Karten", "Brettspiele", "Poker", "Uno", "Spieleabend"), R.drawable.poker_card),
-    Shopping(4, "Shopping", listOf("Einkaufen", "Shoppen", "Mall", "Einkäufe"), R.drawable.shopping),
-    Design(5, "Design", listOf("Concept Art", "Skizzieren", "Zeichnen", "Artwork", "Entwurf"), R.drawable.concept),
-    Code(6, "Code", listOf("Programmieren", "Script", "Dev", "Software"), R.drawable.code),
-    Watch(7,"Streaming", listOf("Netflix", "Serien", "Filme", "Film", "Twitch", "Binge", "Kino", "Stream"), R.drawable.watch),
-    Alcohol(8, "Saufen", listOf("Alkohol", "Trinken", "Bier", "Wein", "Shots", "Betrinken", "Besaufen", "Pegel"), R.drawable.alc),
-    Shower(9, "Hygiene", listOf("Duschen", "Baden", "Pflege", "Rasieren"), R.drawable.shower),
-    P(10, "P", listOf(), R.drawable.p),
-    S(11, "S", listOf(), R.drawable.s),
-    Lecture(12, "Vorlesung", listOf("Präsentation", "Vorstellung"), R.drawable.lecture),
-    Studium(13, "Uni", listOf("Universität", "Studium", "Studieren"), R.drawable.study),
-    Android(14, "Android", listOf(), R.drawable.android),
+enum class EventTag(override val id: Int, val displayName: String, val queryString: Array<String>, override val drawable: Int): TagLike {
+    Party(1, "Feier", arrayOf("Party", "Feiern", "Geburtstagsfeier"), R.drawable.party),
+    Eat(2, "Essen", arrayOf("Futtern", "Snack", "Snacken", "Frühstück", "Mittagessen", "Abendessen", "Fooden"), R.drawable.food),
+    Cards(3, "Gesellschafsspiele", arrayOf("Karten", "Brettspiele", "Poker", "Uno", "Spieleabend"), R.drawable.poker_card),
+    Shopping(4, "Shopping", arrayOf("Einkaufen", "Shoppen", "Mall", "Einkäufe"), R.drawable.shopping),
+    Design(5, "Design", arrayOf("Concept Art", "Skizzieren", "Zeichnen", "Artwork", "Entwurf"), R.drawable.concept),
+    Code(6, "Code", arrayOf("Programmieren", "Script", "Dev", "Software"), R.drawable.code),
+    Watch(7,"Streaming", arrayOf("Netflix", "Serien", "Filme", "Film", "Twitch", "Binge", "Kino", "Stream"), R.drawable.watch),
+    Alcohol(8, "Saufen", arrayOf("Alkohol", "Trinken", "Bier", "Wein", "Shots", "Betrinken", "Besaufen", "Pegel"), R.drawable.alc),
+    Shower(9, "Hygiene", arrayOf("Duschen", "Baden", "Pflege", "Rasieren"), R.drawable.shower),
+    P(10, "P", arrayOf(), R.drawable.p),
+    S(11, "S", arrayOf(), R.drawable.s),
+    Lecture(12, "Vorlesung", arrayOf("Präsentation", "Vorstellung"), R.drawable.lecture),
+    Studium(13, "Uni", arrayOf("Universität", "Studium", "Studieren"), R.drawable.study),
+    Android(14, "Android", arrayOf(), R.drawable.android),
+    Clean(15, "Putzen", arrayOf("Saugen", "Schrubben", "Fegen", "Feudeln", "Wischen"), R.drawable.clean),
+    Cook(16, "Kochen", arrayOf("Schneiden", "Mixen", "Zubereiten"), R.drawable.cook),
     ;
     fun matches(query: String) = displayName.contains(query, true) || queryString.any { it.contains(query, true) }
     // Always add to getResource and to getTagById!!!
