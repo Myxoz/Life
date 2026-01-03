@@ -12,3 +12,4 @@ local.properties
 /app/src/test/java/com/myxoz/life/
 app/release
 .kotlin
+app/src/main/res/values/mapbox_access_token.xml
