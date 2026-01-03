@@ -83,7 +83,6 @@ fun SettingsComposable() {
                 SubOption(R.drawable.location, "Karte", "map"),
                 SubOption(R.drawable.settings, "Berechtigungen", "settings/permissions"),
                 SubOption(R.drawable.contacts, "Kontakte", "contacts"),
-                SubOption(R.drawable.contacts, "Kontakte", "contacts"),
             )
             if(isWrapped) {
                 val gradient = Brush.linearGradient(

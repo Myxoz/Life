@@ -51,6 +51,8 @@ enum class EventTag(override val id: Int, val displayName: String, val queryStri
     Lecture(12, "Vorlesung", listOf("Präsentation", "Vorstellung"), R.drawable.lecture),
     Studium(13, "Uni", listOf("Universität", "Studium", "Studieren"), R.drawable.study),
     Android(14, "Android", listOf(), R.drawable.android),
+    Clean(15, "Putzen", listOf("Saugen", "Schrubben", "Fegen", "Feudeln", "Wischen"), R.drawable.clean),
+    Cook(16, "Kochen", listOf("Schneiden", "Mixen", "Zubereiten"), R.drawable.cook),
     ;
     fun matches(query: String) = displayName.contains(query, true) || queryString.any { it.contains(query, true) }
     // Always add to getResource and to getTagById!!!
