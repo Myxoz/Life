@@ -157,7 +157,7 @@ class ProfileInfoModel(): ViewModel(){
                 renderPieChart(db)
             }
     }
-    suspend fun openPersonDetails(personId: Long, nav: NavController, db: StorageManager, context: Context){
+    fun openPersonDetails(personId: Long, nav: NavController, db: StorageManager, context: Context){
         isEditing.value = false
         isExtended.value = false
         isProfilePictureFullScreen.value = false

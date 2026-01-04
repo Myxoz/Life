@@ -58,7 +58,7 @@ import androidx.core.content.edit
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.myxoz.life.LocalStorage
 import com.myxoz.life.api.SyncedEvent
-import com.myxoz.life.calendar.getMonthByCalendarMonth
+import com.myxoz.life.calendar.dayoverview.getMonthByCalendarMonth
 import com.myxoz.life.ui.theme.Colors
 import com.myxoz.life.ui.theme.FontColor
 import com.myxoz.life.ui.theme.FontSize

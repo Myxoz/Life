@@ -1,4 +1,4 @@
-package com.myxoz.life.calendar
+package com.myxoz.life.calendar.dayoverview
 
 import android.content.Context
 import android.content.Context.MODE_PRIVATE
@@ -6,8 +6,10 @@ import android.hardware.Sensor
 import android.hardware.SensorEvent
 import android.hardware.SensorEventListener
 import android.hardware.SensorManager
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -19,6 +21,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -34,6 +37,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
@@ -41,15 +45,21 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.ImageBitmap
+import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
+import com.myxoz.life.LocalNavController
 import com.myxoz.life.LocalSettings
 import com.myxoz.life.LocalStorage
 import com.myxoz.life.R
+import com.myxoz.life.api.PersonSyncable
+import com.myxoz.life.api.ProfilePictureSyncable
 import com.myxoz.life.calendar.feed.msToDisplay
 import com.myxoz.life.calendar.feed.screenTimeGoal
 import com.myxoz.life.calendar.feed.stepsGoal
@@ -63,14 +73,18 @@ import com.myxoz.life.ui.theme.FontColor
 import com.myxoz.life.ui.theme.FontFamily
 import com.myxoz.life.ui.theme.FontSize
 import com.myxoz.life.ui.theme.TypoStyle
+import com.myxoz.life.utils.MaterialShapes
 import com.myxoz.life.utils.formatMToDistance
 import com.myxoz.life.utils.rippleClick
+import com.myxoz.life.utils.toShape
+import com.myxoz.life.viewmodels.ProfileInfoModel
 import kotlinx.coroutines.delay
 import java.time.LocalDate
 import java.time.ZoneId
+import java.time.temporal.ChronoUnit
 
 @Composable
-fun DayOverviewComposable(navController: NavController, epochDay: Long){
+fun DayOverviewComposable(navController: NavController, epochDay: Long, profileInfoViewModel: ProfileInfoModel){
     val db = LocalStorage.current
     val settings = LocalSettings.current
     val isToday = remember { LocalDate.now().toEpochDay() ==  epochDay }
@@ -79,9 +93,8 @@ fun DayOverviewComposable(navController: NavController, epochDay: Long){
     var successfulness: Int? by remember { mutableStateOf(null) }
     var screenTime: Long? by remember { mutableStateOf(null) }
     var steps: Long? by remember { mutableStateOf(null) }
-    val bankingEntries = remember {
-        mutableStateListOf<BankingEntity>()
-    }
+    val bankingEntries = remember { mutableStateListOf<BankingEntity>() }
+    var birthdays by remember { mutableStateOf(listOf<PersonSyncable>()) }
     val pieChart = remember { PieChart() }
     val dateString = remember {
         val date = LocalDate.ofEpochDay(epochDay)
@@ -106,6 +119,7 @@ fun DayOverviewComposable(navController: NavController, epochDay: Long){
                 date.plusDays(1).atStartOfDay(zone).toEpochSecond()*1000L
             )
         )
+        birthdays = db.people.getPeopleWithBirthdayAt(date).map { PersonSyncable.from(db, it) }
         val total = mutableMapOf<String, Long>()
         val startOfDay = LocalDate.ofEpochDay(epochDay).atStartOfDay(zone).toEpochSecond()*1000L
         val endOfDay = LocalDate.ofEpochDay(epochDay).plusDays(1).atStartOfDay(zone).toEpochSecond()*1000L
@@ -117,6 +131,9 @@ fun DayOverviewComposable(navController: NavController, epochDay: Long){
             val cal = EventType.getById(it.key.toIntOrNull()?:return@mapValues PieChart.Companion.PieChartPart(EventType.Empty.color, 0.0))
             PieChart.Companion.PieChartPart(cal?.color ?: EventType.Empty.color, it.value.toDouble())
         }) //  Also in SummarizeDay
+
+
+        // Nogo section, this wents into a while true loop (if today), write async operation above
         if(isToday && settings.features.screentime.has.value) {
             val zone = ZoneId.systemDefault()
             while (true){
@@ -156,6 +173,7 @@ fun DayOverviewComposable(navController: NavController, epochDay: Long){
             FeelingsBlock(happyness, stress, successfulness)
             Spacer(Modifier)
             if(showSteps) DisplayStepsBlock(steps)
+            if(birthdays.isNotEmpty()) BirthdayBlock(birthdays, profileInfoViewModel, LocalDate.ofEpochDay(epochDay))
             val screentime by settings.features.screentime.has.collectAsState()
             if(screentime) DisplayTimeBlock(screenTime) { navController.navigate("day/$epochDay/screentime") }
             if (bankingEntries.isNotEmpty()) BankingBlock(bankingEntries) { navController.navigate("day/$epochDay/transactions") }
@@ -180,6 +198,77 @@ fun DayOverviewComposable(navController: NavController, epochDay: Long){
     }
 }
 
+@Composable
+fun BirthdayBlock(birthdays: List<PersonSyncable>, profileInfoViewModel: ProfileInfoModel, selectedDate: LocalDate){
+    Column (
+        Modifier
+            .fillMaxWidth()
+            .border(1.dp, Colors.TERTIARY,  RoundedCornerShape(25.dp))
+            .background(Colors.SECONDARY, RoundedCornerShape(25.dp))
+            .clip(RoundedCornerShape(25.dp))
+            .confetti(selectedDate == LocalDate.now())
+            .padding(20.dp)
+    ) {
+        Text("Geburtstage", style = TypoStyle(FontColor.SECONDARY, FontSize.MEDIUM))
+        Spacer(Modifier.height(10.dp))
+        Row(
+            Modifier
+                .fillMaxWidth()
+                .horizontalScroll(rememberScrollState())
+        ) {
+            val context = LocalContext.current
+            birthdays.forEach { person ->
+                val profilePicture by produceState<ImageBitmap?>(null) {
+                    value = ProfilePictureSyncable.loadBitmapByPerson(context, person.id)?.asImageBitmap()
+                }
+                val navController = LocalNavController.current
+                val db = LocalStorage.current
+                val context = LocalContext.current
+                Box {
+                    Column(
+                        Modifier
+                            .width(80.dp)
+                            .clip(RoundedCornerShape(5.dp))
+                            .rippleClick{
+                                profileInfoViewModel.openPersonDetails(person.id, navController, db, context)
+                            }
+                        ,
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        Box(
+                            Modifier
+                                .size(70.dp)
+                                .clip(MaterialShapes.Cookie9Sided.toShape())
+                        ) {
+                            val image = profilePicture
+                            if(image != null) {
+                                Image(
+                                    image,
+                                    person.name,
+                                    Modifier
+                                        .fillMaxSize()
+                                )
+                            } else {
+                                Box(
+                                    Modifier
+                                        .fillMaxSize()
+                                        .background(Colors.TERTIARY)
+                                )
+                            }
+                        }
+                        Spacer(Modifier.height(5.dp))
+                        Text(person.name, style = TypoStyle(FontColor.PRIMARY, FontSize.MEDIUM), textAlign = TextAlign.Center)
+                    }
+                    Text(
+                        "${ChronoUnit.YEARS.between(LocalDate.ofEpochDay(person.birthday?:0L), selectedDate)}." ,
+                        style = TypoStyle(FontColor.PRIMARY, FontSize.MLARGE, FontFamily.Display),
+                        textAlign = TextAlign.Center
+                    )
+                }
+            }
+        }
+    }
+}
 @Composable
 fun FeelingsBlock(happyness: Int?, stress: Int?, successfulness: Int?){
     Column (

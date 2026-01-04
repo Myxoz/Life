@@ -37,7 +37,7 @@ import com.myxoz.life.api.API
 import com.myxoz.life.api.BankingSidecar
 import com.myxoz.life.api.SyncedEvent
 import com.myxoz.life.api.jsonObjArray
-import com.myxoz.life.calendar.DayOverviewComposable
+import com.myxoz.life.calendar.dayoverview.DayOverviewComposable
 import com.myxoz.life.calendar.FullScreenEvent
 import com.myxoz.life.calendar.HomeComposable
 import com.myxoz.life.dbwrapper.DatabaseProvider
@@ -66,7 +66,6 @@ import com.myxoz.life.subscreens.displayperson.PhotoPicker
 import com.myxoz.life.subscreens.displayperson.ProfileFullScreen
 import com.myxoz.life.subscreens.pick.PickExistingLocation
 import com.myxoz.life.subscreens.wrapped.LifeWrappedScreen
-import com.myxoz.life.subscreens.wrapped.ReactiveScreensaverBackground
 import com.myxoz.life.ui.theme.Colors
 import com.myxoz.life.viewmodels.CalendarViewModel
 import com.myxoz.life.viewmodels.ContactsViewModel
@@ -254,7 +253,7 @@ class MainActivity : ComponentActivity() {
                     )) {
                         val epochDay = (it.arguments?.getLong("epochDay") ?: 0).run { if(this == 0L) LocalDate.now().toEpochDay() else this}
                         // Semantic value: 0 == today, due to pending intent targetRoute, which isnt computable
-                        DayOverviewComposable(navController, epochDay)
+                        DayOverviewComposable(navController, epochDay, profileInfoModel)
                     }
                     composable("day/{epochDay}/screentime", arguments = listOf(
                         navArgument("epochDay") { type = NavType.LongType }

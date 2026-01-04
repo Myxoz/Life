@@ -36,6 +36,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -71,7 +72,7 @@ import com.myxoz.life.R
 import com.myxoz.life.api.API
 import com.myxoz.life.api.SyncedEvent
 import com.myxoz.life.calendar.feed.SegmentedEvent.Companion.getSegmentedEvents
-import com.myxoz.life.calendar.getWeekDayByInt
+import com.myxoz.life.calendar.dayoverview.getWeekDayByInt
 import com.myxoz.life.dbwrapper.DaysEntity
 import com.myxoz.life.events.EmptyEvent
 import com.myxoz.life.events.ProposedEvent
@@ -118,6 +119,7 @@ fun DayComposable(
     val hourInPx = with(density) { oneHourDp.toPx() }
     val calendar = remember { Calendar.getInstance() }
     var instantEvents by remember { mutableStateOf(viewModel.instantEventCache[date]?.toList() ?: listOf()) }
+    var birthdayAmount by remember { mutableIntStateOf(0) }
     val lastUpdateTs by viewModel.lastEventUpdateTs.collectAsState()
     val width = fullWidth*.97f
     LaunchedEffect(Unit) {
@@ -139,6 +141,7 @@ fun DayComposable(
                 0
             )
         }
+        birthdayAmount = db.people.getPeopleWithBirthdayAt(date).size
     }
     LaunchedEffect(lastUpdateTs) {
         withContext(Dispatchers.IO){
@@ -189,6 +192,14 @@ fun DayComposable(
                 },
             horizontalArrangement = Arrangement.spacedBy(10.dp)
         ) {
+            repeat(birthdayAmount) {
+                Icon(
+                    painterResource(R.drawable.birthday),
+                    "Birthday",
+                    Modifier.fillMaxHeight(),
+                    Colors.PRIMARYFONT
+                )
+            }
             val dayEntity = dayEntity
             val screentime by settings.features.screentime.has.collectAsState()
             val steps by settings.features.stepCounting.has.collectAsState()
