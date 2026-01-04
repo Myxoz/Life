@@ -133,9 +133,9 @@ class ProfileInfoModel(): ViewModel(){
         val id = id.value ?: return
         val dbEntry = db.people.getPersonById(id) ?: return
         val location = dbEntry.home?.let { db.location.getLocationById(it) }?.let { Location.from(it) }
-        val socials = db.socials.getSocialsFromPerson(id)
-        platforms.value = socials.mapNotNull { PersonSyncable.Companion.Socials.from(it) }
-        platformInputs.value = platforms.value.map { it.asString() }
+        val socials = PersonSyncable.getOrderedSocials(db.socials.getSocialsFromPerson(id).mapNotNull { PersonSyncable.Companion.Socials.from(it) })
+        platforms.value = socials
+        platformInputs.value = socials.map { it.asString() }
         name.value = dbEntry.name
         fullName.value = dbEntry.fullname
         phone.value = dbEntry.phoneNumber

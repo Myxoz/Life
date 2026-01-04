@@ -535,35 +535,41 @@ fun ProfileInfo(largeDataCache: LargeDataCache, profileInfoModel: ProfileInfoMod
                     }
                 }
                 val lastInteraction by profileInfoModel.lastInteraction.collectAsState()
-                if(lastInteraction!=null) {
-                    Chip(
-                        {
-                            val li = lastInteraction ?: return@Chip
-                            socialGraphViewModel.selectedNode.value = profileInfoModel.id.value
-                            socialGraphViewModel.dateRange.value = min(
-                                socialGraphViewModel.dateRange.value,
-                                when((System.currentTimeMillis()-li.end)/(1000L*3600L*24L)) {
-                                    in Int.MIN_VALUE..6 -> 3
-                                    in 6..29 -> 2
-                                    in 29..356 -> 1
-                                    else -> 0
-                                }
-                            )
-                            nav.navigate("social_graph")
-                        },
-                        color = Colors.TERTIARY
-                    ) {
-                        Box(
-                            Modifier.animateContentSize(tween(animationDuration)),
-                            contentAlignment = Alignment.Center
+                AnimatedVisibility(
+                    !isEditing,
+                    enter = fadeIn(tween(animationDuration)) + expandHorizontally(tween(animationDuration)),
+                    exit = fadeOut(tween(animationDuration)) + shrinkHorizontally(tween(animationDuration))
+                ) {
+                    if (lastInteraction != null) {
+                        Chip(
+                            {
+                                val li = lastInteraction ?: return@Chip
+                                socialGraphViewModel.selectedNode.value = profileInfoModel.id.value
+                                socialGraphViewModel.dateRange.value = min(
+                                    socialGraphViewModel.dateRange.value,
+                                    when ((System.currentTimeMillis() - li.end) / (1000L * 3600L * 24L)) {
+                                        in Int.MIN_VALUE..6 -> 3
+                                        in 6..29 -> 2
+                                        in 29..356 -> 1
+                                        else -> 0
+                                    }
+                                )
+                                nav.navigate("social_graph")
+                            },
+                            color = Colors.TERTIARY
                         ) {
-                            Text("", style = TypoStyle(FontColor.PRIMARY, FontSize.MEDIUM))
-                            Icon(
-                                painterResource(R.drawable.graph),
-                                "Social Graph",
-                                Modifier.size(FontSize.MEDIUM.size.toDp()),
-                                Colors.PRIMARYFONT
-                            )
+                            Box(
+                                Modifier.animateContentSize(tween(animationDuration)),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Text("", style = TypoStyle(FontColor.PRIMARY, FontSize.MEDIUM))
+                                Icon(
+                                    painterResource(R.drawable.graph),
+                                    "Social Graph",
+                                    Modifier.size(FontSize.MEDIUM.size.toDp()),
+                                    Colors.PRIMARYFONT
+                                )
+                            }
                         }
                     }
                 }
