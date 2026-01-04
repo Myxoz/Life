@@ -1,5 +1,6 @@
 package com.myxoz.life.search
 
+import android.annotation.SuppressLint
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -94,6 +95,15 @@ fun AdvancedSearch(calendarViewModel: CalendarViewModel){
                         search.titleQuery.value = it
                     }
                 }
+                if(selectedCalendars.isNotEmpty() && selectedCalendars.all { it.isDetailsEvent() }) {
+                    val details by search.detailsQuery.collectAsState()
+                    InputField(
+                        details,
+                        "Details",
+                    ){
+                        search.detailsQuery.value = it
+                    }
+                }
                 if(selectedCalendars.isNotEmpty() && selectedCalendars.none { it != EventType.Travel }){
                     val from by search.locationFrom.collectAsState()
                     MultipleLoctionBar(
@@ -102,6 +112,7 @@ fun AdvancedSearch(calendarViewModel: CalendarViewModel){
                     ) {
                         search.locationFrom.value = it
                     }
+                    @SuppressLint("StateFlowValueCalledInComposition") // Default value, this is fine and SHOULD NOT update when it updates
                     TagLikeSelection(Vehicle.entries.toList(), search.selectedVehicles.value){
                         search.selectedVehicles.value = it
                     }
