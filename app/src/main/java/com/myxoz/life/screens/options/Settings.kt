@@ -11,6 +11,9 @@ import android.graphics.drawable.ColorDrawable
 import android.graphics.drawable.Drawable
 import android.graphics.drawable.Icon
 import android.graphics.drawable.InsetDrawable
+import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.spring
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
@@ -31,6 +34,8 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -53,6 +58,7 @@ import com.myxoz.life.ui.theme.FontSize
 import com.myxoz.life.ui.theme.TypoStyle
 import com.myxoz.life.utils.combinedRippleClick
 import com.myxoz.life.utils.toDp
+import kotlinx.coroutines.delay
 import java.time.LocalDate
 
 @OptIn(ExperimentalLayoutApi::class)
@@ -110,9 +116,35 @@ fun SettingsComposable() {
                 ) {
                     val fontSize = FontSize.DISPLAY.size.toDp()
                     Box {
+                        val rotation = remember { Animatable(0f) }
+
+                        LaunchedEffect(Unit) {
+                            while (true) {
+                                delay(2000)
+                                rotation.animateTo(
+                                    targetValue = 180f,
+                                    animationSpec = spring(
+                                        Spring.DampingRatioMediumBouncy,
+                                        Spring.StiffnessVeryLow
+                                    )
+                                )
+
+                                delay(2000)
+
+                                rotation.animateTo(
+                                    targetValue = 360f,
+                                    animationSpec = spring(
+                                        Spring.DampingRatioMediumBouncy,
+                                        Spring.StiffnessVeryLow
+                                    )
+                                )
+                                rotation.snapTo(0f)
+                            }
+                        }
                         Column(
                             Modifier
                                 .size(fontSize)
+                                .rotate(rotation.value)
                             ,
                             verticalArrangement = Arrangement.Center,
                             horizontalAlignment = Alignment.CenterHorizontally
