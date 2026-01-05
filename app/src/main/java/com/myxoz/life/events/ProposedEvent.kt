@@ -8,7 +8,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.unit.Dp
 import com.myxoz.life.api.API
-import com.myxoz.life.calendar.feed.DefinedDurationEvent
+import com.myxoz.life.screens.feed.main.DefinedDurationEvent
 import com.myxoz.life.dbwrapper.EventEntity
 import com.myxoz.life.dbwrapper.StorageManager
 import com.myxoz.life.dbwrapper.WaitingSyncEntity

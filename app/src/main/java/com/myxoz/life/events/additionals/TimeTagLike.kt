@@ -13,7 +13,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.times
-import com.myxoz.life.calendar.TimeBasedVisualTransformation
+import com.myxoz.life.screens.feed.fullscreenevent.TimeBasedVisualTransformation
 import com.myxoz.life.ui.Chip
 import com.myxoz.life.ui.theme.Colors
 import com.myxoz.life.ui.theme.FontColor

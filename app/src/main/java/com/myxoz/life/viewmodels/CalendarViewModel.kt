@@ -4,13 +4,13 @@ import android.content.Context
 import androidx.compose.runtime.mutableStateListOf
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.myxoz.life.api.SyncedEvent
-import com.myxoz.life.autodetect.AutoDetect
-import com.myxoz.life.calendar.feed.InstantEvent
+import com.myxoz.life.api.syncables.SyncedEvent
+import com.myxoz.life.android.autodetect.AutoDetect
+import com.myxoz.life.screens.feed.main.InstantEvent
 import com.myxoz.life.dbwrapper.BankingEntity
 import com.myxoz.life.dbwrapper.StorageManager
 import com.myxoz.life.events.ProposedEvent
-import com.myxoz.life.search.SearchField
+import com.myxoz.life.screens.feed.search.SearchField
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow

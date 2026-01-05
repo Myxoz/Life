@@ -18,8 +18,8 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.times
 import com.myxoz.life.R
-import com.myxoz.life.autodetect.AutoDetect
-import com.myxoz.life.autodetect.AutoDetectSleep
+import com.myxoz.life.android.autodetect.AutoDetect
+import com.myxoz.life.android.autodetect.AutoDetectSleep
 import com.myxoz.life.dbwrapper.EventEntity
 import com.myxoz.life.dbwrapper.StorageManager
 import com.myxoz.life.events.additionals.EventType

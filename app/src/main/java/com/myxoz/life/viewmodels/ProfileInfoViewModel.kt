@@ -5,18 +5,18 @@ import android.graphics.Bitmap
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.navigation.NavController
-import com.myxoz.life.api.Location
-import com.myxoz.life.api.PersonSyncable
-import com.myxoz.life.api.ProfilePictureSyncable
+import com.myxoz.life.api.syncables.Location
+import com.myxoz.life.api.syncables.PersonSyncable
+import com.myxoz.life.api.syncables.ProfilePictureSyncable
 import com.myxoz.life.dbwrapper.EventEntity
 import com.myxoz.life.dbwrapper.StorageManager
-import com.myxoz.life.diagrams.PieChart
+import com.myxoz.life.utils.diagrams.PieChart
 import com.myxoz.life.events.additionals.EventType
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 
-class ProfileInfoModel(): ViewModel(){
+class ProfileInfoModel(val db: StorageManager): ViewModel(){
     val id  = MutableStateFlow<Long?>(null)
     val name = MutableStateFlow<String?>(null)
     val fullName = MutableStateFlow<String?>(null)
@@ -37,7 +37,7 @@ class ProfileInfoModel(): ViewModel(){
     val platforms = MutableStateFlow(listOf<PersonSyncable.Companion.Socials>())
     val platformInputs = MutableStateFlow(listOf<String>())
     val isProfilePictureFullScreen = MutableStateFlow(false) /* This doesnt  belong here,  but this is my app so I dont care */
-    suspend fun saveAndSync(db: StorageManager){
+    suspend fun saveAndSync(){
         val id = id.value?:throw Error("Trying to sync person with id null (before id was set)")
         val name = name.value?:throw Error("Trying to sync person without name (before name was set)")
         iban.value = iban.value?.takeIf { it.length > 4 }?.replace(" ", "")
@@ -58,7 +58,7 @@ class ProfileInfoModel(): ViewModel(){
         ).saveAndSync(db)
         platforms.value = newSocials
     }
-    suspend fun renderPieChart(db: StorageManager){
+    suspend fun renderPieChart(){
         val totals = mutableMapOf<Int, Long>()
         val id = id.value?:return
         val timeframe = chartScale.value
@@ -129,7 +129,7 @@ class ProfileInfoModel(): ViewModel(){
         out += current
         return out
     }
-    suspend fun setStateToDb(db: StorageManager) {
+    suspend fun setStateToDb() {
         val id = id.value ?: return
         val dbEntry = db.people.getPersonById(id) ?: return
         val location = dbEntry.home?.let { db.location.getLocationById(it) }?.let { Location.from(it) }
@@ -143,25 +143,25 @@ class ProfileInfoModel(): ViewModel(){
         home.value = location
         iban.value = dbEntry.iban
     }
-    fun updateStateIfOutdated(personId: Long, db: StorageManager, context: Context){
+    fun updateStateIfOutdated(personId: Long, context: Context){
         // Changed due to caching reasons
         if(!isEditing.value || id.value != personId)
             viewModelScope.launch {
                 id.value = personId
-                setStateToDb(db)
+                setStateToDb()
                 val entry = db.profilePictureDao.getPPById(personId)
                 if(entry!=null && entry.hasPP) picture.value = ProfilePictureSyncable.loadBitmapByPerson(context, personId) else picture.value = null
                 val now = System.currentTimeMillis()
                 _lastInteraction.value = db.people.getLastInteractionByPerson(personId, now)
                 _nextInteraction.value = db.people.getNextPlanedEvent(personId, now)
-                renderPieChart(db)
+                renderPieChart()
             }
     }
-    fun openPersonDetails(personId: Long, nav: NavController, db: StorageManager, context: Context){
+    fun openPersonDetails(personId: Long, nav: NavController, context: Context){
         isEditing.value = false
         isExtended.value = false
         isProfilePictureFullScreen.value = false
-        updateStateIfOutdated(personId, db, context)
+        updateStateIfOutdated(personId, context)
         nav.navigate("display_person/${personId}")
     }
     companion object {

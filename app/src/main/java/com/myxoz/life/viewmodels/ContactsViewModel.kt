@@ -4,12 +4,12 @@ import android.content.ContentResolver
 import android.content.Context
 import android.provider.ContactsContract
 import androidx.lifecycle.ViewModel
-import com.myxoz.life.api.PersonSyncable
+import com.myxoz.life.api.syncables.PersonSyncable
 import com.myxoz.life.dbwrapper.StorageManager
 import kotlinx.coroutines.flow.MutableStateFlow
-import com.myxoz.life.api.PersonSyncable.Companion as Person
+import com.myxoz.life.api.syncables.PersonSyncable.Companion as Person
 
-class ContactsViewModel: ViewModel() {
+class ContactsViewModel(val db: StorageManager): ViewModel() {
     val deviceContacts = MutableStateFlow(listOf<PersonSyncable>())
     var lifeContacts = MutableStateFlow(listOf<PersonSyncable>())
     var showIcons = MutableStateFlow(false)
@@ -17,9 +17,9 @@ class ContactsViewModel: ViewModel() {
     /**
     * Call only from Dispatcher.IO else massive lag spikes, fetches all device contacts and udpates old ones, if size changes
      */
-    suspend fun fetchDeviceContacts(db: StorageManager, context: Context){
+    suspend fun fetchDeviceContacts(context: Context){
         val newContacts = getAllContacts(context)
-        refetchLifeContacts(db)
+        refetchLifeContacts()
         if(newContacts.size != deviceContacts.value.size) deviceContacts.value = newContacts.filter {
             lifeContacts.value.none { lc ->
                 it.phoneNumber?.trim()?.replace("\\D".toRegex(), "") == lc.phoneNumber?.trim()?.replace("\\D".toRegex(), "")
@@ -27,7 +27,7 @@ class ContactsViewModel: ViewModel() {
         }
     /* Update if size changes, update if problematic */
     }
-    suspend fun refetchLifeContacts(db: StorageManager){
+    suspend fun refetchLifeContacts(){
         val newContacts = db.people.getAllPeople().map { PersonSyncable.from(db, it) }
         if(newContacts.asComparableString(db).hashCode() != lifeContacts.value.asComparableString(db).hashCode()) lifeContacts.value = newContacts
     }

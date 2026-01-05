@@ -4,6 +4,7 @@ import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.navigation.NavController
 import com.myxoz.life.api.API
 import com.myxoz.life.dbwrapper.StorageManager
+import com.myxoz.life.screens.LocalScreensProvider
 import com.myxoz.life.viewmodels.Settings
 
 val LocalAPI = staticCompositionLocalOf<API> {
@@ -17,4 +18,7 @@ val LocalStorage = staticCompositionLocalOf<StorageManager> {
 }
 val LocalSettings = staticCompositionLocalOf<Settings> {
     error("No Settings provided")
+}
+val LocalScreens = staticCompositionLocalOf<LocalScreensProvider> {
+    error("No ScreenProvider provided")
 }

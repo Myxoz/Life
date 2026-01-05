@@ -33,7 +33,7 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.times
 import com.myxoz.life.LocalStorage
-import com.myxoz.life.api.Location
+import com.myxoz.life.api.syncables.Location
 import com.myxoz.life.api.jsonObjArray
 import com.myxoz.life.dbwrapper.EventEntity
 import com.myxoz.life.dbwrapper.StorageManager

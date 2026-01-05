@@ -2,7 +2,7 @@ package com.myxoz.life.events.additionals
 
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import com.myxoz.life.api.PersonSyncable
+import com.myxoz.life.api.syncables.PersonSyncable
 import com.myxoz.life.api.forEach
 import com.myxoz.life.dbwrapper.PeopleMappingEntity
 import com.myxoz.life.dbwrapper.StorageManager

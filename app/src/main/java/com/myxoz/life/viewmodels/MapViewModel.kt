@@ -7,7 +7,7 @@ import com.mapbox.geojson.Point
 import com.mapbox.maps.CameraState
 import com.mapbox.maps.extension.compose.animation.viewport.MapViewportState
 import com.myxoz.life.api.API
-import com.myxoz.life.api.Location
+import com.myxoz.life.api.syncables.Location
 import com.myxoz.life.ui.ThreeStateBottomSheetState
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow

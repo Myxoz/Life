@@ -33,39 +33,40 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
+import com.myxoz.life.android.notifications.createNotificationChannels
 import com.myxoz.life.api.API
-import com.myxoz.life.api.BankingSidecar
-import com.myxoz.life.api.SyncedEvent
 import com.myxoz.life.api.jsonObjArray
-import com.myxoz.life.calendar.dayoverview.DayOverviewComposable
-import com.myxoz.life.calendar.FullScreenEvent
-import com.myxoz.life.calendar.HomeComposable
+import com.myxoz.life.api.syncables.BankingSidecar
+import com.myxoz.life.api.syncables.SyncedEvent
 import com.myxoz.life.dbwrapper.DatabaseProvider
 import com.myxoz.life.dbwrapper.StorageManager
 import com.myxoz.life.events.ProposedEvent
 import com.myxoz.life.events.TravelEvent
-import com.myxoz.life.notifications.createNotificationChannels
-import com.myxoz.life.options.DebugScreen
-import com.myxoz.life.options.SettingsComposable
-import com.myxoz.life.options.SettingsPermissionComposable
-import com.myxoz.life.options.SummarizeDay
-import com.myxoz.life.search.AdvancedSearch
-import com.myxoz.life.subscreens.Contacts
-import com.myxoz.life.subscreens.MapBoxMap
-import com.myxoz.life.subscreens.ModifyLocation
-import com.myxoz.life.subscreens.MyCard
-import com.myxoz.life.subscreens.ScreenTimeOverview
-import com.myxoz.life.subscreens.SocialGraph
-import com.myxoz.life.subscreens.TransactionFeed
-import com.myxoz.life.subscreens.TransactionList
-import com.myxoz.life.subscreens.TransactionOverview
-import com.myxoz.life.subscreens.commits.FullScreenCommit
-import com.myxoz.life.subscreens.commits.FullScreenRepo
-import com.myxoz.life.subscreens.commits.FullScreenRepos
-import com.myxoz.life.subscreens.displayperson.PhotoPicker
-import com.myxoz.life.subscreens.displayperson.ProfileFullScreen
-import com.myxoz.life.subscreens.pick.PickExistingLocation
-import com.myxoz.life.subscreens.wrapped.LifeWrappedScreen
+import com.myxoz.life.screens.LocalScreensProvider
+import com.myxoz.life.screens.MapBoxMap
+import com.myxoz.life.screens.ModifyLocation
+import com.myxoz.life.screens.feed.commits.FullScreenCommit
+import com.myxoz.life.screens.feed.commits.FullScreenRepo
+import com.myxoz.life.screens.feed.commits.FullScreenRepos
+import com.myxoz.life.screens.feed.dayoverview.DayOverviewComposable
+import com.myxoz.life.screens.feed.dayoverview.ScreenTimeOverview
+import com.myxoz.life.screens.feed.fullscreenevent.FullScreenEvent
+import com.myxoz.life.screens.feed.main.HomeComposable
+import com.myxoz.life.screens.feed.search.AdvancedSearch
+import com.myxoz.life.screens.options.DebugScreen
+import com.myxoz.life.screens.options.SettingsComposable
+import com.myxoz.life.screens.options.SettingsPermissionComposable
+import com.myxoz.life.screens.options.SummarizeDay
+import com.myxoz.life.screens.person.Contacts
+import com.myxoz.life.screens.person.SocialGraph
+import com.myxoz.life.screens.person.displayperson.PhotoPicker
+import com.myxoz.life.screens.person.displayperson.ProfileFullScreen
+import com.myxoz.life.screens.pick.PickExistingLocation
+import com.myxoz.life.screens.transactions.MyCard
+import com.myxoz.life.screens.transactions.TransactionFeed
+import com.myxoz.life.screens.transactions.TransactionList
+import com.myxoz.life.screens.transactions.TransactionOverview
+import com.myxoz.life.screens.wrapped.LifeWrappedScreen
 import com.myxoz.life.ui.theme.Colors
 import com.myxoz.life.viewmodels.CalendarViewModel
 import com.myxoz.life.viewmodels.ContactsViewModel
@@ -98,8 +99,8 @@ class MainActivity : ComponentActivity() {
     }
     private val inspectedEventViewModel by viewModel{ InspectedEventViewModel() }
     private val largeDataCache by viewModel{ LargeDataCache() }
-    private val profileInfoModel by viewModel{ ProfileInfoModel() }
-    private val contacsViewModel by viewModel{ ContactsViewModel() }
+    private val profileInfoModel by viewModel{ ProfileInfoModel(db) }
+    private val contacsViewModel by viewModel{ ContactsViewModel(db) }
     private val transactionFeedViewModel by viewModel{ TransactionFeedViewModel(db, ZoneId.systemDefault()) }
     private val socialGraphViewModel by viewModel { SocialGraphViewModel(db) }
     private val mapViewModel by viewModel { MapViewModel(prefs) }
@@ -123,8 +124,8 @@ class MainActivity : ComponentActivity() {
         settings = Settings(prefs, applicationContext, this)
         CoroutineScope(Dispatchers.IO).launch {
             largeDataCache.preloadAll(applicationContext)
-            if(settings.features.addNewPerson.has.value) contacsViewModel.fetchDeviceContacts(db, applicationContext)
-            contacsViewModel.refetchLifeContacts(db)
+            if(settings.features.addNewPerson.has.value) contacsViewModel.fetchDeviceContacts(applicationContext)
+            contacsViewModel.refetchLifeContacts()
         }
         api = API(applicationContext, db, prefs, settings.features.syncWithServer)
         createNotificationChannels(applicationContext)
@@ -138,6 +139,14 @@ class MainActivity : ComponentActivity() {
                 LocalNavController provides navController,
                 LocalStorage provides db,
                 LocalSettings provides settings,
+                LocalScreens provides LocalScreensProvider(
+                    profileInfoModel,
+                    calendarViewModel,
+                    socialGraphViewModel,
+                    inspectedEventViewModel,
+                    navController,
+                    applicationContext
+                )
             ) {
                 LaunchedEffect(Unit) {
                     intent?.let {
@@ -219,13 +228,13 @@ class MainActivity : ComponentActivity() {
                     }
                     */
                     composable("fullscreen_event") {
-                        FullScreenEvent(inspectedEventViewModel, profileInfoModel, calendarViewModel)
+                        FullScreenEvent(inspectedEventViewModel)
                     }
                     composable("display_person/{personId}", arguments = listOf(
                         navArgument("personId") { type = NavType.LongType }
                     )){
                         val personId = it.arguments?.getLong("personId") ?: return@composable
-                        ProfileFullScreen(personId, photoPicker, largeDataCache, profileInfoModel, inspectedEventViewModel, calendarViewModel, socialGraphViewModel)
+                        ProfileFullScreen(personId, photoPicker, largeDataCache, profileInfoModel)
                     }
                     composable("modify_event/add_location") {
                         ModifyLocation()
@@ -243,17 +252,17 @@ class MainActivity : ComponentActivity() {
                         SummarizeDay()
                     }
                     composable("transactions") {
-                        TransactionFeed(transactionFeedViewModel, calendarViewModel)
+                        TransactionFeed(transactionFeedViewModel)
                     }
                     composable("contacts") {
-                        Contacts(contacsViewModel, profileInfoModel)
+                        Contacts(contacsViewModel)
                     }
                     composable("day/{epochDay}/overview", arguments = listOf(
                         navArgument("epochDay") { type = NavType.LongType }
                     )) {
                         val epochDay = (it.arguments?.getLong("epochDay") ?: 0).run { if(this == 0L) LocalDate.now().toEpochDay() else this}
                         // Semantic value: 0 == today, due to pending intent targetRoute, which isnt computable
-                        DayOverviewComposable(navController, epochDay, profileInfoModel)
+                        DayOverviewComposable(navController, epochDay)
                     }
                     composable("day/{epochDay}/screentime", arguments = listOf(
                         navArgument("epochDay") { type = NavType.LongType }
@@ -280,7 +289,7 @@ class MainActivity : ComponentActivity() {
                         DebugScreen()
                     }
                     composable("social_graph") {
-                        SocialGraph(socialGraphViewModel, profileInfoModel)
+                        SocialGraph(socialGraphViewModel)
                     }
                     composable(
                         "map",

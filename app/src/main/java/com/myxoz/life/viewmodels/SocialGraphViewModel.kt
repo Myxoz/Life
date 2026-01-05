@@ -5,8 +5,8 @@ import androidx.lifecycle.ViewModel
 import com.myxoz.life.dbwrapper.EventEntity
 import com.myxoz.life.dbwrapper.PersonEntity
 import com.myxoz.life.dbwrapper.StorageManager
-import com.myxoz.life.subscreens.GraphEdge
-import com.myxoz.life.subscreens.SocialGraphNode
+import com.myxoz.life.screens.person.GraphEdge
+import com.myxoz.life.screens.person.SocialGraphNode
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.withContext
@@ -19,7 +19,7 @@ class SocialGraphViewModel(val db: StorageManager): ViewModel() {
     var showTimes = MutableStateFlow(false)
     val nodes = MutableStateFlow(mapOf<Long, SocialGraphNode>())
     val selectedNode = MutableStateFlow<Long?>(null)
-    val dateRange = MutableStateFlow(2)
+    val chartScale = MutableStateFlow(2)
     private fun mergeNodes(newMap: Map<Long, SocialGraphNode>){
         val oldNodes = nodes.value
         val newNodes = newMap.toMutableMap()
@@ -39,7 +39,7 @@ class SocialGraphViewModel(val db: StorageManager): ViewModel() {
                 nodes[0L] = SocialGraphNode(0L, "Ich", mutableListOf())
             }
             val end = System.currentTimeMillis()
-            val start = if(dateRange.value==0) 0L else System.currentTimeMillis() - 1000L*3600L*24*when(dateRange.value){
+            val start = if(chartScale.value==0) 0L else System.currentTimeMillis() - 1000L*3600L*24*when(chartScale.value){
                 1 -> 356
                 2 -> 30
                 else -> 7

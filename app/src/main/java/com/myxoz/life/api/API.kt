@@ -5,7 +5,7 @@ import android.content.SharedPreferences
 import android.util.Log
 import androidx.compose.runtime.Stable
 import androidx.core.content.edit
-import com.myxoz.life.calendar.getEventId
+import com.myxoz.life.screens.feed.fullscreenevent.getEventId
 import com.myxoz.life.dbwrapper.StorageManager
 import com.myxoz.life.viewmodels.Settings
 import org.json.JSONArray

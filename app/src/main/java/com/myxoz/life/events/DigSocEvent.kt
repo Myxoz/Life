@@ -18,8 +18,8 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.myxoz.life.LocalStorage
 import com.myxoz.life.api.jsonObjArray
-import com.myxoz.life.autodetect.AutoDetect
-import com.myxoz.life.autodetect.AutoDetectCall
+import com.myxoz.life.android.autodetect.AutoDetect
+import com.myxoz.life.android.autodetect.AutoDetectCall
 import com.myxoz.life.dbwrapper.DigSocEntity
 import com.myxoz.life.dbwrapper.DigSocMappingEntity
 import com.myxoz.life.dbwrapper.EventEntity

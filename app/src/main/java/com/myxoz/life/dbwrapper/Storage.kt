@@ -121,9 +121,9 @@ object DatabaseProvider {
  * 10. Add to when in [com.myxoz.life.events.ProposedEvent.getProposedEventByJson]
  * 11. Add to [com.myxoz.life.events.ProposedEvent.from]
  * 12. Add to [com.myxoz.life.api.ServerSyncable.overwriteByJson] AEFL
- * 13. Add to modify/add screen [com.myxoz.life.calendar.ModifyEvent] CalendarChip and to the content renderer
- * 14. Add to display screen [com.myxoz.life.calendar.DisplayEvent]
- * 15. Add to [com.myxoz.life.calendar.feed.SegmentedEvent.getSegmentedEvents] to be rendered at all
+ * 13. Add to modify/add screen [com.myxoz.life.screens.feed.fullscreenevent.ModifyEvent] CalendarChip and to the content renderer
+ * 14. Add to display screen [com.myxoz.life.screens.feed.fullscreenevent.DisplayEvent]
+ * 15. Add to [com.myxoz.life.screens.feed.main.SegmentedEvent.getSegmentedEvents] to be rendered at all
  * 16. Go to serverside ( sshvim myxoz:~/myxoz.de/life/_api.php )
  * 17. Add event to the receive event specifcs (RCEV)
  * 18. Add event to the remove event specifcs from db (RFDB)

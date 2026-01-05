@@ -37,10 +37,10 @@
         android:configChanges="keyboardHidden|orientation|screenSize"
         tools:targetApi="33">
         <service
-            android:name=".sensors.StepsService"
+            android:name=".android.sensors.StepsService"
             android:exported="false"
             android:foregroundServiceType="health" />
-        <receiver android:name=".sensors.BootReceiver" android:exported="true">
+        <receiver android:name=".android.sensors.BootReceiver" android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.BOOT_COMPLETED" />
             </intent-filter>
@@ -54,7 +54,7 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
-        <activity android:name=".sensors.ShareReceiverActivity"
+        <activity android:name=".android.sensors.ShareReceiverActivity"
             android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.SEND" />
@@ -63,7 +63,7 @@
             </intent-filter>
         </activity>
         <service
-            android:name=".notifications.NotificationReaderService"
+            android:name=".android.notifications.NotificationReaderService"
             android:exported="false"
             android:label="Notification Reader"
             android:permission="android.permission.BIND_NOTIFICATION_LISTENER_SERVICE">
