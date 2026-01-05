@@ -58,15 +58,15 @@ data class SegmentedEvent(val event: SyncedEvent, val isFullWidth: Boolean, val 
         }
     }
     companion object {
-        fun getSegmentedEvents(events: List<SyncedEvent>, bankingEntries: List<InstantEvent>, instantEventDisplaySize: Long): List<SegmentedEvent> {
+        fun getSegmentedEvents(events: List<SyncedEvent>, instantEntries: List<InstantEvent>, instantEventDisplaySize: Long): List<SegmentedEvent> {
             val order = arrayOf(
-                EventType.Travel,
-                EventType.Learn,
-                EventType.Hobby,
-                EventType.Spont,
-                EventType.Sleep,
+                EventType.DigSoc,
                 EventType.Social,
-                EventType.DigSoc
+                EventType.Sleep,
+                EventType.Spont,
+                EventType.Hobby,
+                EventType.Learn,
+                EventType.Travel,
             )
             val modifyable = mutableListOf<SegmentedEvent>()
             for (type in order) {
@@ -75,13 +75,13 @@ data class SegmentedEvent(val event: SyncedEvent, val isFullWidth: Boolean, val 
                     modifyable.forEachIndexed { i, it ->
                         if(event.proposed.overlaps(it.event.proposed)) {
                             canBeFullWidth = false
-                            modifyable[i] = it.copy(isFullWidth = false, isLeft = true)
+                            modifyable[i] = it.copy(isFullWidth = false, isLeft = false)
                         }
                     }
-                    modifyable.add(SegmentedEvent(event, canBeFullWidth, canBeFullWidth, hasContent = true, event.proposed.start, event.proposed.end))
+                    modifyable.add(SegmentedEvent(event, canBeFullWidth, true, hasContent = true, event.proposed.start, event.proposed.end))
                 }
             }
-            for(event in bankingEntries) {
+            for(event in instantEntries) {
                 modifyable.forEachIndexed { i, it ->
                     if(it.event.proposed.overlaps(
                             DefinedDurationEvent(
@@ -95,27 +95,29 @@ data class SegmentedEvent(val event: SyncedEvent, val isFullWidth: Boolean, val 
             }
             // Now iterate the list and try to fill spots
             for(seg in modifyable.filter { !it.isLeft }){
-                val overlappingEvents = modifyable.filter { seg != it && it.event.proposed.overlaps(seg.event.proposed) }.sortedBy { it.event.proposed.end }.toMutableList()
-                var parts = mutableListOf<Pair<Long, Long>>()
-                var lastEnd = if(overlappingEvents[0].event.proposed.start > seg.event.proposed.start) seg.event.proposed.start else overlappingEvents[0].event.proposed.end
-                for(overlap in overlappingEvents){
-                    if(overlap.event.proposed.start <= seg.event.proposed.start) continue
-                    parts.add(lastEnd to overlap.event.proposed.start)
-                    lastEnd = overlap.event.proposed.end
+                val ev = seg.event.proposed
+                val overlappingEvents = modifyable.filter { it.event.proposed.overlaps(ev) }.toMutableList()
+                // Including self
+                val overlappList = (overlappingEvents.mapNotNull {
+                    if(it.start >= ev.start) it to true else null
+                } + overlappingEvents.mapNotNull {
+                    if(it.end <= ev.end) it to false else null
+                }).sortedBy { if(it.second) it.first.start else it.first.end }
+                val parted = mutableListOf<Pair<Long, Long>>()
+                var start = ev.start
+                var overlapAmount = overlappingEvents.filter { it.start < ev.start }.size
+                for(ov in overlappList) {
+                    if(overlapAmount == 1) {
+                        parted.add(start to if(ov.second) ov.first.start else ov.first.end)
+                    }
+                    overlapAmount += if(ov.second) 1 else -1
+                    if(overlapAmount == 1) {
+                        start = if(ov.second) ov.first.start else ov.first.end
+                    }
                 }
-                if(lastEnd < seg.event.proposed.end) {
-                    parts.add(
-                        lastEnd to seg.event.proposed.end
-                    )
-                }
-                parts = parts.filter { it.second - it.first != 0L }.toMutableList()
-                if(parts.isNotEmpty()){
+                val parts = parted.filter { it.second != it.first }.toMutableList()
+                if(parts.size > 1){
                     modifyable.remove(seg)
-                    modifyable.add(seg.copy(
-                        hasContent = false,
-                        isLeft = false,
-                        isFullWidth = false
-                    )) // Right no content full time event
                     val longest = parts.sortedByDescending { it.second - it.first }[0]  // Cant be null
                     parts.remove(longest)
                     modifyable.add(
@@ -126,9 +128,14 @@ data class SegmentedEvent(val event: SyncedEvent, val isFullWidth: Boolean, val 
                             seg.copy(isFullWidth = true,  isLeft = true, hasContent = false, segmentStart = part.first, segmentEnd = part.second)
                         )
                     }
+                    modifyable.add(seg.copy(
+                        hasContent = false,
+                        isLeft = false,
+                        isFullWidth = false
+                    )) // Right no content full time event add last for it to be lowest
                 }
             }
-            return modifyable
+            return modifyable.reversed() // So higher prio events are rendered above lower ones
         }
     }
 }
