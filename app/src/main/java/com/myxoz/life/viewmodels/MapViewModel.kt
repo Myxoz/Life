@@ -17,6 +17,8 @@ class MapViewModel(val prefs: SharedPreferences): ViewModel() {
     val sheetLocation = _sheetLocation.asStateFlow()
     val sheetState = ThreeStateBottomSheetState()
     val selectedCoordinates = MutableStateFlow<Point?>(null)
+    val selectCoordsOnMap = MutableStateFlow(false)
+    val refetchLocations = MutableStateFlow(System.currentTimeMillis())
     var lifeSearchResults = MutableStateFlow<List<Location>?>(null)
     var mapBoxSearchResults = MutableStateFlow<List<Location>?>(null)
     val decodedLocation = MutableStateFlow<Location?>(null)

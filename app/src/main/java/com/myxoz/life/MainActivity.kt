@@ -43,7 +43,7 @@ import com.myxoz.life.dbwrapper.StorageManager
 import com.myxoz.life.events.ProposedEvent
 import com.myxoz.life.events.TravelEvent
 import com.myxoz.life.screens.LocalScreensProvider
-import com.myxoz.life.screens.MapBoxMap
+import com.myxoz.life.screens.map.MapBoxMap
 import com.myxoz.life.screens.ModifyLocation
 import com.myxoz.life.screens.feed.commits.FullScreenCommit
 import com.myxoz.life.screens.feed.commits.FullScreenRepo
