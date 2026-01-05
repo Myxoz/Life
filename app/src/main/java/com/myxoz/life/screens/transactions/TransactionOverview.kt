@@ -50,6 +50,7 @@ import com.myxoz.life.R
 import com.myxoz.life.dbwrapper.BankingEntity
 import com.myxoz.life.dbwrapper.BankingSidecarEntity
 import com.myxoz.life.dbwrapper.formatCents
+import com.myxoz.life.screens.options.ME_ID
 import com.myxoz.life.ui.theme.Colors
 import com.myxoz.life.ui.theme.FontColor
 import com.myxoz.life.ui.theme.FontFamily
@@ -185,6 +186,11 @@ fun MyCard(largeDataCache: LargeDataCache){
             db.prefs.getBoolean("show_balance", false)
         )
     }
+    val self = remember {
+        runBlocking {
+            db.people.getPersonById(ME_ID)
+        }
+    }
     val balance = if(showBalance) runBlocking {
         db.banking.getLastTransactionDay()
     } else listOf()
@@ -225,7 +231,7 @@ fun MyCard(largeDataCache: LargeDataCache){
                     textAlign = TextAlign.Center
                 )
             }
-            BankCard("Ich", "***", largeDataCache)
+            BankCard(self?.fullname?:"Ich", self?.iban?:"***", largeDataCache)
             Spacer(Modifier.height(innerPadding.calculateBottomPadding()))
         }
     }

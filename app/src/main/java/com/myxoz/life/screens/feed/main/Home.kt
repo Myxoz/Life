@@ -45,7 +45,7 @@ import com.myxoz.life.LocalNavController
 import com.myxoz.life.LocalSettings
 import com.myxoz.life.LocalStorage
 import com.myxoz.life.R
-import com.myxoz.life.screens.options.LiffyFace
+import com.myxoz.life.screens.feed.summarizeday.LiffyFace
 import com.myxoz.life.screens.options.getUsageDataBetween
 import com.myxoz.life.screens.person.displayperson.UnmodalBottomSheet
 import com.myxoz.life.screens.person.displayperson.datePickerColors

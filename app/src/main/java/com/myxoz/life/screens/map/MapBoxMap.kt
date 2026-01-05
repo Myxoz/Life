@@ -76,16 +76,6 @@ fun MapBoxMap(mapViewModel: MapViewModel, innerPadding: PaddingValues){
     }
     val snapHeight by state.snapHeight.collectAsState()
     val shrunkArea = sheetHeight.coerceIn(0.dp, snapHeight)
-    AnimatedVisibility(
-        !mapBoxInitialRender,
-        exit = fadeOut()
-    ) {
-        Box(
-            Modifier
-                .fillMaxSize()
-                .background(Colors.SECONDARY)
-        )
-    }
     MapboxMap(
         Modifier
             .fillMaxWidth(),
@@ -209,6 +199,16 @@ fun MapBoxMap(mapViewModel: MapViewModel, innerPadding: PaddingValues){
             }
         }
         mapBoxInitialRender = true
+    }
+    AnimatedVisibility(
+        !mapBoxInitialRender,
+        exit = fadeOut()
+    ) {
+        Box(
+            Modifier
+                .fillMaxSize()
+                .background(Colors.SECONDARY)
+        )
     }
 }
 const val EARTH_R = 6_371_000.0 // meters

@@ -1,4 +1,4 @@
-package com.myxoz.life.screens.options
+package com.myxoz.life.screens.feed.summarizeday
 
 import android.content.Context.MODE_PRIVATE
 import androidx.compose.animation.animateColorAsState
@@ -63,6 +63,8 @@ import com.myxoz.life.R
 import com.myxoz.life.api.syncables.FullDaySyncable
 import com.myxoz.life.dbwrapper.DayScreenTimeEntity
 import com.myxoz.life.events.additionals.EventType
+import com.myxoz.life.screens.options.getMappedUsageDataBetween
+import com.myxoz.life.screens.options.getUsageDataBetween
 import com.myxoz.life.ui.theme.Colors
 import com.myxoz.life.ui.theme.FontColor
 import com.myxoz.life.ui.theme.FontSize

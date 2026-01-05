@@ -43,7 +43,6 @@ import com.myxoz.life.dbwrapper.StorageManager
 import com.myxoz.life.events.ProposedEvent
 import com.myxoz.life.events.TravelEvent
 import com.myxoz.life.screens.LocalScreensProvider
-import com.myxoz.life.screens.map.MapBoxMap
 import com.myxoz.life.screens.ModifyLocation
 import com.myxoz.life.screens.feed.commits.FullScreenCommit
 import com.myxoz.life.screens.feed.commits.FullScreenRepo
@@ -53,10 +52,12 @@ import com.myxoz.life.screens.feed.dayoverview.ScreenTimeOverview
 import com.myxoz.life.screens.feed.fullscreenevent.FullScreenEvent
 import com.myxoz.life.screens.feed.main.HomeComposable
 import com.myxoz.life.screens.feed.search.AdvancedSearch
+import com.myxoz.life.screens.feed.summarizeday.SummarizeDay
+import com.myxoz.life.screens.map.MapBoxMap
 import com.myxoz.life.screens.options.DebugScreen
+import com.myxoz.life.screens.options.MenuComposable
 import com.myxoz.life.screens.options.SettingsComposable
 import com.myxoz.life.screens.options.SettingsPermissionComposable
-import com.myxoz.life.screens.options.SummarizeDay
 import com.myxoz.life.screens.person.Contacts
 import com.myxoz.life.screens.person.SocialGraph
 import com.myxoz.life.screens.person.displayperson.PhotoPicker
@@ -241,6 +242,9 @@ class MainActivity : ComponentActivity() {
                     }
                     composable("pick/existing/location") {
                         PickExistingLocation()
+                    }
+                    composable("menu") {
+                        MenuComposable()
                     }
                     composable("settings") {
                         SettingsComposable()

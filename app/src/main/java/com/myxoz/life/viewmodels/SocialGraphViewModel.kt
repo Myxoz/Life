@@ -5,6 +5,7 @@ import androidx.lifecycle.ViewModel
 import com.myxoz.life.dbwrapper.EventEntity
 import com.myxoz.life.dbwrapper.PersonEntity
 import com.myxoz.life.dbwrapper.StorageManager
+import com.myxoz.life.screens.options.ME_ID
 import com.myxoz.life.screens.person.GraphEdge
 import com.myxoz.life.screens.person.SocialGraphNode
 import kotlinx.coroutines.Dispatchers
@@ -36,7 +37,7 @@ class SocialGraphViewModel(val db: StorageManager): ViewModel() {
             var totalWeightAcc = 0L
             val addMyself = addMyself.value
             if(addMyself) {
-                nodes[0L] = SocialGraphNode(0L, "Ich", mutableListOf())
+                nodes[ME_ID] = SocialGraphNode(ME_ID, "Ich", mutableListOf())
             }
             val end = System.currentTimeMillis()
             val start = if(chartScale.value==0) 0L else System.currentTimeMillis() - 1000L*3600L*24*when(chartScale.value){
@@ -61,14 +62,14 @@ class SocialGraphViewModel(val db: StorageManager): ViewModel() {
                 val weight = (decodedEvent.end - decodedEvent.start) / 1000
                 totalWeightAcc += weight
                 for (fi in iterStart..<event.value.size) {
-                    val entry = if(fi == -1) 0L else event.value[fi].personId
+                    val entry = if(fi == -1) ME_ID else event.value[fi].personId
                     val person = nodes.getOrPut(entry) {
                         SocialGraphNode(
                             entry, allPeople[entry]!!.name, mutableListOf()
                         )
                     }
                     for(si in iterStart..<event.value.size) {
-                        val otherPerson = if(si == -1) 0L else event.value[si].personId
+                        val otherPerson = if(si == -1) ME_ID else event.value[si].personId
                         if(otherPerson == entry) continue
                         val otherPersonNode = nodes.getOrPut(otherPerson) {
                             SocialGraphNode(

@@ -307,7 +307,7 @@ fun LifeBottomBar(calendarViewModel: CalendarViewModel){
                 .background(Colors.SECONDARY, CircleShape)
                 .padding(7.dp)
                 .rippleClick {
-                    navController.navigate("settings")
+                    navController.navigate("menu")
                 }
         ) {
             Icon(painterResource(R.drawable.app), "Life", Modifier.fillMaxSize(), Colors.PRIMARYFONT)

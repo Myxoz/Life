@@ -104,6 +104,7 @@ import com.myxoz.life.events.additionals.TimedTagLikeContainer
 import com.myxoz.life.events.additionals.TitleEvent
 import com.myxoz.life.events.additionals.Vehicle
 import com.myxoz.life.screens.feed.main.msToDisplay
+import com.myxoz.life.screens.options.ME_ID
 import com.myxoz.life.ui.ArrowDirection
 import com.myxoz.life.ui.Chip
 import com.myxoz.life.ui.drawArrowBehind
@@ -793,7 +794,8 @@ fun PersonBar(
         val people = db.people.getAllPeople()
         allPeople.clear()
         allPeople.addAll(
-            people.map{
+            people.mapNotNull{
+                if(it.id == ME_ID) return@mapNotNull null
                 PersonSyncable.from(db, it)
             }
         )
