@@ -17,9 +17,9 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.myxoz.life.LocalStorage
-import com.myxoz.life.api.jsonObjArray
 import com.myxoz.life.android.autodetect.AutoDetect
 import com.myxoz.life.android.autodetect.AutoDetectCall
+import com.myxoz.life.api.jsonObjArray
 import com.myxoz.life.dbwrapper.DigSocEntity
 import com.myxoz.life.dbwrapper.DigSocMappingEntity
 import com.myxoz.life.dbwrapper.EventEntity
@@ -80,7 +80,7 @@ class DigSocEvent(
                 Modifier
                     .padding(all = 3.dp),
                 fontSize = (oneHourDp / 4f).toSp(),
-                color = Colors.Calendar.Social.SECONDARY,
+                color = Colors.Calendar.DigSoc.SECONDARY,
                 overflow = TextOverflow.Ellipsis
             )
         } else Column(
