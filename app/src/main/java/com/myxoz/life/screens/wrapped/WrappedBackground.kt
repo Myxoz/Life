@@ -10,6 +10,7 @@ import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.geometry.Offset
@@ -22,7 +23,6 @@ import androidx.compose.ui.graphics.drawscope.Stroke
 import kotlin.math.PI
 import kotlin.math.abs
 import kotlin.math.cos
-import kotlin.math.floor
 import kotlin.math.min
 import kotlin.math.pow
 import kotlin.math.sign
@@ -35,14 +35,19 @@ fun ReactiveScreensaverBackground(
     pressHeat: Float,
     backgroundAccentColor: Color,
 
-    phaseOffset: Float = 0f,      // [-1.0f..1.0f]  Phase shift (1.0 = +1 full cycle).
-    driftScale: Float = 1f,       // [0.0f..2.5f]   0 = no drift, >1 = stronger drift.
-    driftHarmonics: Float = 0.35f,// [0.0f..1.0f]   0 = simple orbit, 1 = more “complex” orbit.
+    phaseOffset: Float = 0f,
+    driftScale: Float = 1f,
+    driftHarmonics: Float = 0.35f,
 
-    ribbonAmp: Float = 2f,        // [0.0f..3.0f]   0 = fully flat ribbons.
-    ribbonDetail: Float = 0.35f,  // [0.0f..1.0f]   Blend low/high harmonics (still loops).
-    ribbonSpike: Float = 0f       // [-4.0f..4.0f]  <0 rounder, 0 sine, >0 spikier.
+    ribbonAmp: Float = 2f,
+    ribbonDetail: Float = 0.35f,
+    ribbonSpike: Float = 0f
 ) {
+    // Only one path per ribbon, reused
+    val ribbons = 15
+    val points = 120
+    val ribbonPaths = remember { List(ribbons) { Path() } }
+
     val inf = rememberInfiniteTransition(label = "bg")
     val phase by inf.animateFloat(
         initialValue = 0f,
@@ -62,22 +67,23 @@ fun ReactiveScreensaverBackground(
         val w = size.width
         val h = size.height
         val center = Offset(w / 2f, h / 2f)
-
         val tau = 2f * PI.toFloat()
-        val ph = (phase + phaseOffset).let { it - floor(it) } // keep it in [0,1)
+
+        val ph = (phase + phaseOffset) % 1f
         val a1 = tau * ph
         val a2 = 2f * a1
-        val a = tau * phase
 
         val ds = driftScale.coerceIn(0f, 2.5f)
         val dh = driftHarmonics.coerceIn(0f, 1f)
 
         val drift = Offset(
-            x = (lerp(cos(a1), cos(a2), dh)) * w * 0.12f * ds,
-            y = (lerp(sin(a1), sin(a2), dh)) * h * 0.10f * ds
+            x = lerp(cos(a1), cos(a2), dh) * w * 0.12f * ds,
+            y = lerp(sin(a1), sin(a2), dh) * h * 0.10f * ds
         )
 
-        val hot = Color(0x80FFFFFF).compositeOver(backgroundAccentColor).copy(alpha = 0.5f + 0.10f * pressHeat)
+        // Draw radial gradient background
+        val hot = Color(0x80FFFFFF).compositeOver(backgroundAccentColor)
+            .copy(alpha = 0.5f + 0.10f * pressHeat)
         val cold = backgroundAccentColor.copy(alpha = 0.30f)
         val dark = backgroundAccentColor.copy(alpha = 0.1f)
 
@@ -90,26 +96,26 @@ fun ReactiveScreensaverBackground(
             size = Size(w, h)
         )
 
-        val ribbons = 15
-        val points = 120
         val ampBase = min(w, h) * (0.05f + 0.03f * pressHeat)
 
         repeat(ribbons) { rIndex ->
             val k = rIndex / (ribbons - 1f)
             val yBase = lerp(h * 0.18f, h * 0.82f, k)
 
-            val path = Path()
+            val path = ribbonPaths[rIndex]
+            path.reset()
+
+            // Precompute some constants outside inner loop
+            val rd = ribbonDetail.coerceIn(0f, 1f)
+            val rs = ribbonSpike.coerceIn(-4f, 4f)
+            val ra = ribbonAmp.coerceIn(0f, 3f)
+
             for (i in 0..points) {
                 val t = i / points.toFloat()
                 val x = t * w
 
-                val rd = ribbonDetail.coerceIn(0f, 1f)
-                val rs = ribbonSpike.coerceIn(-4f, 4f)
-                val ra = ribbonAmp.coerceIn(0f, 3f)
-
                 val base1 = shapedSin(tau * (t * 1.2f) + a1 + rIndex * 0.7f, rs)
-                val base2 = shapedSin(tau * (t * 1.2f) + a2 + rIndex * 0.7f, rs) // 2x harmonic
-
+                val base2 = shapedSin(tau * (t * 1.2f) + a2 + rIndex * 0.7f, rs)
                 val hi1 = shapedSin(tau * (t * 2.3f) + 2f * a1 + rIndex * 1.9f, rs)
                 val hi2 = shapedSin(tau * (t * 2.3f) + 2f * a2 + rIndex * 1.9f, rs)
 
@@ -133,6 +139,7 @@ fun ReactiveScreensaverBackground(
                 blue = 1f,
                 alpha = 0.10f + 0.05f * (1f - k)
             )
+
             drawPath(path = path, color = c, style = Stroke(width = lerp(2f, 2.4f, 1f - k)))
         }
     }

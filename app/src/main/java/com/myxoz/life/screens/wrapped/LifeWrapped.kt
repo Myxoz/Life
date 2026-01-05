@@ -206,8 +206,8 @@ fun LifeWrappedScreen() {
             val totalSteps = allDays.sumOf { it.steps }
             futurePages.add(
                 WalkingStats(
-                    totalSteps,
-                    (totalSteps * .7).toInt(),
+                    totalSteps.toLong(),
+                    (totalSteps * .7).toLong(),
                 )
             )
             val totalScreenTime = allDays.sumOf { it.screenTimeMs / 1000 }

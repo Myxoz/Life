@@ -119,8 +119,8 @@ class YearPage(val year: Int) : WrappedPage() {
             val step = rememberStepSequencer()
             Reveal(step >= 0) { SubtleLine("You did a lot in") }
             Reveal(step >= 1) {
-                RollingInt(
-                    year,
+                RollingLong(
+                    year.toLong(),
                     1,
                     1970
                 )
@@ -146,8 +146,8 @@ class MostPopularEventType(val type: EventType, val duration: Long, val followed
             Spacer(Modifier.height(20.dp))
             Reveal(step >= 7) { SubtleLine("With a whopping" ) }
             Reveal(step >= 9) {
-                RollingInt(
-                    duration.toInt(),
+                RollingLong(
+                    duration,
                     9,
                 ){
                     "${it/1000/3600}h"
@@ -178,8 +178,8 @@ class SecondFavoritedEventType(val type: EventType, val duration: Long, val foll
             val time = (duration / DAYSINYEAR / 60000).let { "${it/60}h ${it % 60}m"}
             Reveal(step >= 7) { SubtleLine("With another $time per day or" ) }
             Reveal(step >= 8) {
-                RollingInt(
-                    duration.toInt(),
+                RollingLong(
+                    duration,
                     8,
                 ){
                     "${it/1000/3600}h"
@@ -204,8 +204,8 @@ class MostUsedTagsForFavActivity(val tags: List<MUTag>, val isFirst: Boolean) : 
             Spacer(Modifier.height(20.dp))
             Reveal(step >= 7) { NoticableFact("Used ${first?.times} time${first?.times.plural("s")}, accumulating" ) }
             Reveal(step >= 10) {
-                RollingInt(
-                    (first?.duration.def(0)/1000/3600).toInt(),
+                RollingLong(
+                    (first?.duration.def(0)/1000/3600),
                     10,
                 ) {
                     "${it}h"
@@ -236,8 +236,8 @@ class NewSocialContact(val amount: Int) : WrappedPage() {
             Reveal(step >= 1) { SubtleLine("You met a lot of new people this year, amounting to") }
             Spacer(Modifier.height(20.dp))
             Reveal(step >= 4) {
-                RollingInt(
-                    amount,
+                RollingLong(
+                    amount.toLong(),
                     4,
                 )
             }
@@ -331,8 +331,8 @@ class TopThreeSocialContacts(val people: List<Pair<PersonSyncable, Long>>, conte
                             Reveal(
                                 revealed
                             ) {
-                                RollingInt(
-                                    (person.second / 1000 / 3600).toInt(),
+                                RollingLong(
+                                    (person.second / 1000 / 3600),
                                     5 + 10 * index,
                                     fontSize = FontSize.XLARGE.size
                                 ) {
@@ -406,8 +406,8 @@ class SpecialNewcommer(val person: PersonSyncable, val ranking: Int, val time: L
                         Reveal(
                             step > 6
                         ) {
-                            RollingInt(
-                                (time / 1000 / 3600).toInt(),
+                            RollingLong(
+                                (time / 1000 / 3600),
                                 6,
                                 fontSize = FontSize.XLARGE.size
                             ) {
@@ -436,8 +436,8 @@ class MostUsedTagsForSocialActivity(val tags: List<MostUsedTagsForFavActivity.Co
             Spacer(Modifier.height(20.dp))
             Reveal(step >= 7) { NoticableFact("With a total time spend of" ) }
             Reveal(step >= 10) {
-                RollingInt(
-                    (first?.duration.def(0)/1000/3600).toInt(),
+                RollingLong(
+                    (first?.duration.def(0)/1000/3600),
                     10,
                 ) {
                     "${it}h"
@@ -464,8 +464,8 @@ class CommitStatsWrapped(val commits: Int, val heavilyCommitedRepo: String, val 
 
                 ))
             }) {
-                RollingInt(
-                    commits,
+                RollingLong(
+                    commits.toLong(),
                     4,
                 )
             }
@@ -474,8 +474,8 @@ class CommitStatsWrapped(val commits: Int, val heavilyCommitedRepo: String, val 
             Spacer(Modifier.height(10.dp))
             Reveal(step >= 17) { SubtleLine("Your additions accumulated to" ) }
             Reveal(step >= 20) {
-                RollingInt(
-                    additions,
+                RollingLong(
+                    additions.toLong(),
                     20,
                 )
             }
@@ -498,8 +498,8 @@ class TravelingOverview(val type: Vehicle, val duration: Long, val totalDuration
                     flow.value.copy(backgroundAccentColor = Colors.Calendar.Travel.BG, ribbonAmp = 2f)
                 )
             }) {
-                RollingInt(
-                    totalDuration.toInt(),
+                RollingLong(
+                    totalDuration,
                     4,
                 ){
                     "${it/1000/3600}h"
@@ -508,8 +508,8 @@ class TravelingOverview(val type: Vehicle, val duration: Long, val totalDuration
             Spacer(Modifier.height(20.dp))
             Reveal(step >= 14) { NoticableFact("Your favorite vehicle is ${type.name} with an accumulated duration of" ) }
             Reveal(step >= 16) {
-                RollingInt(
-                    duration.toInt(),
+                RollingLong(
+                    duration,
                     16,
                 ){
                     "${it/1000/3600}h"
@@ -520,7 +520,7 @@ class TravelingOverview(val type: Vehicle, val duration: Long, val totalDuration
     }
 }
 
-class WalkingStats(val totalSteps: Int, val totalDistanceM: Int) : WrappedPage() {
+class WalkingStats(val totalSteps: Long, val totalDistanceM: Long) : WrappedPage() {
     @Composable
     override fun LifeWrappedCallContext.Content() {
         ScreenScaffold {
@@ -531,7 +531,7 @@ class WalkingStats(val totalSteps: Int, val totalDistanceM: Int) : WrappedPage()
                     flow.value.copy(backgroundAccentColor = Colors.STEPS, ribbonDetail = 1f)
                 )
             }) {
-                RollingInt(
+                RollingLong(
                     totalSteps,
                     4,
                 )
@@ -544,7 +544,7 @@ class WalkingStats(val totalSteps: Int, val totalDistanceM: Int) : WrappedPage()
                     flow.value.copy(backgroundAccentColor = Colors.STEPS, ribbonDetail = 1f)
                 )
             }) {
-                RollingInt(
+                RollingLong(
                     totalDistanceM,
                     17,
                 ) {
@@ -568,8 +568,8 @@ class ScreenTimeOverview(val totalScreenTime: Long, val mostUsedApp: String, val
                     flow.value.copy(backgroundAccentColor = Colors.SCREENTIME)
                 )
             }) {
-                RollingInt(
-                    (totalScreenTime / 3600).toInt(),
+                RollingLong(
+                    (totalScreenTime / 3600),
                     4,
                 ) {
                     "${it}h"
@@ -723,8 +723,8 @@ private fun rememberStepSequencer(steps: Int = 21): Int {
 }
 
 @Composable
-private fun RollingInt(
-    target: Int,
+private fun RollingLong(
+    target: Long,
     delay: Int,
     startAt: Int = 0,
     fontSize: TextUnit = 70.sp,
