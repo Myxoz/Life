@@ -37,6 +37,9 @@ interface PeopleDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertAll(people: List<PersonEntity>)
 
+    @Query("SELECT * FROM people WHERE iban = :iban LIMIT 1")
+    suspend fun getPersonByIban(iban: String): PersonEntity?
+
     @Query("SELECT * FROM people WHERE id = :id LIMIT 1")
     suspend fun getPersonById(id: Long): PersonEntity?
 

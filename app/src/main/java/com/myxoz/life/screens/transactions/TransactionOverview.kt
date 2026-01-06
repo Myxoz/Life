@@ -4,8 +4,10 @@ import android.icu.util.Calendar
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -28,6 +30,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -39,14 +42,18 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.zIndex
 import androidx.core.content.edit
 import com.myxoz.life.LocalNavController
+import com.myxoz.life.LocalScreens
 import com.myxoz.life.LocalStorage
 import com.myxoz.life.R
+import com.myxoz.life.api.syncables.PersonSyncable
 import com.myxoz.life.dbwrapper.BankingEntity
 import com.myxoz.life.dbwrapper.BankingSidecarEntity
 import com.myxoz.life.dbwrapper.formatCents
@@ -353,11 +360,16 @@ fun BankingEntryComposable(entry: Pair<BankingEntity, BankingSidecarEntity?>, on
     }
 }
 
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun BankCard(from: String, fromIBAN: String, largeDataCache: LargeDataCache?) {
     var offsetX by remember { mutableFloatStateOf(0f) }
     var offsetY by remember { mutableFloatStateOf(0f) }
     var displaysIban by remember { mutableStateOf(true) }
+    val db = LocalStorage.current
+    val decodedPerson by produceState<PersonSyncable?>(null) {
+        value = db.people.getPersonByIban(fromIBAN)?.let { PersonSyncable.from(db, it) }
+    }
 
     val animatedOffsetX by animateFloatAsState(
         targetValue = offsetX,
@@ -434,17 +446,24 @@ fun BankCard(from: String, fromIBAN: String, largeDataCache: LargeDataCache?) {
         Column(
             Modifier.align(Alignment.BottomStart)
         ) {
+            val screens = LocalScreens.current
             Text(
-                from,
+                from + if(decodedPerson != null) " (${decodedPerson?.name})" else "",
+                Modifier
+                    .clickable(null, null) {
+                        screens.openPersonDetails(decodedPerson?.id ?: return@clickable)
+                    }
+                ,
                 style = TypoStyle(FontColor.PRIMARY, FontSize.MLARGE),
                 textAlign = TextAlign.Start
             )
             if(displaysIban){
+                val clipboard = LocalClipboardManager.current
                 if(fromIBAN.isNotBlank())
                     Text(
                         fromIBAN.uppercase().chunked(4).joinToString(" "),
                         style = TypoStyle(FontColor.SECONDARY, FontSize.MEDIUM),
-                        modifier = Modifier.clickable(null, null){
+                        modifier = Modifier.combinedClickable(null, null, onLongClick = { clipboard.setText(AnnotatedString(fromIBAN))}){
                             if(largeDataCache!=null && fromIBAN.startsWith("DE")) displaysIban=!displaysIban
                         }
                     )
