@@ -4,8 +4,8 @@ import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.unit.Dp
 import com.myxoz.life.dbwrapper.EventEntity
-import com.myxoz.life.dbwrapper.LearnEntity
 import com.myxoz.life.dbwrapper.StorageManager
+import com.myxoz.life.dbwrapper.WorkEntity
 import com.myxoz.life.events.additionals.DetailsEvent
 import com.myxoz.life.events.additionals.EventTag
 import com.myxoz.life.events.additionals.EventType
@@ -17,7 +17,7 @@ import com.myxoz.life.ui.theme.Colors
 import com.myxoz.life.utils.getStringOrNull
 import org.json.JSONObject
 
-class LearnEvent(
+class WorkEvent(
     start: Long,
     end: Long,
     uss: Boolean,
@@ -25,12 +25,12 @@ class LearnEvent(
     override val eventTags: List<EventTag>,
     override val title: String,
     override val details: String?
-): ProposedEvent(start, end, EventType.Learn, uss, usl), TagEvent, TitleEvent, DetailsEvent
+): ProposedEvent(start, end, EventType.Work, uss, usl), TagEvent, TitleEvent, DetailsEvent
 {
     override suspend fun saveEventSpecifics(db: StorageManager, id: Long): Boolean {
         storeTags(db.tags, id)
-        db.learn.insertEvent(
-            LearnEntity(
+        db.work.insertWork(
+            WorkEntity(
                 id,
                 title,
                 details
@@ -54,9 +54,9 @@ class LearnEvent(
             title,
             isSmall,
             eventTags,
-            Colors.Calendar.Learn.TEXT,
-            Colors.Calendar.Learn.SECONDARY,
-            Colors.Calendar.Learn.Tag,
+            Colors.Calendar.Work.TEXT,
+            Colors.Calendar.Work.SECONDARY,
+            Colors.Calendar.Work.Tag,
             oneHourDp,
             blockHeight
         )
@@ -64,11 +64,11 @@ class LearnEvent(
 
     override suspend fun eraseEventSpecificsFromDB(db: StorageManager, id: Long) {
         db.tags.removeById(id)
-        db.learn.removeById(id)
+        db.work.removeById(id)
     }
     override fun addEventSpecifics(jsonObject: JSONObject): JSONObject = jsonObject.addTitle().addTags().addDetails()
 
-    override fun copyWithTimes(start: Long, end: Long, uss: Boolean, usl: Boolean) = LearnEvent(start, end, uss, usl, eventTags, title, details)
+    override fun copyWithTimes(start: Long, end: Long, uss: Boolean, usl: Boolean) = WorkEvent(start, end, uss, usl, eventTags, title, details)
     override fun getInvalidReason(): String? =
         if(title.isEmpty())
             "Gib einen Titel ein"
@@ -76,20 +76,20 @@ class LearnEvent(
             null
 
     companion object {
-        fun fromJson(json: JSONObject, start: Long, end: Long, uss: Boolean, usl: Boolean) = LearnEvent(
-            start, end, uss, usl, json.getTagsFromJson(), json.getString("title"), json.getStringOrNull("details")
+        fun fromJson(json: JSONObject, start: Long, end: Long, uss: Boolean, usl: Boolean) = WorkEvent(
+            start, end, uss, usl, json.getTagsFromJson(), json.getString("title"), json.getStringOrNull("details")?.ifEmpty { null }
         )
-        suspend fun from(db: StorageManager, event: EventEntity): LearnEvent? {
-            val learnEntity = db.learn.getEvent(event.id) ?: return null
-            return LearnEvent(
+        suspend fun from(db: StorageManager, event: EventEntity): WorkEvent? {
+            val workEntity = db.work.getWork(event.id) ?: return null
+            return WorkEvent(
                 event.start,
                 event.end,
                 event.uss,
                 event.usl,
                 db.tags.getTagsByEventId(event.id)
                     .mapNotNull { EventTag.getTagById(it) },
-                learnEntity.title,
-                learnEntity.details
+                workEntity.title,
+                workEntity.details
             )
         }
     }

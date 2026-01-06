@@ -93,6 +93,7 @@ import com.myxoz.life.events.SleepEvent
 import com.myxoz.life.events.SocialEvent
 import com.myxoz.life.events.SpontEvent
 import com.myxoz.life.events.TravelEvent
+import com.myxoz.life.events.WorkEvent
 import com.myxoz.life.events.additionals.DetailsEvent
 import com.myxoz.life.events.additionals.DigSocPlatform
 import com.myxoz.life.events.additionals.EventTag
@@ -194,6 +195,48 @@ fun ModifyEvent(viewModel: InspectedEventViewModel){
             InputField(event.title.ifEmpty { null }, "Titel") {
                 setEventTo(
                     HobbyEvent(
+                        event.start,
+                        event.end,
+                        event.uss,
+                        event.usl,
+                        event.eventTags,
+                        it,
+                        event.details
+                    )
+                )
+            }
+        }
+
+        is WorkEvent -> {
+            TagsBar(event.eventTags) {
+                setEventTo(
+                    WorkEvent(
+                        event.start,
+                        event.end,
+                        event.uss,
+                        event.usl,
+                        it,
+                        event.title,
+                        event.details
+                    )
+                )
+            }
+            InputField(event.details?.ifEmpty { null }, "Details", multiline = true) {
+                setEventTo(
+                    WorkEvent(
+                        event.start,
+                        event.end,
+                        event.uss,
+                        event.usl,
+                        event.eventTags,
+                        event.title,
+                        it
+                    )
+                )
+            }
+            InputField(event.title.ifEmpty { null }, "Titel") {
+                setEventTo(
+                    WorkEvent(
                         event.start,
                         event.end,
                         event.uss,
@@ -469,6 +512,19 @@ fun ModifyEvent(viewModel: InspectedEventViewModel){
                     listOf(),
                     if (event is TitleEvent) (event as TitleEvent).title else "",
                     if (event is PeopleEvent) (event as PeopleEvent).people else listOf(),
+                )
+            )
+        }
+        CalendarChip(
+            EventType.Work,
+            event is WorkEvent
+        ) {
+            setEventTo(
+                WorkEvent(
+                    event.start, event.end, event.uss, event.usl,
+                    if (event is TagEvent) ((event as TagEvent).eventTags) else listOf(),
+                    if (event is TitleEvent) (event as TitleEvent).title else "",
+                    if (event is DetailsEvent) (event as DetailsEvent).details else ""
                 )
             )
         }

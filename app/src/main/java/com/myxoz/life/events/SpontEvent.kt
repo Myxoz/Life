@@ -8,10 +8,10 @@ import com.myxoz.life.dbwrapper.SpontEntiy
 import com.myxoz.life.dbwrapper.StorageManager
 import com.myxoz.life.events.additionals.EventTag
 import com.myxoz.life.events.additionals.EventType
-import com.myxoz.life.events.additionals.RenderTagAndTitleBar
 import com.myxoz.life.events.additionals.TagEvent
 import com.myxoz.life.events.additionals.TagEvent.Companion.getTagsFromJson
 import com.myxoz.life.events.additionals.TitleEvent
+import com.myxoz.life.screens.feed.main.RenderTagAndTitleBar
 import com.myxoz.life.ui.theme.Colors
 import org.json.JSONObject
 

@@ -25,10 +25,10 @@ import com.myxoz.life.events.additionals.EventTag
 import com.myxoz.life.events.additionals.EventType
 import com.myxoz.life.events.additionals.PeopleEvent
 import com.myxoz.life.events.additionals.PeopleEvent.Companion.getPeopleFromJson
-import com.myxoz.life.events.additionals.RenderTagAndTitleBar
 import com.myxoz.life.events.additionals.TagEvent
 import com.myxoz.life.events.additionals.TagEvent.Companion.getTagsFromJson
 import com.myxoz.life.events.additionals.TitleEvent
+import com.myxoz.life.screens.feed.main.RenderTagAndTitleBar
 import com.myxoz.life.ui.theme.Colors
 import com.myxoz.life.utils.toSp
 import org.json.JSONObject
@@ -105,7 +105,6 @@ class SocialEvent(
                 )
             }
         }
-
     }
 
     override suspend fun eraseEventSpecificsFromDB(db: StorageManager, id: Long) {

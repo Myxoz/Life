@@ -10,10 +10,10 @@ import com.myxoz.life.api.syncables.Location
 import com.myxoz.life.api.syncables.PersonSyncable
 import com.myxoz.life.api.syncables.ProfilePictureSyncable
 import com.myxoz.life.api.syncables.SyncedEvent
-import com.myxoz.life.screens.feed.fullscreenevent.getEventId
 import com.myxoz.life.dbwrapper.StorageManager
 import com.myxoz.life.dbwrapper.WaitingSyncEntity
 import com.myxoz.life.events.additionals.EventType
+import com.myxoz.life.screens.feed.fullscreenevent.getEventId
 import org.json.JSONObject
 
 interface ServerSyncableCompanion {
@@ -40,6 +40,11 @@ abstract class ServerSyncable(val calendarId: Int) {
                         EventType.Hobby.id -> {
                             db.tags.removeById(id)
                             db.hobby.removeById(id)
+                        }
+
+                        EventType.Work.id -> {
+                            db.tags.removeById(id)
+                            db.work.removeById(id)
                         }
 
                         EventType.Learn.id -> {

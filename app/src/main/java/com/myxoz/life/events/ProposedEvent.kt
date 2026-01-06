@@ -8,11 +8,11 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.unit.Dp
 import com.myxoz.life.api.API
-import com.myxoz.life.screens.feed.main.DefinedDurationEvent
 import com.myxoz.life.dbwrapper.EventEntity
 import com.myxoz.life.dbwrapper.StorageManager
 import com.myxoz.life.dbwrapper.WaitingSyncEntity
 import com.myxoz.life.events.additionals.EventType
+import com.myxoz.life.screens.feed.main.DefinedDurationEvent
 import org.json.JSONObject
 
 abstract class ProposedEvent(start: Long, end: Long, val type: EventType, val uss: Boolean, val usl: Boolean): DefinedDurationEvent(start, end) {
@@ -82,14 +82,15 @@ abstract class ProposedEvent(start: Long, end: Long, val type: EventType, val us
     companion object {
         suspend fun from(db: StorageManager, event: EventEntity): ProposedEvent? =
             when (event.type) {
-                EventType.Sleep.id -> { SleepEvent.from(db, event) }
-                EventType.Spont.id -> { SpontEvent.from(db, event) }
-                EventType.Hobby.id -> { HobbyEvent.from(db, event) }
-                EventType.Learn.id -> { LearnEvent.from(db, event) }
-                EventType.Social.id -> { SocialEvent.from(db, event) }
-                EventType.Travel.id -> { TravelEvent.from(db, event) }
-                EventType.DigSoc.id -> { DigSocEvent.from(db, event) }
-                else -> { null }
+                EventType.Sleep.id -> SleepEvent.from(db, event)
+                EventType.Spont.id -> SpontEvent.from(db, event)
+                EventType.Hobby.id -> HobbyEvent.from(db, event)
+                EventType.Learn.id -> LearnEvent.from(db, event)
+                EventType.Social.id -> SocialEvent.from(db, event)
+                EventType.Travel.id -> TravelEvent.from(db, event)
+                EventType.DigSoc.id -> DigSocEvent.from(db, event)
+                EventType.Work.id -> WorkEvent.from(db, event)
+                else -> null
             }
         fun getProposedEventByJson(json: JSONObject): ProposedEvent? {
             val start = json.getLong("start")
@@ -106,6 +107,7 @@ abstract class ProposedEvent(start: Long, end: Long, val type: EventType, val us
                 EventType.Social -> SocialEvent.fromJson(json, start, end, uss, usl)
                 EventType.Travel -> TravelEvent.fromJson(json, start, end, uss, usl)
                 EventType.DigSoc -> DigSocEvent.fromJson(json, start, end, uss, usl)
+                EventType.Work -> WorkEvent.fromJson(json, start, end, uss, usl)
             }
         }
     }

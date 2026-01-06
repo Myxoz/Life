@@ -7,32 +7,20 @@ import androidx.room.RoomDatabase
 import androidx.room.migration.Migration
 import androidx.sqlite.db.SupportSQLiteDatabase
 
-const val currVer = 33
+const val currVer = 34
 val migration = object : Migration(currVer-1, currVer) {
     override fun migrate(db: SupportSQLiteDatabase) {
         // Create the new dayscreentime table
         //db.execSQL("ALTER TABLE people ADD COLUMN birthday INTEGER")
-        ///*
-//        db.execSQL(
-//            """
-//            CREATE TABLE IF NOT EXISTS commits (
-//                repo_owner TEXT NOT NULL,
-//                repo_name TEXT NOT NULL,
-//                commit_sha TEXT NOT NULL PRIMARY KEY,
-//                commit_message TEXT,
-//                commit_author TEXT,
-//                commit_email TEXT,
-//                commit_date INTEGER,
-//                additions INTEGER DEFAULT 0,
-//                deletions INTEGER DEFAULT 0,
-//                files_changed INTEGER DEFAULT 0,
-//                files_json TEXT,
-//                commit_url TEXT,
-//                updated INTEGER NOT NULL
-//            )
-//            """.trimIndent()
-//        )
-        //*/
+        db.execSQL(
+            """
+            CREATE TABLE IF NOT EXISTS work (
+                id INTEGER NOT NULL PRIMARY KEY,
+                title TEXT NOT NULL,
+                details TEXT
+            )
+            """.trimIndent()
+        )
         //db.execSQL("UPDATE people SET home = (SELECT location.id FROM location WHERE location.homeof = people.id) WHERE EXISTS (SELECT 1 FROM location WHERE location.homeof = people.id)")
         //db.execSQL("ALTER TABLE location DROP COLUMN homeof")
     }
@@ -61,10 +49,12 @@ val migration = object : Migration(currVer-1, currVer) {
         DigSocEntity::class,
         DigSocMappingEntity::class,
         CommitEntity::class,
+        WorkEntity::class,
     ],
     version = currVer,
     exportSchema = true
 ) abstract class AppDatabase : RoomDatabase() {
+    abstract fun workDao(): WorkDao
     abstract fun commitsDao(): CommitDao
     abstract fun digsocMappingDao(): DigSocMappingDao
     abstract fun digsocDao(): DigSocDao
@@ -117,17 +107,16 @@ object DatabaseProvider {
  * 6. Create the color scheme for the new EventType in [com.myxoz.life.ui.theme.Colors.Calendar]
  * 7. Create new [com.myxoz.life.events.additionals.EventType]
  * 8. Create event renderer and EventClass by copying a file from [com.myxoz.life.events]
- * 9. Add it to the render method in [com.myxoz.life.calendar.feed.RenderContent]
+ * 9. Add to [com.myxoz.life.events.ProposedEvent.from]
  * 10. Add to when in [com.myxoz.life.events.ProposedEvent.getProposedEventByJson]
- * 11. Add to [com.myxoz.life.events.ProposedEvent.from]
- * 12. Add to [com.myxoz.life.api.ServerSyncable.overwriteByJson] AEFL
- * 13. Add to modify/add screen [com.myxoz.life.screens.feed.fullscreenevent.ModifyEvent] CalendarChip and to the content renderer
- * 14. Add to display screen [com.myxoz.life.screens.feed.fullscreenevent.DisplayEvent]
- * 15. Add to [com.myxoz.life.screens.feed.main.SegmentedEvent.getSegmentedEvents] to be rendered at all
- * 16. Go to serverside ( sshvim myxoz:~/myxoz.de/life/_api.php )
- * 17. Add event to the receive event specifcs (RCEV)
- * 18. Add event to the remove event specifcs from db (RFDB)
- * 19. Add event to the fetch event section (FEEV) and also to the if statement checking fetching calendars (FETT)
+ * 11. Add to [com.myxoz.life.api.ServerSyncable.overwriteByJson] AEFL
+ * 12. Add to modify/add screen [com.myxoz.life.screens.feed.fullscreenevent.ModifyEvent] CalendarChip and to the content renderer
+ * 13. Add to display screen [com.myxoz.life.screens.feed.fullscreenevent.DisplayEvent]
+ * 14. Add to [com.myxoz.life.screens.feed.main.SegmentedEvent.getSegmentedEvents] to be rendered at all
+ * 15. Go to serverside ( sshvim myxoz:~/myxoz.de/life/_api.php )
+ * 16. Add event to the receive event specifcs (RCEV)
+ * 17. Add event to the remove event specifcs from db (RFDB)
+ * 18. Add event to the fetch event section (FEEV) and also to the if statement checking fetching calendars (FETT)
  *
  * Guide to create new Syncable:
  * 7. Create a new Syncable: Syncable in [com.myxoz.life.api]

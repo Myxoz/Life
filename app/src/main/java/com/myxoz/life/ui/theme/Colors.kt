@@ -64,6 +64,16 @@ object Colors {
             val FG = Color(0xFFbfbfbf)
         }
 
+        object Work {
+            val TEXT = Color.White
+            val Tag = TagColors(
+                Color.Black,
+                TEXT,
+            )
+            val BG = Color(0xFF7A2E3A)
+            val SECONDARY = Color(0xFFAAAAAA)
+        }
+
         object Spont {
             val TEXT = Color(0xFF444444)
             val Tag = TagColors(

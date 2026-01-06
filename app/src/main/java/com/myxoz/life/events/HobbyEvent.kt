@@ -1,29 +1,20 @@
 package com.myxoz.life.events
 
 import androidx.compose.foundation.layout.BoxScope
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.Alignment
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
-import androidx.compose.ui.unit.dp
 import com.myxoz.life.dbwrapper.EventEntity
 import com.myxoz.life.dbwrapper.HobbyEntiy
 import com.myxoz.life.dbwrapper.StorageManager
 import com.myxoz.life.events.additionals.DetailsEvent
 import com.myxoz.life.events.additionals.EventTag
 import com.myxoz.life.events.additionals.EventType
-import com.myxoz.life.events.additionals.RenderTagAndTitleBar
 import com.myxoz.life.events.additionals.TagEvent
 import com.myxoz.life.events.additionals.TagEvent.Companion.getTagsFromJson
 import com.myxoz.life.events.additionals.TitleEvent
+import com.myxoz.life.screens.feed.main.RenderBasicEventContent
 import com.myxoz.life.ui.theme.Colors
 import com.myxoz.life.utils.getStringOrNull
-import com.myxoz.life.utils.toSp
 import org.json.JSONObject
 
 class HobbyEvent(
@@ -57,22 +48,18 @@ class HobbyEvent(
         blockHeight: Int
     ) {
         val blockHeight = getBlockHeight(startOfDay, endOfDay)
-        Column(
-            Modifier
-                .align(Alignment.TopCenter)
-                .fillMaxSize()
-        ) {
-            RenderTagAndTitleBar(eventTags, title, oneHourDp, blockHeight, Colors.Calendar.Hobby.Tag, Colors.Calendar.Hobby.TEXT)
-            if(blockHeight>3) Text(
-                details?:"",
-                Modifier
-                    .padding(start = 10.dp, end = 3.dp)
-                ,
-                fontSize = (oneHourDp/3f).toSp(),
-                color = Colors.Calendar.Hobby.SECONDARY,
-                overflow = TextOverflow.Ellipsis
-            )
-        }
+        RenderBasicEventContent(
+            title,
+            details,
+            title,
+            isSmall,
+            eventTags,
+            Colors.Calendar.Hobby.TEXT,
+            Colors.Calendar.Hobby.SECONDARY,
+            Colors.Calendar.Hobby.Tag,
+            oneHourDp,
+            blockHeight
+        )
     }
 
     override suspend fun eraseEventSpecificsFromDB(db: StorageManager, id: Long) {

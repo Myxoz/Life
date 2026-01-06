@@ -68,6 +68,7 @@ data class SegmentedEvent(val event: SyncedEvent, val isFullWidth: Boolean, val 
                 EventType.Hobby,
                 EventType.Learn,
                 EventType.Travel,
+                EventType.Work,
             )
             val modifyable = mutableListOf<SegmentedEvent>()
             for (type in order) {

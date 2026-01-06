@@ -3,6 +3,7 @@ package com.myxoz.life.dbwrapper
 import android.content.SharedPreferences
 
 class StorageManager(db: AppDatabase, sharedPrefs: SharedPreferences) {
+    val work = db.workDao()
     val cleanupDb = db.databaseCleanupDao()
     val prefs = sharedPrefs
     val commits = db.commitsDao()

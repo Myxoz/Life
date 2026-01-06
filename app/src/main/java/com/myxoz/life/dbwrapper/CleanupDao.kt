@@ -62,8 +62,13 @@ interface DatabaseCleanupDao {
 
     @Query("DELETE FROM commits")
     suspend fun clearCommits()
+
+    @Query("DELETE FROM work")
+    suspend fun clearWork()
+
     @Transaction
     suspend fun clearAllExceptPersistent() {
+        clearWork()
         clearBanking()
         clearBankingSidecar()
         clearLocations()
