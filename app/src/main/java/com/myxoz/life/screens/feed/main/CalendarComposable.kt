@@ -163,15 +163,14 @@ fun CalendarComposable(calendarViewModel: CalendarViewModel, inspectedEventViewM
                 onDayScrolled(index)
             }
     }
-
-    BackHandler(isEditing) {
-        inspectedEventViewModel.setEditing(false)
-    }
     val focusManager = LocalFocusManager.current
     val isSearching by calendarViewModel.search.isSearching.collectAsState()
     BackHandler(isSearching) {
         calendarViewModel.search.reset()
         focusManager.clearFocus()
+    }
+    BackHandler(isEditing) {
+        inspectedEventViewModel.setEditing(false)
     }
     Row(
         Modifier
