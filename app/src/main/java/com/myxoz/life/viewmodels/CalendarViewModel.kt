@@ -4,12 +4,12 @@ import android.content.Context
 import androidx.compose.runtime.mutableStateListOf
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.myxoz.life.api.syncables.SyncedEvent
 import com.myxoz.life.android.autodetect.AutoDetect
-import com.myxoz.life.screens.feed.main.InstantEvent
+import com.myxoz.life.api.syncables.SyncedEvent
 import com.myxoz.life.dbwrapper.BankingEntity
 import com.myxoz.life.dbwrapper.StorageManager
 import com.myxoz.life.events.ProposedEvent
+import com.myxoz.life.screens.feed.instantevents.InstantEvent
 import com.myxoz.life.screens.feed.search.SearchField
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
@@ -26,7 +26,7 @@ class CalendarViewModel(private val settings: Settings, private val storage: Sto
     val days = mutableStateListOf<LocalDate>()
     val search = SearchField()
     val dayCache = mutableMapOf<LocalDate, List<SyncedEvent>>()
-    val instantEventCache = mutableMapOf<LocalDate, List<InstantEvent>>()
+    val instantEventCache = mutableMapOf<LocalDate, List<InstantEvent.Companion.InstantEventGroup>>()
     val dayAmount = MutableStateFlow(2)
     var selectDayPopup = MutableStateFlow(false)
     val proposedEvents = mutableStateListOf<ProposedEvent>()

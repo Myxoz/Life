@@ -50,6 +50,7 @@ import com.myxoz.life.screens.feed.commits.FullScreenRepos
 import com.myxoz.life.screens.feed.dayoverview.DayOverviewComposable
 import com.myxoz.life.screens.feed.dayoverview.ScreenTimeOverview
 import com.myxoz.life.screens.feed.fullscreenevent.FullScreenEvent
+import com.myxoz.life.screens.feed.instantevents.InstantEventsScreen
 import com.myxoz.life.screens.feed.main.HomeComposable
 import com.myxoz.life.screens.feed.search.AdvancedSearch
 import com.myxoz.life.screens.feed.summarizeday.SummarizeDay
@@ -267,6 +268,18 @@ class MainActivity : ComponentActivity() {
                         val epochDay = (it.arguments?.getLong("epochDay") ?: 0).run { if(this == 0L) LocalDate.now().toEpochDay() else this}
                         // Semantic value: 0 == today, due to pending intent targetRoute, which isnt computable
                         DayOverviewComposable(navController, epochDay)
+                    }
+                    composable("instant_events_between/{start}/{end}", arguments = listOf(
+                        navArgument("start") { type = NavType.LongType },
+                        navArgument("end") { type = NavType.LongType }
+                    )) {
+                        val start = it.arguments?.getLong("start") ?: 0L
+                        val end = it.arguments?.getLong("end") ?: 0L
+                        InstantEventsScreen(
+                            start,
+                            end,
+                            calendarViewModel
+                        )
                     }
                     composable("day/{epochDay}/screentime", arguments = listOf(
                         navArgument("epochDay") { type = NavType.LongType }
