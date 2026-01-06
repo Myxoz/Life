@@ -1,6 +1,7 @@
 package com.myxoz.life.screens.person
 
 import android.graphics.Paint
+import androidx.activity.compose.BackHandler
 import androidx.compose.animation.core.withInfiniteAnimationFrameMillis
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
@@ -20,9 +21,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableLongStateOf
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
@@ -44,6 +43,8 @@ import com.myxoz.life.R
 import com.myxoz.life.screens.feed.main.msToDisplay
 import com.myxoz.life.screens.person.displayperson.ButtonGroup
 import com.myxoz.life.ui.theme.Colors
+import com.myxoz.life.utils.collectAsMutableNonNullState
+import com.myxoz.life.utils.collectAsMutableState
 import com.myxoz.life.utils.rippleClick
 import com.myxoz.life.utils.toPx
 import com.myxoz.life.viewmodels.SocialGraphViewModel
@@ -147,9 +148,12 @@ fun SocialGraph(socialGraphViewModel: SocialGraphViewModel){
         }
     }
 
-    var hoveredNode by remember { mutableStateOf<SocialGraphNode?>(null) }
-    val selectedNode by socialGraphViewModel.selectedNode.collectAsState()
-
+    var selectedNode by socialGraphViewModel.selectedNode.collectAsMutableState()
+    BackHandler(
+        selectedNode != null
+    ) {
+        selectedNode = null
+    }
     // Helper to convert Screen Coordinates -> Graph Coordinates
     fun hitTest(pointerPosition: Offset, panOffset: Offset, zoomScale: Float): SocialGraphNode? {
         val graphX = (pointerPosition.x / zoomScale) + panOffset.x
@@ -167,8 +171,8 @@ fun SocialGraph(socialGraphViewModel: SocialGraphViewModel){
         val config = LocalConfiguration.current
         val initWidth = config.screenWidthDp.dp.toPx()
         val initHeight = config.screenHeightDp.dp.toPx()
-        var scale by remember { mutableFloatStateOf(0.4f) }
-        var offset by remember { mutableStateOf(-Offset(initWidth / scale / 2f, initHeight / scale / 2f)) }
+        var scale by socialGraphViewModel.scale.collectAsMutableState()
+        var offset by socialGraphViewModel.offset.collectAsMutableNonNullState(-Offset(initWidth / scale / 2f, initHeight / scale / 2f))
 
         val textPaint = remember {
             Paint().apply {
@@ -212,10 +216,10 @@ fun SocialGraph(socialGraphViewModel: SocialGraphViewModel){
                                 }
                                 return@detectTapGestures
                             }
-                            socialGraphViewModel.selectedNode.value = clicked.personId
+                            selectedNode = clicked.personId
                             println("Clicked on: ${clicked.name}")
                         } else {
-                            socialGraphViewModel.selectedNode.value = null // Deselect if clicking empty space
+                            selectedNode = null // Deselect if clicking empty space
                         }
                     }
                 }
@@ -231,7 +235,7 @@ fun SocialGraph(socialGraphViewModel: SocialGraphViewModel){
                 )
                 scale(scale, pivot = Offset.Zero)
             }) {
-                val activeNode = hoveredNode?.personId ?: selectedNode
+                val activeNode = selectedNode
                 val isDimmedMode = activeNode != null
                 fun GraphEdge.drawEdge(color: Color) {
                     drawLine(

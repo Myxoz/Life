@@ -15,9 +15,11 @@ import kotlin.math.cos
 import kotlin.math.sin
 
 class SocialGraphViewModel(val db: StorageManager): ViewModel() {
-    var totalWeight = MutableStateFlow(1L)
-    var addMyself = MutableStateFlow(false)
-    var showTimes = MutableStateFlow(false)
+    val scale = MutableStateFlow(.4f)
+    val offset = MutableStateFlow<Offset?>(null)
+    val totalWeight = MutableStateFlow(1L)
+    val addMyself = MutableStateFlow(false)
+    val showTimes = MutableStateFlow(false)
     val nodes = MutableStateFlow(mapOf<Long, SocialGraphNode>())
     val selectedNode = MutableStateFlow<Long?>(null)
     val chartScale = MutableStateFlow(2)
