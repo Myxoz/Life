@@ -5,18 +5,20 @@ import android.graphics.Bitmap
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.navigation.NavController
+import com.myxoz.life.android.contacts.AndroidContacts
 import com.myxoz.life.api.syncables.Location
 import com.myxoz.life.api.syncables.PersonSyncable
 import com.myxoz.life.api.syncables.ProfilePictureSyncable
 import com.myxoz.life.dbwrapper.EventEntity
 import com.myxoz.life.dbwrapper.StorageManager
-import com.myxoz.life.utils.diagrams.PieChart
 import com.myxoz.life.events.additionals.EventType
+import com.myxoz.life.utils.diagrams.PieChart
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 
 class ProfileInfoModel(val db: StorageManager): ViewModel(){
+    val savedInContacts = MutableStateFlow(true)
     val id  = MutableStateFlow<Long?>(null)
     val name = MutableStateFlow<String?>(null)
     val fullName = MutableStateFlow<String?>(null)
@@ -154,8 +156,12 @@ class ProfileInfoModel(val db: StorageManager): ViewModel(){
                 val now = System.currentTimeMillis()
                 _lastInteraction.value = db.people.getLastInteractionByPerson(personId, now)
                 _nextInteraction.value = db.people.getNextPlanedEvent(personId, now)
+                updateIsSavedInContacts(context)
                 renderPieChart()
             }
+    }
+    fun updateIsSavedInContacts(context: Context){
+        savedInContacts.value = phone.value?.let { AndroidContacts.contactExists(context, it) } ?: false
     }
     fun openPersonDetails(personId: Long, nav: NavController, context: Context){
         isEditing.value = false

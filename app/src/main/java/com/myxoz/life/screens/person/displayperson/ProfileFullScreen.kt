@@ -64,7 +64,6 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.times
-import com.myxoz.life.LocalNavController
 import com.myxoz.life.LocalScreens
 import com.myxoz.life.LocalStorage
 import com.myxoz.life.R
@@ -98,7 +97,6 @@ fun ProfileFullScreen(
 ){
     val screens = LocalScreens.current
     val db = LocalStorage.current
-    val nav = LocalNavController.current
     val coroutineScope = rememberCoroutineScope()
     val context = LocalContext.current
     var isPickingBirthDay by remember { mutableStateOf(false) }

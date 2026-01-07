@@ -77,6 +77,7 @@ import com.myxoz.life.LocalNavController
 import com.myxoz.life.LocalScreens
 import com.myxoz.life.LocalSettings
 import com.myxoz.life.R
+import com.myxoz.life.android.contacts.AndroidContacts
 import com.myxoz.life.android.integration.HVV
 import com.myxoz.life.api.syncables.Location
 import com.myxoz.life.api.syncables.PersonSyncable
@@ -91,6 +92,7 @@ import com.myxoz.life.utils.rippleClick
 import com.myxoz.life.utils.toDp
 import com.myxoz.life.viewmodels.LargeDataCache
 import com.myxoz.life.viewmodels.ProfileInfoModel
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.launch
 import org.json.JSONObject
@@ -100,6 +102,7 @@ private const val animationDuration = 300 // Default Compose Speed
 @Composable
 fun ProfileInfo(largeDataCache: LargeDataCache, profileInfoModel: ProfileInfoModel){
     val coroutineScope = rememberCoroutineScope()
+    val context = LocalContext.current
     val screens = LocalScreens.current
     val nav = LocalNavController.current
     val phoneParser: PhoneNumberParser? by produceState(null) {
@@ -201,16 +204,48 @@ fun ProfileInfo(largeDataCache: LargeDataCache, profileInfoModel: ProfileInfoMod
                     val censoredPlaces =
                         if (formatedPhone != null) (formatedPhone.substringAfter(" ").length * (1 - extendProgress)).roundToInt() else 3
                     val fullyFormatedNumber = formatedPhone?.censorLast(censoredPlaces, " •")
-                    val subtext =
-                        if (!isExtended) null else phone?.let { phoneParser?.getPhoneInfo(it) }
-                    ListEditingField(
-                        isEditing,
-                        fullyFormatedNumber ?: "???",
-                        subtext,
-                        profileInfoModel.phone,
-                        "Handynummer",
-                        KeyboardType.Phone
-                    )
+                    val savedInContacts by profileInfoModel.savedInContacts.collectAsState()
+                    val subtext = if (!isExtended) null else phone?.let { phoneParser?.getPhoneInfo(it) }
+                    Row(
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Column(
+                            Modifier.weight(1f)
+                        ) {
+                            ListEditingField(
+                                isEditing,
+                                fullyFormatedNumber ?: "???",
+                                subtext,
+                                profileInfoModel.phone,
+                                "Handynummer",
+                                KeyboardType.Phone
+                            )
+                        }
+                        if(phone != null && !savedInContacts) {
+                            Spacer(Modifier.width(10.dp))
+                            Icon(
+                                painterResource(R.drawable.save_contact),
+                                "Save contact",
+                                Modifier
+                                    .clip(CircleShape)
+                                    .background(Colors.TERTIARY)
+                                    .rippleClick{
+                                        AndroidContacts.openSaveContactIntent(context, phone, profileInfoModel.name.value)
+                                        coroutineScope.launch {
+                                            while (!profileInfoModel.savedInContacts.value) {
+                                                delay(100)
+                                                profileInfoModel.updateIsSavedInContacts(context)
+                                            }
+                                        }
+                                    }
+                                    .padding(7.dp)
+                                    .size(20.dp)
+                                ,
+                                Colors.PRIMARYFONT
+                            )
+                        }
+                    }
                 }
                 if(iban!=null || isEditing)  {
                     Spacer(Modifier.height(20.dp))
