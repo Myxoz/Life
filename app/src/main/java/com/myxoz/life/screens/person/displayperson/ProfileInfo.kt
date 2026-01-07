@@ -61,6 +61,7 @@ import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.node.Ref
 import androidx.compose.ui.platform.LocalClipboardManager
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.res.painterResource
@@ -68,6 +69,7 @@ import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.core.net.toUri
 import androidx.lifecycle.Observer
@@ -90,6 +92,7 @@ import com.myxoz.life.utils.AndroidUtils
 import com.myxoz.life.utils.PhoneNumberParser
 import com.myxoz.life.utils.rippleClick
 import com.myxoz.life.utils.toDp
+import com.myxoz.life.utils.toPx
 import com.myxoz.life.viewmodels.LargeDataCache
 import com.myxoz.life.viewmodels.ProfileInfoModel
 import kotlinx.coroutines.delay
@@ -456,53 +459,48 @@ fun ProfileInfo(largeDataCache: LargeDataCache, profileInfoModel: ProfileInfoMod
                     horizontalArrangement = Arrangement.spacedBy(5.dp)
                 ) {
                     val context = LocalContext.current
-                    Row (
-                        Modifier
-                            .border(2.dp, Colors.TERTIARY, CircleShape)
-                            .clip(CircleShape)
-                            .rippleClick {
-                                AndroidUtils.openLink(
-                                    context,
-                                    HVV.constructLink(
-                                        null,
-                                        profileInfoModel.home.value
-                                    )
-                                )
-                            }
-                            .padding(horizontal = 10.dp, vertical = 5.dp)
-                        ,
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(5.dp)
-                    ){
-                        Icon(
-                            painterResource(R.drawable.hvv),
-                            "HVV",
-                            Modifier.size(navigationIconSize),
-                            Colors.PRIMARYFONT
-                        )
-                        Text("HVV", style = TypoStyle(FontColor.PRIMARY, FontSize.MEDIUM))
+                    @Composable
+                    fun NavigationOption(title: String, icon: Int, onClick: () -> Unit) {
+                        Row (
+                            Modifier
+                                .border(2.dp, Colors.TERTIARY, CircleShape)
+                                .clip(CircleShape)
+                                .rippleClick(run = onClick)
+                                .padding(horizontal = 10.dp, vertical = 5.dp)
+                            ,
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(5.dp)
+                        ){
+                            Icon(
+                                painterResource(icon),
+                                "HVV",
+                                Modifier.size(navigationIconSize),
+                                Colors.PRIMARYFONT
+                            )
+                            Text(title, style = TypoStyle(FontColor.PRIMARY, FontSize.MEDIUM))
+                        }
                     }
-                    Row(
-                        Modifier
-                            .border(2.dp, Colors.TERTIARY, CircleShape)
-                            .clip(CircleShape)
-                            .rippleClick {
-                                Location.openInGoogleMaps(context, profileInfoModel.home.value)
-                            }
-                            .padding(horizontal = 10.dp, vertical = 5.dp)
-                        ,
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(5.dp)
-                    ){
-                        Icon(
-                            painterResource(R.drawable.gmaps),
-                            "HVV",
-                            Modifier.size(navigationIconSize),
-                            Colors.PRIMARYFONT
-                        )
-                        Text("Maps", style = TypoStyle(FontColor.PRIMARY, FontSize.MEDIUM))
+                    val screenWidthPx = LocalConfiguration.current.screenWidthDp.dp.toPx()
+                    NavigationOption("Life Maps", R.drawable.gmaps) {
+                        location?.also {
+                            screens.openLocation(
+                                it,
+                                screenWidthPx
+                            )
+                        }
                     }
-                    Spacer(Modifier.height(10.dp))
+                    NavigationOption("HVV", R.drawable.hvv) {
+                        AndroidUtils.openLink(
+                            context,
+                            HVV.constructLink(
+                                null,
+                                profileInfoModel.home.value
+                            )
+                        )
+                    }
+                    NavigationOption("Google Maps", R.drawable.gmaps) {
+                        Location.openInGoogleMaps(context, profileInfoModel.home.value)
+                    }
                 }
             }
             val height = FontSize.MEDIUM.size.toDp() + 2.dp
@@ -769,7 +767,9 @@ fun ListEditingField(isEditing: Boolean, displayText: String, subtext: String?, 
             modifier = Modifier.combinedClickable(null, null, onLongClick = {
                 if(displayText.isNotBlank() && displayText!="???") clipboard.setText(AnnotatedString(displayText))
             }){},
-            style = TypoStyle(FontColor.PRIMARY, FontSize.LARGE)
+            style = TypoStyle(FontColor.PRIMARY, FontSize.LARGE),
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis
         )
     }
     val rememberedText = remember { Ref<String?>() }

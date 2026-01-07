@@ -146,6 +146,7 @@ class MainActivity : ComponentActivity() {
                     calendarViewModel,
                     socialGraphViewModel,
                     inspectedEventViewModel,
+                    mapViewModel,
                     navController,
                     applicationContext
                 )

@@ -86,7 +86,7 @@ fun MenuComposable() {
                 SubOption(R.drawable.info, "Informationen", "information"),
                 SubOption(R.drawable.graph, "Social Graph", "social_graph"),
                 SubOption(R.drawable.bank_transfer, "Transaktionen", "transactions"),
-                SubOption(R.drawable.location, "Karte", "map"),
+                SubOption(R.drawable.location, "Life Maps", "map"),
                 SubOption(R.drawable.settings, "Settings", "settings"),
                 SubOption(R.drawable.contacts, "Kontakte", "contacts"),
             )
