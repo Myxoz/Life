@@ -35,10 +35,12 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import com.myxoz.life.LocalNavController
+import com.myxoz.life.LocalScreens
 import com.myxoz.life.LocalStorage
 import com.myxoz.life.R
-import com.myxoz.life.api.syncables.CommitSyncable
 import com.myxoz.life.android.integration.GitHub
+import com.myxoz.life.api.syncables.CommitSyncable
 import com.myxoz.life.screens.feed.dayoverview.edgeToEdgeGradient
 import com.myxoz.life.ui.theme.Colors
 import com.myxoz.life.ui.theme.FontColor
@@ -49,6 +51,8 @@ import com.myxoz.life.utils.AndroidUtils
 import com.myxoz.life.utils.formatTimeStamp
 import com.myxoz.life.utils.rippleClick
 import kotlinx.coroutines.runBlocking
+import java.time.Instant
+import java.time.ZoneId
 
 @Composable
 fun FullScreenCommit(sha: String){
@@ -85,8 +89,37 @@ fun FullScreenCommit(sha: String){
                     horizontalArrangement = Arrangement.SpaceBetween
                 ) {
                     val calendar = remember { Calendar.getInstance() }
-                    Text("${commit.repoOwner}/${commit.repoName}", Modifier.weight(1f), style = TypoStyle(FontColor.SECONDARY, FontSize.MEDIUM), maxLines = 1, overflow = TextOverflow.Ellipsis)
-                    Text(commit.commitDate?.formatTimeStamp(calendar) ?: "", style = TypoStyle(FontColor.SECONDARY, FontSize.MEDIUM), maxLines = 1)
+                    val nav = LocalNavController.current
+                    Text(
+                        "${commit.repoOwner}/${commit.repoName}",
+                        Modifier
+                            .weight(1f)
+                            .rippleClick{
+                                nav.navigate("commits/repo/${commit.repoName}")
+                            }
+                        ,
+                        style = TypoStyle(FontColor.SECONDARY, FontSize.MEDIUM),
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                    val screens = LocalScreens.current
+                    Text(
+                        commit.commitDate?.formatTimeStamp(calendar) ?: "",
+                        Modifier
+                            .rippleClick{
+                                commit.commitDate?.let {
+                                    screens.openCalendarAt(
+                                        Instant
+                                            .ofEpochMilli(it)
+                                            .atZone(ZoneId.systemDefault())
+                                            .toLocalDate()
+                                    )
+                                }
+                            }
+                        ,
+                        style = TypoStyle(FontColor.SECONDARY, FontSize.MEDIUM),
+                        maxLines = 1
+                    )
                 }
                 Spacer(Modifier.height(30.dp))
                 Text(

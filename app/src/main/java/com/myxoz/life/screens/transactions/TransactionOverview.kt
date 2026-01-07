@@ -70,6 +70,7 @@ import com.myxoz.life.utils.toDp
 import com.myxoz.life.viewmodels.LargeDataCache
 import kotlinx.coroutines.runBlocking
 import org.json.JSONObject
+import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneId
 
@@ -141,6 +142,7 @@ fun TransactionOverview(transactionId: String, bankViewModel: LargeDataCache){
                 bankViewModel
             )
             val calendar = remember { Calendar.getInstance() }
+            val screens = LocalScreens.current
             Text(
                 run {
                     val transactionType = when {
@@ -161,7 +163,18 @@ fun TransactionOverview(transactionId: String, bankViewModel: LargeDataCache){
                     "$transactionType$separator$timestamp"
                 },
                 Modifier
-                    .fillMaxWidth(),
+                    .rippleClick(transactionAtHand.purposeDate != null || transactionSidecar?.date != null){
+                        (transactionAtHand.purposeDate ?: transactionSidecar?.date)?.let {
+                            screens.openCalendarAt(
+                                Instant
+                                    .ofEpochMilli(it)
+                                    .atZone(ZoneId.systemDefault())
+                                    .toLocalDate()
+                            )
+                        }
+                    }
+                    .align(Alignment.End)
+                ,
                 textAlign = TextAlign.End,
                 style = TypoStyle(FontColor.SECONDARY, FontSize.SMALL)
             )

@@ -26,6 +26,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
+import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Add
@@ -57,6 +58,7 @@ import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.font.FontStyle
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.text.style.TextAlign
@@ -162,6 +164,7 @@ fun MapSheet(mapViewModel: MapViewModel, innerPadding: PaddingValues){
                     horizontalArrangement = Arrangement.SpaceBetween
                 ) {
                     val nameInput by mapViewModel.nameInput.collectAsState()
+                    val focusManager = LocalFocusManager.current
                     BasicTextField(
                         if(isEditing) nameInput?:"" else display,
                         {
@@ -174,6 +177,13 @@ fun MapSheet(mapViewModel: MapViewModel, innerPadding: PaddingValues){
                         cursorBrush = SolidColor(Colors.PRIMARYFONT),
                         enabled = isEditing && progress > 0.1f,
                         textStyle = TypoStyle(FontColor.PRIMARY, FontSize.XLARGE, FontFamily.Display),
+                        keyboardOptions = KeyboardOptions(
+                            capitalization = KeyboardCapitalization.Sentences,
+                            imeAction = ImeAction.Done,
+                        ),
+                        keyboardActions = KeyboardActions{
+                            focusManager.clearFocus()
+                        },
                         singleLine = true,
                     )
                     val morph = remember {
