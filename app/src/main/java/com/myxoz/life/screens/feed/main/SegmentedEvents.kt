@@ -118,7 +118,7 @@ data class SegmentedEvent(val event: SyncedEvent, val isFullWidth: Boolean, val 
                     }
                 }
                 val parts = parted.filter { it.second != it.first }.toMutableList()
-                if(parts.size > 1){
+                if(parts.isNotEmpty()){
                     modifyable.remove(seg)
                     val longest = parts.sortedByDescending { it.second - it.first }[0]  // Cant be null
                     parts.remove(longest)
