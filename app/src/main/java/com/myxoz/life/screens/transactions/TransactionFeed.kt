@@ -64,6 +64,7 @@ fun TransactionFeed(
                 .edgeToEdgeGradient(Colors.BACKGROUND, innerPadding)
                 .fillMaxSize(),
             state = listState,
+            reverseLayout = true
         ) {
             item {
                 Spacer(Modifier.height(8.dp + innerPadding.calculateTopPadding()))
@@ -98,11 +99,19 @@ private fun DateTransactionGroup(
     val screens = LocalScreens.current
     Column(
         modifier = Modifier
-            .padding(top = 10.dp, bottom = 30.dp)
+            .padding(top = 20.dp, bottom = 10.dp)
             .fillMaxWidth(),
-        verticalArrangement = Arrangement.spacedBy(10.dp),
+        verticalArrangement = Arrangement.spacedBy(5.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
+        transactions.forEachIndexed { i, tx ->
+            key(tx.first.id) {  // Ensure stable composition
+                BankingEntryComposable(tx, i == 0, i == transactions.size-1) {
+                    onTransactionClick(tx.first)
+                }
+            }
+        }
+        Spacer(Modifier)
         Row(
             Modifier.fillMaxWidth(.95f),
             verticalAlignment = Alignment.CenterVertically,
@@ -125,12 +134,6 @@ private fun DateTransactionGroup(
                 fontSize = FontSize.MEDIUM.size,
                 color = if (sum < 0) Colors.Transactions.MINUS else Colors.Transactions.PLUS
             )
-        }
-
-        transactions.forEach { tx ->
-            key(tx.first.id) {  // Ensure stable composition
-                BankingEntryComposable(tx, onClick = { onTransactionClick(tx.first) })
-            }
         }
     }
 }

@@ -128,6 +128,7 @@ fun MapSheet(mapViewModel: MapViewModel, innerPadding: PaddingValues){
             Modifier
                 .fillMaxWidth()
                 .padding(horizontal = 20.dp)
+            ,
         ) {
             val progress by state.progress.collectAsState()
             val loc = sheetLocation

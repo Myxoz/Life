@@ -306,3 +306,11 @@ fun MeasuredSheetContent(
         }
     }
 }
+
+@Composable
+fun rememberAsymmetricalCornerRadius(isFirst: Boolean, isLast: Boolean, scaling: Int = 24, reverse: Boolean = false) = remember(isFirst, isLast) { RoundedCornerShape(
+    if((!reverse && isFirst) || (reverse && isLast)) scaling else scaling/2,
+    if((!reverse && isFirst) || (reverse && isLast)) scaling else scaling/2,
+    if((reverse && isFirst) || (!reverse && isLast)) scaling else scaling/2,
+    if((reverse && isFirst) || (!reverse && isLast)) scaling else scaling/2,
+) }

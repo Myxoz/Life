@@ -58,6 +58,7 @@ import com.myxoz.life.dbwrapper.BankingEntity
 import com.myxoz.life.dbwrapper.BankingSidecarEntity
 import com.myxoz.life.dbwrapper.formatCents
 import com.myxoz.life.screens.options.ME_ID
+import com.myxoz.life.ui.rememberAsymmetricalCornerRadius
 import com.myxoz.life.ui.theme.Colors
 import com.myxoz.life.ui.theme.FontColor
 import com.myxoz.life.ui.theme.FontFamily
@@ -277,12 +278,12 @@ fun TransactionList(epochDay: Long) {
         Column(
             Modifier
                 .fillMaxSize(),
-            verticalArrangement = Arrangement.spacedBy(15.dp),
+            verticalArrangement = Arrangement.spacedBy(5.dp, Alignment.Bottom),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             Spacer(Modifier.height(innerPadding.calculateTopPadding()))
-            bankingEntries.forEach {
-                BankingEntryComposable(it) {
+            bankingEntries.forEachIndexed { i, it ->
+                BankingEntryComposable(it, i == 0, i == bankingEntries.size-1) {
                     nav.navigate("bank/transaction/${it.first.id}")
                 }
             }
@@ -292,12 +293,12 @@ fun TransactionList(epochDay: Long) {
 }
 
 @Composable
-fun BankingEntryComposable(entry: Pair<BankingEntity, BankingSidecarEntity?>, onClick:  ()->Unit){
+fun BankingEntryComposable(entry: Pair<BankingEntity, BankingSidecarEntity?>, isFirst: Boolean, isLast: Boolean, onClick:  ()->Unit){
     val calendar = remember { Calendar.getInstance() }
     Column(
         Modifier
-            .background(Colors.SECONDARY, RoundedCornerShape(25))
-            .clip(RoundedCornerShape(25))
+            .clip(rememberAsymmetricalCornerRadius(isFirst, isLast))
+            .background(Colors.SECONDARY)
             .rippleClick{onClick()}
             .padding(horizontal = 20.dp, vertical = 15.dp)
             .fillMaxWidth(.95f)

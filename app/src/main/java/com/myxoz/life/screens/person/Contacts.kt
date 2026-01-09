@@ -27,7 +27,6 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.rounded.Add
@@ -64,6 +63,7 @@ import com.myxoz.life.api.API
 import com.myxoz.life.api.syncables.PersonSyncable
 import com.myxoz.life.screens.feed.dayoverview.edgeToEdgeGradient
 import com.myxoz.life.screens.feed.fullscreenevent.InputField
+import com.myxoz.life.ui.rememberAsymmetricalCornerRadius
 import com.myxoz.life.ui.theme.Colors
 import com.myxoz.life.ui.theme.FontColor
 import com.myxoz.life.ui.theme.FontSize
@@ -153,12 +153,7 @@ fun Contacts(contactsViewModel: ContactsViewModel){
                     items(items, key = { "${letter}_${it.id}_${it.name}_${it.phoneNumber}" }) { contact ->
                         val isFirst = contact == items.firstOrNull()
                         val isLast = contact == items.lastOrNull()
-                        val shape = RoundedCornerShape( // Flip due to reverse Layout (tf)
-                            if(isLast) 20.dp else 10.dp,
-                            if(isLast) 20.dp else 10.dp,
-                            if(isFirst) 20.dp else 10.dp,
-                            if(isFirst) 20.dp else 10.dp,
-                        )
+                        val shape = rememberAsymmetricalCornerRadius(isFirst, isLast, 40, true)
                         val offsetX = remember { Animatable(0f) }
                         val coroutineScope = rememberCoroutineScope()
                         val swipedRight = offsetX.value > 0
@@ -184,6 +179,7 @@ fun Contacts(contactsViewModel: ContactsViewModel){
                                                 intent.setData(number)
                                                 intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
                                                 context.startActivity(intent)
+                                                delay(1000)
                                             }
                                         } else {
                                             if (it < -1000f && platform != null) {
@@ -270,7 +266,7 @@ fun Contacts(contactsViewModel: ContactsViewModel){
                                                 }
                                             }
                                         }
-                                        .padding(vertical = 12.dp, horizontal = 10.dp)
+                                        .padding(vertical = 12.dp, horizontal = 12.dp)
                                     ,
                                     horizontalArrangement = Arrangement.SpaceBetween,
                                     verticalAlignment = Alignment.CenterVertically

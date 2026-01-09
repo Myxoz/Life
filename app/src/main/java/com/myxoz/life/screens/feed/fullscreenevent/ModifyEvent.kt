@@ -1012,7 +1012,7 @@ fun LocationBar(defaultLocation: Long, setLocation: (Long)->Unit){
                 }
             } else {
                 Chip({
-                    navController.navigate("modify_event/add_location")
+                    navController.navigate("map")
                 }) {
                     Text(
                         "Neu",

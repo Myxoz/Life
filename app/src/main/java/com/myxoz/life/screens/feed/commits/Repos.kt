@@ -15,9 +15,8 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
@@ -37,10 +36,11 @@ import androidx.compose.ui.unit.dp
 import com.myxoz.life.LocalNavController
 import com.myxoz.life.LocalStorage
 import com.myxoz.life.R
-import com.myxoz.life.api.syncables.CommitSyncable
-import com.myxoz.life.screens.feed.fullscreenevent.InputField
 import com.myxoz.life.android.integration.GitHub
+import com.myxoz.life.api.syncables.CommitSyncable
 import com.myxoz.life.screens.feed.dayoverview.edgeToEdgeGradient
+import com.myxoz.life.screens.feed.fullscreenevent.InputField
+import com.myxoz.life.ui.rememberAsymmetricalCornerRadius
 import com.myxoz.life.ui.theme.Colors
 import com.myxoz.life.ui.theme.FontColor
 import com.myxoz.life.ui.theme.FontFamily
@@ -85,7 +85,10 @@ fun FullScreenRepos(){
                 ,
                 reverseLayout = true
             ) {
-                items(displayedRepos, {it.commitSha}) {
+                item {
+                    Spacer(Modifier.height(innerPadding.calculateBottomPadding()))
+                }
+                itemsIndexed(displayedRepos, {i, it -> it.commitSha}) {i, it ->
                     val calendar = remember { Calendar.getInstance() }
                     Item(
                         it.repoOwner+"/",
@@ -93,6 +96,8 @@ fun FullScreenRepos(){
                         "Last commit: ${it.commitDate?.formatTimeStamp(calendar)}",
                         null,
                         false,
+                        i == 0,
+                        i == displayedRepos.size-1,
                         {
                             nav.navigate("commits/repo/${it.repoName}")
                         }
@@ -149,8 +154,11 @@ fun FullScreenRepo(name: String){
                 ,
                 reverseLayout = true
             ) {
-                items(displayedCommits, {it.commitSha}) {
-                    val calendar = remember { Calendar.getInstance() }
+                item {
+                    Spacer(Modifier.height(innerPadding.calculateBottomPadding()))
+                }
+                itemsIndexed(displayedCommits, {i, it -> it.commitSha}) {i, it ->
+                val calendar = remember { Calendar.getInstance() }
                     Item(
                         "By ${it.commitAuthor} <${it.commitEmail}>",
                         it.commitMessage?:"",
@@ -159,6 +167,8 @@ fun FullScreenRepo(name: String){
                                 "${it.filesChanged} File${it.filesChanged.plural("s")} changed",
                         it.commitDate?.formatTimeStamp(calendar),
                         true,
+                        i == 0,
+                        i == displayedCommits.size-1,
                         {
                             nav.navigate("commits/commit/${it.commitSha}")
                         }
@@ -189,13 +199,14 @@ fun FullScreenRepo(name: String){
     }
 }
 @Composable
-private fun Item(subTitle: String, title: String, subsubTitle: String, date: String?, smaller: Boolean, onClick: (()->Unit)? = null, onClickAction: ()->Unit){
+private fun Item(subTitle: String, title: String, subsubTitle: String, date: String?, smaller: Boolean, isFirst: Boolean, isLast: Boolean, onClick: (()->Unit)? = null, onClickAction: ()->Unit){
     Row(
         Modifier
             .fillMaxWidth()
             .height(IntrinsicSize.Min)
-            .padding(vertical = 10.dp)
-            .background(Colors.SECONDARY, RoundedCornerShape(25.dp))
+            .padding(vertical = 3.dp)
+            .clip(rememberAsymmetricalCornerRadius(isFirst, isLast, reverse = true))
+            .background(Colors.SECONDARY)
             .rippleClick(onClick!=null) {
                 onClick?.invoke()
             }
