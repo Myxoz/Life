@@ -7,8 +7,10 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
+import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -27,16 +29,15 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.unit.dp
-import com.myxoz.life.LocalNavController
 import com.myxoz.life.LocalScreens
 import com.myxoz.life.LocalStorage
 import com.myxoz.life.R
+import com.myxoz.life.Theme
 import com.myxoz.life.android.integration.HVV
 import com.myxoz.life.api.syncables.Location
 import com.myxoz.life.api.syncables.PersonSyncable
@@ -50,9 +51,9 @@ import com.myxoz.life.events.additionals.PeopleEvent
 import com.myxoz.life.events.additionals.TagEvent
 import com.myxoz.life.events.additionals.TimedTagLikeContainer.Companion.TimedTagLikeBar
 import com.myxoz.life.events.additionals.TitleEvent
+import com.myxoz.life.ui.ArrowDirection
 import com.myxoz.life.ui.Chip
-import com.myxoz.life.ui.theme.Colors
-import com.myxoz.life.ui.theme.FontColor
+import com.myxoz.life.ui.drawArrowBehind
 import com.myxoz.life.ui.theme.FontFamily
 import com.myxoz.life.ui.theme.FontSize
 import com.myxoz.life.ui.theme.TypoStyle
@@ -60,6 +61,7 @@ import com.myxoz.life.utils.AndroidUtils
 import com.myxoz.life.utils.formatTimeStamp
 import com.myxoz.life.utils.rippleClick
 import com.myxoz.life.utils.toDp
+import com.myxoz.life.utils.toPx
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
@@ -67,7 +69,6 @@ import kotlinx.coroutines.withContext
 @Composable
 fun DisplayEvent(fullEvent: SyncedEvent){
     val context = LocalContext.current
-    val nav = LocalNavController.current
     val db = LocalStorage.current
     val screens = LocalScreens.current
     Column(
@@ -81,9 +82,9 @@ fun DisplayEvent(fullEvent: SyncedEvent){
                     .fillMaxWidth(),
                 style =
                     if (fullEvent.proposed.title.isNotBlank())
-                        TypoStyle(FontColor.PRIMARY, FontSize.XXLARGE, FontFamily.Display)
+                        TypoStyle(Theme.primary, FontSize.XXLARGE, FontFamily.Display)
                     else
-                        TypoStyle(FontColor.SECONDARY, FontSize.XXLARGE).copy(fontStyle = FontStyle.Italic)
+                        TypoStyle(Theme.secondary, FontSize.XXLARGE).copy(fontStyle = FontStyle.Italic)
             )
         }
         if (fullEvent.proposed is DetailsEvent && fullEvent.proposed.details != null) {
@@ -92,7 +93,7 @@ fun DisplayEvent(fullEvent: SyncedEvent){
                 Modifier
                     .fillMaxWidth()
                     .padding(horizontal = 10.dp),
-                style = TypoStyle(FontColor.SECONDARY, FontSize.MEDIUM)
+                style = TypoStyle(Theme.secondary, FontSize.MEDIUM)
             )
         }
         Spacer(Modifier.height(10.dp))
@@ -105,7 +106,7 @@ fun DisplayEvent(fullEvent: SyncedEvent){
                     Row(
                         Modifier
                             .padding(vertical = 5.dp)
-                            .background(fullEvent.proposed.type.color, CircleShape)
+                            .background(Theme.secondaryContainer, CircleShape)
                             .clip(CircleShape)
                             .rippleClick{
                                 screens.openCalendarWithSearch{
@@ -126,11 +127,11 @@ fun DisplayEvent(fullEvent: SyncedEvent){
                             painterResource(it.drawable),
                             it.displayName,
                             modifier = Modifier.height(tagsHeight),
-                            tint = fullEvent.proposed.type.selectedColor
+                            tint = Theme.onSecondaryContainer
                         )
                         Text(
                             it.displayName,
-                            color = fullEvent.proposed.type.selectedColor,
+                            color = Theme.onSecondaryContainer,
                             fontSize = FontSize.MEDIUM.size
                         )
                     }
@@ -155,7 +156,7 @@ fun DisplayEvent(fullEvent: SyncedEvent){
                 displayedPeople = it
             }
             Spacer(Modifier.height(10.dp))
-            Text("Mit:", style = TypoStyle(FontColor.SECONDARY, FontSize.LARGE))
+            Text("Mit:", style = TypoStyle(Theme.onSecondaryContainer, FontSize.LARGE))
             FlowRow(
                 horizontalArrangement = Arrangement.spacedBy(10.dp),
                 verticalArrangement = Arrangement.spacedBy(5.dp),
@@ -180,13 +181,13 @@ fun DisplayEvent(fullEvent: SyncedEvent){
                     ) {
                         Text(
                             it.name,
-                            style = TypoStyle(FontColor.SECONDARY, FontSize.MEDIUM)
+                            style = TypoStyle(Theme.onSecondaryContainer, FontSize.MEDIUM)
                         )
                     }
                 }
                 if(fullEvent.proposed is SocialEvent && fullEvent.proposed.more)
                     Chip(null, null, color = Color.Transparent) {
-                        Text("+ Weitere", style = TypoStyle(FontColor.SECONDARY, FontSize.MEDIUM))
+                        Text("+ Weitere", style = TypoStyle(Theme.secondary, FontSize.MEDIUM))
                     }
             }
         }
@@ -202,30 +203,27 @@ fun DisplayEvent(fullEvent: SyncedEvent){
                         ?.also { to = Location.from(it) }
                 }
             }
-            Column(
-                Modifier
-                    .fillMaxWidth(),
-                verticalArrangement = Arrangement.spacedBy(10.dp)
-            ) {
+            @Composable
+            fun RenderLocation(location: Location?, isFrom: Boolean) {
                 Column(
                     Modifier
                         .fillMaxWidth()
-                        .background(Colors.SECONDARY, RoundedCornerShape(20))
+                        .background(Theme.surfaceContainerHighest, RoundedCornerShape(20))
                         .padding(20.dp)
                 ) {
                     Text(
-                        from?.name ?: "",
-                        style = TypoStyle(FontColor.PRIMARY, FontSize.XLARGE)
+                        location?.name ?: "",
+                        style = TypoStyle(Theme.primary, FontSize.XLARGE)
                     )
                     Spacer(Modifier.height(5.dp))
                     Text(
-                        from?.toAddress() ?: "",
-                        style = TypoStyle(FontColor.SECONDARY, FontSize.MEDIUM)
+                        location?.toAddress() ?: "",
+                        style = TypoStyle(Theme.secondary, FontSize.MEDIUM)
                     )
                     Spacer(Modifier.height(2.dp))
                     Text(
-                        from?.toCords() ?: "",
-                        style = TypoStyle(FontColor.SECONDARY, FontSize.SMALLM)
+                        location?.toCords() ?: "",
+                        style = TypoStyle(Theme.secondary, FontSize.SMALLM)
                     )
                     Spacer(Modifier.height(15.dp))
                     Row(
@@ -235,12 +233,12 @@ fun DisplayEvent(fullEvent: SyncedEvent){
                         Row(
                             Modifier
                                 .weight(1f)
-                                .background(Colors.TERTIARY, CircleShape)
+                                .background(Theme.primaryContainer, CircleShape)
                                 .clip(CircleShape)
                                 .rippleClick {
                                     AndroidUtils.openLink(
                                         context,
-                                        HVV.constructLink(null, from)
+                                        HVV.constructLink(if(isFrom) location else null, if(isFrom) null else location)
                                             .apply { println(this) })
                                 }
                                 .padding(vertical = 8.dp),
@@ -254,22 +252,22 @@ fun DisplayEvent(fullEvent: SyncedEvent){
                                 painterResource(R.drawable.hvv),
                                 "HVV",
                                 Modifier.height(FontSize.LARGE.size.toDp()),
-                                Colors.SECONDARYFONT
+                                Theme.onPrimaryContainer
                             )
                             Text(
                                 "HVV App",
-                                style = TypoStyle(FontColor.SECONDARY, FontSize.MEDIUM)
+                                style = TypoStyle(Theme.onPrimaryContainer, FontSize.MEDIUM)
                             )
                         }
                         Row(
                             Modifier
                                 .weight(1f)
-                                .background(Colors.TERTIARY, CircleShape)
+                                .background(Theme.primaryContainer, CircleShape)
                                 .clip(CircleShape)
                                 .rippleClick {
                                     Location.openInGoogleMaps(
                                         context,
-                                        from
+                                        location
                                     )
                                 }
                                 .padding(vertical = 8.dp),
@@ -283,26 +281,39 @@ fun DisplayEvent(fullEvent: SyncedEvent){
                                 painterResource(R.drawable.gmaps),
                                 "Maps",
                                 Modifier.height(FontSize.LARGE.size.toDp()),
-                                Colors.SECONDARYFONT
+                                Theme.onPrimaryContainer
                             )
                             Text(
                                 "Google Maps",
-                                style = TypoStyle(FontColor.SECONDARY, FontSize.MEDIUM)
+                                style = TypoStyle(Theme.onPrimaryContainer, FontSize.MEDIUM)
                             )
                         }
                     }
                 }
+            }
+            Column(
+                Modifier
+                    .fillMaxWidth(),
+                verticalArrangement = Arrangement.spacedBy(10.dp)
+            ) {
+                RenderLocation(from, true)
                 Row(
-                    Modifier.fillMaxWidth(),
-                    verticalAlignment = Alignment.CenterVertically
+                    Modifier
+                        .height(IntrinsicSize.Min)
+                        .fillMaxWidth()
+                    ,
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(5.dp)
                 ) {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(5.dp)
+                    Column(
+                        verticalArrangement = Arrangement.SpaceEvenly,
+                        horizontalAlignment = Alignment.CenterHorizontally
                     ) {
                         Box(
-                            Modifier.clip(CircleShape)
-                                .background(Colors.TERTIARY, CircleShape).rippleClick {
+                            Modifier
+                                .padding(vertical = 2.dp)
+                                .clip(CircleShape)
+                                .background(Theme.primaryContainer).rippleClick {
                                     Location.openRouteInGoogleMaps(
                                         context,
                                         from?.toAddress()?.substringBeforeLast(","),
@@ -317,14 +328,18 @@ fun DisplayEvent(fullEvent: SyncedEvent){
                             Icon(
                                 painterResource(R.drawable.gmaps),
                                 "Maps",
-                                Modifier.size(size),
-                                Colors.SECONDARYFONT
+                                Modifier
+                                    .size(size)
+                                ,
+                                Theme.onPrimaryContainer
                             )
                         }
                         val calendar = remember { Calendar.getInstance() }
                         Box(
-                            Modifier.clip(CircleShape)
-                                .background(Colors.TERTIARY, CircleShape).rippleClick {
+                            Modifier
+                                .padding(vertical = 2.dp)
+                                .clip(CircleShape)
+                                .background(Theme.primaryContainer).rippleClick {
                                     AndroidUtils.openLink(
                                         context, HVV.constructLink(
                                             from,
@@ -340,106 +355,24 @@ fun DisplayEvent(fullEvent: SyncedEvent){
                             Icon(
                                 painterResource(R.drawable.hvv),
                                 "HVV",
-                                Modifier.size(size),
-                                Colors.SECONDARYFONT
+                                Modifier
+                                    .size(size)
+                                ,
+                                Theme.onPrimaryContainer
                             )
                         }
                     }
                     Spacer(Modifier.width(10.dp))
-                    Icon(
-                        painterResource(R.drawable.arrow_right),
-                        "to",
-                        Modifier.height(size * 2).rotate(90f),
-                        Colors.TERTIARY
+                    Box(
+                        Modifier
+                            .fillMaxHeight()
+                            .drawArrowBehind(ArrowDirection.Down, 10.dp.toPx(), Theme.primary)
+                        ,
                     )
                     Spacer(Modifier.width(5.dp))
                     TimedTagLikeBar(fullEvent.proposed.vehicles)
                 }
-                Column(
-                    Modifier
-                        .fillMaxWidth()
-                        .background(Colors.SECONDARY, RoundedCornerShape(20))
-                        .padding(20.dp)
-                ) {
-                    Text(
-                        to?.name ?: "",
-                        style = TypoStyle(FontColor.PRIMARY, FontSize.XLARGE)
-                    )
-                    Spacer(Modifier.height(5.dp))
-                    Text(
-                        to?.toAddress() ?: "",
-                        style = TypoStyle(FontColor.SECONDARY, FontSize.MEDIUM)
-                    )
-                    Spacer(Modifier.height(2.dp))
-                    Text(
-                        to?.toCords() ?: "",
-                        style = TypoStyle(FontColor.SECONDARY, FontSize.SMALLM)
-                    )
-                    Spacer(Modifier.height(15.dp))
-                    Row(
-                        Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(10.dp)
-                    ) {
-                        Row(
-                            Modifier
-                                .weight(1f)
-                                .background(Colors.TERTIARY, CircleShape)
-                                .clip(CircleShape)
-                                .rippleClick {
-                                    AndroidUtils.openLink(
-                                        context,
-                                        HVV.constructLink(null, to)
-                                            .apply { println(this) })
-                                }
-                                .padding(vertical = 8.dp),
-                            horizontalArrangement = Arrangement.spacedBy(
-                                10.dp,
-                                Alignment.CenterHorizontally
-                            ),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Icon(
-                                painterResource(R.drawable.hvv),
-                                "HVV",
-                                Modifier.height(FontSize.LARGE.size.toDp()),
-                                Colors.SECONDARYFONT
-                            )
-                            Text(
-                                "HVV App",
-                                style = TypoStyle(FontColor.SECONDARY, FontSize.MEDIUM)
-                            )
-                        }
-                        Row(
-                            Modifier
-                                .weight(1f)
-                                .background(Colors.TERTIARY, CircleShape)
-                                .clip(CircleShape)
-                                .rippleClick {
-                                    Location.openInGoogleMaps(
-                                        context,
-                                        to
-                                    )
-                                }
-                                .padding(vertical = 8.dp),
-                            horizontalArrangement = Arrangement.spacedBy(
-                                10.dp,
-                                Alignment.CenterHorizontally
-                            ),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Icon(
-                                painterResource(R.drawable.gmaps),
-                                "Maps",
-                                Modifier.height(FontSize.LARGE.size.toDp()),
-                                Colors.SECONDARYFONT
-                            )
-                            Text(
-                                "Google Maps",
-                                style = TypoStyle(FontColor.SECONDARY, FontSize.MEDIUM)
-                            )
-                        }
-                    }
-                }
+                RenderLocation(to, false)
             }
         }
     }

@@ -32,17 +32,17 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.myxoz.life.LocalNavController
 import com.myxoz.life.R
+import com.myxoz.life.Theme
+import com.myxoz.life.events.additionals.DigSocPlatform
+import com.myxoz.life.events.additionals.EventType
+import com.myxoz.life.events.additionals.Vehicle
 import com.myxoz.life.screens.feed.fullscreenevent.CalendarChip
 import com.myxoz.life.screens.feed.fullscreenevent.InputField
 import com.myxoz.life.screens.feed.fullscreenevent.PersonBar
 import com.myxoz.life.screens.feed.fullscreenevent.TagsBar
-import com.myxoz.life.events.additionals.DigSocPlatform
-import com.myxoz.life.events.additionals.EventType
-import com.myxoz.life.events.additionals.Vehicle
 import com.myxoz.life.ui.ActionBar
-import com.myxoz.life.ui.theme.Colors
-import com.myxoz.life.ui.theme.FontColor
 import com.myxoz.life.ui.theme.FontSize
+import com.myxoz.life.ui.theme.OldColors
 import com.myxoz.life.ui.theme.TypoStyle
 import com.myxoz.life.utils.toDp
 import com.myxoz.life.viewmodels.CalendarViewModel
@@ -53,7 +53,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 fun AdvancedSearch(calendarViewModel: CalendarViewModel){
     val search = calendarViewModel.search
     Scaffold(
-        containerColor = Colors.BACKGROUND
+        containerColor = Theme.background
     ) { innerPadding ->
         Column(
             Modifier
@@ -142,7 +142,7 @@ fun AdvancedSearch(calendarViewModel: CalendarViewModel){
                         )
                         Text(
                             title,
-                            style = TypoStyle(FontColor.SECONDARY, FontSize.MEDIUM),
+                            style = TypoStyle(Theme.secondary, FontSize.MEDIUM),
                             modifier = Modifier
                                 .clickable(null, null){
                                     mutableFlow.value = !mutableFlow.value
@@ -167,7 +167,7 @@ fun AdvancedSearch(calendarViewModel: CalendarViewModel){
                         }
                     }
                 }
-                HorizontalDivider(Modifier.clip(CircleShape), color = Colors.SECONDARY, thickness = 3.dp)
+                HorizontalDivider(Modifier.clip(CircleShape), color = Theme.outlineVariant)
                 PersonBar(
                     selectedPeople,
                     false,
@@ -178,16 +178,16 @@ fun AdvancedSearch(calendarViewModel: CalendarViewModel){
                 ) { l, _ ->
                     search.selectedPeople.value = l
                 }
-                HorizontalDivider(Modifier.clip(CircleShape), color = Colors.SECONDARY, thickness = 3.dp)
+                HorizontalDivider(Modifier.clip(CircleShape), color = Theme.outlineVariant)
                 ActionBar(
                     {
                         search.reset()
                         nav.popBackStack("home", false, true)
                     },
                     {
-                        Icon(painterResource(R.drawable.close), "Close", Modifier.fillMaxSize(), tint = Colors.SECONDARYFONT)
+                        Icon(painterResource(R.drawable.close), "Close", Modifier.fillMaxSize(), tint = OldColors.SECONDARYFONT)
                     },
-                    Colors.SELECTED,
+                    OldColors.SELECTED,
                     {
                         nav.popBackStack("home", false, true)
                     },
@@ -195,7 +195,7 @@ fun AdvancedSearch(calendarViewModel: CalendarViewModel){
                     Text(
                         "Suchen",
                         style = TypoStyle(
-                            FontColor.PRIMARY,
+                            Theme.primary,
                             FontSize.LARGE
                         ).copy(fontWeight = FontWeight.W900)
                     )
@@ -203,7 +203,7 @@ fun AdvancedSearch(calendarViewModel: CalendarViewModel){
                     Icon(
                         painterResource(R.drawable.arrow_right),
                         "Continue",
-                        tint = Colors.PRIMARYFONT,
+                        tint = Theme.primary,
                         modifier = Modifier.height(20.dp)
                     )
                 }

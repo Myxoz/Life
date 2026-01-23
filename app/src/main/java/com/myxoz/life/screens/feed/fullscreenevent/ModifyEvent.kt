@@ -81,6 +81,7 @@ import com.myxoz.life.LocalNavController
 import com.myxoz.life.LocalScreens
 import com.myxoz.life.LocalStorage
 import com.myxoz.life.R
+import com.myxoz.life.Theme
 import com.myxoz.life.android.integration.HVV
 import com.myxoz.life.api.syncables.Location
 import com.myxoz.life.api.syncables.PersonSyncable
@@ -108,11 +109,14 @@ import com.myxoz.life.screens.feed.main.msToDisplay
 import com.myxoz.life.screens.options.ME_ID
 import com.myxoz.life.ui.ArrowDirection
 import com.myxoz.life.ui.Chip
+import com.myxoz.life.ui.RowChip
 import com.myxoz.life.ui.drawArrowBehind
-import com.myxoz.life.ui.theme.Colors
 import com.myxoz.life.ui.theme.FontColor
+import com.myxoz.life.ui.theme.FontFamily
 import com.myxoz.life.ui.theme.FontSize
+import com.myxoz.life.ui.theme.OldColors
 import com.myxoz.life.ui.theme.TypoStyle
+import com.myxoz.life.ui.theme.TypoStyleOld
 import com.myxoz.life.utils.AndroidUtils
 import com.myxoz.life.utils.filteredWith
 import com.myxoz.life.utils.formatMinutesToVisual
@@ -425,7 +429,7 @@ fun ModifyEvent(viewModel: InspectedEventViewModel){
         }
     }
     if (event.type != EventType.Sleep && event.type != EventType.Empty) HorizontalDivider(
-        color = Colors.SECONDARY,
+        color = OldColors.SECONDARY,
         thickness = 3.dp
     )
     FlowRow(
@@ -539,7 +543,7 @@ fun CalendarChip(
 ) {
     val animationDuration = 500
     val dotSize = 10.dp
-    val fontColor by animateColorAsState(if(isSelected) type.selectedColor else Colors.SECONDARYFONT, tween(animationDuration, easing = LinearEasing))
+    val fontColor by animateColorAsState(if(isSelected) type.selectedColor else OldColors.SECONDARYFONT, tween(animationDuration, easing = LinearEasing))
     val progress by animateFloatAsState(if(isSelected) 1f else 0f, tween(animationDuration, easing = EaseIn))
     val fontSize = FontSize.LARGE.size.toDp()
     val offsetX = (10.dp+dotSize).toPx()
@@ -548,8 +552,8 @@ fun CalendarChip(
     Row(
         Modifier
             .padding(vertical = 5.dp)
-            .clip(RoundedCornerShape(25))
-            .background(Colors.SECONDARY, RoundedCornerShape(25))
+            .clip(RoundedCornerShape((50 * (progress/2 + .5f)).toInt()))
+            .background(Theme.tertiaryContainer, RoundedCornerShape(25))
             .drawBehind{
                 val maxWidth = size.width
                 drawCircle(
@@ -576,7 +580,15 @@ fun CalendarChip(
     }
 }
 @Composable
-fun InputField(defaultValue: String?, placeholder: String, focusRequester: FocusRequester?=null, onImeAction: (()-> ImeActionClicked)?=null, multiline: Boolean = false, onChange: (String)->Unit){
+fun InputField(
+    defaultValue: String?,
+    placeholder: String,
+    focusRequester: FocusRequester?=null,
+    onImeAction: (()-> ImeActionClicked)?=null,
+    multiline: Boolean = false,
+    background: Color = Theme.secondaryContainer,
+    onChange: (String)->Unit
+){
     var value by remember(defaultValue, placeholder) {
         mutableStateOf(defaultValue?:"")
     }
@@ -591,13 +603,13 @@ fun InputField(defaultValue: String?, placeholder: String, focusRequester: Focus
         Modifier
             .let{ if(focusRequester!=null) it.focusRequester(focusRequester) else it }
             .fillMaxWidth(),
-        textStyle = TypoStyle(FontColor.PRIMARY, FontSize.LARGE),
+        textStyle = TypoStyle(Theme.primary, FontSize.LARGE),
         colors = TextFieldDefaults.colors(
             focusedIndicatorColor = Color.Transparent,
             unfocusedIndicatorColor = Color.Transparent,
-            focusedContainerColor = Colors.SECONDARY,
-            unfocusedContainerColor = Colors.SECONDARY,
-            cursorColor = Colors.PRIMARYFONT
+            focusedContainerColor = background,
+            unfocusedContainerColor = background,
+            cursorColor = Theme.primary,
         ),
         singleLine = !multiline,
         keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Sentences, imeAction = ImeAction.Done),
@@ -614,7 +626,7 @@ fun InputField(defaultValue: String?, placeholder: String, focusRequester: Focus
         },
         shape = RoundedCornerShape(10.dp),
         placeholder = {
-            Text(placeholder, style = TypoStyle(FontColor.SECONDARY, FontSize.LARGE))
+            Text(placeholder, style = TypoStyle(Theme.secondary, FontSize.LARGE))
         }
     )
 }
@@ -626,7 +638,7 @@ fun TagsBar(ev: List<EventTag>, updateEvent: (List<EventTag>)->Unit){
     var search: String? by remember {
         mutableStateOf(null)
     }
-    val allEventTags = EventTag.entries.filter { it != EventTag.P && it != EventTag.S }
+    val allEventTags = EventTag.entries.filter { it != EventTag.S }
     val leftItems by remember {
         derivedStateOf {
             val tags = allEventTags.filter {
@@ -651,7 +663,7 @@ fun TagsBar(ev: List<EventTag>, updateEvent: (List<EventTag>)->Unit){
             if(selectedTags.isNotEmpty()) {
                 Row(
                     Modifier
-                        .background(Colors.SECONDARY, CircleShape)
+                        .background(Theme.primaryContainer, CircleShape)
                         .padding(horizontal = 10.dp, vertical = 5.dp),
                     horizontalArrangement = Arrangement.spacedBy(3.dp),
                     verticalAlignment = Alignment.CenterVertically
@@ -666,14 +678,14 @@ fun TagsBar(ev: List<EventTag>, updateEvent: (List<EventTag>)->Unit){
                                     selectedTags.remove(it)
                                     updateEvent(selectedTags)
                                 },
-                            tint = Colors.PRIMARYFONT
+                            tint = Theme.onPrimaryContainer,
                         )
                     }
                 }
                 Box(
                     Modifier
                         .padding(horizontal = 10.dp)
-                        .background(Colors.SECONDARY, CircleShape)
+                        .background(Theme.outlineVariant, CircleShape)
                         .padding(horizontal = 1.dp)
                         .height(20.dp)
                 )
@@ -683,25 +695,25 @@ fun TagsBar(ev: List<EventTag>, updateEvent: (List<EventTag>)->Unit){
                     .horizontalScroll(rememberScrollState())
                     .weight(1f)
                 ,
-                horizontalArrangement = Arrangement.spacedBy(5.dp),
+                horizontalArrangement = Arrangement.spacedBy(2.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                leftItems.forEach{
-                    Chip({
+                leftItems.forEachIndexed{ i, it ->
+                    RowChip ({
                         selectedTags.add(it)
                         updateEvent(selectedTags)
-                    }, spacing = 3.dp) {
+                    }, spacing = 3.dp, isFirst = i == 0, isLast = i == leftItems.size - 1) {
                         Icon(
                             painterResource(it.drawable),
                             it.displayName,
                             modifier = Modifier.height(tagsHeight),
-                            tint = Colors.SECONDARYFONT
+                            tint = Theme.onSecondaryContainer,
                         )
                         val displayString = if(it.displayName.lowercase().contains(search?.lowercase()?:""))
                             it.displayName
                         else
                             "${it.displayName} (${it.queryString.filteredWith(search?:"\na", {""}){ l -> l}.firstOrNull() ?:"NULL"})"
-                        Text(displayString, style = TypoStyle(FontColor.SECONDARY, FontSize.SMALL))
+                        Text(displayString, style = TypoStyle(Theme.onSecondaryContainer, FontSize.SMALL))
                     }
                 }
             }
@@ -709,7 +721,6 @@ fun TagsBar(ev: List<EventTag>, updateEvent: (List<EventTag>)->Unit){
         InputField(null, "Tags", onImeAction = {
             return@InputField if(search!=null) {
                 when (search) {
-                    "nrfedoP".removeRange(2..4).reversed() -> selectedTags.add(EventTag.P)
                     "xkwreS".removeRange(1..3).reversed() -> selectedTags.add(EventTag.S)
                     else -> leftItems.getOrNull(0)?.apply { selectedTags.add(this); updateEvent(selectedTags) }
                 }
@@ -736,7 +747,7 @@ fun TimeBar(event: ProposedEvent, progress: Float = 0f, color: Color, setEventTo
             Modifier
                 .fillMaxWidth()
                 .padding(vertical = 15.dp)
-                .border(3.dp, Colors.TERTIARY, RoundedCornerShape(15.dp))
+                .border(3.dp, Theme.outlineVariant, RoundedCornerShape(15.dp))
                 .padding(vertical = 3.dp)
                 .clip(RoundedCornerShape(25))
             ,
@@ -777,21 +788,21 @@ fun TimeBar(event: ProposedEvent, progress: Float = 0f, color: Color, setEventTo
                             calendar.get(Calendar.YEAR)
                 }
                 Row {
-                    Text(startTime, style = TypoStyle(FontColor.PRIMARY, FontSize.LARGE), modifier = Modifier.clickable(null, null) {
+                    Text(startTime, style = TypoStyle(Theme.primary, FontSize.LARGE, FontFamily.Display), modifier = Modifier.clickable(null, null) {
                         setEventTo(event.copyWithTimes(event.start, event.end, !event.uss, event.usl))
                     })
-                    Text("~", color = if(!uss) Color.Transparent else Colors.PRIMARYFONT, fontSize = FontSize.LARGE.size)
+                    Text("~", color = if(!uss) Color.Transparent else Theme.primary, fontSize = FontSize.LARGE.size, fontFamily = FontFamily.Display.family)
                 }
-                Text(startDate, style = TypoStyle(FontColor.SECONDARY, FontSize.MEDIUM), modifier = Modifier.clip(CircleShape).rippleClick{
+                Text(startDate, style = TypoStyle(Theme.secondary, FontSize.MEDIUMM), modifier = Modifier.clip(CircleShape).rippleClick{
                     screens.openCalendarAt(Instant.ofEpochMilli(event.start).atZone(ZoneId.systemDefault()).toLocalDate())
-                }.padding(5.dp))
-                Icon(Icons.AutoMirrored.Rounded.KeyboardArrowRight, "Till", tint = Colors.SECONDARYFONT)
-                Text(endDate, style = TypoStyle(FontColor.SECONDARY, FontSize.MEDIUM), modifier = Modifier.clip(CircleShape).rippleClick{
+                }.padding(2.dp))
+                Icon(Icons.AutoMirrored.Rounded.KeyboardArrowRight, "Till", tint = Theme.tertiary)
+                Text(endDate, style = TypoStyle(Theme.secondary, FontSize.MEDIUMM), modifier = Modifier.clip(CircleShape).rippleClick{
                     screens.openCalendarAt(Instant.ofEpochMilli(event.end).atZone(ZoneId.systemDefault()).toLocalDate())
-                }.padding(5.dp))
+                }.padding(2.dp))
                 Row {
-                    Text("~", color = if(!usl) Color.Transparent else Colors.PRIMARYFONT, fontSize = FontSize.LARGE.size)
-                    Text(endTime, style = TypoStyle(FontColor.PRIMARY, FontSize.LARGE), modifier = Modifier.clickable(null, null) {
+                    Text("~", color = if(!usl) Color.Transparent else Theme.primary, fontSize = FontSize.LARGE.size, fontFamily = FontFamily.Display.family)
+                    Text(endTime, style = TypoStyle(Theme.primary, FontSize.LARGE, FontFamily.Display), modifier = Modifier.clickable(null, null) {
                         setEventTo(event.copyWithTimes(event.start, event.end, event.uss, !event.usl))
                     })
                 }
@@ -799,7 +810,7 @@ fun TimeBar(event: ProposedEvent, progress: Float = 0f, color: Color, setEventTo
             Box(
                 Modifier
                     .fillMaxWidth()
-                    .background(Colors.SECONDARY, CircleShape)
+                    .background(Theme.tertiaryContainer, CircleShape)
                     .height(6.dp)
             ){
                 Box(
@@ -820,15 +831,15 @@ fun TimeBar(event: ProposedEvent, progress: Float = 0f, color: Color, setEventTo
         Box(
             Modifier
                 .align(Alignment.BottomEnd)
-                .offset(y = verticalOffset - 4.dp - 5.dp, x = (-15).dp)
-                .background(Colors.TERTIARY, shape = RoundedCornerShape(0.dp, 0.dp, 10.dp, 10.dp))
+                .offset(y = verticalOffset - 4.dp /* 2*2 */ - 2.dp, x = (-15).dp)
+                .background(Theme.outlineVariant, shape = RoundedCornerShape(0.dp, 0.dp, 10.dp, 10.dp))
         ) {
             Text(
                 (event.end - event.start).toInt().msToDisplay(true),
                 Modifier
                     .padding(horizontal = 8.dp, vertical = 2.dp)
                 ,
-                style = TypoStyle(FontColor.PRIMARY, FontSize.SMALLM)
+                style = TypoStyle(Theme.secondary, FontSize.MEDIUM, FontFamily.Display)
             )
         }
     }
@@ -889,7 +900,7 @@ fun PersonBar(
                 }) {
                     Text(
                         decPerson?.name?:"NULL",
-                        style = TypoStyle(FontColor.PRIMARY, FontSize.SMALL)
+                        style = TypoStyle(Theme.onSecondaryContainer, FontSize.SMALL)
                     )
                 }
             }
@@ -899,13 +910,12 @@ fun PersonBar(
             }) {
                 Text(
                     "+ weitere",
-                    style = TypoStyle(if(more) FontColor.PRIMARY else FontColor.SECONDARY, FontSize.SMALL)
+                    style = TypoStyle(Theme.onSecondaryContainer, FontSize.SMALL)
                 )
             }
         }
         Row(
             Modifier
-                .horizontalScroll(rememberScrollState())
                 .fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(5.dp),
         ) {
@@ -914,18 +924,29 @@ fun PersonBar(
             }) {
                 Text(
                     "Neu",
-                    style = TypoStyle(FontColor.PRIMARY, FontSize.SMALL)
+                    style = TypoStyle(Theme.onSecondaryContainer, FontSize.SMALL)
                 )
             }
-            leftItems.forEach { person ->
-                Chip({
-                    selectedPeople.add(person.id)
-                    updateEvent(selectedPeople, more)
-                }) {
-                    Text(
-                        person.name,
-                        style = TypoStyle(FontColor.SECONDARY, FontSize.SMALL)
-                    )
+            Row(
+                Modifier
+                    .horizontalScroll(rememberScrollState())
+                    .weight(1f)
+                ,
+                horizontalArrangement = Arrangement.spacedBy(2.dp),
+            ) {
+                leftItems.forEachIndexed { i, person ->
+                    RowChip ({
+                        selectedPeople.add(person.id)
+                        updateEvent(selectedPeople, more)
+                    },
+                        isFirst = i == 0,
+                        isLast = i == leftItems.size - 1
+                    ) {
+                        Text(
+                            person.name,
+                            style = TypoStyle(Theme.onSecondaryContainer, FontSize.SMALL)
+                        )
+                    }
                 }
             }
         }
@@ -971,14 +992,10 @@ fun LocationBar(defaultLocation: Long, setLocation: (Long)->Unit){
                 locs
         }
     }
-    val scrollState = rememberScrollState()
     val coroutineScope = rememberCoroutineScope()
     val setLocationTo = { it: Long ->
         selectedLocation = it
         setLocation(it)
-        coroutineScope.launch {
-            scrollState.animateScrollTo(0, tween(300))
-        }
     }
     val editLocation = { it: Location ->
         coroutineScope.launch {
@@ -995,41 +1012,62 @@ fun LocationBar(defaultLocation: Long, setLocation: (Long)->Unit){
     ) {
         Row(
             Modifier
-                .horizontalScroll(scrollState)
                 .fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(5.dp),
+            horizontalArrangement = Arrangement.spacedBy(2.dp),
         ) {
             if (decodedLocation != null) {
                 Chip({
                     setLocationTo(0L)
                 },{
                     editLocation(decodedLocation?:return@Chip)
-                }){
+                },
+                    color = Theme.primaryContainer
+                    ){
                     Text(
                         decodedLocation?.name ?: "NULL",
-                        style = TypoStyle(FontColor.PRIMARY, FontSize.SMALL)
+                        style = TypoStyle(Theme.onPrimaryContainer, FontSize.SMALL)
                     )
                 }
             } else {
                 Chip({
                     navController.navigate("map")
-                }) {
+                },
+                    color = Theme.secondaryContainer
+                ) {
                     Text(
                         "Neu",
-                        style = TypoStyle(FontColor.PRIMARY, FontSize.SMALL)
+                        style = TypoStyle(Theme.onSecondaryContainer, FontSize.SMALL)
                     )
                 }
             }
-            leftItems.forEach { location ->
-                Chip({
-                    setLocationTo(location.id)
-                }, {
-                    editLocation(location)
-                }) {
-                    Text(
-                        location.name,
-                        style = TypoStyle(FontColor.SECONDARY, FontSize.SMALL)
-                    )
+            Box(
+                Modifier
+                    .padding(horizontal = 10.dp)
+                    .background(Theme.outlineVariant, CircleShape)
+                    .padding(horizontal = 1.dp)
+                    .height(20.dp)
+            )
+            Row(
+                Modifier
+                    .horizontalScroll(rememberScrollState())
+                    .weight(1f)
+                ,
+                horizontalArrangement = Arrangement.spacedBy(2.dp),
+            ) {
+                leftItems.forEachIndexed { i, location ->
+                    RowChip ({
+                        setLocationTo(location.id)
+                    }, {
+                        editLocation(location)
+                    },
+                        isFirst = i == 0,
+                        isLast = i == leftItems.size - 1
+                    ) {
+                        Text(
+                            location.name,
+                            style = TypoStyle(Theme.onSecondaryContainer, FontSize.SMALL)
+                        )
+                    }
                 }
             }
         }
@@ -1062,7 +1100,7 @@ fun VehicleSelection(defSelected: List<TimedTagLikeContainer<Vehicle>>, inspectV
             Modifier
                 .fillMaxHeight()
                 .width(iconHeight*3)
-                .drawArrowBehind(ArrowDirection.Down, iconHeight.toPx(density), Colors.SECONDARY)
+                .drawArrowBehind(ArrowDirection.Down, iconHeight.toPx(density), Theme.primary)
         )
         Column(Modifier.fillMaxWidth()) {
             TimeBasedTagLikeSelection(Vehicle.entries.toList(), defSelected) {
@@ -1085,14 +1123,14 @@ fun VehicleSelection(defSelected: List<TimedTagLikeContainer<Vehicle>>, inspectV
                             AndroidUtils.openLink(context, HVV.constructLink(from, to, (event.proposed.start-15*1000L*60L).formatTimeStamp(calendar)))
                         }
                     }
-                    .border(2.dp, Colors.TERTIARY, CircleShape)
+                    .border(2.dp, Theme.outlineVariant, CircleShape)
                     .padding(horizontal = 10.dp, vertical = 5.dp)
                 ,
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(5.dp)
             ) {
-                Icon(painterResource(R.drawable.hvv), "HVV", Modifier.size(FontSize.MEDIUM.size.toDp()), tint = Colors.PRIMARYFONT)
-                Text("Mit HVV App ermitteln", style = TypoStyle(FontColor.PRIMARY, FontSize.MEDIUM))
+                Icon(painterResource(R.drawable.hvv), "HVV", Modifier.size(FontSize.MEDIUM.size.toDp()), tint = Theme.primary)
+                Text("Mit HVV App ermitteln", style = TypoStyleOld(FontColor.PRIMARY, FontSize.MEDIUM))
             }
         }
     }
@@ -1116,7 +1154,7 @@ fun <T: TagLike> TimeBasedTagLikeSelection(allSelectables: List<T>, defSelection
                 }
                 Row(
                     Modifier
-                        .background(Colors.SECONDARY, CircleShape)
+                        .background(Theme.primaryContainer, CircleShape)
                         .clip(CircleShape)
                         .rippleClick{
                             selectedTagLike.removeIf { it.type == item.type}
@@ -1136,12 +1174,12 @@ fun <T: TagLike> TimeBasedTagLikeSelection(allSelectables: List<T>, defSelection
                         painterResource(item.type.drawable),
                         null,
                         Modifier.height(iconHeight),
-                        tint = Colors.PRIMARYFONT
+                        tint = Theme.onPrimaryContainer
                     )
                     val textWidth = with(LocalDensity.current){
                         textMessurer.measure(
                             TimeBasedVisualTransformation.toTransformed(text),
-                            style = TypoStyle(FontColor.PRIMARY, FontSize.MEDIUM),
+                            style = TypoStyleOld(FontColor.PRIMARY, FontSize.MEDIUM),
                         ).size.width.toDp()
                     }
                     val focusManager = LocalFocusManager.current
@@ -1159,7 +1197,7 @@ fun <T: TagLike> TimeBasedTagLikeSelection(allSelectables: List<T>, defSelection
                             )
                             setVehiclesTo(selectedTagLike)
                         },
-                        textStyle = TypoStyle(FontColor.PRIMARY, FontSize.MEDIUM),
+                        textStyle = TypoStyle(Theme.onPrimaryContainer, FontSize.MEDIUM),
                         keyboardOptions = KeyboardOptions(
                             keyboardType = KeyboardType.Number,
                             imeAction = ImeAction.Done,
@@ -1172,7 +1210,7 @@ fun <T: TagLike> TimeBasedTagLikeSelection(allSelectables: List<T>, defSelection
                             .focusRequester(focusRequester)
                             .offset(y = if(layoutComplete) iconHeight/8 else 0.dp)
                             .width(if(textWidth < 1.dp) 1.dp else textWidth),
-                        cursorBrush = SolidColor(Colors.PRIMARYFONT),
+                        cursorBrush = SolidColor(Theme.onPrimaryContainer),
                         visualTransformation = TimeBasedVisualTransformation(),
                         onTextLayout = { layoutComplete = true }
                     )
@@ -1183,7 +1221,7 @@ fun <T: TagLike> TimeBasedTagLikeSelection(allSelectables: List<T>, defSelection
             key(item){
                 Row(
                     Modifier
-                        .background(Colors.SECONDARY, CircleShape)
+                        .background(Theme.secondaryContainer, CircleShape)
                         .clip(CircleShape)
                         .rippleClick{
                             selectedTagLike.add(TimedTagLikeContainer(
@@ -1202,7 +1240,7 @@ fun <T: TagLike> TimeBasedTagLikeSelection(allSelectables: List<T>, defSelection
                         painterResource(item.drawable),
                         null,
                         Modifier.height(iconHeight),
-                        tint = Colors.SECONDARYFONT
+                        tint = Theme.onSecondaryContainer
                     )
                 }
             }
@@ -1227,7 +1265,7 @@ class TimeBasedVisualTransformation: VisualTransformation {
             return transformed.length - when(original.length-offset){ // 0  is at the end
                 0 -> 1
                 1 -> 2
-                2 -> if(original.length > 2) 5 else 2
+                2 -> if(original.length > 2) 5 else 3
                 else -> 3+original.length-offset
             }
         }

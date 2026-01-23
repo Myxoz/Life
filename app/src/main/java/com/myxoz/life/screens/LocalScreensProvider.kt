@@ -2,6 +2,7 @@ package com.myxoz.life.screens
 
 import android.content.Context
 import androidx.compose.runtime.snapshotFlow
+import androidx.compose.ui.MotionDurationScale
 import androidx.lifecycle.viewModelScope
 import androidx.navigation.NavController
 import com.mapbox.geojson.Point
@@ -34,6 +35,7 @@ class LocalScreensProvider(
     private val nav: NavController,
     private val context: Context
 ) {
+    private var calendarCooldown = System.currentTimeMillis()
     fun openPersonDetails(personId: Long){
         profileInfoModel.openPersonDetails(personId, nav, context)
     }
@@ -44,8 +46,11 @@ class LocalScreensProvider(
         calendarViewModel.search.openCalendarWithSearch(nav, applied)
     }
     fun openCalendarAt(date: LocalDate){
-        calendarViewModel.setDay(date)
-        nav.popBackStack("home", false)
+        if(System.currentTimeMillis() - calendarCooldown > calendarViewModel.viewModelScope.coroutineContext[MotionDurationScale]?.scaleFactor.def(1f)*2000L) {
+            calendarViewModel.setDay(date)
+            nav.popBackStack("home", false)
+            calendarCooldown = System.currentTimeMillis()
+        }
     }
     fun openSocialGraphWithNodeSelected(personId: Long?, adjustDateRangeToInclude: Long?){
         socialGraphViewModel.selectedNode.value = personId

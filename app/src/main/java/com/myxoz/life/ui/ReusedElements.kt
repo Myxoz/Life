@@ -46,7 +46,7 @@ import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.times
-import com.myxoz.life.ui.theme.Colors
+import com.myxoz.life.Theme
 import com.myxoz.life.utils.combinedRippleClick
 import com.myxoz.life.utils.rippleClick
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -63,7 +63,7 @@ fun ActionBar(smallActionClick: (()->Unit)?, smallContent: (@Composable ()->Unit
             Box(
                 Modifier
                     .size(75.dp)
-                    .background(Colors.SECONDARY, RoundedCornerShape(25))
+                    .background(Theme.surfaceContainerHigh, RoundedCornerShape(25))
                     .clip(RoundedCornerShape(25))
                     .rippleClick{
                         smallActionClick?.invoke()
@@ -81,7 +81,7 @@ fun ActionBar(smallActionClick: (()->Unit)?, smallContent: (@Composable ()->Unit
                 .fillMaxWidth()
                 .background(
                     Brush.horizontalGradient(
-                        listOf(Colors.SECONDARY, gradientEnd),
+                        listOf(Theme.surfaceContainerHigh, gradientEnd),
                         startX = 250f
                     ),
                     RoundedCornerShape(25)
@@ -144,11 +144,30 @@ fun Modifier.drawArrowBehind(direction: ArrowDirection, arrowWidth: Float, color
     }
 }
 @Composable
-fun Chip(onClick: (()->Unit)?=null, onHold: (()->Unit)?=null, spacing: Dp =0.dp, color: Color=Colors.SECONDARY, content: @Composable RowScope.()->Unit){
+fun Chip(onClick: (()->Unit)?=null, onHold: (()->Unit)?=null, spacing: Dp =0.dp, color: Color=Theme.secondaryContainer, content: @Composable RowScope.()->Unit){
     Row(
         Modifier
-            .background(color, CircleShape)
             .clip(CircleShape)
+            .background(color)
+            .combinedRippleClick({
+                onHold?.invoke()
+            }, onClick!=null || onHold!=null){
+                onClick?.invoke()
+            }
+            .padding(horizontal = 10.dp, vertical = 5.dp)
+        ,
+        horizontalArrangement = Arrangement.spacedBy(spacing),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        content()
+    }
+}
+@Composable
+fun RowChip(onClick: (()->Unit)?=null, onHold: (()->Unit)?=null, spacing: Dp = 0.dp, color: Color=Theme.secondaryContainer, isFirst: Boolean, isLast: Boolean, content: @Composable RowScope.()->Unit){
+    Row(
+        Modifier
+            .clip(rememberAsymmetricalHorrizontalCornerRadius(isFirst, isLast, 50))
+            .background(color)
             .combinedRippleClick({
                 onHold?.invoke()
             }, onClick!=null || onHold!=null){
@@ -308,9 +327,17 @@ fun MeasuredSheetContent(
 }
 
 @Composable
-fun rememberAsymmetricalCornerRadius(isFirst: Boolean, isLast: Boolean, scaling: Int = 24, reverse: Boolean = false) = remember(isFirst, isLast) { RoundedCornerShape(
+fun rememberAsymmetricalVerticalCornerRadius(isFirst: Boolean, isLast: Boolean, scaling: Int = 24, reverse: Boolean = false) = remember(isFirst, isLast) { RoundedCornerShape(
     if((!reverse && isFirst) || (reverse && isLast)) scaling else scaling/2,
     if((!reverse && isFirst) || (reverse && isLast)) scaling else scaling/2,
     if((reverse && isFirst) || (!reverse && isLast)) scaling else scaling/2,
     if((reverse && isFirst) || (!reverse && isLast)) scaling else scaling/2,
+) }
+
+@Composable
+fun rememberAsymmetricalHorrizontalCornerRadius(isFirst: Boolean, isLast: Boolean, scaling: Int = 24, reverse: Boolean = false) = remember(isFirst, isLast) { RoundedCornerShape(
+    if((!reverse && isFirst) || (reverse && isLast)) scaling else scaling/2,
+    if((reverse && isFirst) || (!reverse && isLast)) scaling else scaling/2,
+    if((reverse && isFirst) || (!reverse && isLast)) scaling else scaling/2,
+    if((!reverse && isFirst) || (reverse && isLast)) scaling else scaling/2,
 ) }

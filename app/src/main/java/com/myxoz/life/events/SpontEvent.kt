@@ -12,7 +12,7 @@ import com.myxoz.life.events.additionals.TagEvent
 import com.myxoz.life.events.additionals.TagEvent.Companion.getTagsFromJson
 import com.myxoz.life.events.additionals.TitleEvent
 import com.myxoz.life.screens.feed.main.RenderTagAndTitleBar
-import com.myxoz.life.ui.theme.Colors
+import com.myxoz.life.ui.theme.OldColors
 import org.json.JSONObject
 
 class SpontEvent(
@@ -43,7 +43,7 @@ class SpontEvent(
         blockHeight: Int
     ) {
         val blockHeight = getBlockHeight(startOfDay, endOfDay)
-        RenderTagAndTitleBar(eventTags, title, oneHourDp, blockHeight, Colors.Calendar.Spont.Tag, Colors.Calendar.Spont.TEXT)
+        RenderTagAndTitleBar(eventTags, title, oneHourDp, blockHeight, OldColors.Calendar.Spont.Tag, OldColors.Calendar.Spont.TEXT)
     }
 
     override suspend fun eraseEventSpecificsFromDB(db: StorageManager, id: Long) {

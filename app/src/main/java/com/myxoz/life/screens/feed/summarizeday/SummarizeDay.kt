@@ -60,15 +60,17 @@ import com.myxoz.life.LocalNavController
 import com.myxoz.life.LocalSettings
 import com.myxoz.life.LocalStorage
 import com.myxoz.life.R
+import com.myxoz.life.Theme
 import com.myxoz.life.api.syncables.FullDaySyncable
 import com.myxoz.life.dbwrapper.DayScreenTimeEntity
 import com.myxoz.life.events.additionals.EventType
 import com.myxoz.life.screens.options.getMappedUsageDataBetween
 import com.myxoz.life.screens.options.getUsageDataBetween
-import com.myxoz.life.ui.theme.Colors
 import com.myxoz.life.ui.theme.FontColor
 import com.myxoz.life.ui.theme.FontSize
+import com.myxoz.life.ui.theme.OldColors
 import com.myxoz.life.ui.theme.TypoStyle
+import com.myxoz.life.ui.theme.TypoStyleOld
 import com.myxoz.life.utils.diagrams.PieChart
 import com.myxoz.life.utils.rippleClick
 import java.time.LocalDate
@@ -81,7 +83,7 @@ fun SummarizeDay() {
     val db = LocalStorage.current
     Scaffold(
         Modifier.fillMaxSize(),
-        containerColor = Colors.BACKGROUND
+        containerColor = Theme.background
     ) { innerPadding ->
         Column(
             Modifier
@@ -119,15 +121,15 @@ fun SummarizeDay() {
                         .rotate(rotation)
                 ) {
                     val oneColor by animateColorAsState(
-                        if (currentStage.value > 0) Colors.LIFFYCOLOR else Colors.SECONDARY,
+                        Theme.primary.copy(if(currentStage.value > 0) 1f else .2f),
                         tween(fadeInDuration)
                     )
                     val twoColor by animateColorAsState(
-                        if (currentStage.value > 1) Colors.LIFFYCOLOR else Colors.SECONDARY,
+                        Theme.primary.copy(if(currentStage.value > 1) 1f else .2f),
                         tween(fadeInDuration)
                     )
                     val threeColor by animateColorAsState(
-                        if (currentStage.value > 2) Colors.LIFFYCOLOR else Colors.SECONDARY,
+                        Theme.primary.copy(if(currentStage.value > 2) 1f else .2f),
                         tween(fadeInDuration)
                     )
                     Icon(
@@ -333,10 +335,10 @@ fun SummarizeDay() {
                         ) {
                             Text(
                                 "Letzte 30 Tage",
-                                style = TypoStyle(FontColor.FLAGSLIDER, FontSize.MEDIUM)
+                                style = TypoStyle(Theme.secondary, FontSize.MEDIUM)
                             )
                             Box(
-                                Modifier.fillMaxWidth().height(2.dp).background(Colors.FLAGSLIDER)
+                                Modifier.fillMaxWidth().height(2.dp).background(Theme.secondary)
                             )
                         }
                         Column(
@@ -348,10 +350,10 @@ fun SummarizeDay() {
                         ) {
                             Text(
                                 "Letzte 3 Tage",
-                                style = TypoStyle(FontColor.FLAGSLIDER, FontSize.MEDIUM)
+                                style = TypoStyle(Theme.secondary, FontSize.MEDIUM)
                             )
                             Box(
-                                Modifier.fillMaxWidth().height(2.dp).background(Colors.FLAGSLIDER)
+                                Modifier.fillMaxWidth().height(2.dp).background(Theme.secondary)
                             )
                         }
                         Box(
@@ -359,19 +361,19 @@ fun SummarizeDay() {
                                 .fillMaxWidth(.3f)
                                 .fillMaxHeight()
                                 .align(Alignment.Center)
-                                .background(Colors.SECONDARY, RoundedCornerShape(25.dp))
+                                .background(Theme.surfaceContainerHigh, RoundedCornerShape(25.dp))
                         )
                         Box(
                             Modifier
                                 .fillMaxWidth(.3f)
                                 .height(displayedPercentage * boxHeight)
                                 .align(Alignment.BottomCenter)
-                                .background(Colors.FLAGSLIDER, RoundedCornerShape(25.dp)),
+                                .background(Theme.primaryContainer, RoundedCornerShape(25.dp)),
                             contentAlignment = Alignment.Center
                         ) {
                             Text(
                                 (displayedPercentage * 100).toInt().toString(),
-                                style = TypoStyle(FontColor.ONSLIDER, FontSize.LARGE),
+                                style = TypoStyle(Theme.onPrimaryContainer, FontSize.LARGE),
                                 fontWeight = FontWeight.Bold
                             )
                         }
@@ -451,14 +453,14 @@ fun SummarizeDay() {
                         }
                         Box(
                             Modifier
-                                .background(Colors.FLAGSLIDER.copy(.6f), CircleShape)
+                                .background(OldColors.FLAGSLIDER.copy(.6f), CircleShape)
                                 .padding(vertical = 30.dp)
                                 .fillMaxWidth(.8f),
                             contentAlignment = Alignment.Center
                         ) {
                             Text(
                                 "Juhu Statistiken",
-                                style = TypoStyle(FontColor.ONSLIDER, FontSize.LARGE),
+                                style = TypoStyleOld(FontColor.ONSLIDER, FontSize.LARGE),
                                 textAlign = TextAlign.Center
                             )
                         }
@@ -470,14 +472,14 @@ fun SummarizeDay() {
                                 .rippleClick {
                                     nav.popBackStack()
                                 }
-                                .background(Colors.SELECTED.copy(.6f), CircleShape)
+                                .background(OldColors.SELECTED.copy(.6f), CircleShape)
                                 .padding(vertical = 30.dp)
                                 .fillMaxWidth(.8f),
                             contentAlignment = Alignment.Center
                         ) {
                             Text(
                                 "Nächstes Mal vielleicht",
-                                style = TypoStyle(FontColor.ONSLIDER, FontSize.LARGE),
+                                style = TypoStyleOld(FontColor.ONSLIDER, FontSize.LARGE),
                                 textAlign = TextAlign.Center
                             )
                         }
@@ -505,7 +507,7 @@ fun LiffyText(title: String, subText: String){
             Modifier
                 .padding(horizontal = 15.dp, vertical = 5.dp)
             ,
-            style = TypoStyle(FontColor.PRIMARY, FontSize.LARGE)
+            style = TypoStyle(Theme.primary, FontSize.LARGE)
         )
         Text(
             subText,
@@ -513,7 +515,7 @@ fun LiffyText(title: String, subText: String){
                 .padding(horizontal = 15.dp, vertical = 5.dp)
             ,
             textAlign = TextAlign.Center,
-            style = TypoStyle(FontColor.SECONDARY, FontSize.MEDIUM)
+            style = TypoStyle(Theme.secondary, FontSize.MEDIUM)
         )
     }
 }
@@ -546,6 +548,6 @@ fun LiffyFace(size: Dp){
             .offset(y=-abs(vertical)*.05*size)
             .size(size)
         ,
-        tint = Colors.PRIMARYFONT
+        tint = Theme.secondary
     )
 }

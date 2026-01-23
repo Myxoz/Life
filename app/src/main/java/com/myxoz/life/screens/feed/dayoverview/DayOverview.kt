@@ -58,6 +58,7 @@ import com.myxoz.life.LocalScreens
 import com.myxoz.life.LocalSettings
 import com.myxoz.life.LocalStorage
 import com.myxoz.life.R
+import com.myxoz.life.Theme
 import com.myxoz.life.api.syncables.PersonSyncable
 import com.myxoz.life.api.syncables.ProfilePictureSyncable
 import com.myxoz.life.dbwrapper.BankingEntity
@@ -67,10 +68,9 @@ import com.myxoz.life.screens.feed.main.msToDisplay
 import com.myxoz.life.screens.feed.main.screenTimeGoal
 import com.myxoz.life.screens.feed.main.stepsGoal
 import com.myxoz.life.screens.options.getUsageDataBetween
-import com.myxoz.life.ui.theme.Colors
-import com.myxoz.life.ui.theme.FontColor
 import com.myxoz.life.ui.theme.FontFamily
 import com.myxoz.life.ui.theme.FontSize
+import com.myxoz.life.ui.theme.OldColors
 import com.myxoz.life.ui.theme.TypoStyle
 import com.myxoz.life.utils.MaterialShapes
 import com.myxoz.life.utils.diagrams.PieChart
@@ -150,10 +150,11 @@ fun DayOverviewComposable(navController: NavController, epochDay: Long){
     if(isToday && showSteps) StepCounterTrigger { steps = it }
     Scaffold(
         Modifier.fillMaxSize(),
-        containerColor = Colors.BACKGROUND
+        containerColor = Theme.background
     ) { innerPadding ->
         Column(
             Modifier
+                .edgeToEdgeGradient(Theme.background, innerPadding)
                 .padding(horizontal = 20.dp)
                 .fillMaxSize()
                 .verticalScroll(rememberScrollState()),
@@ -161,14 +162,11 @@ fun DayOverviewComposable(navController: NavController, epochDay: Long){
         ) {
             Text(
                 dateString,
-                style = TypoStyle(FontColor.SECONDARY, FontSize.XLARGE, FontFamily.Display).copy(
+                style = TypoStyle(Theme.primary, FontSize.XLARGE, FontFamily.Display).copy(
                     fontWeight = FontWeight.Bold
                 ),
-                modifier = Modifier
-                    .padding(top = 20.dp)
-                    .padding(top = innerPadding.calculateTopPadding())
+                modifier = Modifier.padding(top = innerPadding.calculateTopPadding() + 10.dp, bottom = 10.dp)
             )
-            Spacer(Modifier)
             FeelingsBlock(happyness, stress, successfulness)
             Spacer(Modifier)
             if(showSteps) DisplayStepsBlock(steps)
@@ -179,13 +177,13 @@ fun DayOverviewComposable(navController: NavController, epochDay: Long){
             Column (
                 Modifier
                     .fillMaxWidth()
-                    .border(1.dp, Colors.TERTIARY,  RoundedCornerShape(25.dp))
-                    .background(Colors.SECONDARY, RoundedCornerShape(25.dp))
+                    .border(1.dp, Theme.outlineVariant,  RoundedCornerShape(25.dp))
+                    .background(Theme.surfaceContainer, RoundedCornerShape(25.dp))
                     .clip(RoundedCornerShape(25.dp))
                     .padding(20.dp),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                Text("Aufteilung", style = TypoStyle(FontColor.SECONDARY, FontSize.MEDIUM), modifier = Modifier.fillMaxWidth())
+                Text("Aufteilung", style = TypoStyle(Theme.primary, FontSize.MEDIUM), modifier = Modifier.fillMaxWidth())
                 Spacer(Modifier.height(10.dp))
                 val screenWidth = LocalConfiguration.current.screenWidthDp.dp
                 Box(Modifier.size(screenWidth*.7f)){
@@ -203,13 +201,13 @@ fun BirthdayBlock(birthdays: List<PersonSyncable>, selectedDate: LocalDate){
     Column (
         Modifier
             .fillMaxWidth()
-            .border(1.dp, Colors.TERTIARY,  RoundedCornerShape(25.dp))
-            .background(Colors.SECONDARY, RoundedCornerShape(25.dp))
+            .border(1.dp, Theme.outlineVariant,  RoundedCornerShape(25.dp))
+            .background(Theme.surfaceContainer, RoundedCornerShape(25.dp))
             .clip(RoundedCornerShape(25.dp))
             .confetti(selectedDate == LocalDate.now())
             .padding(20.dp)
     ) {
-        Text("Geburtstage", style = TypoStyle(FontColor.SECONDARY, FontSize.MEDIUM))
+        Text("Geburtstage", style = TypoStyle(Theme.primary, FontSize.MEDIUM))
         Spacer(Modifier.height(10.dp))
         Row(
             Modifier
@@ -251,16 +249,16 @@ fun BirthdayBlock(birthdays: List<PersonSyncable>, selectedDate: LocalDate){
                                 Box(
                                     Modifier
                                         .fillMaxSize()
-                                        .background(Colors.TERTIARY)
+                                        .background(OldColors.TERTIARY)
                                 )
                             }
                         }
                         Spacer(Modifier.height(5.dp))
-                        Text(person.name, style = TypoStyle(FontColor.PRIMARY, FontSize.MEDIUM), textAlign = TextAlign.Center)
+                        Text(person.name, style = TypoStyle(Theme.secondary, FontSize.MEDIUM), textAlign = TextAlign.Center)
                     }
                     Text(
                         "${ChronoUnit.YEARS.between(LocalDate.ofEpochDay(person.birthday?:0L), selectedDate)}." ,
-                        style = TypoStyle(FontColor.PRIMARY, FontSize.MLARGE, FontFamily.Display),
+                        style = TypoStyle(Theme.secondary, FontSize.MLARGE, FontFamily.Display),
                         textAlign = TextAlign.Center
                     )
                 }
@@ -276,9 +274,9 @@ fun FeelingsBlock(happyness: Int?, stress: Int?, successfulness: Int?){
         ,
         verticalArrangement = Arrangement.spacedBy(10.dp)
     ) {
-        FeelingsBlockItem("Zufriedenheit", happyness, Colors.HAPPYNESS, true)
-        FeelingsBlockItem("Stress", stress, Colors.STRESS, false)
-        FeelingsBlockItem("Produktivität", successfulness, Colors.PRODUCTIVITY, true)
+        FeelingsBlockItem("Zufriedenheit", happyness, OldColors.HAPPYNESS, true)
+        FeelingsBlockItem("Stress", stress, OldColors.STRESS, false)
+        FeelingsBlockItem("Produktivität", successfulness, OldColors.PRODUCTIVITY, true)
     }
 }
 @Composable
@@ -286,7 +284,7 @@ fun FeelingsBlockItem(name: String, value: Int?, color: Color, fromLeft: Boolean
     Box (
         Modifier
             .fillMaxWidth()
-            .background(Colors.SECONDARY, CircleShape)
+            .background(Theme.surfaceContainer, CircleShape)
             .height(70.dp)
             .clip(CircleShape)
     ) {
@@ -308,11 +306,11 @@ fun FeelingsBlockItem(name: String, value: Int?, color: Color, fromLeft: Boolean
             verticalAlignment = Alignment.CenterVertically
         ) {
             if(fromLeft) {
-                Text(name, style = TypoStyle(FontColor.SECONDARY, FontSize.LARGE))
-                Text(value?.toString()?:"--", style = TypoStyle(FontColor.SECONDARY, FontSize.DISPLAY, FontFamily.Display).copy(fontWeight = FontWeight.Bold))
+                Text(name, style = TypoStyle(Theme.onPrimaryContainer, FontSize.LARGE))
+                Text(value?.toString()?:"--", style = TypoStyle(Theme.onPrimaryContainer, FontSize.DISPLAY, FontFamily.Display).copy(fontWeight = FontWeight.Bold))
             } else {
-                Text(value?.toString()?:"--", style = TypoStyle(FontColor.SECONDARY, FontSize.DISPLAY, FontFamily.Display).copy(fontWeight = FontWeight.Bold))
-                Text(name, style = TypoStyle(FontColor.SECONDARY, FontSize.LARGE))
+                Text(value?.toString()?:"--", style = TypoStyle(Theme.onPrimaryContainer, FontSize.DISPLAY, FontFamily.Display).copy(fontWeight = FontWeight.Bold))
+                Text(name, style = TypoStyle(Theme.onPrimaryContainer, FontSize.LARGE))
             }
         }
     }
@@ -322,13 +320,13 @@ fun DisplayTimeBlock(timeInMs: Long?, openScreenTime: ()->Unit){
     Column (
         Modifier
             .fillMaxWidth()
-            .border(1.dp, Colors.TERTIARY,  RoundedCornerShape(25.dp))
-            .background(Colors.SECONDARY, RoundedCornerShape(25.dp))
+            .border(1.dp, Theme.outlineVariant,  RoundedCornerShape(25.dp))
+            .background(Theme.surfaceContainer, RoundedCornerShape(25.dp))
             .clip(RoundedCornerShape(25.dp))
             .rippleClick(run = openScreenTime)
             .padding(20.dp)
     ) {
-        Text("Bildschirmzeit", style = TypoStyle(FontColor.SECONDARY, FontSize.MEDIUM))
+        Text("Bildschirmzeit", style = TypoStyle(Theme.primary, FontSize.MEDIUM))
         Spacer(Modifier.height(10.dp))
         Box(
             Modifier
@@ -338,17 +336,17 @@ fun DisplayTimeBlock(timeInMs: Long?, openScreenTime: ()->Unit){
                 Modifier
                     .fillMaxSize()
                     .height(50.dp)
-                    .background(Colors.TERTIARY)
+                    .background(Theme.surfaceContainerHighest)
             )
             Box(
                 Modifier
                     .height(50.dp)
                     .fillMaxWidth(timeInMs?.div(screenTimeGoal)?:0f)
-                    .background(Colors.SCREENTIME, CircleShape)
+                    .background(OldColors.SCREENTIME, CircleShape)
             )
             Text(
                 timeInMs?.toInt()?.msToDisplay()?:"--h --m --s",
-                style = TypoStyle(FontColor.SECONDARY, FontSize.XLARGE, FontFamily.Display),
+                style = TypoStyle(Theme.onPrimaryContainer, FontSize.XLARGE, FontFamily.Display),
                 modifier =
                     Modifier
                         .padding(horizontal = 25.dp)
@@ -363,8 +361,8 @@ fun DisplayStepsBlock(steps: Long?){
     Column (
         Modifier
             .fillMaxWidth()
-            .border(1.dp, Colors.TERTIARY,  RoundedCornerShape(25.dp))
-            .background(Colors.SECONDARY, RoundedCornerShape(25.dp))
+            .border(1.dp, Theme.outlineVariant,  RoundedCornerShape(25.dp))
+            .background(Theme.surfaceContainer, RoundedCornerShape(25.dp))
             .clip(RoundedCornerShape(25.dp))
             .padding(20.dp),
         verticalArrangement = Arrangement.spacedBy(10.dp)
@@ -373,19 +371,19 @@ fun DisplayStepsBlock(steps: Long?){
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(10.dp)
         ) {
-            Icon(painterResource(R.drawable.walk), "Walk", Modifier.size(50.dp, 50.dp), Colors.PRIMARYFONT)
+            Icon(painterResource(R.drawable.walk), "Walk", Modifier.size(50.dp, 50.dp), Theme.primary)
             Box(
                 Modifier
                     .height(50.dp)
                     .fillMaxWidth()
-                    .background(Colors.TERTIARY, CircleShape)
+                    .background(Theme.surfaceContainerHighest, CircleShape)
                     .clip(CircleShape)
             ) {
                 Box(
                     Modifier
                         .fillMaxWidth(steps?.div(stepsGoal)?.coerceIn(0f, 1f)?:0f)
                         .height(50.dp)
-                        .background(Colors.STEPS, CircleShape)
+                        .background(OldColors.STEPS, CircleShape)
                 )
                 Text(
                     steps?.toString()?:"Keine",
@@ -395,7 +393,7 @@ fun DisplayStepsBlock(steps: Long?){
                         )
                         .padding(horizontal = 25.dp)
                     ,
-                    style = TypoStyle(FontColor.SECONDARY, FontSize.XLARGE, FontFamily.Display)
+                    style = TypoStyle(Theme.onPrimaryContainer, FontSize.XLARGE, FontFamily.Display)
                 )
             }
         }
@@ -405,8 +403,8 @@ fun DisplayStepsBlock(steps: Long?){
             ,
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
-            Text("Schritte", style = TypoStyle(FontColor.PRIMARY, FontSize.MEDIUM).copy(fontWeight = FontWeight.Bold))
-            Text("${if(steps!=null) "ca. ${(steps*.7).toInt().formatMToDistance()} · " else ""}${((steps?:0L)/ stepsGoal *100).toInt()}%", style = TypoStyle(FontColor.PRIMARY, FontSize.MEDIUM).copy(fontWeight = FontWeight.Bold))
+            Text("Schritte", style = TypoStyle(Theme.primary, FontSize.MEDIUM).copy(fontWeight = FontWeight.Bold))
+            Text("${if(steps!=null) "ca. ${(steps*.7).toInt().formatMToDistance()} · " else ""}${((steps?:0L)/ stepsGoal *100).toInt()}%", style = TypoStyle(Theme.primary, FontSize.MEDIUM).copy(fontWeight = FontWeight.Bold))
         }
     }
 }
@@ -416,17 +414,17 @@ fun BankingBlock(bankingEntries: List<BankingEntity>, openBankingMenu: ()->Unit)
     Column (
         Modifier
             .fillMaxWidth()
-            .border(1.dp, Colors.TERTIARY,  RoundedCornerShape(25.dp))
-            .background(Colors.SECONDARY, RoundedCornerShape(25.dp))
+            .border(1.dp, Theme.outlineVariant,  RoundedCornerShape(25.dp))
+            .background(Theme.surfaceContainer, RoundedCornerShape(25.dp))
             .clip(RoundedCornerShape(25.dp))
             .rippleClick(run = openBankingMenu)
             .padding(20.dp)
     ) {
-        Text("Überweisungen", style = TypoStyle(FontColor.SECONDARY, FontSize.MEDIUM))
+        Text("Überweisungen", style = TypoStyle(Theme.primary, FontSize.MEDIUM))
         Spacer(Modifier.height(10.dp))
         Text(
             bankingEntries.sumOf { it.amountCents }.formatCents(),
-            style = TypoStyle(FontColor.SECONDARY, FontSize.XLARGE, FontFamily.Display),
+            style = TypoStyle(if(bankingEntries.sumOf { it.amountCents } >= 0) OldColors.Transactions.PLUS else OldColors.Transactions.MINUS, FontSize.XLARGE, FontFamily.Display),
         )
     }
 }

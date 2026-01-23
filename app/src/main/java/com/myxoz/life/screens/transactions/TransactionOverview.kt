@@ -46,6 +46,7 @@ import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.zIndex
 import androidx.core.content.edit
@@ -53,17 +54,19 @@ import com.myxoz.life.LocalNavController
 import com.myxoz.life.LocalScreens
 import com.myxoz.life.LocalStorage
 import com.myxoz.life.R
+import com.myxoz.life.Theme
 import com.myxoz.life.api.syncables.PersonSyncable
 import com.myxoz.life.dbwrapper.BankingEntity
 import com.myxoz.life.dbwrapper.BankingSidecarEntity
 import com.myxoz.life.dbwrapper.formatCents
 import com.myxoz.life.screens.options.ME_ID
-import com.myxoz.life.ui.rememberAsymmetricalCornerRadius
-import com.myxoz.life.ui.theme.Colors
+import com.myxoz.life.ui.rememberAsymmetricalVerticalCornerRadius
 import com.myxoz.life.ui.theme.FontColor
 import com.myxoz.life.ui.theme.FontFamily
 import com.myxoz.life.ui.theme.FontSize
+import com.myxoz.life.ui.theme.OldColors
 import com.myxoz.life.ui.theme.TypoStyle
+import com.myxoz.life.ui.theme.TypoStyleOld
 import com.myxoz.life.utils.formatMinutes
 import com.myxoz.life.utils.formatTimeStamp
 import com.myxoz.life.utils.rippleClick
@@ -100,7 +103,7 @@ fun TransactionOverview(transactionId: String, bankViewModel: LargeDataCache){
     val transactionSidecar = remember { runBlocking { db.bankingSidecar.getSidecar(transactionId) } }
     Scaffold(
         Modifier.fillMaxSize(),
-        containerColor = Colors.BACKGROUND
+        containerColor = Theme.background
     ) { innerPadding ->
         Column(
             Modifier
@@ -112,7 +115,7 @@ fun TransactionOverview(transactionId: String, bankViewModel: LargeDataCache){
             Box(
                 Modifier
                     .padding(vertical = 50.dp)
-                    .background(Colors.SECONDARY, CircleShape)
+                    .background(Theme.surfaceContainer, CircleShape)
                     .clip(CircleShape)
                     .rippleClick {
                         nav.navigate("bank/me")
@@ -124,7 +127,7 @@ fun TransactionOverview(transactionId: String, bankViewModel: LargeDataCache){
                     transactionAtHand.amountCents.formatCents(false) + " " + transactionAtHand.currency,
                     Modifier
                         .fillMaxWidth(),
-                    color = if (transactionAtHand.amountCents > 0) Colors.Transactions.PLUS else Colors.Transactions.MINUS,
+                    color = if (transactionAtHand.amountCents > 0) OldColors.Transactions.PLUS else OldColors.Transactions.MINUS,
                     fontFamily = FontFamily.Display.family,
                     fontSize = FontSize.XXLARGE.size,
                     textAlign = TextAlign.Center
@@ -134,7 +137,7 @@ fun TransactionOverview(transactionId: String, bankViewModel: LargeDataCache){
                 if (transactionAtHand.amountCents < 0) "An" else "Von",
                 Modifier
                     .fillMaxWidth(),
-                style = TypoStyle(FontColor.SECONDARY, FontSize.LARGE),
+                style = TypoStyle(Theme.secondary, FontSize.LARGE),
                 textAlign = TextAlign.Center
             )
             BankCard(
@@ -177,7 +180,7 @@ fun TransactionOverview(transactionId: String, bankViewModel: LargeDataCache){
                     .align(Alignment.End)
                 ,
                 textAlign = TextAlign.End,
-                style = TypoStyle(FontColor.SECONDARY, FontSize.SMALL)
+                style = TypoStyle(Theme.secondary, FontSize.SMALL)
             )
             if (transactionAtHand.bookingTime.isNotBlank()) {
                 Spacer(Modifier.height(40.dp))
@@ -194,8 +197,8 @@ fun TransactionOverview(transactionId: String, bankViewModel: LargeDataCache){
 @Composable
 fun TransactionEntry(title: String, value: String) {
     Column {
-        Text(title, style = TypoStyle(FontColor.PRIMARY, FontSize.LARGE))
-        Text(value, style = TypoStyle(FontColor.SECONDARY, FontSize.MEDIUM), modifier = Modifier.padding(top = 5.dp))
+        Text(title, style = TypoStyle(Theme.primary, FontSize.LARGE))
+        Text(value, style = TypoStyle(Theme.secondary, FontSize.MEDIUM), modifier = Modifier.padding(top = 5.dp))
     }
 }
 
@@ -217,7 +220,7 @@ fun MyCard(largeDataCache: LargeDataCache){
     } else listOf()
     Scaffold(
         Modifier.fillMaxSize(),
-        containerColor = Colors.BACKGROUND
+        containerColor = Theme.background
     ) { innerPadding ->
         Box(
             Modifier
@@ -225,11 +228,10 @@ fun MyCard(largeDataCache: LargeDataCache){
                 .fillMaxSize(),
             contentAlignment = Alignment.Center
         ) {
-            Spacer(Modifier.height(innerPadding.calculateTopPadding()))
             Box(
                 Modifier
-                    .padding(vertical = 50.dp)
-                    .background(Colors.SECONDARY, CircleShape)
+                    .padding(vertical = 50.dp + innerPadding.calculateTopPadding() + 10.dp)
+                    .background(Theme.surfaceContainer, CircleShape)
                     .clip(CircleShape)
                     .rippleClick {
                         showBalance = !showBalance
@@ -246,7 +248,7 @@ fun MyCard(largeDataCache: LargeDataCache){
                         .formatCents(true) else "· · · , · · €",
                     Modifier
                         .fillMaxWidth(),
-                    color = Colors.PRIMARYFONT,
+                    color = Theme.primary,
                     fontFamily = FontFamily.Display.family,
                     fontSize = FontSize.XXLARGE.size,
                     textAlign = TextAlign.Center
@@ -273,7 +275,7 @@ fun TransactionList(epochDay: Long) {
     }
     Scaffold(
         Modifier.fillMaxSize(),
-        containerColor = Colors.BACKGROUND
+        containerColor = Theme.surfaceContainer
     ) { innerPadding ->
         Column(
             Modifier
@@ -297,8 +299,8 @@ fun BankingEntryComposable(entry: Pair<BankingEntity, BankingSidecarEntity?>, is
     val calendar = remember { Calendar.getInstance() }
     Column(
         Modifier
-            .clip(rememberAsymmetricalCornerRadius(isFirst, isLast))
-            .background(Colors.SECONDARY)
+            .clip(rememberAsymmetricalVerticalCornerRadius(isFirst, isLast))
+            .background(Theme.surfaceContainerHigh)
             .rippleClick{onClick()}
             .padding(horizontal = 20.dp, vertical = 15.dp)
             .fillMaxWidth(.95f)
@@ -331,16 +333,16 @@ fun BankingEntryComposable(entry: Pair<BankingEntity, BankingSidecarEntity?>, is
                     Modifier
                         .height(height)
                         .width(if(!transfer && !card) height*2.5f else height),
-                    Colors.SECONDARYFONT
+                    Theme.secondary
                 )
                 if(card || transfer) Text(
                     if(card) "Kartenzahlung" else "Überweisung",
-                    style = TypoStyle(FontColor.SECONDARY, FontSize.MEDIUMM)
+                    style = TypoStyle(Theme.secondary, FontSize.MEDIUMM)
                 )
             }
             Text(
                 (entry.second?.date ?: entry.first.purposeDate ?: entry.first.valueDate).formatMinutes(calendar),
-                style = TypoStyle(FontColor.SECONDARY, FontSize.MEDIUMM)
+                style = TypoStyle(Theme.secondary, FontSize.MEDIUMM)
             )
         }
         Row(
@@ -357,16 +359,20 @@ fun BankingEntryComposable(entry: Pair<BankingEntity, BankingSidecarEntity?>, is
             ) {
                 Text(
                     entry.second?.name ?: entry.first.fromName,
-                    style = TypoStyle(FontColor.PRIMARY, FontSize.LARGE)
+                    style = TypoStyle(Theme.primary, FontSize.LARGE),
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
                 )
                 Text(
                     if(entry.second == null) entry.first.fromIban.chunked(4).joinToString(" ") else entry.first.fromName,
-                    style = TypoStyle(FontColor.SECONDARY, FontSize.SMALLM)
+                    style = TypoStyle(Theme.secondary, FontSize.SMALLM),
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
                 )
             }
             Text(
                 entry.first.amountCents.formatCents(),
-                color = if(entry.first.amountCents > 0) Colors.Transactions.PLUS else Colors.Transactions.MINUS,
+                color = if(entry.first.amountCents > 0) OldColors.Transactions.PLUS else OldColors.Transactions.MINUS,
                 fontFamily = FontFamily.Display.family,
                 fontSize = FontSize.XLARGE.size,
             )
@@ -422,8 +428,8 @@ fun BankCard(from: String, fromIBAN: String, largeDataCache: LargeDataCache?) {
             .background(
                 Brush.radialGradient(
                     listOf(
-                        Colors.Myxoz.ACC,
-                        Colors.Myxoz.MAIN
+                        OldColors.Myxoz.ACC,
+                        OldColors.Myxoz.MAIN
                     ),
                     center = Offset(Float.POSITIVE_INFINITY, 0f),
                     radius = 600f
@@ -468,7 +474,7 @@ fun BankCard(from: String, fromIBAN: String, largeDataCache: LargeDataCache?) {
                         screens.openPersonDetails(decodedPerson?.id ?: return@clickable)
                     }
                 ,
-                style = TypoStyle(FontColor.PRIMARY, FontSize.MLARGE),
+                style = TypoStyleOld(FontColor.PRIMARY, FontSize.MLARGE),
                 textAlign = TextAlign.Start
             )
             if(displaysIban){
@@ -476,7 +482,7 @@ fun BankCard(from: String, fromIBAN: String, largeDataCache: LargeDataCache?) {
                 if(fromIBAN.isNotBlank())
                     Text(
                         fromIBAN.uppercase().chunked(4).joinToString(" "),
-                        style = TypoStyle(FontColor.SECONDARY, FontSize.MEDIUM),
+                        style = TypoStyleOld(FontColor.SECONDARY, FontSize.MEDIUM),
                         modifier = Modifier.combinedClickable(null, null, onLongClick = { clipboard.setText(AnnotatedString(fromIBAN))}){
                             if(largeDataCache!=null && fromIBAN.startsWith("DE")) displaysIban=!displaysIban
                         }
@@ -485,7 +491,7 @@ fun BankCard(from: String, fromIBAN: String, largeDataCache: LargeDataCache?) {
                 val allBanks = largeDataCache?.bankMap ?: mapOf()
                 Text(
                     allBanks[fromIBAN.substring(4, 4+8)]?.format()?:"Keine Informationen möglich",
-                    style = TypoStyle(FontColor.SECONDARY, FontSize.MEDIUM),
+                    style = TypoStyleOld(FontColor.SECONDARY, FontSize.MEDIUM),
                     modifier = Modifier.clickable(null, null){if(largeDataCache!=null) displaysIban=!displaysIban}
                 )
             }

@@ -25,13 +25,13 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.unit.dp
 import com.myxoz.life.LocalNavController
 import com.myxoz.life.LocalScreens
+import com.myxoz.life.Theme
 import com.myxoz.life.dbwrapper.BankingEntity
 import com.myxoz.life.dbwrapper.BankingSidecarEntity
 import com.myxoz.life.dbwrapper.formatCents
 import com.myxoz.life.screens.feed.dayoverview.edgeToEdgeGradient
-import com.myxoz.life.ui.theme.Colors
-import com.myxoz.life.ui.theme.FontColor
 import com.myxoz.life.ui.theme.FontSize
+import com.myxoz.life.ui.theme.OldColors
 import com.myxoz.life.ui.theme.TypoStyle
 import com.myxoz.life.utils.rippleClick
 import com.myxoz.life.viewmodels.TransactionFeedViewModel
@@ -48,6 +48,7 @@ fun TransactionFeed(
     val listState = state.lazyListState
 
     LaunchedEffect(listState) {
+        state.refreshCache()
         snapshotFlow { listState.layoutInfo.visibleItemsInfo.lastOrNull()?.index }
             .distinctUntilChanged()
             .collect { lastVisible ->
@@ -57,19 +58,18 @@ fun TransactionFeed(
 
     Scaffold(
         Modifier.fillMaxSize(),
-        containerColor = Colors.BACKGROUND
+        containerColor = Theme.background
     ) { innerPadding ->
         LazyColumn(
             modifier = Modifier
-                .edgeToEdgeGradient(Colors.BACKGROUND, innerPadding)
+                .edgeToEdgeGradient(Theme.background, innerPadding)
                 .fillMaxSize(),
             state = listState,
             reverseLayout = true
         ) {
             item {
-                Spacer(Modifier.height(8.dp + innerPadding.calculateTopPadding()))
+                Spacer(Modifier.height(innerPadding.calculateBottomPadding()))
             }
-
             items(
                 items = visibleDates,
                 key = { it.toEpochDay() },
@@ -121,7 +121,7 @@ private fun DateTransactionGroup(
                 text = "${date.dayOfMonth.toString().padStart(2, '0')}.${
                     date.monthValue.toString().padStart(2, '0')
                 }.${date.year}",
-                style = TypoStyle(FontColor.SECONDARY, FontSize.MEDIUM),
+                style = TypoStyle(Theme.secondary, FontSize.MEDIUM),
                 modifier = Modifier
                     .clip(CircleShape)
                     .rippleClick{
@@ -132,7 +132,7 @@ private fun DateTransactionGroup(
             Text(
                 text = sum.formatCents(true),
                 fontSize = FontSize.MEDIUM.size,
-                color = if (sum < 0) Colors.Transactions.MINUS else Colors.Transactions.PLUS
+                color = if (sum < 0) OldColors.Transactions.MINUS else OldColors.Transactions.PLUS
             )
         }
     }

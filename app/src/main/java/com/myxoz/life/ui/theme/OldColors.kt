@@ -2,7 +2,7 @@ package com.myxoz.life.ui.theme
 
 import androidx.compose.ui.graphics.Color
 
-object Colors {
+object OldColors {
     val GITHUB  = Color(0xFFE2E9E4)
     val GITHUBBG = Color(0xFF1f6feb)
     val LIFFYCOLOR = Color(0xFFFFFFFF)

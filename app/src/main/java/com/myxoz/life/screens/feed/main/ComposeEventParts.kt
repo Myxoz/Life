@@ -82,7 +82,7 @@ fun RenderTagAndTitleBar(tags: List<TagLike>, title: String?, oneHourDp: Dp, blo
                     },
                 horizontalArrangement = Arrangement.spacedBy(1.dp),
             ) {
-                tags.filter { it!=EventTag.S  && it!=EventTag.P }.forEach {
+                tags.filter { it!=EventTag.S }.forEach {
                     Icon(
                         painterResource(it.drawable),
                         null,

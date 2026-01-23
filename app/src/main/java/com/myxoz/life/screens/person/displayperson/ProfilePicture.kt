@@ -53,10 +53,9 @@ import androidx.compose.ui.unit.times
 import androidx.graphics.shapes.Morph
 import androidx.graphics.shapes.toPath
 import com.myxoz.life.LocalStorage
+import com.myxoz.life.Theme
 import com.myxoz.life.api.syncables.ProfilePictureSyncable
 import com.myxoz.life.dbwrapper.ProfilePictureStored
-import com.myxoz.life.ui.theme.Colors
-import com.myxoz.life.ui.theme.FontColor
 import com.myxoz.life.ui.theme.FontFamily
 import com.myxoz.life.ui.theme.FontSize
 import com.myxoz.life.ui.theme.TypoStyle
@@ -82,7 +81,7 @@ fun ProfilePictureWithText(photoPicker: PhotoPicker, profileInfoViewModel: Profi
     val maxHeight = topBarHeight-smallPbSize-smallPbPadding*2
     val progress = 1-min(maxHeight, scrollLength)/maxHeight
     val fontPadding = 20.dp
-    val style = TypoStyle(FontColor.PRIMARY, FontSize.XLARGE, FontFamily.Display)
+    val style = TypoStyle(Theme.primary, FontSize.XLARGE, FontFamily.Display)
     val textMessurer = rememberTextMeasurer()
     val name by profileInfoViewModel.name.collectAsState()
     val textWidth = with(LocalDensity.current){
@@ -114,7 +113,7 @@ fun ProfilePictureWithText(photoPicker: PhotoPicker, profileInfoViewModel: Profi
     Box(
         Modifier
             .fillMaxWidth()
-            .background(Colors.BACKGROUND)
+            .background(Theme.background)
             .height(progress*(maxHeight)+smallPbSize+smallPbPadding*2)
     ){
         val conf = LocalConfiguration.current
@@ -171,7 +170,7 @@ fun ProfilePictureWithText(photoPicker: PhotoPicker, profileInfoViewModel: Profi
             Box(
                 Modifier
                     .fillMaxSize()
-                    .background(Colors.SECONDARY.copy(progress), shape)
+                    .background(Theme.secondaryContainer.copy(progress), shape)
                     .clip(shape)
                     .combinedClickable(null, null, true, onLongClick = {
                         photoPicker.pickPhoto()
@@ -213,15 +212,15 @@ fun ProfilePictureWithText(photoPicker: PhotoPicker, profileInfoViewModel: Profi
                 keyboardActions = KeyboardActions{
                     focusManager.clearFocus()
                 },
-                cursorBrush = SolidColor(Colors.PRIMARYFONT),
+                cursorBrush = SolidColor(Theme.primary),
             )
         }
         Box(
             Modifier
                 .align(Alignment.BottomCenter)
-                .padding(bottom = 3.dp)
+                .padding(bottom = 1.dp)
                 .fillMaxWidth(.95f)
-                .background(Colors.TERTIARY.copy(alpha = 1 - progress), CircleShape)
+                .background(Theme.outline .copy(alpha = 1 - progress), CircleShape)
                 .height(2.dp),
         )
     }

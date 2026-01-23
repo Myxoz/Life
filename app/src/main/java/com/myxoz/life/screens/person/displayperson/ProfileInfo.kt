@@ -79,13 +79,12 @@ import com.myxoz.life.LocalNavController
 import com.myxoz.life.LocalScreens
 import com.myxoz.life.LocalSettings
 import com.myxoz.life.R
+import com.myxoz.life.Theme
 import com.myxoz.life.android.contacts.AndroidContacts
 import com.myxoz.life.android.integration.HVV
 import com.myxoz.life.api.syncables.Location
 import com.myxoz.life.api.syncables.PersonSyncable
 import com.myxoz.life.ui.Chip
-import com.myxoz.life.ui.theme.Colors
-import com.myxoz.life.ui.theme.FontColor
 import com.myxoz.life.ui.theme.FontSize
 import com.myxoz.life.ui.theme.TypoStyle
 import com.myxoz.life.utils.AndroidUtils
@@ -125,7 +124,7 @@ fun ProfileInfo(largeDataCache: LargeDataCache, profileInfoModel: ProfileInfoMod
         Column(
             Modifier
                 .fillMaxWidth(.95f)
-                .background(Colors.SECONDARY, RoundedCornerShape(20.dp))
+                .background(Theme.surfaceContainerHigh, RoundedCornerShape(20.dp))
                 .padding(10.dp),
         ) {
             val extendProgress by animateFloatAsState(if (isExtended) 1f else 0f, animationSpec = tween(animationDuration))
@@ -232,7 +231,7 @@ fun ProfileInfo(largeDataCache: LargeDataCache, profileInfoModel: ProfileInfoMod
                                 "Save contact",
                                 Modifier
                                     .clip(CircleShape)
-                                    .background(Colors.TERTIARY)
+                                    .background(Theme.primaryContainer)
                                     .rippleClick{
                                         AndroidContacts.openSaveContactIntent(context, phone, profileInfoModel.name.value)
                                         coroutineScope.launch {
@@ -245,7 +244,7 @@ fun ProfileInfo(largeDataCache: LargeDataCache, profileInfoModel: ProfileInfoMod
                                     .padding(7.dp)
                                     .size(20.dp)
                                 ,
-                                Colors.PRIMARYFONT
+                                Theme.onPrimaryContainer
                             )
                         }
                     }
@@ -275,7 +274,7 @@ fun ProfileInfo(largeDataCache: LargeDataCache, profileInfoModel: ProfileInfoMod
                         ,
                         verticalArrangement = Arrangement.spacedBy(5.dp)
                     ) {
-                        Text("Platformen", style = TypoStyle(FontColor.SECONDARY, FontSize.MEDIUM))
+                        Text("Platformen", style = TypoStyle(Theme.secondary, FontSize.MEDIUM))
                         Row(
                             Modifier
                                 .horizontalScroll(rememberScrollState())
@@ -295,7 +294,7 @@ fun ProfileInfo(largeDataCache: LargeDataCache, profileInfoModel: ProfileInfoMod
                                         val context = LocalContext.current
                                         Row(
                                             Modifier
-                                                .background(Colors.TERTIARY, CircleShape)
+                                                .background(Theme.secondaryContainer, CircleShape)
                                                 .clip(CircleShape)
                                                 .rippleClick(isExtended) {
                                                     it.platform.openPlatform(
@@ -314,11 +313,11 @@ fun ProfileInfo(largeDataCache: LargeDataCache, profileInfoModel: ProfileInfoMod
                                                 painterResource(it.platform.icon),
                                                 it.platform.name,
                                                 Modifier.size(iconSize),
-                                                Colors.PRIMARYFONT
+                                                Theme.onSecondaryContainer,
                                             )
                                             Text(
                                                 it.handle,
-                                                style = TypoStyle(FontColor.PRIMARY, FontSize.MEDIUM)
+                                                style = TypoStyle(Theme.onSecondaryContainer, FontSize.MEDIUM)
                                             )
                                         }
                                     }
@@ -327,7 +326,7 @@ fun ProfileInfo(largeDataCache: LargeDataCache, profileInfoModel: ProfileInfoMod
                                     platformInputs.forEachIndexed { i, it ->
                                         Row(
                                             Modifier
-                                                .background(Colors.TERTIARY, CircleShape)
+                                                .background(Theme.secondaryContainer, CircleShape)
                                                 .padding(vertical = 5.dp, horizontal = 10.dp)
                                                 .height(iconSize + 4.dp)
                                             ,
@@ -348,7 +347,7 @@ fun ProfileInfo(largeDataCache: LargeDataCache, profileInfoModel: ProfileInfoMod
                                                         profileInfoModel.platformInputs.value = cp
                                                     }
                                                 ,
-                                                Colors.PRIMARYFONT
+                                                Theme.onSecondaryContainer
                                             )
                                             BasicTextField(
                                                 it,
@@ -358,16 +357,16 @@ fun ProfileInfo(largeDataCache: LargeDataCache, profileInfoModel: ProfileInfoMod
                                                     cp[i] = newValue
                                                     profileInfoModel.platformInputs.value = cp
                                                 },
-                                                textStyle = TypoStyle(FontColor.PRIMARY, FontSize.MEDIUM),
+                                                textStyle = TypoStyle(Theme.onSecondaryContainer, FontSize.MEDIUM),
                                                 keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
                                                 keyboardActions = KeyboardActions{focusManager.clearFocus(true)},
-                                                cursorBrush = SolidColor(Colors.PRIMARYFONT),
+                                                cursorBrush = SolidColor(Theme.onSecondaryContainer),
                                             )
                                         }
                                     }
                                     Row(
                                         Modifier
-                                            .background(Colors.TERTIARY, CircleShape)
+                                            .background(Theme.secondaryContainer, CircleShape)
                                             .clip(CircleShape)
                                             .rippleClick {
                                                 val cp =
@@ -380,7 +379,7 @@ fun ProfileInfo(largeDataCache: LargeDataCache, profileInfoModel: ProfileInfoMod
                                         ,
                                         verticalAlignment = Alignment.CenterVertically
                                     ) {
-                                        Text("Neu", style = TypoStyle(FontColor.PRIMARY, FontSize.MEDIUM))
+                                        Text("Neu", style = TypoStyle(Theme.onSecondaryContainer, FontSize.MEDIUM))
                                     }
                                 }
                             }
@@ -405,7 +404,7 @@ fun ProfileInfo(largeDataCache: LargeDataCache, profileInfoModel: ProfileInfoMod
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             location?.name?.let {
-                                Text(it, style = TypoStyle(FontColor.PRIMARY, FontSize.LARGE))
+                                Text(it, style = TypoStyle(Theme.onSecondaryContainer, FontSize.LARGE))
                                 Spacer(Modifier.width(10.dp))
                             }
                             Chip(
@@ -423,14 +422,14 @@ fun ProfileInfo(largeDataCache: LargeDataCache, profileInfoModel: ProfileInfoMod
                                     }
                                 },
                                 spacing = 5.dp,
-                                color = Colors.TERTIARY
+                                color = Theme.secondaryContainer
                             ) {
-                                Text(if(location!=null) "Ändern" else "Hinzufügen", style = TypoStyle(FontColor.PRIMARY, FontSize.MEDIUM))
+                                Text(if(location!=null) "Ändern" else "Hinzufügen", style = TypoStyle(Theme.onSecondaryContainer, FontSize.MEDIUM))
                                 Icon(
                                     Icons.AutoMirrored.Rounded.KeyboardArrowRight,
                                     "Continue",
                                     Modifier.size(FontSize.MEDIUM.size.toDp()),
-                                    tint = Colors.PRIMARYFONT
+                                    tint = Theme.onSecondaryContainer
                                 )
                             }
                             if(location != null) {
@@ -439,14 +438,14 @@ fun ProfileInfo(largeDataCache: LargeDataCache, profileInfoModel: ProfileInfoMod
                                     {
                                         profileInfoModel.home.value = null
                                     },
-                                    color = Colors.TERTIARY
+                                    color = Theme.secondaryContainer
                                 ) {
-                                    Text("", style = TypoStyle(FontColor.PRIMARY, FontSize.MEDIUM))
+                                    Text("", style = TypoStyle(Theme.onSecondaryContainer, FontSize.MEDIUM))
                                     Icon(
                                         painterResource(R.drawable.delete),
                                         "Remove",
                                         Modifier.size(FontSize.MEDIUM.size.toDp()),
-                                        tint = Colors.PRIMARYFONT
+                                        tint = Theme.onSecondaryContainer
                                     )
                                 }
                             }
@@ -463,7 +462,7 @@ fun ProfileInfo(largeDataCache: LargeDataCache, profileInfoModel: ProfileInfoMod
                     fun NavigationOption(title: String, icon: Int, onClick: () -> Unit) {
                         Row (
                             Modifier
-                                .border(2.dp, Colors.TERTIARY, CircleShape)
+                                .border(2.dp, Theme.outlineVariant, CircleShape)
                                 .clip(CircleShape)
                                 .rippleClick(run = onClick)
                                 .padding(horizontal = 10.dp, vertical = 5.dp)
@@ -473,11 +472,11 @@ fun ProfileInfo(largeDataCache: LargeDataCache, profileInfoModel: ProfileInfoMod
                         ){
                             Icon(
                                 painterResource(icon),
-                                "HVV",
+                                title,
                                 Modifier.size(navigationIconSize),
-                                Colors.PRIMARYFONT
+                                Theme.primary
                             )
-                            Text(title, style = TypoStyle(FontColor.PRIMARY, FontSize.MEDIUM))
+                            Text(title, style = TypoStyle(Theme.primary, FontSize.MEDIUM))
                         }
                     }
                     val screenWidthPx = LocalConfiguration.current.screenWidthDp.dp.toPx()
@@ -526,12 +525,12 @@ fun ProfileInfo(largeDataCache: LargeDataCache, profileInfoModel: ProfileInfoMod
                             intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
                             context.startActivity(intent)
                         },
-                        color = Colors.TERTIARY
+                        color = Theme.secondaryContainer
                     ) {
                         Text(
                             "Anrufen",
                             Modifier.animateContentSize(tween(animationDuration)),
-                            style = TypoStyle(FontColor.PRIMARY, FontSize.MEDIUM)
+                            style = TypoStyle(Theme.onSecondaryContainer, FontSize.MEDIUM)
                         )
                     }
                 }
@@ -546,7 +545,7 @@ fun ProfileInfo(largeDataCache: LargeDataCache, profileInfoModel: ProfileInfoMod
                         {
                             platforms.getOrNull(0)?.platform?.openPlatform(context, platforms.getOrNull(0)?.handle?:"", phoneNumber)
                         },
-                        color = Colors.TERTIARY
+                        color = Theme.secondaryContainer
                     ) {
                         Box(
                             Modifier.animateContentSize(tween(animationDuration)),
@@ -554,13 +553,13 @@ fun ProfileInfo(largeDataCache: LargeDataCache, profileInfoModel: ProfileInfoMod
                         ) {
                             Text(
                                 "",
-                                style = TypoStyle(FontColor.PRIMARY, FontSize.MEDIUM)
+                                style = TypoStyle(Theme.onSecondaryContainer, FontSize.MEDIUM)
                             )
                             Icon(
                                 painterResource(icon),
                                 "Message",
                                 Modifier.size(FontSize.MEDIUM.size.toDp()),
-                                Colors.PRIMARYFONT
+                                Theme.onSecondaryContainer
                             )
                         }
                     }
@@ -576,18 +575,18 @@ fun ProfileInfo(largeDataCache: LargeDataCache, profileInfoModel: ProfileInfoMod
                             {
                                 screens.openSocialGraphWithNodeSelected(profileInfoModel.id.value, lastInteraction?.end)
                             },
-                            color = Colors.TERTIARY
+                            color = Theme.secondaryContainer
                         ) {
                             Box(
                                 Modifier.animateContentSize(tween(animationDuration)),
                                 contentAlignment = Alignment.Center
                             ) {
-                                Text("", style = TypoStyle(FontColor.PRIMARY, FontSize.MEDIUM))
+                                Text("", style = TypoStyle(Theme.onSecondaryContainer, FontSize.MEDIUM))
                                 Icon(
                                     painterResource(R.drawable.graph),
                                     "Social Graph",
                                     Modifier.size(FontSize.MEDIUM.size.toDp()),
-                                    Colors.PRIMARYFONT
+                                    Theme.onSecondaryContainer
                                 )
                             }
                         }
@@ -603,12 +602,12 @@ fun ProfileInfo(largeDataCache: LargeDataCache, profileInfoModel: ProfileInfoMod
                         {
                             profileInfoModel.isExtended.value = !isExtended
                         },
-                        color = Colors.TERTIARY
+                        color = Theme.secondaryContainer
                     ) {
                         Text(
                             if (isExtended) "Weniger" else "Mehr",
                             Modifier.animateContentSize(tween(animationDuration)),
-                            style = TypoStyle(FontColor.PRIMARY, FontSize.MEDIUM)
+                            style = TypoStyle(Theme.onSecondaryContainer, FontSize.MEDIUM)
                         )
                         Icon(
                             Icons.Rounded.KeyboardArrowDown,
@@ -616,7 +615,7 @@ fun ProfileInfo(largeDataCache: LargeDataCache, profileInfoModel: ProfileInfoMod
                             Modifier
                                 .size(height)
                                 .rotate(180f * extendProgress),
-                            tint = Colors.PRIMARYFONT
+                            tint = Theme.onSecondaryContainer
                         )
                     }
                 }
@@ -636,7 +635,7 @@ fun ProfileInfo(largeDataCache: LargeDataCache, profileInfoModel: ProfileInfoMod
                             focusManager.clearFocus(true)
                         }
                     }
-                    .background(Colors.TERTIARY, CircleShape)
+                    .background(Theme.secondaryContainer, CircleShape)
                     .padding(5.dp)
                     .size(20.dp)
                 ,
@@ -646,7 +645,7 @@ fun ProfileInfo(largeDataCache: LargeDataCache, profileInfoModel: ProfileInfoMod
                     painterResource(R.drawable.close),
                     "Exit",
                     Modifier.fillMaxSize(),
-                    Colors.PRIMARYFONT
+                    Theme.onSecondaryContainer
                 )
             }
         }
@@ -667,7 +666,7 @@ fun ProfileInfo(largeDataCache: LargeDataCache, profileInfoModel: ProfileInfoMod
                         profileInfoModel.isExtended.value = true
                     }
                 }
-                .background(Colors.TERTIARY, CircleShape)
+                .background(Theme.secondaryContainer, CircleShape)
                 .padding(5.dp)
                 .size(20.dp)
             ,
@@ -682,7 +681,7 @@ fun ProfileInfo(largeDataCache: LargeDataCache, profileInfoModel: ProfileInfoMod
                     painterResource(R.drawable.edit),
                     "Edit",
                     Modifier.fillMaxSize(),
-                    Colors.PRIMARYFONT
+                    Theme.onSecondaryContainer
                 )
             }
             AnimatedVisibility(
@@ -694,7 +693,7 @@ fun ProfileInfo(largeDataCache: LargeDataCache, profileInfoModel: ProfileInfoMod
                     painterResource(R.drawable.tick),
                     "Done",
                     Modifier.fillMaxSize(),
-                    Colors.PRIMARYFONT
+                    Theme.onSecondaryContainer
                 )
             }
         }
@@ -706,7 +705,7 @@ fun ListEntry(title: String, icon: Painter, text: @Composable ()->Unit){
     Column(
         verticalArrangement = Arrangement.spacedBy(5.dp)
     ) {
-        Text(title, style = TypoStyle(FontColor.SECONDARY, FontSize.MEDIUM))
+        Text(title, style = TypoStyle(Theme.secondary, FontSize.MEDIUM))
         Row(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(10.dp)
@@ -716,7 +715,7 @@ fun ListEntry(title: String, icon: Painter, text: @Composable ()->Unit){
                 Modifier.height(height),
                 contentAlignment = Alignment.Center
             )  {
-                Icon(icon, "Icon", Modifier.size(30.dp), tint = Colors.PRIMARYFONT)
+                Icon(icon, "Icon", Modifier.size(30.dp), tint = Theme.secondary)
             }
             Column(
                 Modifier.height(height),
@@ -745,7 +744,7 @@ fun ListEditingField(isEditing: Boolean, displayText: String, subtext: String?, 
                     hasFocus = it.hasFocus
                 }
                 .fillMaxWidth(),
-            textStyle = TypoStyle(FontColor.PRIMARY, FontSize.LARGE),
+            textStyle = TypoStyle(Theme.primary, FontSize.LARGE),
             singleLine = true,
             keyboardOptions = KeyboardOptions(
                 capitalization = KeyboardCapitalization.Sentences,
@@ -755,9 +754,9 @@ fun ListEditingField(isEditing: Boolean, displayText: String, subtext: String?, 
             keyboardActions = KeyboardActions{
                 focusManager.clearFocus()
             },
-            cursorBrush = SolidColor(Colors.PRIMARYFONT),
+            cursorBrush = SolidColor(Theme.primary),
             decorationBox = {
-                if(!hasFocus && value?.isBlank()?:true) Text(placeHolder, style = TypoStyle(FontColor.SECONDARY, FontSize.LARGE)) else it()
+                if(!hasFocus && value?.isBlank()?:true) Text(placeHolder, style = TypoStyle(Theme.secondary, FontSize.LARGE)) else it()
             }
         )
     } else {
@@ -767,7 +766,7 @@ fun ListEditingField(isEditing: Boolean, displayText: String, subtext: String?, 
             modifier = Modifier.combinedClickable(null, null, onLongClick = {
                 if(displayText.isNotBlank() && displayText!="???") clipboard.setText(AnnotatedString(displayText))
             }){},
-            style = TypoStyle(FontColor.PRIMARY, FontSize.LARGE),
+            style = TypoStyle(Theme.primary, FontSize.LARGE),
             maxLines = 1,
             overflow = TextOverflow.Ellipsis
         )
@@ -781,7 +780,7 @@ fun ListEditingField(isEditing: Boolean, displayText: String, subtext: String?, 
             exit = fadeOut(tween(animationDuration)) + shrinkVertically(tween(animationDuration)),
         ) {
             Spacer(Modifier.height(5.dp))
-            Text(rememberedText.value?:"", style = TypoStyle(FontColor.SECONDARY, FontSize.SMALL))
+            Text(rememberedText.value?:"", style = TypoStyle(Theme.secondary, FontSize.SMALL))
         }
     }
 }

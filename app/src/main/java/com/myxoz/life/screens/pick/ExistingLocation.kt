@@ -33,11 +33,10 @@ import androidx.compose.ui.unit.dp
 import com.myxoz.life.LocalNavController
 import com.myxoz.life.LocalStorage
 import com.myxoz.life.R
+import com.myxoz.life.Theme
 import com.myxoz.life.api.syncables.Location
-import com.myxoz.life.screens.feed.fullscreenevent.InputField
 import com.myxoz.life.screens.feed.dayoverview.edgeToEdgeGradient
-import com.myxoz.life.ui.theme.Colors
-import com.myxoz.life.ui.theme.FontColor
+import com.myxoz.life.screens.feed.fullscreenevent.InputField
 import com.myxoz.life.ui.theme.FontSize
 import com.myxoz.life.ui.theme.TypoStyle
 import com.myxoz.life.utils.filteredWith
@@ -62,7 +61,7 @@ fun PickExistingLocation(){
         filtered = allLocations.filteredWith(filter, {it.toAddress(true)}) { it.name }
     }
     Scaffold(
-        containerColor = Colors.BACKGROUND,
+        containerColor = Theme.background,
     ) { innerPadding ->
         BackHandler(true) {
             nav.previousBackStackEntry?.savedStateHandle?.set("pelocation", null)
@@ -75,7 +74,7 @@ fun PickExistingLocation(){
             LazyColumn(
                 Modifier
                     .weight(1f)
-                    .edgeToEdgeGradient(Colors.BACKGROUND, innerPadding)
+                    .edgeToEdgeGradient(Theme.background, innerPadding)
                 ,
                 reverseLayout = true, // IMPORTANT
                 verticalArrangement = Arrangement.Bottom
@@ -100,21 +99,21 @@ fun PickExistingLocation(){
                             painterResource(R.drawable.location),
                             "Location",
                             Modifier.size(20.dp),
-                            Colors.PRIMARYFONT
+                            Theme.primary
                         )
                         Column{
                             Text(
                                 it.name,
-                                style = TypoStyle(FontColor.PRIMARY, FontSize.LARGE)
+                                style = TypoStyle(Theme.primary, FontSize.LARGE)
                             )
                             Spacer(Modifier.height(2.dp))
                             Text(
                                 it.toAddress(false),
-                                style = TypoStyle(FontColor.SECONDARY, FontSize.SMALLM)
+                                style = TypoStyle(Theme.secondary, FontSize.SMALLM)
                             )
                         }
                     }
-                    if(i != filtered.size-1) HorizontalDivider(color = Colors.DIVIDERS)
+                    if(i != filtered.size-1) HorizontalDivider(color = Theme.outlineVariant)
                 }
                 item { // At the start
                     Spacer(Modifier.height(innerPadding.calculateTopPadding()))

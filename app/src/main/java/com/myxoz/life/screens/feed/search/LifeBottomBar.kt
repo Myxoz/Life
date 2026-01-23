@@ -44,15 +44,16 @@ import androidx.compose.ui.unit.times
 import com.myxoz.life.LocalNavController
 import com.myxoz.life.LocalStorage
 import com.myxoz.life.R
+import com.myxoz.life.Theme
 import com.myxoz.life.api.syncables.Location
 import com.myxoz.life.api.syncables.PersonSyncable
 import com.myxoz.life.events.additionals.TagLike
-import com.myxoz.life.ui.theme.Colors
-import com.myxoz.life.ui.theme.FontColor
 import com.myxoz.life.ui.theme.FontSize
 import com.myxoz.life.ui.theme.TypoStyle
+import com.myxoz.life.utils.MaterialShapes
 import com.myxoz.life.utils.rippleClick
 import com.myxoz.life.utils.toDp
+import com.myxoz.life.utils.toShape
 import com.myxoz.life.viewmodels.CalendarViewModel
 
 @Composable
@@ -102,8 +103,8 @@ fun LifeBottomBar(calendarViewModel: CalendarViewModel){
                 Box(Modifier
                     .fillMaxHeight()
                     .width(widthPerElem)
-                    .padding(horizontal = (6f / width).dp)
-                    .background(Colors.PRIMARYFONT, CircleShape)
+                    .padding(horizontal = 1.dp)
+                    .background(Theme.primary, CircleShape)
                 )
             }
         }
@@ -116,11 +117,11 @@ fun LifeBottomBar(calendarViewModel: CalendarViewModel){
                     .weight(1f)
                     .fillMaxWidth()
                     .clip(RoundedCornerShape(50, 20, 20, 50))
-                    .background(Colors.SECONDARY, RoundedCornerShape(50, 20, 20, 50))
+                    .background(Theme.secondaryContainer, RoundedCornerShape(50, 20, 20, 50))
                     .rippleClick {
                         nav.navigate("advanced_search")
                     }
-                    .padding(start = 15.dp, end = 5.dp)
+                    .padding(horizontal = 5.dp)
                     .height(rowHeight)
                 ,
                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -139,7 +140,7 @@ fun LifeBottomBar(calendarViewModel: CalendarViewModel){
                     if(eventTypes.isNotEmpty()) {
                         Box(
                             Modifier
-                                .background(Colors.TERTIARY, CircleShape)
+                                .background(Theme.secondary, CircleShape)
                                 .padding(horizontal = 10.dp, vertical = 5.dp)
                                 .width((eventTypes.size + 1) * rowHeight / 2)
                         ){
@@ -160,7 +161,7 @@ fun LifeBottomBar(calendarViewModel: CalendarViewModel){
                         if(like.isEmpty()) continue
                         Row(
                             Modifier
-                                .background(Colors.TERTIARY, CircleShape)
+                                .background(Theme.secondary, CircleShape)
                                 .padding(horizontal = 10.dp, vertical = 5.dp)
                             ,
                             horizontalArrangement = Arrangement.spacedBy(3.dp)
@@ -170,7 +171,7 @@ fun LifeBottomBar(calendarViewModel: CalendarViewModel){
                                     painterResource(tag.drawable),
                                     "Taglike",
                                     Modifier.size(rowHeight),
-                                    Colors.PRIMARYFONT
+                                    Theme.onSecondary
                                 )
                             }
                         }
@@ -186,12 +187,12 @@ fun LifeBottomBar(calendarViewModel: CalendarViewModel){
                         if(string==null) continue
                         Box(
                             Modifier
-                                .background(Colors.TERTIARY, CircleShape)
+                                .background(Theme.secondary, CircleShape)
                                 .padding(horizontal = 10.dp, vertical = 5.dp)
                             ,
                             contentAlignment = Alignment.Center
                         ) {
-                            Text(string, style = TypoStyle(FontColor.PRIMARY, FontSize.MEDIUM))
+                            Text(string, style = TypoStyle(Theme.onSecondary, FontSize.MEDIUM))
                         }
                     }
                 }
@@ -206,7 +207,7 @@ fun LifeBottomBar(calendarViewModel: CalendarViewModel){
                             search.reset()
                         }
                     ,
-                    Colors.SECONDARYFONT
+                    Theme.primary,
                 )
             }
         } else BasicTextField(
@@ -232,7 +233,7 @@ fun LifeBottomBar(calendarViewModel: CalendarViewModel){
             decorationBox = @Composable { innerTextField ->
                 Box(
                     Modifier
-                        .background(Colors.SECONDARY, RoundedCornerShape(50, 20, 20, 50))
+                        .background(Theme.secondaryContainer, RoundedCornerShape(50, 20, 20, 50))
                         .fillMaxWidth()
                         .padding(start = 15.dp, end = 5.dp)
                         .height(rowHeight)
@@ -263,25 +264,25 @@ fun LifeBottomBar(calendarViewModel: CalendarViewModel){
                                         search.reset()
                                     }
                                 ,
-                                Colors.SECONDARYFONT
+                                Theme.primary
                             )
                         }
                     } else{
                         Text(
                             "Suchen / Finden",
                             Modifier.align(Alignment.Center),
-                            style = TypoStyle(FontColor.SECONDARY, FontSize.LARGE),
+                            style = TypoStyle(Theme.secondary, FontSize.LARGE),
                         )
                     }
                 }
             },
             singleLine = true,
-            cursorBrush = SolidColor(Colors.PRIMARYFONT),
+            cursorBrush = SolidColor(Theme.primary),
             keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Sentences, imeAction = ImeAction.Search),
             keyboardActions = KeyboardActions(onSearch = {
                 focusManager.clearFocus()
             }),
-            textStyle = TypoStyle(FontColor.PRIMARY, FontSize.LARGE)
+            textStyle = TypoStyle(Theme.secondary, FontSize.LARGE)
         )
         Spacer(Modifier.width(2.dp))
         val navController = LocalNavController.current
@@ -290,27 +291,27 @@ fun LifeBottomBar(calendarViewModel: CalendarViewModel){
             Modifier
                 .clip(targetShape)
                 .size(rowHeight)
-                .background(Colors.SECONDARY, targetShape)
+                .background(Theme.secondaryContainer, targetShape)
                 .padding(7.dp)
                 .rippleClick {
                     search.mode.value = SearchField.SearchMode.Target
                     navController.navigate("advanced_search")
                 }
         ) {
-            Icon(painterResource(R.drawable.target), "Search Specific", Modifier.fillMaxSize(), Colors.PRIMARYFONT)
+            Icon(painterResource(R.drawable.target), "Search Specific", Modifier.fillMaxSize(), Theme.primary)
         }
         Spacer(Modifier.width(5.dp))
         Box(
             Modifier
-                .clip(CircleShape)
+                .clip(MaterialShapes.Pill.toShape())
                 .size(rowHeight)
-                .background(Colors.SECONDARY, CircleShape)
+                .background(Theme.primary)
                 .padding(7.dp)
                 .rippleClick {
                     navController.navigate("menu")
                 }
         ) {
-            Icon(painterResource(R.drawable.app), "Life", Modifier.fillMaxSize(), Colors.PRIMARYFONT)
+            Icon(painterResource(R.drawable.app), "Life", Modifier.fillMaxSize(), Theme.onPrimary)
         }
     }
 }

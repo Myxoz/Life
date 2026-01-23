@@ -18,6 +18,7 @@ import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -68,6 +69,7 @@ import com.myxoz.life.LocalNavController
 import com.myxoz.life.LocalSettings
 import com.myxoz.life.LocalStorage
 import com.myxoz.life.R
+import com.myxoz.life.Theme
 import com.myxoz.life.api.API
 import com.myxoz.life.api.syncables.SyncedEvent
 import com.myxoz.life.dbwrapper.DaysEntity
@@ -76,13 +78,16 @@ import com.myxoz.life.events.ProposedEvent
 import com.myxoz.life.screens.feed.dayoverview.getWeekDayByInt
 import com.myxoz.life.screens.feed.instantevents.InstantEvent
 import com.myxoz.life.screens.options.getUsageDataBetween
-import com.myxoz.life.ui.theme.Colors
 import com.myxoz.life.ui.theme.FontColor
 import com.myxoz.life.ui.theme.FontFamily
 import com.myxoz.life.ui.theme.FontSize
+import com.myxoz.life.ui.theme.OldColors
 import com.myxoz.life.ui.theme.TypoStyle
+import com.myxoz.life.ui.theme.TypoStyleOld
+import com.myxoz.life.utils.MaterialShapes
 import com.myxoz.life.utils.rippleClick
 import com.myxoz.life.utils.toDp
+import com.myxoz.life.utils.toShape
 import com.myxoz.life.viewmodels.CalendarViewModel
 import com.myxoz.life.viewmodels.InspectedEventViewModel
 import kotlinx.coroutines.Dispatchers
@@ -159,65 +164,97 @@ fun DayComposable(
     ) {
         Column(
             Modifier
-                .height(dateBarHeight)
                 .fillMaxWidth()
-            ,
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Center
-        ) {
-            Text(
-                date.dayOfMonth.toString(),
-                style = TypoStyle(if(isToday) FontColor.SELECTED else FontColor.SECONDARY, FontSize.MLARGE, FontFamily.Display)
-                    .run { this.copy(fontWeight = if(isToday) FontWeight.Bold else FontWeight.Normal) }
-            )
-            Text(
-                getWeekDayByInt(date.dayOfWeek.value - 1),
-                style = TypoStyle(if(isToday) FontColor.SELECTED else FontColor.SECONDARY, FontSize.SMALLM)
-                    .run { this.copy(fontWeight = if(isToday) FontWeight.Bold else FontWeight.Normal) }
-            )
-        }
-        Box(
-            Modifier
-                .height(fullDayBarHeight)
-        )
-        Row (
-            Modifier
-                .height(daySummaryHeight)
-                .fillMaxWidth()
-                .horizontalScroll(rememberScrollState())
-                .clip(CircleShape)
+                .clip(RoundedCornerShape(10.dp))
                 .rippleClick {
                     navController.navigate("day/${date.toEpochDay()}/overview")
-                },
-            horizontalArrangement = Arrangement.spacedBy(10.dp)
+                }
         ) {
-            repeat(birthdayAmount) {
-                Icon(
-                    painterResource(R.drawable.birthday),
-                    "Birthday",
-                    Modifier.fillMaxHeight(),
-                    Colors.PRIMARYFONT
-                )
-            }
-            val dayEntity = dayEntity
-            val screentime by settings.features.screentime.has.collectAsState()
-            val steps by settings.features.stepCounting.has.collectAsState()
-            if(dayEntity!=null) {
-                if (screentime || dayEntity.screenTimeMs != 0) {
-                    DayPill(
-                        painterResource(R.drawable.screentime),
-                        "${dayEntity.screenTimeMs / 1000 / 3600}h ${dayEntity.screenTimeMs / 1000 / 60 % 60}m",
-                        (dayEntity.screenTimeMs / screenTimeGoal).coerceIn(0f, 1f),
-                        Colors.SCREENTIME
+            Box(
+                Modifier
+                    .height(dateBarHeight)
+                    .fillMaxWidth()
+                ,
+                contentAlignment = Alignment.Center
+            ) {
+                Column(
+                    Modifier
+                        .then(
+                            if (isToday)
+                                Modifier
+                                    .aspectRatio(1f)
+                                    .background(
+                                        Theme.primary,
+                                        MaterialShapes.Slanted.toShape()
+                                    )
+                            else
+                                Modifier
+                        ),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.Center
+                ) {
+                    Text(
+                        date.dayOfMonth.toString(),
+                        style = TypoStyle(
+                            if (isToday) Theme.onPrimary else Theme.secondary,
+                            FontSize.MLARGE,
+                            FontFamily.Display
+                        )
+                            .run { this.copy(fontWeight = if (isToday) FontWeight.Bold else FontWeight.Normal) }
+                    )
+                    Text(
+                        getWeekDayByInt(date.dayOfWeek.value - 1),
+                        style = TypoStyle(
+                            if (isToday) Theme.onPrimary else Theme.secondary,
+                            FontSize.SMALLM
+                        )
+                            .run { this.copy(fontWeight = if (isToday) FontWeight.Bold else FontWeight.Normal) }
                     )
                 }
-                if (steps || dayEntity.steps != 0) {
-                    DayPill(
-                        painterResource(R.drawable.shoe),
-                        "${dayEntity.steps}",
-                        (dayEntity.steps / stepsGoal).coerceIn(0f, 1f),
-                        Colors.STEPS
+            }
+            Box(
+                Modifier
+                    .height(fullDayBarHeight)
+            )
+            Row(
+                Modifier
+                    .height(daySummaryHeight)
+                    .fillMaxWidth()
+                    .horizontalScroll(rememberScrollState())
+                    .clip(CircleShape)
+                    .rippleClick {
+                        navController.navigate("day/${date.toEpochDay()}/overview")
+                    },
+                horizontalArrangement = Arrangement.spacedBy(10.dp)
+            ) {
+                repeat(birthdayAmount) {
+                    Icon(
+                        painterResource(R.drawable.birthday),
+                        "Birthday",
+                        Modifier.fillMaxHeight(),
+                        Theme.secondary
                     )
+                }
+                val dayEntity = dayEntity
+                val screentime by settings.features.screentime.has.collectAsState()
+                val steps by settings.features.stepCounting.has.collectAsState()
+                if (dayEntity != null) {
+                    if (screentime || dayEntity.screenTimeMs != 0) {
+                        DayPill(
+                            painterResource(R.drawable.screentime),
+                            "${dayEntity.screenTimeMs / 1000 / 3600}h ${dayEntity.screenTimeMs / 1000 / 60 % 60}m",
+                            (dayEntity.screenTimeMs / screenTimeGoal).coerceIn(0f, 1f),
+                            OldColors.SCREENTIME
+                        )
+                    }
+                    if (steps || dayEntity.steps != 0) {
+                        DayPill(
+                            painterResource(R.drawable.shoe),
+                            "${dayEntity.steps}",
+                            (dayEntity.steps / stepsGoal).coerceIn(0f, 1f),
+                            OldColors.STEPS
+                        )
+                    }
                 }
             }
         }
@@ -240,7 +277,7 @@ fun DayComposable(
                     Box(
                         Modifier
                             .padding(vertical = 2.dp)
-                            .background(Colors.CALENDARBG, RoundedCornerShape(25))
+                            .background(Theme.background, RoundedCornerShape(25))
                             .fillMaxWidth()
                             .weight(1f)
                             .clickable(null, null) {
@@ -323,25 +360,26 @@ fun DayComposable(
                         Box(
                             Modifier
                                 .fillMaxWidth()
-                                .background(Colors.SELECTED, CircleShape)
+                                .background(Theme.primary, CircleShape)
                                 .align(Alignment.CenterStart)
                                 .height(2.dp)
                         )
                         Box(
                             Modifier
-                                .background(Colors.SELECTED, CircleShape)
+                                .background(Theme.primary, CircleShape)
                                 .align(Alignment.CenterStart)
                                 .size(10.dp)
                         )
                     }
                 }
                 if(isEditing && newEvent.proposed.end > startOfDay && newEvent.proposed.start < endOfDay) {
-                    val gradientBottom = remember {
-                        Brush.radialGradient( listOf( Colors.SELECTED, Color.Transparent ),
+                    val colors = newEvent.proposed.type.color
+                    val gradientBottom = remember(colors) {
+                        Brush.radialGradient( listOf( colors, Color.Transparent ),
                             Offset(Float.POSITIVE_INFINITY, Float.POSITIVE_INFINITY), 100f )
                     }
                     val gradientTop = remember {
-                        Brush.radialGradient( listOf( Colors.SELECTED, Color.Transparent ),
+                        Brush.radialGradient( listOf( colors, Color.Transparent ),
                             Offset(0f, 0f), 100f )
                     }
                     val bottomDragger: @Composable BoxScope.() -> Unit = @Composable {
@@ -439,7 +477,7 @@ fun DayComposable(
                                 }
                             }
                             .height(newEvent.proposed.getHeightDp(oneHourDp, startOfDay, endOfDay))
-                            .border(2.dp, Colors.SELECTED, RoundedCornerShape(10.dp))
+                            .border(2.dp, newEvent.proposed.type.color, RoundedCornerShape(10.dp))
                             .background(
                                 newEvent.proposed.getBackgroundBrush(.5f),
                                 RoundedCornerShape(10.dp)
@@ -541,7 +579,7 @@ fun DayPill(imageVector: Painter, text: String, progress: Float, color: Color){
     Box(
         Modifier
             .height(daySummaryHeight)
-            .background(Colors.DAYPILLBG, CircleShape)
+            .background(OldColors.DAYPILLBG, CircleShape)
             .widthIn(40.dp)
             .clip(CircleShape)
     ) {
@@ -570,10 +608,10 @@ fun DayPill(imageVector: Painter, text: String, progress: Float, color: Color){
                 Modifier
                     .size(daySummaryHeight)
                     .padding(2.dp),
-                Colors.PRIMARYFONT
+                OldColors.PRIMARYFONT
             )
             Spacer(Modifier.width(5.dp))
-            Text(text, style = TypoStyle(FontColor.PRIMARY, FontSize.SMALL).copy(fontWeight = FontWeight.Bold))
+            Text(text, style = TypoStyleOld(FontColor.PRIMARY, FontSize.SMALL).copy(fontWeight = FontWeight.Bold))
         }
     }
 }
@@ -618,7 +656,7 @@ fun ProposedEvent.render(oneHour: Dp, startOfDay: Long, endOfDay: Long, removePr
                     Modifier
                         .fillMaxHeight()
                         .weight(1f)
-                        .background(Colors.ACCEPT)
+                        .background(OldColors.ACCEPT)
                         .clip(RoundedCornerShape(10.dp))
                         .rippleClick {
                             coroutine.launch {
@@ -640,7 +678,7 @@ fun ProposedEvent.render(oneHour: Dp, startOfDay: Long, endOfDay: Long, removePr
                     Modifier
                         .fillMaxHeight()
                         .weight(1f)
-                        .background(Colors.DECLINE)
+                        .background(OldColors.DECLINE)
                         .clip(RoundedCornerShape(10.dp))
                         .combinedClickable(onLongClick = {
                             removeProposedEvent(); visible = false

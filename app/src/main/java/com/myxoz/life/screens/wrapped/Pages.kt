@@ -53,11 +53,11 @@ import com.myxoz.life.api.syncables.ProfilePictureSyncable
 import com.myxoz.life.events.additionals.EventTag
 import com.myxoz.life.events.additionals.EventType
 import com.myxoz.life.events.additionals.Vehicle
-import com.myxoz.life.ui.theme.Colors
+import com.myxoz.life.ui.theme.OldColors
 import com.myxoz.life.ui.theme.FontColor
 import com.myxoz.life.ui.theme.FontFamily
 import com.myxoz.life.ui.theme.FontSize
-import com.myxoz.life.ui.theme.TypoStyle
+import com.myxoz.life.ui.theme.TypoStyleOld
 import com.myxoz.life.utils.MaterialShapes
 import com.myxoz.life.utils.def
 import com.myxoz.life.utils.formatMToDistance
@@ -82,7 +82,7 @@ abstract class WrappedPage {
     class LifeWrappedCallContext {
         var flow = MutableStateFlow(
             LifeWrappedColorContext(
-                Colors.Calendar.Hobby.BG,
+                OldColors.Calendar.Hobby.BG,
                 2f,
                 0.35f,
                 0f
@@ -228,7 +228,7 @@ class NewSocialContact(val amount: Int) : WrappedPage() {
             LaunchedEffect(Unit) {
                 setColorTo(
                     flow.value.copy(
-                        backgroundAccentColor = Colors.Calendar.Social.BG,
+                        backgroundAccentColor = OldColors.Calendar.Social.BG,
                         ribbonDetail = 0.5f, ribbonSpike = 3f
                     )
                 )
@@ -297,7 +297,7 @@ class TopThreeSocialContacts(val people: List<Pair<PersonSyncable, Long>>, conte
                             Box(
                                 Modifier
                                     .fillMaxSize()
-                                    .background(Colors.BACKGROUND, MaterialShapes.Cookie9Sided.toShape())
+                                    .background(OldColors.BACKGROUND, MaterialShapes.Cookie9Sided.toShape())
                             )
                         }
 
@@ -309,7 +309,7 @@ class TopThreeSocialContacts(val people: List<Pair<PersonSyncable, Long>>, conte
                             Reveal(step > 10 + index * 10) {
                                 Text(
                                     person.first.name,
-                                    style = TypoStyle(FontColor.PRIMARY, FontSize.MEDIUM)
+                                    style = TypoStyleOld(FontColor.PRIMARY, FontSize.MEDIUM)
                                 )
                             }
                         }
@@ -317,7 +317,7 @@ class TopThreeSocialContacts(val people: List<Pair<PersonSyncable, Long>>, conte
                             "${rindex + 1}.",
                             Modifier
                                 .offset(x = (-5).dp, y = (-5).dp),
-                            style = TypoStyle(
+                            style = TypoStyleOld(
                                 FontColor.PRIMARY,
                                 FontSize.DISPLAY,
                                 FontFamily.Display
@@ -383,7 +383,7 @@ class SpecialNewcommer(val person: PersonSyncable, val ranking: Int, val time: L
                             Modifier
                                 .fillMaxSize()
                                 .background(
-                                    Colors.BACKGROUND,
+                                    OldColors.BACKGROUND,
                                     MaterialShapes.Cookie9Sided.toShape()
                                 )
                         )
@@ -392,7 +392,7 @@ class SpecialNewcommer(val person: PersonSyncable, val ranking: Int, val time: L
                         "${ranking}.",
                         Modifier
                             .offset(x = (-5).dp, y = (-5).dp),
-                        style = TypoStyle(
+                        style = TypoStyleOld(
                             FontColor.PRIMARY,
                             FontSize.DISPLAY,
                             FontFamily.Display
@@ -457,7 +457,7 @@ class CommitStatsWrapped(val commits: Int, val heavilyCommitedRepo: String, val 
             Reveal(step >= 1) { SubtleLine("You commited a total of") }
             Reveal(step >= 4, {
                 setColorTo(flow.value.copy(
-                    backgroundAccentColor = Colors.GITHUBBG,
+                    backgroundAccentColor = OldColors.GITHUBBG,
                     ribbonDetail = 0.5f,
                     ribbonSpike = 1f,
                     ribbonAmp = 1f,
@@ -495,7 +495,7 @@ class TravelingOverview(val type: Vehicle, val duration: Long, val totalDuration
             Reveal(step >= 1) { SubtleLine("Your total time spend traveling accumulated to") }
             Reveal(step >= 4, {
                 setColorTo(
-                    flow.value.copy(backgroundAccentColor = Colors.Calendar.Travel.BG, ribbonAmp = 2f)
+                    flow.value.copy(backgroundAccentColor = OldColors.Calendar.Travel.BG, ribbonAmp = 2f)
                 )
             }) {
                 RollingLong(
@@ -528,7 +528,7 @@ class WalkingStats(val totalSteps: Long, val totalDistanceM: Long) : WrappedPage
             Reveal(step >= 1) { SubtleLine("You walked a total of") }
             Reveal(step >= 4, {
                 setColorTo(
-                    flow.value.copy(backgroundAccentColor = Colors.STEPS, ribbonDetail = 1f)
+                    flow.value.copy(backgroundAccentColor = OldColors.STEPS, ribbonDetail = 1f)
                 )
             }) {
                 RollingLong(
@@ -541,7 +541,7 @@ class WalkingStats(val totalSteps: Long, val totalDistanceM: Long) : WrappedPage
             Reveal(step >= 14) { SubtleLine("With a total distance of" ) }
             Reveal(step >= 17, {
                 setColorTo(
-                    flow.value.copy(backgroundAccentColor = Colors.STEPS, ribbonDetail = 1f)
+                    flow.value.copy(backgroundAccentColor = OldColors.STEPS, ribbonDetail = 1f)
                 )
             }) {
                 RollingLong(
@@ -565,7 +565,7 @@ class ScreenTimeOverview(val totalScreenTime: Long, val mostUsedApp: String, val
             Reveal(step >= 1) { SubtleLine("In the last year, you used your phone") }
             Reveal(step >= 4, {
                 setColorTo(
-                    flow.value.copy(backgroundAccentColor = Colors.SCREENTIME)
+                    flow.value.copy(backgroundAccentColor = OldColors.SCREENTIME)
                 )
             }) {
                 RollingLong(
@@ -595,7 +595,7 @@ class FinalPage : WrappedPage() {
     override fun LifeWrappedCallContext.Content() {
         ScreenScaffold {
             LaunchedEffect(Unit) {
-                setColorTo(flow.value.copy(backgroundAccentColor = Colors.SELECTED))
+                setColorTo(flow.value.copy(backgroundAccentColor = OldColors.SELECTED))
             }
             SubtleLine("This has been")
             Spacer(Modifier.height(10.dp))
@@ -630,15 +630,15 @@ private fun ScreenScaffold(
 }
 
 @Composable private fun BigTitle(text: String) {
-    Text(text = text, style = TypoStyle(FontColor.PRIMARY, FontSize.DISPLAY, FontFamily.Display), textAlign = TextAlign.Center)
+    Text(text = text, style = TypoStyleOld(FontColor.PRIMARY, FontSize.DISPLAY, FontFamily.Display), textAlign = TextAlign.Center)
 }
 
 @Composable private fun SectionTitle(text: String) {
-    Text(text = text, style = TypoStyle(FontColor.PRIMARY, FontSize.MLARGE), textAlign = TextAlign.Center)
+    Text(text = text, style = TypoStyleOld(FontColor.PRIMARY, FontSize.MLARGE), textAlign = TextAlign.Center)
 }
 
 @Composable private fun BigWord(text: String) {
-    Text(text = text, style = TypoStyle(FontColor.PRIMARY, FontSize.DISPLAY, FontFamily.Display).copy(fontSize = 70.sp), textAlign = TextAlign.Center)
+    Text(text = text, style = TypoStyleOld(FontColor.PRIMARY, FontSize.DISPLAY, FontFamily.Display).copy(fontSize = 70.sp), textAlign = TextAlign.Center)
 }
 
 @Composable private fun WavyBigTitle(text: String, maxOffset: Dp = 10.dp, speedScale: Float = 1f) {
@@ -657,7 +657,7 @@ private fun ScreenScaffold(
                 Modifier
                     .offset(y = sin(offset + 0.5f * i) * maxOffset)
                 ,
-                style = TypoStyle(FontColor.PRIMARY, FontSize.DISPLAY, FontFamily.Display),
+                style = TypoStyleOld(FontColor.PRIMARY, FontSize.DISPLAY, FontFamily.Display),
                 textAlign = TextAlign.Center
             )
         }
@@ -665,13 +665,13 @@ private fun ScreenScaffold(
 }
 
 @Composable private fun SmallTag(text: String) {
-    Text(text = text, style = TypoStyle(FontColor.PRIMARY, FontSize.MEDIUMM), textAlign = TextAlign.Center)
+    Text(text = text, style = TypoStyleOld(FontColor.PRIMARY, FontSize.MEDIUMM), textAlign = TextAlign.Center)
 }
 
 @Composable private fun SubtleLine(text: String) {
     Text(
         text = text,
-        style = TypoStyle(FontColor.SECONDARY, FontSize.MEDIUMM),
+        style = TypoStyleOld(FontColor.SECONDARY, FontSize.MEDIUMM),
         textAlign = TextAlign.Center
     )
 }
@@ -679,7 +679,7 @@ private fun ScreenScaffold(
 @Composable private fun NoticableFact(text: String) {
     Text(
         text = text,
-        style = TypoStyle(FontColor.PRIMARY, FontSize.MEDIUM),
+        style = TypoStyleOld(FontColor.PRIMARY, FontSize.MEDIUM),
         textAlign = TextAlign.Center
     )
 }
@@ -744,7 +744,7 @@ private fun RollingLong(
         style = TextStyle(
             fontSize = fontSize,
             fontWeight = FontWeight.Bold,
-            color = Colors.PRIMARYFONT,
+            color = OldColors.PRIMARYFONT,
             letterSpacing = (-0.4).sp,
             fontFamily = FontFamily.Display.family
         )

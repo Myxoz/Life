@@ -34,6 +34,7 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SwitchColors
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.material3.rememberDatePickerState
@@ -67,13 +68,12 @@ import androidx.compose.ui.unit.times
 import com.myxoz.life.LocalScreens
 import com.myxoz.life.LocalStorage
 import com.myxoz.life.R
+import com.myxoz.life.Theme
 import com.myxoz.life.api.syncables.SyncedEvent
 import com.myxoz.life.events.DigSocEvent
 import com.myxoz.life.events.additionals.EventType
 import com.myxoz.life.screens.feed.main.msToDisplay
 import com.myxoz.life.ui.ActionBar
-import com.myxoz.life.ui.theme.Colors
-import com.myxoz.life.ui.theme.FontColor
 import com.myxoz.life.ui.theme.FontSize
 import com.myxoz.life.ui.theme.TypoStyle
 import com.myxoz.life.utils.rippleClick
@@ -104,7 +104,7 @@ fun ProfileFullScreen(
         profileInfoModel.updateStateIfOutdated(personId, context)
     }
     Scaffold(
-        containerColor = Colors.BACKGROUND
+        containerColor = Theme.background
     ) { innerPadding ->
         val verticalScrollState = rememberScrollState()
         Box(
@@ -197,7 +197,7 @@ fun ProfileFullScreen(
                 Column(
                     Modifier
                         .fillMaxWidth(.95f)
-                        .background(Colors.SECONDARY, RoundedCornerShape(20.dp))
+                        .background(Theme.surfaceContainerHigh, RoundedCornerShape(20.dp))
                         .clip(RoundedCornerShape(20.dp))
                         .rippleClick {}
                         .padding(10.dp)
@@ -206,7 +206,7 @@ fun ProfileFullScreen(
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
                     val width = smallerScreenDimension*.95f-10.dp*2
-                    Text("Aufteilung", style = TypoStyle(FontColor.SECONDARY, FontSize.MEDIUM), modifier = Modifier.fillMaxWidth())
+                    Text("Aufteilung", style = TypoStyle(Theme.secondary, FontSize.MEDIUM), modifier = Modifier.fillMaxWidth())
                     val boxWidth = width
                     ButtonGroup(
                         arrayOf("All-Time", "1 Jahr", "1 Monat", "1 Woche"),
@@ -266,16 +266,16 @@ fun ProfileFullScreen(
                                     Spacer(Modifier.width(10.dp))
                                     Text(
                                         calendar?.calendarName?:"NULL",
-                                        style = TypoStyle(FontColor.PRIMARY, FontSize.LARGE)
+                                        style = TypoStyle(Theme.primary, FontSize.LARGE)
                                     )
                                 }
                                 Text(
                                     if(chartUnit==0) (it.value.value / acc).formatPercent(2) else it.value.value.toInt().msToDisplay(true),
-                                    style = TypoStyle(FontColor.PRIMARY, FontSize.LARGE)
+                                    style = TypoStyle(Theme.primary, FontSize.LARGE)
                                 )
                             }
                         }
-                        HorizontalDivider()
+                        HorizontalDivider(color = Theme.outline)
                         Row(
                             Modifier
                                 .fillMaxWidth()
@@ -304,12 +304,12 @@ fun ProfileFullScreen(
                                 Spacer(Modifier.width(10.dp))
                                 Text(
                                     "Summe",
-                                    style = TypoStyle(FontColor.PRIMARY, FontSize.LARGE)
+                                    style = TypoStyle(Theme.primary, FontSize.LARGE)
                                 )
                             }
                             Text(
                                 if(chartUnit==0) 1.0.formatPercent(2) else acc.toInt().msToDisplay(true),
-                                style = TypoStyle(FontColor.PRIMARY, FontSize.LARGE)
+                                style = TypoStyle(Theme.primary, FontSize.LARGE)
                             )
                         }
                     }
@@ -321,7 +321,7 @@ fun ProfileFullScreen(
             val scrollLength = with(LocalDensity.current){ verticalScrollState.value.toDp() }
             Box(
                 Modifier
-                    .background(Colors.BACKGROUND)
+                    .background(Theme.background)
                     .padding(top = innerPadding.calculateTopPadding())
             ){
                 ProfilePictureWithText(
@@ -349,8 +349,8 @@ fun ProfileFullScreen(
             ActionBar({
                 isPickingBirthDay = false
             }, {
-                Icon(painterResource(R.drawable.close), "Close", Modifier.fillMaxSize(), tint = Colors.SECONDARYFONT)
-            }, Colors.SELECTED, {
+                Icon(painterResource(R.drawable.close), "Close", Modifier.fillMaxSize(), Theme.onSecondaryContainer)
+            }, Theme.primaryContainer, {
                 profileInfoModel.isEditing.value = true
                 profileInfoModel.isExtended.value = true
                 profileInfoModel.birthday.value = datePickerState.selectedDateMillis?.let { millis ->
@@ -364,7 +364,7 @@ fun ProfileFullScreen(
                 Text(
                     "Eintragen",
                     style = TypoStyle(
-                        FontColor.PRIMARY,
+                        Theme.primary,
                         FontSize.LARGE
                     ).copy(fontWeight = FontWeight.W900)
                 )
@@ -372,7 +372,7 @@ fun ProfileFullScreen(
                 Icon(
                     painterResource(R.drawable.arrow_right),
                     "Continue",
-                    tint = Colors.PRIMARYFONT,
+                    tint = Theme.primary,
                     modifier = Modifier.height(20.dp)
                 )
             }
@@ -386,20 +386,20 @@ private fun FlowRowScope.FlowRowItem(title: String, icon: Int, text: String, onC
         Modifier
             .weight(1f)
             .fillMaxWidth()
-            .background(Colors.SECONDARY, RoundedCornerShape(25))
+            .background(Theme.surfaceContainerHigh, RoundedCornerShape(25))
             .clip(RoundedCornerShape(25))
             .rippleClick{onClick()}
             .padding(10.dp),
         verticalArrangement = Arrangement.spacedBy(7.dp)
     ) {
         val iconSize = FontSize.MEDIUM.size.toDp() * 1.5f
-        Text(title, style = TypoStyle(FontColor.SECONDARY, FontSize.MEDIUM))
+        Text(title, style = TypoStyle(Theme.secondary, FontSize.MEDIUM))
         Row(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(10.dp)
         ) {
-            Icon(painterResource(icon), "Icon", Modifier.size(iconSize), Colors.PRIMARYFONT)
-            Text(text, style = TypoStyle(FontColor.PRIMARY, FontSize.MEDIUM))
+            Icon(painterResource(icon), "Icon", Modifier.size(iconSize), Theme.primary)
+            Text(text, style = TypoStyle(Theme.primary, FontSize.MEDIUM))
         }
     }
 }
@@ -441,7 +441,7 @@ fun UnmodalBottomSheet(isVisible: Boolean, close: ()->Unit, content: @Composable
             Column(
                 Modifier
                     .fillMaxWidth()
-                    .background(Colors.BACKGROUND, RoundedCornerShape(20.dp, 20.dp))
+                    .background(Theme.surfaceContainer, RoundedCornerShape(20.dp, 20.dp))
                     .padding(15.dp)
                     .align(Alignment.BottomCenter)
                 ,
@@ -455,41 +455,88 @@ fun UnmodalBottomSheet(isVisible: Boolean, close: ()->Unit, content: @Composable
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun datePickerColors() = DatePickerDefaults.colors(
-    containerColor = Colors.BACKGROUND,
-    titleContentColor = Colors.SECONDARYFONT,
-    headlineContentColor = Colors.SECONDARYFONT,
-    weekdayContentColor = Colors.SECONDARYFONT,
-    subheadContentColor = Colors.SECONDARYFONT,
-    navigationContentColor = Colors.SECONDARYFONT,
-    yearContentColor = Colors.SECONDARYFONT,
-    currentYearContentColor = Colors.PRIMARYFONT,
-    selectedYearContentColor = Colors.PRIMARYFONT,
-    selectedYearContainerColor = Colors.SELECTED,
-    dayContentColor = Colors.SECONDARYFONT,
-    selectedDayContentColor = Colors.PRIMARYFONT,
-    selectedDayContainerColor = Colors.SELECTED,
-    todayContentColor = Colors.PRIMARYFONT,
-    todayDateBorderColor = Colors.PRIMARYFONT,
-    dividerColor = Colors.TERTIARY,
+    containerColor = Theme.surfaceContainer,
+    titleContentColor = Theme.secondary,
+    headlineContentColor = Theme.secondary,
+    weekdayContentColor = Theme.secondary,
+    subheadContentColor = Theme.secondary,
+    navigationContentColor = Theme.secondary,
+    yearContentColor = Theme.secondary,
+    currentYearContentColor = Theme.primary,
+    selectedYearContentColor = Theme.primary,
+    selectedYearContainerColor = Theme.primaryContainer,
+    dayContentColor = Theme.secondary,
+    selectedDayContentColor = Theme.primary,
+    selectedDayContainerColor = Theme.primaryContainer,
+    todayContentColor = Theme.primary,
+    todayDateBorderColor = Theme.primary,
+    dividerColor = Theme.outline,
     dateTextFieldColors = TextFieldDefaults.colors(
         focusedIndicatorColor = Color.Transparent,
         unfocusedIndicatorColor = Color.Transparent,
-        focusedContainerColor = Colors.SECONDARY,
-        unfocusedContainerColor = Colors.SECONDARY,
-        cursorColor = Colors.PRIMARYFONT,
-        focusedTextColor = Colors.PRIMARYFONT,
-        unfocusedTextColor = Colors.PRIMARYFONT,
-        focusedLabelColor = Colors.PRIMARYFONT,
-        unfocusedLabelColor = Colors.PRIMARYFONT,
-        focusedSupportingTextColor = Colors.PRIMARYFONT,
+        focusedContainerColor = Theme.surfaceContainer,
+        unfocusedContainerColor = Theme.surfaceContainer,
+        cursorColor = Theme.primary,
+        focusedTextColor = Theme.primary,
+        unfocusedTextColor = Theme.primary,
+        focusedLabelColor = Theme.primary,
+        unfocusedLabelColor = Theme.primary,
+        focusedSupportingTextColor = Theme.primary,
     ),
+)
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun switchColors(
+    selectedHandleColor: Color = Theme.onPrimary,
+    selectedTrackColor: Color = Theme.primary,
+    selectedIconColor: Color = Theme.onPrimaryContainer,
+
+    unselectedHandleColor: Color = Theme.outline,
+    unselectedTrackColor: Color = Theme.surfaceContainerHigh,
+    unselectedIconColor: Color = Theme.surfaceContainerHigh,
+
+    disabledSelectedHandleColor: Color =
+        Theme.surface,
+    disabledSelectedTrackColor: Color =
+        Theme.onSurface.copy(alpha = 0.12f),
+
+    disabledUnselectedHandleColor: Color =
+        Theme.onSurface.copy(alpha = 0.38f),
+    disabledUnselectedTrackColor: Color =
+        Theme.surfaceContainerHigh.copy(alpha = 0.12f),
+
+    borderColor: Color = Theme.outline,
+): SwitchColors = SwitchColors(
+    checkedThumbColor = selectedHandleColor,
+    checkedTrackColor = selectedTrackColor,
+    checkedIconColor = selectedIconColor,
+
+    uncheckedThumbColor = unselectedHandleColor,
+    uncheckedTrackColor = unselectedTrackColor,
+    uncheckedIconColor = unselectedIconColor,
+
+    disabledCheckedThumbColor = disabledSelectedHandleColor,
+    disabledCheckedTrackColor = disabledSelectedTrackColor,
+    disabledCheckedIconColor =
+        Theme.onSurface.copy(alpha = 0.38f),
+
+    disabledUncheckedThumbColor = disabledUnselectedHandleColor,
+    disabledUncheckedTrackColor = disabledUnselectedTrackColor,
+    disabledUncheckedIconColor =
+        Theme.surfaceContainerHigh.copy(alpha = 0.38f),
+
+    checkedBorderColor = Color.Transparent,
+    uncheckedBorderColor = borderColor,
+    disabledCheckedBorderColor = Color.Transparent,
+    disabledUncheckedBorderColor =
+        Theme.onSurface.copy(alpha = 0.12f),
 )
 @Composable
 fun ButtonGroup(list: Array<String>, width: Dp, selectedItem: MutableStateFlow<Int>, onClick: (Int) -> Unit){
     Box(
         Modifier
             .width(width)
-            .background(Colors.TERTIARY, CircleShape)
+            .background(Theme.secondaryContainer, CircleShape)
     ) {
         Row {
             list.forEachIndexed { i, v ->
@@ -506,7 +553,7 @@ fun ButtonGroup(list: Array<String>, width: Dp, selectedItem: MutableStateFlow<I
                     Text(
                         v,
                         Modifier.fillMaxWidth(),
-                        style = TypoStyle(FontColor.SECONDARY, FontSize.MEDIUM),
+                        style = TypoStyle(Theme.secondary, FontSize.MEDIUM),
                         textAlign = TextAlign.Center
                     )
                 }
@@ -518,13 +565,13 @@ fun ButtonGroup(list: Array<String>, width: Dp, selectedItem: MutableStateFlow<I
             Modifier
                 .offset(x = offsetLeft)
                 .width(width / list.size)
-                .border(1.dp, Colors.SECONDARYFONT, CircleShape)
+                .border(1.dp, Theme.outline, CircleShape)
                 .padding(5.dp)
         ) {
             Text(
                 "",
                 Modifier.fillMaxWidth(),
-                style = TypoStyle(FontColor.SECONDARY, FontSize.MEDIUM),
+                style = TypoStyle(Theme.onSecondaryContainer, FontSize.MEDIUM),
                 textAlign = TextAlign.Center
             )
         }

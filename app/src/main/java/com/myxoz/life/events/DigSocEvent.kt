@@ -23,7 +23,7 @@ import com.myxoz.life.events.additionals.PeopleEvent.Companion.getPeopleFromJson
 import com.myxoz.life.events.additionals.TimedTagLikeContainer
 import com.myxoz.life.events.additionals.TitleEvent
 import com.myxoz.life.screens.feed.main.RenderBasicEventContent
-import com.myxoz.life.ui.theme.Colors
+import com.myxoz.life.ui.theme.OldColors
 import org.json.JSONArray
 import org.json.JSONObject
 
@@ -71,9 +71,9 @@ class DigSocEvent(
             displayText,
             isSmall,
             digSocEntries.map { it.type },
-            Colors.Calendar.DigSoc.TEXT,
-            Colors.Calendar.DigSoc.SECONDARY,
-            Colors.Calendar.DigSoc.Tag,
+            OldColors.Calendar.DigSoc.TEXT,
+            OldColors.Calendar.DigSoc.SECONDARY,
+            OldColors.Calendar.DigSoc.Tag,
             oneHourDp,
             blockHeight
         )

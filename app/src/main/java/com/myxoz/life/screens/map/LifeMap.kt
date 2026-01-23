@@ -4,7 +4,7 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
 import com.mapbox.maps.MapboxExperimental
-import com.myxoz.life.ui.theme.Colors
+import com.myxoz.life.ui.theme.OldColors
 import com.myxoz.life.viewmodels.MapViewModel
 
 @Suppress("COMPOSE_APPLIER_CALL_MISMATCH")
@@ -14,7 +14,7 @@ import com.myxoz.life.viewmodels.MapViewModel
 @Composable
 fun MapBoxMap(mapViewModel: MapViewModel){
     Scaffold(
-        containerColor = Colors.BACKGROUND
+        containerColor = OldColors.BACKGROUND
     ) { innerPadding ->
         MapBoxMap(mapViewModel, innerPadding)
         MapSheet(mapViewModel, innerPadding)

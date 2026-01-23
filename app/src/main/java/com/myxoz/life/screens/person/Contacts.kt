@@ -59,14 +59,15 @@ import com.myxoz.life.LocalScreens
 import com.myxoz.life.LocalSettings
 import com.myxoz.life.LocalStorage
 import com.myxoz.life.R
+import com.myxoz.life.Theme
 import com.myxoz.life.api.API
 import com.myxoz.life.api.syncables.PersonSyncable
 import com.myxoz.life.screens.feed.dayoverview.edgeToEdgeGradient
 import com.myxoz.life.screens.feed.fullscreenevent.InputField
-import com.myxoz.life.ui.rememberAsymmetricalCornerRadius
-import com.myxoz.life.ui.theme.Colors
-import com.myxoz.life.ui.theme.FontColor
+import com.myxoz.life.ui.rememberAsymmetricalVerticalCornerRadius
+import com.myxoz.life.ui.theme.FontFamily
 import com.myxoz.life.ui.theme.FontSize
+import com.myxoz.life.ui.theme.OldColors
 import com.myxoz.life.ui.theme.TypoStyle
 import com.myxoz.life.utils.MaterialShapes
 import com.myxoz.life.utils.combinedRippleClick
@@ -86,14 +87,13 @@ import kotlin.math.roundToInt
 @Composable
 fun Contacts(contactsViewModel: ContactsViewModel){
     Scaffold(
-        containerColor = Colors.BACKGROUND
+        containerColor = Theme.background
     ) { innerPadding ->
         Column(
             Modifier
                 .fillMaxSize()
-                .padding(bottom = innerPadding.calculateBottomPadding())
             ,
-            verticalArrangement = Arrangement.Bottom,
+            verticalArrangement = Arrangement.Bottom
         ) {
             val screens = LocalScreens.current
             val context = LocalContext.current
@@ -102,7 +102,6 @@ fun Contacts(contactsViewModel: ContactsViewModel){
             val screenWidthPx = LocalConfiguration.current.screenWidthDp.dp.toPx(LocalDensity.current)
             val lifeContacts by contactsViewModel.lifeContacts.collectAsState()
             val deviceContacts by contactsViewModel.deviceContacts.collectAsState()
-            val hasContactPermission by settings.features.addNewPerson.has.collectAsState()
             var search by remember { mutableStateOf("") }
             val showIcons by contactsViewModel.showIcons.collectAsState()
             val ordering = remember {
@@ -114,7 +113,7 @@ fun Contacts(contactsViewModel: ContactsViewModel){
             LaunchedEffect(Unit) {
                 withContext(Dispatchers.IO){
                     contactsViewModel.refetchLifeContacts()
-                    if(hasContactPermission) contactsViewModel.fetchDeviceContacts(context)
+                    if(settings.features.addNewPerson.hasAssured()) contactsViewModel.fetchDeviceContacts(context)
                 }
             }
             val filteredLifeContacts = remember(search, lifeContacts.hashCode() /* Idk if needed but lists... */) {
@@ -130,7 +129,7 @@ fun Contacts(contactsViewModel: ContactsViewModel){
                 Modifier
                     .fillMaxWidth()
                     .weight(1f)
-                    .edgeToEdgeGradient(Colors.BACKGROUND, innerPadding)
+                    .edgeToEdgeGradient(Theme.background, innerPadding)
                 ,
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.Bottom,
@@ -153,7 +152,7 @@ fun Contacts(contactsViewModel: ContactsViewModel){
                     items(items, key = { "${letter}_${it.id}_${it.name}_${it.phoneNumber}" }) { contact ->
                         val isFirst = contact == items.firstOrNull()
                         val isLast = contact == items.lastOrNull()
-                        val shape = rememberAsymmetricalCornerRadius(isFirst, isLast, 40, true)
+                        val shape = rememberAsymmetricalVerticalCornerRadius(isFirst, isLast, 40, true)
                         val offsetX = remember { Animatable(0f) }
                         val coroutineScope = rememberCoroutineScope()
                         val swipedRight = offsetX.value > 0
@@ -199,8 +198,8 @@ fun Contacts(contactsViewModel: ContactsViewModel){
                                 Modifier
                                     .matchParentSize()
                                     .background(
-                                        if (offsetX.value == 0f) Colors.SECONDARY else if (swipedRight) if (contact.phoneNumber != null) Colors.Transactions.PLUS else Colors.PRIMARYFONT else platform?.color
-                                            ?: Colors.PRIMARYFONT, shape
+                                        if (offsetX.value == 0f) Theme.surfaceContainerHigh else if (swipedRight) if (contact.phoneNumber != null) OldColors.Transactions.PLUS else Theme.primary else platform?.color
+                                            ?: Theme.primary, shape
                                     )
                                     .padding(horizontal = 10.dp)
                                 ,
@@ -210,11 +209,11 @@ fun Contacts(contactsViewModel: ContactsViewModel){
                                 val fontSize = FontSize.LARGE.size
                                 if(swipedRight) {
                                     val hasPhone = contact.phoneNumber!=null
-                                    Icon(painterResource(if(hasPhone) R.drawable.phone else R.drawable.close), "Call", Modifier.size(fontSize.toDp()), tint = Colors.BACKGROUND)
-                                    Text(if(hasPhone) "Anrufen" else "Keine Nummer hinterlegt", style = TextStyle.Default.copy(color = Colors.BACKGROUND, fontSize = fontSize))
+                                    Icon(painterResource(if(hasPhone) R.drawable.phone else R.drawable.close), "Call", Modifier.size(fontSize.toDp()), Theme.background)
+                                    Text(if(hasPhone) "Anrufen" else "Keine Nummer hinterlegt", style = TextStyle.Default.copy(color = Theme.background, fontSize = fontSize))
                                 } else {
-                                    Icon(painterResource(platform?.icon?:R.drawable.close), "Call", Modifier.size(fontSize.toDp()), tint = Colors.BACKGROUND)
-                                    Text(platform?.fullName?:"Keine Platform", style = TextStyle.Default.copy(color = Colors.BACKGROUND, fontSize = fontSize))
+                                    Icon(painterResource(platform?.icon?:R.drawable.close), "Call", Modifier.size(fontSize.toDp()), Theme.background)
+                                    Text(platform?.fullName?:"Keine Platform", style = TextStyle.Default.copy(color = Theme.background, fontSize = fontSize))
                                 }
                             }
                             Column(
@@ -227,7 +226,7 @@ fun Contacts(contactsViewModel: ContactsViewModel){
                                             1f
                                         )
                                     )
-                                    .background(Colors.SECONDARY, shape)
+                                    .background(Theme.surfaceContainerHigh, shape)
                             ) {
                                 Row(
                                     Modifier
@@ -282,7 +281,7 @@ fun Contacts(contactsViewModel: ContactsViewModel){
                                         Text(
                                             contact.name,
                                             Modifier,
-                                            style = TypoStyle(FontColor.PRIMARY, FontSize.LARGE)
+                                            style = TypoStyle(Theme.primary, FontSize.LARGE)
                                         )
                                         if(!showIcons) return@Row
                                         val textSize = FontSize.LARGE.size.toDp()
@@ -303,7 +302,7 @@ fun Contacts(contactsViewModel: ContactsViewModel){
                                         ) {
                                             for (i in icons) {
                                                 if(i == null) continue
-                                                Icon(painterResource(i), null, Modifier.size(textSize * .8f), tint = Colors.TERTIARYFONT)
+                                                Icon(painterResource(i), null, Modifier.size(textSize * .8f), tint = Theme.secondary.copy(.35f))
                                             }
                                         }
                                     }
@@ -311,7 +310,7 @@ fun Contacts(contactsViewModel: ContactsViewModel){
                                         Box(Modifier
                                             .size(fontSize)
                                             .background(
-                                                if (letter == 'F') Colors.PRIMARYFONT else Colors.TERTIARYFONT,
+                                                if (letter == 'F') Theme.primary else Theme.primary.copy(.2f),
                                                 MaterialShapes.Flower.toShape()
                                             )
                                             .clip(CircleShape)
@@ -349,7 +348,7 @@ fun Contacts(contactsViewModel: ContactsViewModel){
                                                 }
                                             }
                                         ) {
-                                            Icon(Icons.Default.Add, "New", Modifier.fillMaxSize(), Colors.PRIMARYFONT)
+                                            Icon(Icons.Default.Add, "New", Modifier.fillMaxSize(), Theme.primary)
                                         }
                                     }
                                 }
@@ -362,7 +361,7 @@ fun Contacts(contactsViewModel: ContactsViewModel){
                             Modifier
                                 .fillMaxWidth(.95f)
                                 .padding(top = 20.dp, bottom = 5.dp),
-                            style = TypoStyle(FontColor.SECONDARY, FontSize.LARGE)
+                            style = TypoStyle(Theme.secondary, FontSize.LARGE, if(letter == 'F') FontFamily.Display else null)
                         )
                     }
                 }
@@ -370,7 +369,8 @@ fun Contacts(contactsViewModel: ContactsViewModel){
             Row(
                 Modifier
                     .fillMaxWidth()
-                    .padding(10.dp)
+                    .padding(horizontal = 10.dp)
+                    .padding(bottom = innerPadding.calculateBottomPadding())
                 ,
                 horizontalArrangement = Arrangement.spacedBy(10.dp)
             ) {
@@ -391,7 +391,7 @@ fun Contacts(contactsViewModel: ContactsViewModel){
                 Box(
                     Modifier
                         .size(lineHeight)
-                        .background(Colors.SECONDARY, shape)
+                        .background(Theme.primaryContainer, shape)
                         .padding(5.dp)
                         .clip(shape)
                         .combinedRippleClick(
@@ -428,8 +428,9 @@ fun Contacts(contactsViewModel: ContactsViewModel){
                             ).show()
                         }
                 ) {
-                    Icon(Icons.Rounded.Add, "New", Modifier.fillMaxSize(), Colors.PRIMARYFONT)
+                    Icon(Icons.Rounded.Add, "New", Modifier.fillMaxSize(), Theme.onPrimary)
                 }
+                Spacer(Modifier.height(50.dp))
             }
         }
         Box(
@@ -440,8 +441,8 @@ fun Contacts(contactsViewModel: ContactsViewModel){
                     .align(Alignment.TopEnd)
                     .padding(innerPadding)
                     .padding(10.dp)
-                    .background(Colors.SECONDARY, CircleShape)
-                    .border(1.dp, Colors.TERTIARYFONT, CircleShape)
+                    .background(Theme.secondaryContainer, CircleShape)
+                    .border(1.dp, Theme.outline, CircleShape)
                     .clip(CircleShape)
                     .rippleClick {
                         contactsViewModel.showIcons.value = !contactsViewModel.showIcons.value
@@ -450,10 +451,10 @@ fun Contacts(contactsViewModel: ContactsViewModel){
             ) {
                 val visible by contactsViewModel.showIcons.collectAsState()
                 Icon(
-                    painterResource(if(visible) R.drawable.visible else R.drawable.visible_off),
+                    painterResource(if (visible) R.drawable.visible else R.drawable.visible_off),
                     "Toggle Icons",
                     Modifier.size(20.dp),
-                    tint = Colors.SECONDARYFONT
+                    Theme.onSecondaryContainer
                 )
             }
         }

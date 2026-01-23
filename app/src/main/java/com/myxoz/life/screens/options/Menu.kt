@@ -4,7 +4,6 @@ import android.content.Context
 import android.content.Intent
 import android.content.pm.ShortcutInfo
 import android.content.pm.ShortcutManager
-import android.graphics.Bitmap
 import android.graphics.Canvas
 import android.graphics.drawable.AdaptiveIconDrawable
 import android.graphics.drawable.ColorDrawable
@@ -47,14 +46,15 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.unit.dp
+import androidx.core.graphics.createBitmap
 import androidx.core.graphics.drawable.DrawableCompat
 import com.myxoz.life.LocalNavController
 import com.myxoz.life.MainActivity
 import com.myxoz.life.R
-import com.myxoz.life.ui.theme.Colors
-import com.myxoz.life.ui.theme.FontColor
+import com.myxoz.life.Theme
 import com.myxoz.life.ui.theme.FontFamily
 import com.myxoz.life.ui.theme.FontSize
+import com.myxoz.life.ui.theme.OldColors
 import com.myxoz.life.ui.theme.TypoStyle
 import com.myxoz.life.utils.combinedRippleClick
 import com.myxoz.life.utils.toDp
@@ -67,7 +67,7 @@ fun MenuComposable() {
     val context = LocalContext.current
     val nav = LocalNavController.current
     Scaffold(
-        containerColor = Colors.BACKGROUND
+        containerColor = Theme.background
     ) { innerPadding ->
         val currentDate = LocalDate.now()
         FlowRow(
@@ -105,7 +105,7 @@ fun MenuComposable() {
                         }
                         .padding(8.dp)
                         .border(1.dp, gradient, RoundedCornerShape(20.dp))
-                        .background(Colors.SECONDARY, RoundedCornerShape(20.dp))
+                        .background(Theme.surfaceContainer, RoundedCornerShape(20.dp))
                         .clip(RoundedCornerShape(20.dp))
                         .combinedRippleClick{
                             nav.navigate("life_wrapped")
@@ -169,14 +169,14 @@ fun MenuComposable() {
                         }
                     }
                     Spacer(Modifier.height(5.dp))
-                    Text("Wrapped", style = TypoStyle(FontColor.PRIMARY, FontSize.LARGE, FontFamily.Display))
+                    Text("Wrapped", style = TypoStyle(Theme.primary, FontSize.LARGE, FontFamily.Display))
                 }
             }
             all.forEachIndexed { i, it ->
                 val mod = Modifier
                     .padding(8.dp)
-                    .border(1.dp, Colors.TERTIARY, RoundedCornerShape(20.dp))
-                    .background(Colors.SECONDARY, RoundedCornerShape(20.dp))
+                    .border(1.dp, Theme.outlineVariant, RoundedCornerShape(20.dp))
+                    .background(Theme.surfaceContainer, RoundedCornerShape(20.dp))
                     .clip(RoundedCornerShape(20.dp))
                     .combinedRippleClick(
                         onHold = {
@@ -195,9 +195,9 @@ fun MenuComposable() {
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
                     val fontSize = FontSize.DISPLAY.size.toDp()
-                    Icon(painterResource(it.icon), it.text, Modifier.size(fontSize), Colors.SECONDARYFONT)
+                    Icon(painterResource(it.icon), it.text, Modifier.size(fontSize), Theme.secondary)
                     Spacer(Modifier.height(5.dp))
-                    Text(it.text, style = TypoStyle(FontColor.PRIMARY, FontSize.LARGE, FontFamily.Display))
+                    Text(it.text, style = TypoStyle(Theme.primary, FontSize.LARGE, FontFamily.Display))
                 }
             }
         }
@@ -208,9 +208,9 @@ data class SubOption(val icon: Int, val text: String, val route: String) {
         val size = context.resources.getDimensionPixelSize(android.R.dimen.app_icon_size)
         val renderSize = size * 4
 
-        val bg = ColorDrawable(Colors.APPICONBG.toArgb())
+        val bg = ColorDrawable(OldColors.APPICONBG.toArgb())
         val tintedFg = DrawableCompat.wrap(fg.mutate()).apply {
-            setTint(Colors.PRIMARYFONT.toArgb())
+            setTint(OldColors.PRIMARYFONT.toArgb())
         }
 
         // 25% padding total means foreground inset of 25% on each side [web:21]
@@ -219,7 +219,7 @@ data class SubOption(val icon: Int, val text: String, val route: String) {
 
         val adaptive = AdaptiveIconDrawable(bg, insetFg)
 
-        val bitmap = Bitmap.createBitmap(renderSize, renderSize, Bitmap.Config.ARGB_8888)
+        val bitmap = createBitmap(renderSize, renderSize)
         val canvas = Canvas(bitmap)
 
         // Full-bleed draw so background fills the entire bitmap (no outline)

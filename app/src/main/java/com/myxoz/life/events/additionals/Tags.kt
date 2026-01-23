@@ -17,7 +17,7 @@ enum class EventTag(override val id: Int, val displayName: String, val queryStri
     Watch(7,"Streaming", listOf("Netflix", "Serien", "Filme", "Film", "Twitch", "Binge", "Kino", "Stream"), R.drawable.watch),
     Alcohol(8, "Saufen", listOf("Alkohol", "Trinken", "Bier", "Wein", "Shots", "Betrinken", "Besaufen", "Pegel"), R.drawable.alc),
     Shower(9, "Hygiene", listOf("Duschen", "Baden", "Pflege", "Rasieren"), R.drawable.shower),
-    P(10, "P", listOf(), R.drawable.p),
+    // Skipped id 10
     S(11, "S", listOf(), R.drawable.s),
     Lecture(12, "Vorlesung", listOf("Präsentation", "Vorstellung"), R.drawable.lecture),
     Studium(13, "Uni", listOf("Universität", "Studium", "Studieren"), R.drawable.study),

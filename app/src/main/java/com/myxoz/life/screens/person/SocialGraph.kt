@@ -40,9 +40,10 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import com.myxoz.life.LocalScreens
 import com.myxoz.life.R
+import com.myxoz.life.Theme
 import com.myxoz.life.screens.feed.main.msToDisplay
 import com.myxoz.life.screens.person.displayperson.ButtonGroup
-import com.myxoz.life.ui.theme.Colors
+import com.myxoz.life.ui.theme.OldColors
 import com.myxoz.life.utils.collectAsMutableNonNullState
 import com.myxoz.life.utils.collectAsMutableState
 import com.myxoz.life.utils.rippleClick
@@ -174,25 +175,22 @@ fun SocialGraph(socialGraphViewModel: SocialGraphViewModel){
         var scale by socialGraphViewModel.scale.collectAsMutableState()
         var offset by socialGraphViewModel.offset.collectAsMutableNonNullState(-Offset(initWidth / scale / 2f, initHeight / scale / 2f))
 
-        val textPaint = remember {
-            Paint().apply {
-                color = Colors.PRIMARYFONT.toArgb()
-                textSize = 40f
-                textAlign = Paint.Align.CENTER
-            }
+        val textPaint = Paint().apply {
+            color = Theme.primary.toArgb()
+            textSize = 40f
+            textAlign = Paint.Align.CENTER
         }
-        val relevantEdgeTextPaint = remember {
-            Paint().apply {
-                color = Colors.PRIMARYFONT.toArgb()
-                textSize = 30f
-                textAlign = Paint.Align.CENTER
-            }
+        val relevantEdgeTextPaint = Paint().apply {
+            color = Theme.secondary.toArgb()
+            textSize = 30f
+            textAlign = Paint.Align.CENTER
         }
 
+        val CurrentTheme = Theme
         Canvas(
             modifier = Modifier
                 .fillMaxSize()
-                .background(Color.Black)
+                .background(CurrentTheme.background)
                 .pointerInput(Unit) {
                     detectTransformGestures { centroid, pan, gestureZoom, _ ->
                         val oldScale = scale
@@ -252,10 +250,10 @@ fun SocialGraph(socialGraphViewModel: SocialGraphViewModel){
                         val isRelevantEdge = node.personId == activeNode || otherNode.personId == activeNode
                         if (otherNode.personId <= node.personId) return@forEach
                         if (!isDimmedMode) {
-                            edge.drawEdge(Colors.SocialGraphColors.EDGE)
+                            edge.drawEdge(CurrentTheme.outline)
                         } else {
                             if(!isRelevantEdge){
-                                edge.drawEdge(Colors.SocialGraphColors.IRRELEVANT_EDGE)
+                                edge.drawEdge(CurrentTheme.outlineVariant.copy(.5f))
                             } else {
                                 relevantEdges.add(edge)
                             }
@@ -263,7 +261,7 @@ fun SocialGraph(socialGraphViewModel: SocialGraphViewModel){
                     }
                 }
                 for (edge in relevantEdges) {
-                    edge.drawEdge(Colors.SocialGraphColors.RELEVANT_EDGE)
+                    edge.drawEdge(CurrentTheme.outline)
                 }
                 if(showTimes)
                     for (edge in relevantEdges) {
@@ -280,10 +278,10 @@ fun SocialGraph(socialGraphViewModel: SocialGraphViewModel){
                     }
                     val isSelf = node.personId == activeNode
                     val nodeColor = when {
-                        isSelf -> Colors.SocialGraphColors.SELECTED_NODE
-                        isConnected -> Colors.SocialGraphColors.RELEVANT_NODE
-                        isDimmedMode -> Colors.SocialGraphColors.IRRELEVANT_NODE
-                        else -> Colors.SocialGraphColors.NODE
+                        isSelf -> CurrentTheme.primary
+                        isConnected -> CurrentTheme.secondary
+                        isDimmedMode -> CurrentTheme.secondaryContainer.copy(.5f)
+                        else -> CurrentTheme.secondary
                     }
                     drawCircle(
                         color = nodeColor,
@@ -294,8 +292,8 @@ fun SocialGraph(socialGraphViewModel: SocialGraphViewModel){
                         drawContext.canvas.nativeCanvas.drawText(
                             node.name,
                             node.position.x,
-                            node.position.y - 50f,
-                            textPaint
+                            node.position.y - 50f - if(isSelf) 10f else 0f,
+                            if(isSelf || !isDimmedMode) textPaint else relevantEdgeTextPaint
                         )
                     }
                 }
@@ -305,7 +303,7 @@ fun SocialGraph(socialGraphViewModel: SocialGraphViewModel){
             Modifier
                 .align(Alignment.BottomEnd)
                 .padding(20.dp)
-                .background(Colors.SECONDARY, CircleShape),
+                .background(Theme.surfaceContainerHighest, CircleShape),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(5.dp)
         ) {
@@ -320,7 +318,7 @@ fun SocialGraph(socialGraphViewModel: SocialGraphViewModel){
                 }
             }
             val height = 20.dp
-            VerticalDivider(Modifier.height(height), color = Colors.DIVIDERS)
+            VerticalDivider(Modifier.height(height), color = OldColors.DIVIDERS)
             Box(
                 Modifier
                     .size(30.dp)
@@ -336,7 +334,7 @@ fun SocialGraph(socialGraphViewModel: SocialGraphViewModel){
                     ),
                     "Me",
                     Modifier.fillMaxSize(),
-                    tint = Colors.SECONDARYFONT
+                    tint = OldColors.SECONDARYFONT
                 )
             }
             Box(
@@ -357,7 +355,7 @@ fun SocialGraph(socialGraphViewModel: SocialGraphViewModel){
                     painterResource(R.drawable.contacts),
                     "Me",
                     Modifier.fillMaxSize(),
-                    tint = Colors.SECONDARYFONT
+                    tint = OldColors.SECONDARYFONT
                 )
             }
         }

@@ -28,8 +28,7 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import com.myxoz.life.LocalNavController
 import com.myxoz.life.LocalStorage
-import com.myxoz.life.ui.theme.Colors
-import com.myxoz.life.ui.theme.FontColor
+import com.myxoz.life.Theme
 import com.myxoz.life.ui.theme.FontFamily
 import com.myxoz.life.ui.theme.FontSize
 import com.myxoz.life.ui.theme.TypoStyle
@@ -43,7 +42,7 @@ import kotlinx.coroutines.runBlocking
 @Composable
 fun InstantEventsScreen(start: Long, end: Long, calendarViewModel: CalendarViewModel){
     Scaffold(
-        containerColor = Colors.BACKGROUND
+        containerColor = Theme.background
     ) { innerPadding ->
         val calendar = Calendar.getInstance()
         val nav = LocalNavController.current
@@ -71,8 +70,8 @@ fun InstantEventsScreen(start: Long, end: Long, calendarViewModel: CalendarViewM
             instantEvents.forEachIndexed { i, it ->
                 val mod = Modifier
                     .padding(8.dp)
-                    .border(1.dp, Colors.TERTIARY, RoundedCornerShape(20.dp))
-                    .background(Colors.SECONDARY, RoundedCornerShape(20.dp))
+                    .border(1.dp, Theme.outlineVariant, RoundedCornerShape(20.dp))
+                    .background(Theme.surfaceContainer, RoundedCornerShape(20.dp))
                     .clip(RoundedCornerShape(20.dp))
                     .rippleClick{
                         it.openDetails(nav)
@@ -87,11 +86,11 @@ fun InstantEventsScreen(start: Long, end: Long, calendarViewModel: CalendarViewM
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
                     val fontSize = FontSize.DISPLAY.size.toDp()
-                    Icon(painterResource(it.icon), it.subText, Modifier.size(fontSize), Colors.SECONDARYFONT)
+                    Icon(painterResource(it.icon), it.subText, Modifier.size(fontSize), Theme.secondary)
                     Spacer(Modifier.height(10.dp))
-                    Text(it.timestamp.formatMinutes(calendar), style = TypoStyle(FontColor.SECONDARY, FontSize.MEDIUM))
+                    Text(it.timestamp.formatMinutes(calendar), style = TypoStyle(Theme.secondary, FontSize.MEDIUM))
                     Spacer(Modifier.height(5.dp))
-                    Text(it.subText, style = TypoStyle(FontColor.PRIMARY, FontSize.LARGE, FontFamily.Display))
+                    Text(it.subText, style = TypoStyle(Theme.primary, FontSize.LARGE, FontFamily.Display))
                 }
             }
         }

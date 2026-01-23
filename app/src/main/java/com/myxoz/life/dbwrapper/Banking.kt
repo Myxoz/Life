@@ -117,4 +117,4 @@ interface BankingDao {
     suspend fun getLastTransactionDay(): List<BankingEntity>
 }
 // Methods would be put somewhere else, but banking doesnt have a special event class so:
-fun Int.formatCents(euroSign: Boolean=true) = "${if(this<0) "-" else ""}${abs(this)/100},${(abs(this)%100).toString().padStart(2, '0')}${if(euroSign) "€" else ""}"
+fun Int.formatCents(euroSign: Boolean=true) = "${if(this<0) "-" else "+"}${abs(this)/100},${(abs(this)%100).toString().padStart(2, '0')}${if(euroSign) "€" else ""}"

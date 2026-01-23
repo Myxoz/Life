@@ -29,15 +29,15 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import com.myxoz.life.LocalStorage
+import com.myxoz.life.Theme
 import com.myxoz.life.api.syncables.Location
+import com.myxoz.life.events.additionals.TagLike
 import com.myxoz.life.screens.feed.fullscreenevent.ImeActionClicked
 import com.myxoz.life.screens.feed.fullscreenevent.InputField
-import com.myxoz.life.events.additionals.TagLike
 import com.myxoz.life.ui.Chip
-import com.myxoz.life.ui.theme.Colors
 import com.myxoz.life.ui.theme.FontColor
 import com.myxoz.life.ui.theme.FontSize
-import com.myxoz.life.ui.theme.TypoStyle
+import com.myxoz.life.ui.theme.TypoStyleOld
 import com.myxoz.life.utils.filteredWith
 import com.myxoz.life.utils.rippleClick
 import com.myxoz.life.utils.toDp
@@ -94,7 +94,7 @@ fun MultipleLoctionBar(
                 }) {
                     Text(
                         decPerson?.name?:"NULL",
-                        style = TypoStyle(FontColor.PRIMARY, FontSize.SMALL)
+                        style = TypoStyleOld(FontColor.PRIMARY, FontSize.SMALL)
                     )
                 }
             }
@@ -112,7 +112,7 @@ fun MultipleLoctionBar(
                 }) {
                     Text(
                         person.name,
-                        style = TypoStyle(FontColor.SECONDARY, FontSize.SMALL)
+                        style = TypoStyleOld(FontColor.SECONDARY, FontSize.SMALL)
                     )
                 }
             }
@@ -150,9 +150,8 @@ fun <T: TagLike> TagLikeSelection(allTags: List<T>, defaultSelectedTags: List<T>
         (selectedTags.map{it to true} + notSelectedTags.map{it to false}).forEach {
             Box(
                 Modifier
-                    .background(Colors.SECONDARY, CircleShape)
+                    .background(Theme.secondaryContainer, CircleShape)
                     .clip(CircleShape)
-                    .padding(horizontal = 10.dp, vertical = 5.dp)
                     .rippleClick{
                         if(it.second) {
                             selectedTags.remove(it.first)
@@ -162,13 +161,14 @@ fun <T: TagLike> TagLikeSelection(allTags: List<T>, defaultSelectedTags: List<T>
                             updateTags(selectedTags)
                         }
                     }
+                    .padding(horizontal = 10.dp, vertical = 5.dp)
             ){
                 Icon(
                     painterResource(it.first.drawable),
                     "Icon",
                     Modifier
                         .size(height),
-                    if(it.second) Colors.PRIMARYFONT else Colors.TERTIARYFONT
+                    if(it.second) Theme.primary else Theme.secondary.copy(.5f)
                 )
             }
         }

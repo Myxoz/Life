@@ -19,6 +19,7 @@ import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.text.selection.LocalTextSelectionColors
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -69,7 +70,8 @@ import com.myxoz.life.screens.transactions.TransactionFeed
 import com.myxoz.life.screens.transactions.TransactionList
 import com.myxoz.life.screens.transactions.TransactionOverview
 import com.myxoz.life.screens.wrapped.LifeWrappedScreen
-import com.myxoz.life.ui.theme.Colors
+import com.myxoz.life.utils.rememberTextSelectionColors
+import com.myxoz.life.utils.systemColorScheme
 import com.myxoz.life.viewmodels.CalendarViewModel
 import com.myxoz.life.viewmodels.ContactsViewModel
 import com.myxoz.life.viewmodels.InspectedEventViewModel
@@ -136,6 +138,8 @@ class MainActivity : ComponentActivity() {
         setContent {
             val navController = rememberNavController()
             controller = navController
+            val colorScheme = systemColorScheme()
+            val selectionColors = rememberTextSelectionColors(colorScheme)
             CompositionLocalProvider(
                 LocalAPI provides api,
                 LocalNavController provides navController,
@@ -149,7 +153,9 @@ class MainActivity : ComponentActivity() {
                     mapViewModel,
                     navController,
                     applicationContext
-                )
+                ),
+                LocalColors provides colorScheme,
+                LocalTextSelectionColors provides selectionColors
             ) {
                 LaunchedEffect(Unit) {
                     intent?.let {
@@ -204,7 +210,7 @@ class MainActivity : ComponentActivity() {
                 NavHost(
                     navController = navController,
                     startDestination = "home",
-                    modifier = Modifier.fillMaxSize().background(Colors.BACKGROUND),
+                    modifier = Modifier.fillMaxSize().background(Theme.background),
                     enterTransition = {
                         slideInHorizontally { it/2 } + fadeIn(navigationTransitionSpec)
                     },

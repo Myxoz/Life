@@ -34,10 +34,10 @@ import com.myxoz.life.R
 import com.myxoz.life.dbwrapper.BankingEntity
 import com.myxoz.life.dbwrapper.StorageManager
 import com.myxoz.life.dbwrapper.formatCents
-import com.myxoz.life.ui.theme.Colors
+import com.myxoz.life.ui.theme.OldColors
 import com.myxoz.life.ui.theme.FontColor
 import com.myxoz.life.ui.theme.FontSize
-import com.myxoz.life.ui.theme.TypoStyle
+import com.myxoz.life.ui.theme.TypoStyleOld
 import com.myxoz.life.utils.rippleClick
 import com.myxoz.life.viewmodels.CalendarViewModel
 import org.json.JSONObject
@@ -62,7 +62,7 @@ class InstantEvent(
             Column(
                 Modifier.Companion
                     .size(instantEventDisplaySize)
-                    .background(Colors.SECONDARY.copy(.8f), CircleShape)
+                    .background(OldColors.SECONDARY.copy(.8f), CircleShape)
                     .clip(CircleShape)
                     .rippleClick {
                         openDetails(
@@ -76,10 +76,10 @@ class InstantEvent(
                     painterResource(icon),
                     "Card",
                     Modifier.Companion.height(oneHourDp / (if (icon == R.drawable.gpay) 3f else 2f)),
-                    tint = Colors.PRIMARYFONT
+                    tint = OldColors.PRIMARYFONT
                 )
                 Spacer(Modifier.Companion.height((if (icon == R.drawable.pay_with_card) 2.dp else 4.dp)))
-                Text(subText, style = TypoStyle(FontColor.PRIMARY, FontSize.XSMALL))
+                Text(subText, style = TypoStyleOld(FontColor.PRIMARY, FontSize.XSMALL))
             }
             Box(
                 Modifier.Companion
@@ -88,7 +88,7 @@ class InstantEvent(
                         Brush.Companion.horizontalGradient(
                             listOf(
                                 Color.Companion.Transparent,
-                                Colors.PRIMARYFONT
+                                OldColors.PRIMARYFONT
                             )
                         ), CircleShape
                     )
@@ -162,7 +162,7 @@ class InstantEvent(
                             Modifier.Companion
                                 .fillMaxHeight()
                                 .width(instantEventDisplaySize)
-                                .background(Colors.SECONDARY.copy(.8f), CircleShape)
+                                .background(OldColors.SECONDARY.copy(.8f), CircleShape)
                                 .clip(CircleShape)
                                 .rippleClick {
                                     nav.navigate("instant_events_between/${start}/${end}")
@@ -186,12 +186,12 @@ class InstantEvent(
                                         Modifier.Companion
                                             .padding(start = .15f * instantEventDisplaySize)
                                             .height(oneHourDp / (if (ev.icon == R.drawable.gpay) 6f else 4f)),
-                                        tint = Colors.PRIMARYFONT
+                                        tint = OldColors.PRIMARYFONT
                                     )
                                     Spacer(Modifier.Companion.width((if (ev.icon == R.drawable.pay_with_card) 2.dp else 4.dp)))
                                     Text(
                                         ev.subText,
-                                        style = TypoStyle(FontColor.PRIMARY, FontSize.XSMALL),
+                                        style = TypoStyleOld(FontColor.PRIMARY, FontSize.XSMALL),
                                         maxLines = 1,
                                         overflow = TextOverflow.Companion.Ellipsis
                                     )
@@ -203,7 +203,7 @@ class InstantEvent(
                                             Brush.Companion.horizontalGradient(
                                                 listOf(
                                                     Color.Companion.Transparent,
-                                                    Colors.PRIMARYFONT
+                                                    OldColors.PRIMARYFONT
                                                 )
                                             ), CircleShape
                                         )

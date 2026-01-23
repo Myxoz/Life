@@ -60,12 +60,18 @@ class TransactionFeedViewModel(
             }
         }
     }
-
+    suspend fun refreshCache(){
+        _transactionsByDate.value.keys.sorted().forEach {
+            loadDate(it)
+        }
+    }
     private suspend fun loadDateIfNeeded(date: LocalDate) {
         // already loaded
         if (_transactionsByDate.value.containsKey(date)) return
-
-        val list = loadTransactionsForDate(db, date, zone) // make this return the list
+        loadDate(date)
+    }
+    private suspend fun loadDate(date: LocalDate) {
+        val list = loadTransactionsForDate(db, date, zone)
         _transactionsByDate.update { old ->
             // cache results; new map instance
             old + (date to list)

@@ -24,12 +24,11 @@ import androidx.compose.ui.unit.dp
 import androidx.core.content.edit
 import com.myxoz.life.LocalNavController
 import com.myxoz.life.LocalStorage
+import com.myxoz.life.Theme
 import com.myxoz.life.api.API
 import com.myxoz.life.api.syncables.Location
 import com.myxoz.life.api.syncables.PersonSyncable
 import com.myxoz.life.screens.feed.fullscreenevent.InputField
-import com.myxoz.life.ui.theme.Colors
-import com.myxoz.life.ui.theme.FontColor
 import com.myxoz.life.ui.theme.FontSize
 import com.myxoz.life.ui.theme.TypoStyle
 import com.myxoz.life.utils.rippleClick
@@ -62,7 +61,7 @@ fun ModifyLocation(){
     }
     Scaffold(
         Modifier.fillMaxSize(),
-        containerColor = Colors.BACKGROUND
+        containerColor = Theme.background
     ) { innerPadding ->
         Box(
             Modifier
@@ -114,7 +113,7 @@ fun ModifyLocation(){
                 val coroutineScope = rememberCoroutineScope()
                 Box(
                     Modifier
-                        .background(Colors.SECONDARY, CircleShape)
+                        .background(Theme.primary, CircleShape)
                         .padding(horizontal = 10.dp, vertical = 5.dp)
                         .clip(CircleShape)
                         .rippleClick {
@@ -135,7 +134,7 @@ fun ModifyLocation(){
                             }
                         }
                 ) {
-                    Text("Eintragen", style = TypoStyle(FontColor.PRIMARY, FontSize.LARGE))
+                    Text("Eintragen", style = TypoStyle(Theme.onPrimary, FontSize.LARGE))
                 }
             }
         }

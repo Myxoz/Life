@@ -21,6 +21,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyRow
@@ -57,11 +58,10 @@ import androidx.compose.ui.unit.dp
 import androidx.core.content.edit
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.myxoz.life.LocalStorage
+import com.myxoz.life.Theme
 import com.myxoz.life.api.syncables.SyncedEvent
 import com.myxoz.life.screens.feed.dayoverview.getMonthByCalendarMonth
 import com.myxoz.life.screens.feed.instantevents.InstantEvent
-import com.myxoz.life.ui.theme.Colors
-import com.myxoz.life.ui.theme.FontColor
 import com.myxoz.life.ui.theme.FontSize
 import com.myxoz.life.ui.theme.TypoStyle
 import com.myxoz.life.utils.rippleClick
@@ -192,8 +192,8 @@ fun CalendarComposable(calendarViewModel: CalendarViewModel, inspectedEventViewM
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.Center
             ) {
-                Text(currentMonth, style = TypoStyle(FontColor.SECONDARY, FontSize.MEDIUM))
-                Text(currentYear.toString(), style = TypoStyle(FontColor.SECONDARY, FontSize.SMALL))
+                Text(currentMonth, style = TypoStyle(Theme.primary, FontSize.MEDIUM))
+                Text(currentYear.toString(), style = TypoStyle(Theme.primary, FontSize.SMALL))
             }
             Box(
                 Modifier.height(fullDayBarHeight)
@@ -229,7 +229,7 @@ fun CalendarComposable(calendarViewModel: CalendarViewModel, inspectedEventViewM
                     "Today",
                     Modifier
                         .size(fullDayBarHeight)
-                        .background(Colors.SECONDARY, CircleShape)
+                        .background(Theme.primaryContainer, CircleShape)
                         .clip(CircleShape)
                         .rotate(rotation)
                         .rippleClick{
@@ -244,7 +244,7 @@ fun CalendarComposable(calendarViewModel: CalendarViewModel, inspectedEventViewM
                             }
                         }
                     ,
-                    Colors.SELECTED
+                    Theme.onPrimaryContainer
                 )
             }
             Spacer(Modifier)
@@ -272,7 +272,7 @@ fun CalendarComposable(calendarViewModel: CalendarViewModel, inspectedEventViewM
                 ) {
                     Spacer(Modifier.height(daySummaryHeight))
                     repeat(24) { hour ->
-                        val within15m = abs((hour * 60) - totalMinutes) < 20
+                        val within30m = abs((hour * 60) - totalMinutes) < 30
                         val label = "${if (hour > 9) "" else "0"}$hour:00"
                         Text(
                             label,
@@ -280,7 +280,7 @@ fun CalendarComposable(calendarViewModel: CalendarViewModel, inspectedEventViewM
                                 .weight(1f)
                                 .offset(0.dp, -offset)
                             ,
-                            style = TypoStyle(if(within15m) FontColor.TERTIARY else FontColor.SECONDARY, FontSize.SMALL)
+                            style = TypoStyle(if(within30m) Theme.tertiary.copy(.5f) else Theme.secondary, FontSize.SMALL)
                         )
                     }
                 }
@@ -290,13 +290,18 @@ fun CalendarComposable(calendarViewModel: CalendarViewModel, inspectedEventViewM
                         .offset(
                             y = daySummaryHeight + (timelineHeight * totalHoursFloat)
                         )
+                    ,
                 ) {
                     Text(
                         "${if(currentHour<=9) "0" else ""}$currentHour:${if(currentMinute<=9) "0" else ""}$currentMinute",
                         Modifier
                             .fillMaxWidth()
-                            .offset(0.dp, -offset),
-                        style = TypoStyle(FontColor.SELECTED, FontSize.SMALL)
+                            .offset(0.dp, -offset - 2.dp)
+                            .padding(horizontal = 4.dp)
+                            .background(Theme.primary, CircleShape)
+                            .padding(vertical = 2.dp)
+                        ,
+                        style = TypoStyle(Theme.onPrimary, FontSize.SMALL)
                             .copy(fontWeight = FontWeight.W900),
                         textAlign = TextAlign.Center
                     )

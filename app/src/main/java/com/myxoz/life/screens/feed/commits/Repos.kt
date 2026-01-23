@@ -36,15 +36,15 @@ import androidx.compose.ui.unit.dp
 import com.myxoz.life.LocalNavController
 import com.myxoz.life.LocalStorage
 import com.myxoz.life.R
+import com.myxoz.life.Theme
 import com.myxoz.life.android.integration.GitHub
 import com.myxoz.life.api.syncables.CommitSyncable
 import com.myxoz.life.screens.feed.dayoverview.edgeToEdgeGradient
 import com.myxoz.life.screens.feed.fullscreenevent.InputField
-import com.myxoz.life.ui.rememberAsymmetricalCornerRadius
-import com.myxoz.life.ui.theme.Colors
-import com.myxoz.life.ui.theme.FontColor
+import com.myxoz.life.ui.rememberAsymmetricalVerticalCornerRadius
 import com.myxoz.life.ui.theme.FontFamily
 import com.myxoz.life.ui.theme.FontSize
+import com.myxoz.life.ui.theme.OldColors
 import com.myxoz.life.ui.theme.TypoStyle
 import com.myxoz.life.utils.AndroidUtils
 import com.myxoz.life.utils.filteredWith
@@ -70,7 +70,7 @@ fun FullScreenRepos(){
     }
     var displayedRepos by remember { mutableStateOf(repos) }
     Scaffold(
-        containerColor = Colors.BACKGROUND
+        containerColor = Theme.background
     ) {  innerPadding ->
         Column(
             Modifier
@@ -81,7 +81,7 @@ fun FullScreenRepos(){
                 Modifier
                     .fillMaxWidth(.95f)
                     .weight(1f)
-                    .edgeToEdgeGradient(Colors.BACKGROUND, innerPadding)
+                    .edgeToEdgeGradient(Theme.background, innerPadding)
                 ,
                 reverseLayout = true
             ) {
@@ -113,7 +113,7 @@ fun FullScreenRepos(){
             Box(
                 Modifier
                     .fillMaxWidth()
-                    .background(Colors.BACKGROUND)
+                    .background(Theme.background)
                     .padding(10.dp)
                     .padding(bottom = innerPadding.calculateBottomPadding())
             )  {
@@ -139,7 +139,7 @@ fun FullScreenRepo(name: String){
     }
     var displayedCommits by remember { mutableStateOf(repos) }
     Scaffold(
-        containerColor = Colors.BACKGROUND
+        containerColor = Theme.background
     ) {  innerPadding ->
         Column(
             Modifier
@@ -150,7 +150,7 @@ fun FullScreenRepo(name: String){
                 Modifier
                     .fillMaxWidth(.95f)
                     .weight(1f)
-                    .edgeToEdgeGradient(Colors.BACKGROUND, innerPadding)
+                    .edgeToEdgeGradient(Theme.background, innerPadding)
                 ,
                 reverseLayout = true
             ) {
@@ -184,7 +184,7 @@ fun FullScreenRepo(name: String){
             Box(
                 Modifier
                     .fillMaxWidth()
-                    .background(Colors.BACKGROUND)
+                    .background(Theme.background)
                     .padding(10.dp)
                     .padding(bottom = innerPadding.calculateBottomPadding())
             )  {
@@ -205,8 +205,8 @@ private fun Item(subTitle: String, title: String, subsubTitle: String, date: Str
             .fillMaxWidth()
             .height(IntrinsicSize.Min)
             .padding(vertical = 3.dp)
-            .clip(rememberAsymmetricalCornerRadius(isFirst, isLast, reverse = true))
-            .background(Colors.SECONDARY)
+            .clip(rememberAsymmetricalVerticalCornerRadius(isFirst, isLast, reverse = true))
+            .background(Theme.surfaceContainerHigh)
             .rippleClick(onClick!=null) {
                 onClick?.invoke()
             }
@@ -223,16 +223,16 @@ private fun Item(subTitle: String, title: String, subsubTitle: String, date: Str
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Text(subTitle, Modifier.weight(1f), style = TypoStyle(FontColor.SECONDARY, if(smaller) FontSize.SMALLM else FontSize.MEDIUM), maxLines = 1, overflow = TextOverflow.Ellipsis)
-                if(date != null) Text(date, style = TypoStyle(FontColor.SECONDARY, if(smaller) FontSize.SMALLM else FontSize.MEDIUM))
+                Text(subTitle, Modifier.weight(1f), style = TypoStyle(Theme.secondary, if(smaller) FontSize.SMALLM else FontSize.MEDIUM), maxLines = 1, overflow = TextOverflow.Ellipsis)
+                if(date != null) Text(date, style = TypoStyle(Theme.secondary, if(smaller) FontSize.SMALLM else FontSize.MEDIUM))
             }
             Spacer(Modifier.height(5.dp))
-            Text(title, style = TypoStyle(FontColor.PRIMARY, if(smaller) FontSize.LARGE else FontSize.XLARGE, FontFamily.Display), maxLines = 1 + smaller, overflow = TextOverflow.Ellipsis)
+            Text(title, style = TypoStyle(Theme.primary, if(smaller) FontSize.LARGE else FontSize.XLARGE, FontFamily.Display), maxLines = 1 + smaller, overflow = TextOverflow.Ellipsis)
             Spacer(Modifier.height(10.dp))
-            Text(subsubTitle, style = TypoStyle(FontColor.SECONDARY, FontSize.SMALLM))
+            Text(subsubTitle, style = TypoStyle(Theme.secondary, FontSize.SMALLM))
         }
         Spacer(Modifier.width(10.dp))
-        VerticalDivider(color = Colors.DIVIDERS)
+        VerticalDivider(color = Theme.outline)
         Icon(
             painterResource(R.drawable.github),
             "Github File",
@@ -244,7 +244,7 @@ private fun Item(subTitle: String, title: String, subsubTitle: String, date: Str
                 .padding(20.dp)
                 .size(30.dp)
             ,
-            tint = Colors.GITHUB
+            tint = OldColors.GITHUB
         )
     }
 }

@@ -1,26 +1,22 @@
 package com.myxoz.life.ui.theme
 
-import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.unit.Density
-import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.sp
 import com.myxoz.life.R
 
 enum class FontColor(val color: Color) {
-    PRIMARY(Colors.PRIMARYFONT),
-    SECONDARY(Colors.SECONDARYFONT),
-    SELECTED(Colors.SELECTED),
-    FLAGSLIDER(Colors.FLAGSLIDER),
+    PRIMARY(OldColors.PRIMARYFONT),
+    SECONDARY(OldColors.SECONDARYFONT),
+    SELECTED(OldColors.SELECTED),
+    FLAGSLIDER(OldColors.FLAGSLIDER),
     ONSLIDER(Color(0xFF000000)),
-    ONSECONDARY(Colors.ONSECONDARY),
-    TERTIARY(Colors.TERTIARYFONT)
+    ONSECONDARY(OldColors.ONSECONDARY),
+    TERTIARY(OldColors.TERTIARYFONT)
 }
 
 enum class FontSize(val size: TextUnit) {
@@ -41,6 +37,18 @@ enum class FontFamily(val family: FontFamily) {
 }
 
 fun TypoStyle(
+    color: Color,
+    fontSize: FontSize,
+    fontFamily: com.myxoz.life.ui.theme.FontFamily? = null
+): TextStyle =
+    TextStyle.Default.copy(
+        color = color,
+        fontSize = fontSize.size,
+        fontFamily = fontFamily?.family
+    )
+
+@Deprecated("Use Typostyle instead", ReplaceWith("TypoStyle()"))
+fun TypoStyleOld(
     color: FontColor,
     fontSize: FontSize,
     fontFamily: com.myxoz.life.ui.theme.FontFamily? = null

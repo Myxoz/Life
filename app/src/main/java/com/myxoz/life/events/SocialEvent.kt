@@ -29,7 +29,7 @@ import com.myxoz.life.events.additionals.TagEvent
 import com.myxoz.life.events.additionals.TagEvent.Companion.getTagsFromJson
 import com.myxoz.life.events.additionals.TitleEvent
 import com.myxoz.life.screens.feed.main.RenderTagAndTitleBar
-import com.myxoz.life.ui.theme.Colors
+import com.myxoz.life.ui.theme.OldColors
 import com.myxoz.life.utils.toSp
 import org.json.JSONObject
 
@@ -76,7 +76,7 @@ class SocialEvent(
                 Modifier
                     .padding(all = 3.dp),
                 fontSize = (oneHourDp / 4f).toSp(),
-                color = Colors.Calendar.Social.SECONDARY,
+                color = OldColors.Calendar.Social.SECONDARY,
                 overflow = TextOverflow.Ellipsis
             )
         } else Column(
@@ -84,14 +84,14 @@ class SocialEvent(
                 .align(Alignment.TopCenter)
                 .fillMaxSize()
         ) {
-            RenderTagAndTitleBar(eventTags, title, oneHourDp, blockHeight, Colors.Calendar.Social.Tag, Colors.Calendar.Social.TEXT)
+            RenderTagAndTitleBar(eventTags, title, oneHourDp, blockHeight, OldColors.Calendar.Social.Tag, OldColors.Calendar.Social.TEXT)
             if(blockHeight>3) {
                 Text(
                     displayText,
                     Modifier
                         .padding(start = 10.dp),
                     fontSize = (oneHourDp / 3f).toSp(),
-                    color = Colors.Calendar.Social.SECONDARY,
+                    color = OldColors.Calendar.Social.SECONDARY,
                     overflow = TextOverflow.Ellipsis
                 )
                 Spacer(Modifier.height(3.dp))
@@ -100,7 +100,7 @@ class SocialEvent(
                     Modifier
                         .padding(start = 10.dp),
                     fontSize = (oneHourDp / 3f).toSp(),
-                    color = Colors.Calendar.Social.SECONDARY,
+                    color = OldColors.Calendar.Social.SECONDARY,
                     overflow = TextOverflow.Ellipsis
                 )
             }

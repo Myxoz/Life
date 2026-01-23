@@ -16,6 +16,7 @@ navigationCompose = "2.9.5"
 workRuntimeKtx = "2.10.5"
 graphicsShapes = "1.1.0"
 uiGraphics = "1.10.0"
+paletteKtx = "1.0.0"
 
 [libraries]
 android-ndk27 = { module = "com.mapbox.maps:android-ndk27", version.ref = "androidNdk27" }
@@ -43,6 +44,7 @@ androidx-graphics-shapes = { group = "androidx.graphics", name = "graphics-shape
 maps-compose = { module = "com.mapbox.extension:maps-compose" }
 maps-compose-ndk27 = { module = "com.mapbox.extension:maps-compose-ndk27", version.ref = "mapsComposeNdk27" }
 androidx-compose-ui-graphics = { group = "androidx.compose.ui", name = "ui-graphics", version.ref = "uiGraphics" }
+androidx-palette-ktx = { group = "androidx.palette", name = "palette-ktx", version.ref = "paletteKtx" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }

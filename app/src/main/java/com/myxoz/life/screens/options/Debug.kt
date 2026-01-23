@@ -38,10 +38,10 @@ import com.myxoz.life.LocalSettings
 import com.myxoz.life.LocalStorage
 import com.myxoz.life.api.syncables.PersonSyncable
 import com.myxoz.life.api.Syncable
-import com.myxoz.life.ui.theme.Colors
+import com.myxoz.life.ui.theme.OldColors
 import com.myxoz.life.ui.theme.FontColor
 import com.myxoz.life.ui.theme.FontSize
-import com.myxoz.life.ui.theme.TypoStyle
+import com.myxoz.life.ui.theme.TypoStyleOld
 import com.myxoz.life.utils.formatTimeStamp
 import com.myxoz.life.viewmodels.ContactsViewModel
 import kotlinx.coroutines.launch
@@ -51,7 +51,7 @@ import java.io.File
 fun DebugScreen(){
     Scaffold(
         Modifier.fillMaxSize(),
-        containerColor = Colors.BACKGROUND
+        containerColor = OldColors.BACKGROUND
     ) { innerPadding ->
         Column(
             Modifier
@@ -84,7 +84,7 @@ fun DebugScreen(){
             }
             Text(
                 sprefs.all.map { "${it.key}: ${it.value}\n" }.joinToString(""),
-                style = TypoStyle(FontColor.PRIMARY, FontSize.MEDIUM)
+                style = TypoStyleOld(FontColor.PRIMARY, FontSize.MEDIUM)
             )
             Spacer(Modifier.height(5.dp))
             Button({
@@ -153,18 +153,18 @@ fun DebugScreen(){
             }
             Text(
                 "Last steps saved: $lastSavedSteps",
-                style = TypoStyle(FontColor.PRIMARY, FontSize.MEDIUM)
+                style = TypoStyleOld(FontColor.PRIMARY, FontSize.MEDIUM)
             )
             Text(
                 "Last steps at midnight: $stepsAtMidnight",
-                style = TypoStyle(FontColor.PRIMARY, FontSize.MEDIUM)
+                style = TypoStyleOld(FontColor.PRIMARY, FontSize.MEDIUM)
             )
             Text(
                 "Last date saved: $lastDateSaved",
-                style = TypoStyle(FontColor.PRIMARY, FontSize.MEDIUM)
+                style = TypoStyleOld(FontColor.PRIMARY, FontSize.MEDIUM)
             )
             StepCounterText {
-                Text("Steps live: $it", style = TypoStyle(FontColor.PRIMARY, FontSize.MEDIUM))
+                Text("Steps live: $it", style = TypoStyleOld(FontColor.PRIMARY, FontSize.MEDIUM))
             }
             if(features.autoDetectCalls.hasAssured()){
                 CallLogDumpDebug()
@@ -278,7 +278,7 @@ fun CallLogDumpDebug() {
         callLogs.forEach {
             Text(
                 text = it,
-                style = TypoStyle(FontColor.PRIMARY, FontSize.MEDIUM)
+                style = TypoStyleOld(FontColor.PRIMARY, FontSize.MEDIUM)
             )
         }
     }

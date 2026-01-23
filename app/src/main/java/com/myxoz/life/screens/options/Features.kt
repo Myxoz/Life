@@ -39,10 +39,11 @@ import androidx.compose.ui.unit.dp
 import com.myxoz.life.LocalAPI
 import com.myxoz.life.LocalSettings
 import com.myxoz.life.R
+import com.myxoz.life.Theme
 import com.myxoz.life.screens.feed.dayoverview.edgeToEdgeGradient
-import com.myxoz.life.ui.theme.Colors
-import com.myxoz.life.ui.theme.FontColor
+import com.myxoz.life.screens.person.displayperson.switchColors
 import com.myxoz.life.ui.theme.FontSize
+import com.myxoz.life.ui.theme.OldColors
 import com.myxoz.life.ui.theme.TypoStyle
 import com.myxoz.life.utils.rippleClick
 import com.myxoz.life.viewmodels.Settings
@@ -54,45 +55,46 @@ import kotlin.math.max
 fun SettingsPermissionComposable() {
     Scaffold(
         Modifier.fillMaxSize(),
-        containerColor = Colors.BACKGROUND
+        containerColor = Theme.background
     ) { innerPadding ->
         Column(
             Modifier
                 .fillMaxSize()
-                .edgeToEdgeGradient(Colors.BACKGROUND, innerPadding)
+                .edgeToEdgeGradient(Theme.background, innerPadding)
                 .verticalScroll(rememberScrollState()),
             horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(10.dp)
         ) {
             val settings = LocalSettings.current
-            Spacer(Modifier.height(innerPadding.calculateTopPadding()))
-            Text("Berechtigungen", style = TypoStyle(FontColor.SECONDARY, FontSize.MEDIUM), modifier = Modifier.fillMaxWidth(.95f))
+            Spacer(Modifier.height(innerPadding.calculateTopPadding() + 10.dp))
+            Text("Berechtigungen", style = TypoStyle(Theme.secondary, FontSize.MEDIUM), modifier = Modifier.fillMaxWidth(.95f))
+            Spacer(Modifier.height(10.dp))
             Column(
                 Modifier
                     .fillMaxWidth(.95f)
-                    .background(Colors.SECONDARY, RoundedCornerShape(30.dp)),
+                    .background(Theme.surfaceContainer, RoundedCornerShape(30.dp)),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
                 settings.permissions.all.forEachIndexed { i, c ->
                     if(i != 0){
-                        HorizontalDivider(Modifier.padding(horizontal = 20.dp), color = Colors.DIVIDERS)
+                        HorizontalDivider(Modifier.padding(horizontal = 20.dp), color = Theme.outlineVariant)
                     }
                     PermissionComposable(c) { c.set(it) }
                 }
             }
             Spacer(Modifier.height(20.dp))
-            Text("Features", style = TypoStyle(FontColor.SECONDARY, FontSize.MEDIUM), modifier = Modifier.fillMaxWidth(.95f))
+            Text("Features", style = TypoStyle(Theme.secondary, FontSize.MEDIUM), modifier = Modifier.fillMaxWidth(.95f))
+            Spacer(Modifier.height(10.dp))
             Column(
                 Modifier
                     .fillMaxWidth(.95f)
-                    .background(Colors.SECONDARY, RoundedCornerShape(30.dp)),
+                    .background(Theme.surfaceContainer, RoundedCornerShape(30.dp)),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
                 settings.features.all.forEach {
                     FeatureItem(it) { c-> it.set(c) }
-                    HorizontalDivider(Modifier.padding(horizontal = 15.dp), color = Colors.DIVIDERS)
+                    HorizontalDivider(Modifier.padding(horizontal = 15.dp), color = Theme.outlineVariant)
                 }
-                HorizontalDivider(Modifier.padding(horizontal = 15.dp), color = Colors.DIVIDERS)
+                HorizontalDivider(Modifier.padding(horizontal = 15.dp), color = Theme.outlineVariant)
                 val api = LocalAPI.current
                 val coroutineScope = rememberCoroutineScope()
                 val context = LocalContext.current
@@ -113,7 +115,7 @@ fun SettingsPermissionComposable() {
                     }
                 }
             }
-            Spacer(Modifier.height(innerPadding.calculateTopPadding()))
+            Spacer(Modifier.height(innerPadding.calculateBottomPadding()))
         }
 //            PermissionComposable(
 //                "Read Notifications",
@@ -156,10 +158,10 @@ fun PermissionComposable(permission: Settings.Permissions.Permission, toggle: (n
         ,
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Text(permission.name, Modifier.weight(1f), style = TypoStyle(if(!isUseless) FontColor.PRIMARY else FontColor.TERTIARY, FontSize.LARGE))
+        Text(permission.name, Modifier.weight(1f), style = TypoStyle(if(!isUseless) Theme.secondary else Theme.tertiary, FontSize.LARGE))
         Switch(state, {
             toggle(it)
-        })
+        }, colors = switchColors())
     }
 }
 @Composable
@@ -175,11 +177,12 @@ fun FeatureItem(feature: Settings.Features.Feature, setTo: (Boolean)->Unit) {
         Row(
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Text(feature.name, Modifier.weight(1f), style = TypoStyle(FontColor.PRIMARY, FontSize.LARGE))
+            Text(feature.name, Modifier.weight(1f), style = TypoStyle(Theme.primary, FontSize.LARGE))
             Switch(
                 state,
                 { setTo(!state) },
-                enabled = isEnablable
+                enabled = isEnablable,
+                colors = switchColors()
             )
         }
         Column(
@@ -197,18 +200,18 @@ fun FeatureItem(feature: Settings.Features.Feature, setTo: (Boolean)->Unit) {
                             .rippleClick{
                                 if(!has) it.set(true)
                             }
-                            .background(if(has) Colors.Permissions.GRANTED else Colors.Permissions.REVOKED)
+                            .background(if(has) OldColors.Permissions.GRANTED else OldColors.Permissions.REVOKED)
                             .padding(horizontal = 10.dp, vertical = 3.dp),
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.spacedBy(5.dp)
                     ) {
-                        Icon(painterResource(if(has) R.drawable.tick else R.drawable.close), "Needs", Modifier.size(FontSize.SMALL.size.value.dp*.8f), Colors.PRIMARYFONT)
-                        Text(it.name, style = TypoStyle(FontColor.PRIMARY, FontSize.SMALL))
+                        Icon(painterResource(if(has) R.drawable.tick else R.drawable.close), "Needs", Modifier.size(FontSize.SMALL.size.value.dp*.8f), Theme.onPrimary)
+                        Text(it.name, style = TypoStyle(Theme.onPrimary, FontSize.SMALL))
                     }
                 }
             }
             Spacer(Modifier.height(10.dp))
-            Text(feature.description, style = TypoStyle(FontColor.SECONDARY, FontSize.MEDIUM), modifier = Modifier.padding(end = 52.dp))
+            Text(feature.description, style = TypoStyle(Theme.secondary, FontSize.MEDIUM), modifier = Modifier.padding(end = 52.dp))
         }
     }
 }
@@ -228,6 +231,17 @@ private fun processUsageEvents(
     val event = UsageEvents.Event()
 
     var screenOn = false
+    run { // Determines wether the screen was on before the window
+        val preEvents = usageStatsManager.queryEvents(start - 24*3600*1000L, start)
+        val e = UsageEvents.Event()
+        while (preEvents.hasNextEvent()) {
+            preEvents.getNextEvent(e)
+            when (e.eventType) {
+                UsageEvents.Event.SCREEN_INTERACTIVE -> screenOn = true
+                UsageEvents.Event.SCREEN_NON_INTERACTIVE -> screenOn = false
+            }
+        }
+    }
     var currentForegroundPkg: String? = null
     var lastForegroundTs = 0L
 

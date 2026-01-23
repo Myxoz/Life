@@ -39,13 +39,13 @@ import com.myxoz.life.LocalNavController
 import com.myxoz.life.LocalScreens
 import com.myxoz.life.LocalStorage
 import com.myxoz.life.R
+import com.myxoz.life.Theme
 import com.myxoz.life.android.integration.GitHub
 import com.myxoz.life.api.syncables.CommitSyncable
 import com.myxoz.life.screens.feed.dayoverview.edgeToEdgeGradient
-import com.myxoz.life.ui.theme.Colors
-import com.myxoz.life.ui.theme.FontColor
 import com.myxoz.life.ui.theme.FontFamily
 import com.myxoz.life.ui.theme.FontSize
+import com.myxoz.life.ui.theme.OldColors
 import com.myxoz.life.ui.theme.TypoStyle
 import com.myxoz.life.utils.AndroidUtils
 import com.myxoz.life.utils.formatTimeStamp
@@ -58,7 +58,7 @@ import java.time.ZoneId
 fun FullScreenCommit(sha: String){
     val context = LocalContext.current
     Scaffold(
-        containerColor = Colors.BACKGROUND
+        containerColor = Theme.background
     ) { innerPadding ->
         val db = LocalStorage.current
         val commit = remember {
@@ -69,7 +69,7 @@ fun FullScreenCommit(sha: String){
         Box(
             Modifier
                 .fillMaxSize()
-                .edgeToEdgeGradient(Colors.BACKGROUND, innerPadding)
+                .edgeToEdgeGradient(Theme.background, innerPadding)
             ,
             contentAlignment = Alignment.Center
         ) {
@@ -98,7 +98,7 @@ fun FullScreenCommit(sha: String){
                                 nav.navigate("commits/repo/${commit.repoName}")
                             }
                         ,
-                        style = TypoStyle(FontColor.SECONDARY, FontSize.MEDIUM),
+                        style = TypoStyle(Theme.secondary, FontSize.MEDIUM),
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis
                     )
@@ -117,24 +117,24 @@ fun FullScreenCommit(sha: String){
                                 }
                             }
                         ,
-                        style = TypoStyle(FontColor.SECONDARY, FontSize.MEDIUM),
+                        style = TypoStyle(Theme.secondary, FontSize.MEDIUM),
                         maxLines = 1
                     )
                 }
                 Spacer(Modifier.height(30.dp))
                 Text(
                     commit.commitMessage?:"Keine",
-                    style = TypoStyle(FontColor.PRIMARY, FontSize.XLARGE, FontFamily.Display)
+                    style = TypoStyle(Theme.primary, FontSize.XLARGE, FontFamily.Display)
                         .copy(fontStyle = if(commit.commitMessage == null) FontStyle.Italic else FontStyle.Normal)
                 )
                 Spacer(Modifier.height(10.dp))
-                Text(commit.commitSha, style = TypoStyle(FontColor.TERTIARY, FontSize.MEDIUM))
+                Text(commit.commitSha, style = TypoStyle(Theme.tertiary, FontSize.MEDIUM))
                 Spacer(Modifier.height(20.dp))
                 Row(
                     Modifier
                         .fillMaxWidth()
                         .height(IntrinsicSize.Min)
-                        .background(Colors.SECONDARY, RoundedCornerShape(25.dp))
+                        .background(Theme.surfaceContainer, RoundedCornerShape(25.dp))
                         .clip(RoundedCornerShape(25.dp))
                         .rippleClick{
                             AndroidUtils.openLink(context, commit.commitUrl?:return@rippleClick)
@@ -149,16 +149,16 @@ fun FullScreenCommit(sha: String){
                             ,
                             horizontalAlignment = Alignment.CenterHorizontally
                         ) {
-                            Text(text, style = TypoStyle(FontColor.SECONDARY, FontSize.MEDIUM))
+                            Text(text, style = TypoStyle(Theme.secondary, FontSize.MEDIUM))
                             Text(value.toString(), color = color, fontSize = FontSize.XXLARGE.size, fontFamily = FontFamily.Display.family)
                         }
                     }
-                    AddDelItem("Additions", commit.additions?:0, Colors.Commits.ADDITION)
-                    VerticalDivider(color = Colors.DIVIDERS)
-                    AddDelItem("Deletion", commit.deletions?:0, Colors.Commits.DELETION)
+                    AddDelItem("Additions", commit.additions?:0, OldColors.Commits.ADDITION)
+                    VerticalDivider(color = Theme.outlineVariant)
+                    AddDelItem("Deletion", commit.deletions?:0, OldColors.Commits.DELETION)
                 }
                 Spacer(Modifier.height(20.dp))
-                HorizontalDivider(color = Colors.DIVIDERS)
+                HorizontalDivider(color = Theme.outline)
                 Spacer(Modifier.height(20.dp))
                 Column(
                     verticalArrangement = Arrangement.spacedBy(10.dp)
@@ -168,7 +168,7 @@ fun FullScreenCommit(sha: String){
                             Modifier
                                 .fillMaxWidth()
                                 .height(IntrinsicSize.Min)
-                                .background(Colors.SECONDARY, RoundedCornerShape(25.dp))
+                                .background(Theme.surfaceContainer, RoundedCornerShape(25.dp))
                             ,
                             verticalAlignment = Alignment.CenterVertically
                         ) {
@@ -182,7 +182,7 @@ fun FullScreenCommit(sha: String){
                                     Modifier
                                         .padding(start = 10.dp, end = 5.dp)
                                     ,
-                                    style = TypoStyle(FontColor.PRIMARY, FontSize.MEDIUM)
+                                    style = TypoStyle(Theme.primary, FontSize.MEDIUM)
                                 )
                                 Spacer(Modifier.height(10.dp))
                                 Row(
@@ -201,18 +201,18 @@ fun FullScreenCommit(sha: String){
                                             ,
                                             horizontalAlignment = Alignment.CenterHorizontally
                                         ) {
-                                            Text(text, style = TypoStyle(FontColor.SECONDARY, FontSize.SMALLM))
+                                            Text(text, style = TypoStyle(Theme.secondary, FontSize.SMALLM))
                                             Text(value.toString(), color = color, fontSize = FontSize.XLARGE.size, fontFamily = FontFamily.Display.family)
                                         }
                                     }
-                                    AddDelItem("Additions", modification.additions, Colors.Commits.ADDITION)
-                                    VerticalDivider(Modifier.padding(vertical = 5.dp), color = Colors.DIVIDERS)
-                                    AddDelItem("Deletions", modification.deletions, Colors.Commits.DELETION)
-                                    VerticalDivider(Modifier.padding(vertical = 5.dp), color = Colors.DIVIDERS)
-                                    AddDelItem("Changes", modification.changes, Colors.Commits.CHANGE)
+                                    AddDelItem("Additions", modification.additions, OldColors.Commits.ADDITION)
+                                    VerticalDivider(Modifier.padding(vertical = 5.dp), color = Theme.outlineVariant)
+                                    AddDelItem("Deletions", modification.deletions, OldColors.Commits.DELETION)
+                                    VerticalDivider(Modifier.padding(vertical = 5.dp), color = Theme.outlineVariant)
+                                    AddDelItem("Changes", modification.changes, OldColors.Commits.CHANGE)
                                 }
                             }
-                            VerticalDivider(Modifier.padding(vertical = 5.dp), color = Colors.DIVIDERS)
+                            VerticalDivider(Modifier.padding(vertical = 5.dp), color = Theme.outline)
                             Icon(
                                 painterResource(R.drawable.github),
                                 "Github File",
@@ -224,7 +224,7 @@ fun FullScreenCommit(sha: String){
                                     .padding(20.dp)
                                     .size(30.dp)
                                 ,
-                                tint = Colors.GITHUB
+                                tint = OldColors.GITHUB
                             )
                         }
                     }

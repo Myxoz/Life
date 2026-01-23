@@ -23,7 +23,7 @@ import com.myxoz.life.android.autodetect.AutoDetectSleep
 import com.myxoz.life.dbwrapper.EventEntity
 import com.myxoz.life.dbwrapper.StorageManager
 import com.myxoz.life.events.additionals.EventType
-import com.myxoz.life.ui.theme.Colors
+import com.myxoz.life.ui.theme.OldColors
 import com.myxoz.life.utils.toSp
 import org.json.JSONObject
 
@@ -53,12 +53,12 @@ class SleepEvent(start: Long, end: Long, uss: Boolean, usl: Boolean): ProposedEv
                 "Sleep",
                 Modifier
                     .height(((blockHeight*.9f).coerceIn(0f, 2f)*oneHourDp/4)),
-                tint = Colors.SECONDARYFONT
+                tint = OldColors.SECONDARYFONT
             )
             Text(
                 "${if(blockEvent>=4) "${blockEvent/4}h " else ""}${if(blockEvent%4!=0) "${(blockEvent%4)*15}m" else ""}",
                 fontSize = ((blockHeight*.9f).coerceIn(0f, if(!isSmall) 2f else 1.25f)*oneHourDp/4).toSp(),
-                color = Colors.Calendar.Sleep.FG,
+                color = OldColors.Calendar.Sleep.FG,
                 fontWeight = FontWeight.Bold
             )
         }

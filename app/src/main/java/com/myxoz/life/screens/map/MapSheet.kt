@@ -48,6 +48,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.focus.onFocusChanged
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Matrix
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.asComposePath
@@ -72,16 +73,16 @@ import com.mapbox.maps.CameraOptions
 import com.myxoz.life.LocalNavController
 import com.myxoz.life.LocalStorage
 import com.myxoz.life.R
+import com.myxoz.life.Theme
 import com.myxoz.life.android.integration.MapBoxAPI
 import com.myxoz.life.api.syncables.Location
 import com.myxoz.life.screens.person.displayperson.ListEditingField
 import com.myxoz.life.screens.person.displayperson.ListEntry
 import com.myxoz.life.screens.person.displayperson.navigateForResult
 import com.myxoz.life.ui.ThreeStateBottomSheet
-import com.myxoz.life.ui.theme.Colors
-import com.myxoz.life.ui.theme.FontColor
 import com.myxoz.life.ui.theme.FontFamily
 import com.myxoz.life.ui.theme.FontSize
+import com.myxoz.life.ui.theme.OldColors
 import com.myxoz.life.ui.theme.TypoStyle
 import com.myxoz.life.utils.MaterialShapes
 import com.myxoz.life.utils.def
@@ -115,7 +116,7 @@ fun MapSheet(mapViewModel: MapViewModel, innerPadding: PaddingValues){
     ThreeStateBottomSheet(
         state,
         minSheetHeight,
-        Colors.BACKGROUND,
+        Theme.surfaceContainer,
         innerPadding
     ) {
         BackHandler(sheetLocation!=null || selectedCoordinates != null) {
@@ -175,9 +176,9 @@ fun MapSheet(mapViewModel: MapViewModel, innerPadding: PaddingValues){
                             .padding(vertical = 5.dp)
                             .weight(1f)
                         ,
-                        cursorBrush = SolidColor(Colors.PRIMARYFONT),
+                        cursorBrush = SolidColor(Theme.primary),
                         enabled = isEditing && progress > 0.1f,
-                        textStyle = TypoStyle(FontColor.PRIMARY, FontSize.XLARGE, FontFamily.Display),
+                        textStyle = TypoStyle(Theme.primary, FontSize.XLARGE, FontFamily.Display),
                         keyboardOptions = KeyboardOptions(
                             capitalization = KeyboardCapitalization.Sentences,
                             imeAction = ImeAction.Done,
@@ -222,19 +223,19 @@ fun MapSheet(mapViewModel: MapViewModel, innerPadding: PaddingValues){
                                 .offset(x = -editingAnimationProgress*(iconSize+10.dp))
                                 .alpha(editingAnimationProgress)
                                 .size(iconSize+10.dp)
-                                .background(Colors.TERTIARY, discardShape)
+                                .background(Theme.secondaryContainer, discardShape)
                                 .clip(discardShape)
                                 .rippleClick{
                                     discard()
                                 }
                                 .padding(10.dp)
                         ) {
-                            Icon(painterResource(R.drawable.close), "Discard", Modifier.fillMaxSize(), Colors.PRIMARYFONT)
+                            Icon(painterResource(R.drawable.close), "Discard", Modifier.fillMaxSize(), Theme.onSecondaryContainer)
                         }
                         Box(
                             Modifier
                                 .size(iconSize+10.dp)
-                                .background(Colors.TERTIARY, shape)
+                                .background(Theme.primaryContainer, shape)
                                 .clip(shape)
                                 .rippleClick{
                                     if(loc == null) { // Add new Location
@@ -270,21 +271,21 @@ fun MapSheet(mapViewModel: MapViewModel, innerPadding: PaddingValues){
                                 enter = scaleIn() + fadeIn(),
                                 exit = scaleOut() + fadeOut(),
                             ) {
-                                Icon(Icons.Rounded.Add, "Add", Modifier.fillMaxSize(), Colors.PRIMARYFONT)
+                                Icon(Icons.Rounded.Add, "Add", Modifier.fillMaxSize(), Theme.onSecondaryContainer)
                             }
                             androidx.compose.animation.AnimatedVisibility(
                                 loc != null && !isEditing,
                                 enter = scaleIn() + fadeIn(),
                                 exit = scaleOut() + fadeOut(),
                             ) {
-                                Icon(painterResource(R.drawable.edit), "Edit", Modifier.fillMaxSize(), Colors.PRIMARYFONT)
+                                Icon(painterResource(R.drawable.edit), "Edit", Modifier.fillMaxSize(), Theme.onSecondaryContainer)
                             }
                             androidx.compose.animation.AnimatedVisibility(
                                 loc != null && isEditing,
                                 enter = scaleIn() + fadeIn(),
                                 exit = scaleOut() + fadeOut(),
                             ) {
-                                Icon(painterResource(R.drawable.tick), "Save", Modifier.fillMaxSize(), Colors.PRIMARYFONT)
+                                Icon(painterResource(R.drawable.tick), "Save", Modifier.fillMaxSize(), Theme.onSecondaryContainer)
                             }
                         }
                     }
@@ -294,7 +295,7 @@ fun MapSheet(mapViewModel: MapViewModel, innerPadding: PaddingValues){
                     Modifier
                         .offset(y = 20.dp*(1-progress))
                         .alpha(if(isEditing) 0f else progress),
-                    style = TypoStyle(FontColor.SECONDARY, FontSize.MEDIUMM),
+                    style = TypoStyle(Theme.secondary, FontSize.MEDIUMM),
                 )
                 Spacer(Modifier.height(20.dp))
                 val mixedLocation = loc ?: decodedLocation
@@ -331,7 +332,7 @@ fun MapSheet(mapViewModel: MapViewModel, innerPadding: PaddingValues){
                         Box(
                             Modifier
                                 .size(iconSize + 10.dp)
-                                .background(Colors.SECONDARY, CircleShape)
+                                .background(if(selectCoordsOnMap) Theme.primaryContainer else Color.Transparent, CircleShape)
                                 .clip(CircleShape)
                                 .rippleClick{
                                     mapViewModel.selectCoordsOnMap.value = !selectCoordsOnMap
@@ -342,7 +343,7 @@ fun MapSheet(mapViewModel: MapViewModel, innerPadding: PaddingValues){
                                 painterResource(R.drawable.pick),
                                 "Pick",
                                 Modifier.fillMaxSize(),
-                                if(selectCoordsOnMap) Colors.SELECTED else Colors.PRIMARYFONT
+                                if(selectCoordsOnMap) Theme.onPrimaryContainer else Theme.primary
                             )
                         }
                 }
@@ -462,7 +463,7 @@ fun MapSheet(mapViewModel: MapViewModel, innerPadding: PaddingValues){
                         },
                         Modifier
                             .padding(vertical = 5.dp)
-                            .background(Colors.SECONDARY, RoundedCornerShape(10.dp))
+                            .background(Theme.surfaceContainerHighest, RoundedCornerShape(10.dp))
                             .fillMaxWidth()
                             .clip(RoundedCornerShape(10.dp))
                             .focusRequester(focusRequester)
@@ -482,8 +483,8 @@ fun MapSheet(mapViewModel: MapViewModel, innerPadding: PaddingValues){
                             }
                             .padding(horizontal = 15.dp, vertical = 10.dp)
                         ,
-                        textStyle = TypoStyle(FontColor.PRIMARY, FontSize.LARGE),
-                        cursorBrush = SolidColor(Colors.PRIMARYFONT),
+                        textStyle = TypoStyle(Theme.primary, FontSize.LARGE),
+                        cursorBrush = SolidColor(OldColors.PRIMARYFONT),
                         keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Sentences),
                         enabled = progress > 0.1f
                     ) { innerTextField ->
@@ -492,7 +493,7 @@ fun MapSheet(mapViewModel: MapViewModel, innerPadding: PaddingValues){
                         } else{
                             Text(
                                 "Suchen",
-                                style = TypoStyle(FontColor.SECONDARY, FontSize.LARGE),
+                                style = TypoStyle(Theme.secondary, FontSize.LARGE),
                             )
                         }
                     }
@@ -534,7 +535,7 @@ fun MapSheet(mapViewModel: MapViewModel, innerPadding: PaddingValues){
                 ) {
                     Text(
                         "Life Search",
-                        style = TypoStyle(FontColor.SECONDARY, FontSize.MEDIUMM)
+                        style = TypoStyle(Theme.secondary, FontSize.MEDIUMM)
                     )
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
@@ -559,9 +560,9 @@ fun MapSheet(mapViewModel: MapViewModel, innerPadding: PaddingValues){
                                     }
                                 }
                             ,
-                            style = TypoStyle(FontColor.TERTIARY, FontSize.MEDIUMM)
+                            style = TypoStyle(Theme.secondary, FontSize.MEDIUMM)
                         )
-                        Icon(painterResource(R.drawable.arrow_right), "All", Modifier.size(FontSize.MEDIUMM.size.toDp()), Colors.TERTIARYFONT)
+                        Icon(painterResource(R.drawable.arrow_right), "All", Modifier.size(FontSize.MEDIUMM.size.toDp()), OldColors.TERTIARYFONT)
                     }
                 }
                 Spacer(Modifier.height(10.dp))
@@ -570,16 +571,16 @@ fun MapSheet(mapViewModel: MapViewModel, innerPadding: PaddingValues){
                         .fillMaxWidth()
                         .then(
                             if(lifeSearchResults.isNullOrEmpty())
-                                Modifier.border(2.dp, Colors.SECONDARY, RoundedCornerShape(15.dp))
+                                Modifier.border(1.dp, Theme.outlineVariant, RoundedCornerShape(15.dp))
                             else
-                                Modifier.background(Colors.SECONDARY, RoundedCornerShape(15.dp))
+                                Modifier.background(Theme.surfaceContainerHigh, RoundedCornerShape(15.dp))
                         )
                 ) {
                     if(lifeSearchResults.isNullOrEmpty()) {
                         Text(
                             if(lifeSearchResults==null) "Suche etwas" else "Keine Ergebnisse",
                             Modifier.padding(vertical = 15.dp).fillMaxWidth(),
-                            style = TypoStyle(FontColor.SECONDARY, FontSize.LARGE).copy(fontStyle = FontStyle.Italic),
+                            style = TypoStyle(Theme.secondary, FontSize.LARGE).copy(fontStyle = FontStyle.Italic),
                             textAlign = TextAlign.Center
                         )
                     }
@@ -600,17 +601,17 @@ fun MapSheet(mapViewModel: MapViewModel, innerPadding: PaddingValues){
                                 painterResource(R.drawable.location),
                                 "Location",
                                 Modifier.size(20.dp),
-                                Colors.PRIMARYFONT
+                                Theme.primary
                             )
                             Column{
                                 Text(
                                     it.name,
-                                    style = TypoStyle(FontColor.PRIMARY, FontSize.LARGE)
+                                    style = TypoStyle(Theme.primary, FontSize.LARGE)
                                 )
                                 Spacer(Modifier.height(2.dp))
                                 Text(
                                     it.toAddress(false),
-                                    style = TypoStyle(FontColor.SECONDARY, FontSize.SMALLM)
+                                    style = TypoStyle(Theme.secondary, FontSize.SMALLM)
                                 )
                             }
                         }
@@ -627,7 +628,7 @@ fun MapSheet(mapViewModel: MapViewModel, innerPadding: PaddingValues){
                 ) {
                     Text(
                         "Mapbox Search",
-                        style = TypoStyle(FontColor.SECONDARY, FontSize.MEDIUMM)
+                        style = TypoStyle(Theme.secondary, FontSize.MEDIUMM)
                     )
                 }
                 Spacer(Modifier.height(10.dp))
@@ -636,9 +637,9 @@ fun MapSheet(mapViewModel: MapViewModel, innerPadding: PaddingValues){
                         .fillMaxWidth()
                         .then(
                             if(lifeSearchResults.isNullOrEmpty())
-                                Modifier.border(2.dp, Colors.SECONDARY, RoundedCornerShape(15.dp))
+                                Modifier.border(1.dp, Theme.outlineVariant, RoundedCornerShape(15.dp))
                             else
-                                Modifier.background(Colors.SECONDARY, RoundedCornerShape(15.dp))
+                                Modifier.background(Theme.surfaceContainerHigh, RoundedCornerShape(15.dp))
                         )
                     ,
                     horizontalAlignment = Alignment.CenterHorizontally
@@ -650,8 +651,6 @@ fun MapSheet(mapViewModel: MapViewModel, innerPadding: PaddingValues){
                                 Modifier
                                     .fillMaxWidth()
                                     .clip(RoundedCornerShape(15.dp))
-                                    .background(Colors.SECONDARY)
-                                    .padding(vertical = 10.dp)
                                     .rippleClick{
                                         if(lifeQueryValue.text.isBlank()) return@rippleClick
                                         coroutineScope.launch {
@@ -659,15 +658,16 @@ fun MapSheet(mapViewModel: MapViewModel, innerPadding: PaddingValues){
                                             mapViewModel.mapBoxSearchResults.value = resp
                                         }
                                     }
+                                    .padding(vertical = 10.dp)
                                 ,
-                                style = TypoStyle(FontColor.SECONDARY, FontSize.LARGE),
+                                style = TypoStyle(Theme.secondary, FontSize.LARGE),
                                 textAlign = TextAlign.Center
                             )
                         } else {
                             Text(
                                 "Keine Ergebnisse",
                                 Modifier.padding(vertical = 15.dp).fillMaxWidth(),
-                                style = TypoStyle(FontColor.SECONDARY, FontSize.LARGE).copy(fontStyle = FontStyle.Italic),
+                                style = TypoStyle(Theme.secondary, FontSize.LARGE).copy(fontStyle = FontStyle.Italic),
                                 textAlign = TextAlign.Center
                             )
                         }
@@ -689,17 +689,17 @@ fun MapSheet(mapViewModel: MapViewModel, innerPadding: PaddingValues){
                                 painterResource(R.drawable.location),
                                 "Location",
                                 Modifier.size(20.dp),
-                                Colors.PRIMARYFONT
+                                Theme.primary
                             )
                             Column{
                                 Text(
                                     it.name,
-                                    style = TypoStyle(FontColor.PRIMARY, FontSize.LARGE)
+                                    style = TypoStyle(Theme.primary, FontSize.LARGE)
                                 )
                                 Spacer(Modifier.height(2.dp))
                                 Text(
                                     it.toAddress(false),
-                                    style = TypoStyle(FontColor.SECONDARY, FontSize.SMALLM)
+                                    style = TypoStyle(Theme.secondary, FontSize.SMALLM)
                                 )
                             }
                         }

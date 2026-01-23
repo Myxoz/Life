@@ -27,8 +27,7 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import com.myxoz.life.LocalNavController
 import com.myxoz.life.R
-import com.myxoz.life.ui.theme.Colors
-import com.myxoz.life.ui.theme.FontColor
+import com.myxoz.life.Theme
 import com.myxoz.life.ui.theme.FontFamily
 import com.myxoz.life.ui.theme.FontSize
 import com.myxoz.life.ui.theme.TypoStyle
@@ -46,7 +45,7 @@ fun SettingsComposable(){
     val context = LocalContext.current
     val nav = LocalNavController.current
     Scaffold(
-        containerColor = Colors.BACKGROUND
+        containerColor = Theme.background
     ) { innerPadding ->
         FlowRow(
             Modifier
@@ -60,8 +59,8 @@ fun SettingsComposable(){
             all.forEachIndexed { i, it ->
                 val mod = Modifier
                     .padding(8.dp)
-                    .border(1.dp, Colors.TERTIARY, RoundedCornerShape(20.dp))
-                    .background(Colors.SECONDARY, RoundedCornerShape(20.dp))
+                    .border(1.dp, Theme.outlineVariant, RoundedCornerShape(20.dp))
+                    .background(Theme.surfaceContainer, RoundedCornerShape(20.dp))
                     .clip(RoundedCornerShape(20.dp))
                     .combinedRippleClick(
                         onHold = {
@@ -84,12 +83,12 @@ fun SettingsComposable(){
                         painterResource(it.icon),
                         it.text,
                         Modifier.size(fontSize),
-                        Colors.SECONDARYFONT
+                        Theme.secondary
                     )
                     Spacer(Modifier.height(5.dp))
                     Text(
                         it.text,
-                        style = TypoStyle(FontColor.PRIMARY, FontSize.LARGE, FontFamily.Display)
+                        style = TypoStyle(Theme.primary, FontSize.LARGE, FontFamily.Display)
                     )
                 }
             }

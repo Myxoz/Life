@@ -43,8 +43,9 @@ import com.mapbox.maps.plugin.locationcomponent.location
 import com.myxoz.life.LocalSettings
 import com.myxoz.life.LocalStorage
 import com.myxoz.life.R
+import com.myxoz.life.Theme
 import com.myxoz.life.api.syncables.Location
-import com.myxoz.life.ui.theme.Colors
+import com.myxoz.life.ui.theme.OldColors
 import com.myxoz.life.viewmodels.MapViewModel
 import kotlinx.coroutines.launch
 import kotlin.math.asin
@@ -87,7 +88,7 @@ fun MapBoxMap(mapViewModel: MapViewModel, innerPadding: PaddingValues){
             ScaleBar(
                 Modifier.padding(innerPadding),
                 showTextBorder = false,
-                textColor = Colors.PRIMARYFONT,
+                textColor = OldColors.PRIMARYFONT,
             )
         },
         onMapClickListener = OnMapClickListener {
@@ -184,7 +185,7 @@ fun MapBoxMap(mapViewModel: MapViewModel, innerPadding: PaddingValues){
                 )
                 result += PolygonAnnotationOptions()
                     .withPoints(listOf(ring))
-                    .withFillColor(Colors.SELECTED.copy(alpha = 0.5f).toArgb())
+                    .withFillColor(OldColors.SELECTED.copy(alpha = 0.5f).toArgb())
             }
             result
         }
@@ -207,7 +208,7 @@ fun MapBoxMap(mapViewModel: MapViewModel, innerPadding: PaddingValues){
         Box(
             Modifier
                 .fillMaxSize()
-                .background(Colors.SECONDARY)
+                .background(Theme.background)
         )
     }
 }

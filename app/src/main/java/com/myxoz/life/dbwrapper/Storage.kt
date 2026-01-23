@@ -104,7 +104,7 @@ object DatabaseProvider {
  * 6. Add to CleanupDao [DatabaseCleanupDao.clearAllExceptPersistent]
  *
  * Guide to create new calendar:
- * 6. Create the color scheme for the new EventType in [com.myxoz.life.ui.theme.Colors.Calendar]
+ * 6. Create the color scheme for the new EventType in [com.myxoz.life.ui.theme.OldColors.Calendar]
  * 7. Create new [com.myxoz.life.events.additionals.EventType]
  * 8. Create event renderer and EventClass by copying a file from [com.myxoz.life.events]
  * 9. Add to [com.myxoz.life.events.ProposedEvent.from]

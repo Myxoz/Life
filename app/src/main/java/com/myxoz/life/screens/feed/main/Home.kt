@@ -39,19 +39,18 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.navigation.compose.currentBackStackEntryAsState
-import com.myxoz.life.screens.feed.search.LifeBottomBar
 import com.myxoz.life.LocalAPI
 import com.myxoz.life.LocalNavController
 import com.myxoz.life.LocalSettings
 import com.myxoz.life.LocalStorage
 import com.myxoz.life.R
+import com.myxoz.life.Theme
+import com.myxoz.life.screens.feed.search.LifeBottomBar
 import com.myxoz.life.screens.feed.summarizeday.LiffyFace
 import com.myxoz.life.screens.options.getUsageDataBetween
 import com.myxoz.life.screens.person.displayperson.UnmodalBottomSheet
 import com.myxoz.life.screens.person.displayperson.datePickerColors
 import com.myxoz.life.ui.ActionBar
-import com.myxoz.life.ui.theme.Colors
-import com.myxoz.life.ui.theme.FontColor
 import com.myxoz.life.ui.theme.FontFamily
 import com.myxoz.life.ui.theme.FontSize
 import com.myxoz.life.ui.theme.TypoStyle
@@ -73,7 +72,7 @@ fun HomeComposable(calendarViewModel: CalendarViewModel, inspectedEventViewModel
     LaunchedEffect(currentBackStackEntry) {
         val currentRoute = currentBackStackEntry?.destination?.route
         if (currentRoute == "home") {
-            showDayPopup = db.days.getDay(LocalDate.now().minusDays(1).toEpochDay().toInt()) == null
+            showDayPopup = db.days.getDay(LocalDate.now().minusDays(1).toEpochDay().toInt()) == null && !inspectedEventViewModel.isEditing.value
         }
     }
     LaunchedEffect(Unit) {
@@ -82,7 +81,7 @@ fun HomeComposable(calendarViewModel: CalendarViewModel, inspectedEventViewModel
 
     Scaffold(
         Modifier.fillMaxSize(),
-        containerColor = Colors.BACKGROUND
+        containerColor = Theme.surfaceContainer
     ) { innerPadding ->
         Column(
             Modifier
@@ -101,7 +100,7 @@ fun HomeComposable(calendarViewModel: CalendarViewModel, inspectedEventViewModel
                     showDayPopup = false
                 },
                 sheetState = rememberModalBottomSheetState(true),
-                containerColor = Colors.BACKGROUND
+                containerColor = Theme.surfaceContainer
             ) {
                 Column(
                     Modifier
@@ -119,20 +118,20 @@ fun HomeComposable(calendarViewModel: CalendarViewModel, inspectedEventViewModel
                             "Liffy",
                             Modifier
                                 .size(70.dp),
-                            tint = Colors.PRIMARYFONT
+                            tint = Theme.primary
                         )
                         LiffyFace(70.dp)
                     }
-                    Text("Hey!", style = TypoStyle(FontColor.PRIMARY, FontSize.LARGE))
+                    Text("Hey!", style = TypoStyle(Theme.primary, FontSize.LARGE))
                     Text(
                         "Trage deinen gestrigen Tag endgültig ein",
-                        style = TypoStyle(FontColor.SECONDARY, FontSize.MEDIUM)
+                        style = TypoStyle(Theme.secondary, FontSize.MEDIUM)
                     )
                     Spacer(Modifier.height(20.dp))
                     val day = remember { LocalDate.now().minusDays(1) }
                     Text(
                         "${day.dayOfMonth}.${day.month.value}.${day.year}",
-                        style = TypoStyle(FontColor.SECONDARY, FontSize.MEDIUM)
+                        style = TypoStyle(Theme.primary, FontSize.MEDIUM)
                     )
                     val settings = LocalSettings.current
                     val screenTimeEnabled by settings.features.screentime.has.collectAsState()
@@ -141,7 +140,7 @@ fun HomeComposable(calendarViewModel: CalendarViewModel, inspectedEventViewModel
                         Column(
                             Modifier
                             .fillMaxWidth()
-                            .border(1.dp, Colors.TERTIARY, RoundedCornerShape(25.dp))
+                            .border(1.dp, Theme.outlineVariant, RoundedCornerShape(25.dp))
                             .padding(horizontal = 25.dp, vertical = 20.dp)
                     ) {
                         val context = LocalContext.current
@@ -157,12 +156,12 @@ fun HomeComposable(calendarViewModel: CalendarViewModel, inspectedEventViewModel
                             }
                             Text(
                                 "Schritte",
-                                style = TypoStyle(FontColor.PRIMARY, FontSize.SMALL)
+                                style = TypoStyle(Theme.primary, FontSize.SMALL)
                             )
                             Text(
                                 steps.toString(),
                                 style = TypoStyle(
-                                    FontColor.PRIMARY,
+                                    Theme.secondary,
                                     FontSize.XLARGE,
                                     FontFamily.Display
                                 )
@@ -180,12 +179,12 @@ fun HomeComposable(calendarViewModel: CalendarViewModel, inspectedEventViewModel
                             Spacer(Modifier.height(20.dp))
                             Text(
                                 "Bildschirmzeit",
-                                style = TypoStyle(FontColor.PRIMARY, FontSize.SMALL)
+                                style = TypoStyle(Theme.primary, FontSize.SMALL)
                             )
                             Text(
                                 screenTime.msToDisplay(),
                                 style = TypoStyle(
-                                    FontColor.PRIMARY,
+                                    Theme.secondary,
                                     FontSize.XLARGE,
                                     FontFamily.Display
                                 )
@@ -193,7 +192,7 @@ fun HomeComposable(calendarViewModel: CalendarViewModel, inspectedEventViewModel
                         }
                     }
                     Spacer(Modifier.height(20.dp))
-                    HorizontalDivider(color = Colors.SECONDARY, thickness = 3.dp, modifier = Modifier.clip(CircleShape))
+                    HorizontalDivider(color = Theme.outlineVariant, thickness = 3.dp, modifier = Modifier.clip(CircleShape))
                     Spacer(Modifier)
                     val navController = LocalNavController.current
                     ActionBar(
@@ -201,9 +200,9 @@ fun HomeComposable(calendarViewModel: CalendarViewModel, inspectedEventViewModel
                             showDayPopup = false
                         },
                         {
-                            Icon(painterResource(R.drawable.close),"Close",Modifier.fillMaxSize(),Colors.SECONDARYFONT)
+                            Icon(painterResource(R.drawable.close),"Close",Modifier.fillMaxSize(),Theme.onSecondaryContainer)
                         },
-                        Colors.SELECTED,
+                        Theme.primaryContainer,
                         {
                             showDayPopup = false
                             navController.navigate("summarize_day")
@@ -212,7 +211,7 @@ fun HomeComposable(calendarViewModel: CalendarViewModel, inspectedEventViewModel
                         Text(
                             "Eintragen",
                             style = TypoStyle(
-                                FontColor.PRIMARY,
+                                Theme.onPrimaryContainer,
                                 FontSize.LARGE
                             ).copy(fontWeight = FontWeight.W900)
                         )
@@ -220,7 +219,7 @@ fun HomeComposable(calendarViewModel: CalendarViewModel, inspectedEventViewModel
                         Icon(
                             painterResource(R.drawable.arrow_right),
                             "Continue",
-                            tint = Colors.PRIMARYFONT,
+                            tint = Theme.onPrimaryContainer,
                             modifier = Modifier.height(20.dp)
                         )
                     }
@@ -231,11 +230,15 @@ fun HomeComposable(calendarViewModel: CalendarViewModel, inspectedEventViewModel
         UnmodalBottomSheet(isSelectDayVisible, {calendarViewModel.selectDayPopup.value = false}) {
             val datePickerState = rememberDatePickerState()
             DatePicker(datePickerState, colors = datePickerColors())
-            ActionBar({
-                calendarViewModel.selectDayPopup.value = false
-            }, {
-                Icon(painterResource(R.drawable.close), "Close", Modifier.fillMaxSize(), tint = Colors.SECONDARYFONT)
-            }, Colors.SELECTED, {
+            ActionBar(
+                {
+                    calendarViewModel.selectDayPopup.value = false
+                },
+                {
+                    Icon(painterResource(R.drawable.close), "Close", Modifier.fillMaxSize(), tint = Theme.onSecondaryContainer)
+                },
+                Theme.primaryContainer,
+                {
                 val selectedDay = datePickerState.selectedDateMillis?.let { millis ->
                     Instant.ofEpochMilli(millis)
                         .atZone(ZoneId.of("UTC"))
@@ -247,7 +250,7 @@ fun HomeComposable(calendarViewModel: CalendarViewModel, inspectedEventViewModel
                 Text(
                     "Auswählen",
                     style = TypoStyle(
-                        FontColor.PRIMARY,
+                        Theme.onSecondaryContainer,
                         FontSize.LARGE
                     ).copy(fontWeight = FontWeight.W900)
                 )
@@ -255,7 +258,7 @@ fun HomeComposable(calendarViewModel: CalendarViewModel, inspectedEventViewModel
                 Icon(
                     painterResource(R.drawable.arrow_right),
                     "Continue",
-                    tint = Colors.PRIMARYFONT,
+                    tint = Theme.onSecondaryContainer,
                     modifier = Modifier.height(20.dp)
                 )
             }
