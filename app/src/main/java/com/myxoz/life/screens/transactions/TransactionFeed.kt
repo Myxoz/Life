@@ -1,5 +1,6 @@
 package com.myxoz.life.screens.transactions
 
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -65,7 +66,8 @@ fun TransactionFeed(
                 .edgeToEdgeGradient(Theme.background, innerPadding)
                 .fillMaxSize(),
             state = listState,
-            reverseLayout = true
+            reverseLayout = true,
+            horizontalAlignment = Alignment.CenterHorizontally
         ) {
             item {
                 Spacer(Modifier.height(innerPadding.calculateBottomPadding()))
@@ -100,7 +102,8 @@ private fun DateTransactionGroup(
     Column(
         modifier = Modifier
             .padding(top = 20.dp, bottom = 10.dp)
-            .fillMaxWidth(),
+            .fillMaxWidth(.95f)
+        ,
         verticalArrangement = Arrangement.spacedBy(5.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
@@ -111,9 +114,13 @@ private fun DateTransactionGroup(
                 }
             }
         }
-        Spacer(Modifier)
         Row(
-            Modifier.fillMaxWidth(.95f),
+            Modifier
+                .border(2.dp, Theme.outlineVariant, CircleShape)
+                // .background(Theme.surfaceContainer, RoundedCornerShape(20.dp))
+                .fillMaxWidth()
+                .padding(horizontal = 10.dp, vertical = 5.dp)
+            ,
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.SpaceBetween
         ) {

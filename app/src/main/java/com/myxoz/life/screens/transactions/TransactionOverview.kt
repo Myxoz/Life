@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -277,16 +278,26 @@ fun TransactionList(epochDay: Long) {
         Modifier.fillMaxSize(),
         containerColor = Theme.surfaceContainer
     ) { innerPadding ->
+        Box(
+            Modifier
+                .fillMaxWidth()
+            ,
+            contentAlignment = Alignment.Center
+        ) {
         Column(
             Modifier
-                .fillMaxSize(),
+                .verticalScroll(rememberScrollState())
+                .fillMaxWidth(.95f)
+                .fillMaxHeight()
+            ,
             verticalArrangement = Arrangement.spacedBy(5.dp, Alignment.Bottom),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             Spacer(Modifier.height(innerPadding.calculateTopPadding()))
-            bankingEntries.forEachIndexed { i, it ->
-                BankingEntryComposable(it, i == 0, i == bankingEntries.size-1) {
-                    nav.navigate("bank/transaction/${it.first.id}")
+                bankingEntries.forEachIndexed { i, it ->
+                    BankingEntryComposable(it, i == 0, i == bankingEntries.size-1) {
+                        nav.navigate("bank/transaction/${it.first.id}")
+                    }
                 }
             }
             Spacer(Modifier.height(innerPadding.calculateBottomPadding()))
@@ -303,7 +314,6 @@ fun BankingEntryComposable(entry: Pair<BankingEntity, BankingSidecarEntity?>, is
             .background(Theme.surfaceContainerHigh)
             .rippleClick{onClick()}
             .padding(horizontal = 20.dp, vertical = 15.dp)
-            .fillMaxWidth(.95f)
         ,
         verticalArrangement = Arrangement.spacedBy(10.dp)
     ) {
