@@ -5,9 +5,11 @@ import androidx.activity.compose.PredictiveBackHandler
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.animate
+import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.gestures.detectVerticalDragGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -22,6 +24,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.Icon
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -37,6 +40,7 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.Layout
 import androidx.compose.ui.layout.onGloballyPositioned
@@ -47,11 +51,18 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.times
 import com.myxoz.life.Theme
+import com.myxoz.life.screens.feed.fullscreenevent.InputField
+import com.myxoz.life.ui.theme.FontSize
+import com.myxoz.life.utils.MaterialShapes
+import com.myxoz.life.utils.collectAsMutableState
 import com.myxoz.life.utils.combinedRippleClick
 import com.myxoz.life.utils.rippleClick
+import com.myxoz.life.utils.toDp
+import com.myxoz.life.utils.toShape
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.launch
 import kotlin.math.pow
+import kotlin.math.roundToInt
 
 @Composable
 fun ActionBar(smallActionClick: (()->Unit)?, smallContent: (@Composable ()->Unit)?, color: Color, onLargeClick: ()->Unit, largeContent: @Composable ()->Unit){
@@ -341,3 +352,102 @@ fun rememberAsymmetricalHorrizontalCornerRadius(isFirst: Boolean, isLast: Boolea
     if((reverse && isFirst) || (!reverse && isLast)) scaling else scaling/2,
     if((!reverse && isFirst) || (reverse && isLast)) scaling else scaling/2,
 ) }
+
+val BOTTOMSEARCHBARHEIGHT = 56.dp + 5.dp * 2 + 15.dp
+@Composable
+fun BottomSearchBar(bg: Color, bottomPadding: Dp, onChange: (String)->Unit, icon: Painter? = null, onHold: (() -> Unit)? = null, onClick: (() -> Unit)? = null){
+    Column(
+        Modifier
+            .fillMaxWidth()
+    ) {
+        Box(
+            Modifier
+                .fillMaxWidth()
+                .height(15.dp)
+                .background(Brush.verticalGradient(
+                    listOf(Color.Transparent, bg.copy(alpha = .5f)),
+                ))
+        )
+        Box(
+            Modifier
+                .fillMaxWidth()
+                .background(bg.copy(alpha = .5f))
+                .padding(vertical = 5.dp)
+            ,
+            Alignment.BottomCenter
+        ) {
+            Row(
+                Modifier
+                    .fillMaxWidth(.95f)
+                    .padding(bottom = bottomPadding)
+                ,
+                horizontalArrangement = Arrangement.spacedBy(10.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Box(
+                    Modifier
+                        .weight(1f)
+                        .border(1.dp, Theme.primary, CircleShape)
+                        .background(Theme.surfaceContainerHighest, CircleShape)
+                ) {
+                    InputField(
+                        null,
+                        "Suchen",
+                        background = Color.Transparent,
+                        onChange = onChange
+                    )
+                }
+                icon?.let { icon ->
+                    val lineHeight = FontSize.LARGE.size.toDp() + 16.dp  * 2 /* TextFieldPadding * 2 */
+                    val shape = MaterialShapes.Cookie12Sided.toShape()
+                    Box(
+                        Modifier
+                            .size(lineHeight)
+                            .clip(shape)
+                            .background(Theme.primary)
+                            .combinedRippleClick(
+                                onHold,
+                                onClick != null && onHold != null
+                            ) {
+                                onClick?.invoke()
+                            }
+                    ) {
+                        Icon(icon, "New", Modifier.fillMaxSize(), Theme.onPrimary)
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun ToggleIconButton(active: MutableStateFlow<Boolean>, icon: Painter, onClick: ((Boolean) -> Unit)? = null){
+    ToggleButton(active, onClick) {
+        Icon(
+            icon,
+            null,
+            Modifier
+                .size(30.dp)
+            ,
+            tint = Theme.onPrimaryContainer
+        )
+    }
+}
+@Composable
+fun ToggleButton(active: MutableStateFlow<Boolean>, onClick: ((Boolean) -> Unit)? = null, content: @Composable ()->Unit){
+    val isActive by active.collectAsMutableState()
+    val progress by animateFloatAsState(if(isActive) 1f else 0f) // , tween(easing = LinearEasing)
+    val colors by animateColorAsState(if(isActive) Theme.primaryContainer else Theme.surfaceContainerHighest)
+    Box(
+        Modifier
+            .clip(RoundedCornerShape((progress * 20 + 30).roundToInt()))
+            .background(colors)
+            .rippleClick{
+                active.value = !active.value
+                onClick?.invoke(active.value)
+            }
+            .padding(10.dp)
+    ) {
+        content()
+    }
+}

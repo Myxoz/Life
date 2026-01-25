@@ -2,6 +2,7 @@ package com.myxoz.life.screens.person
 
 import android.graphics.Paint
 import androidx.activity.compose.BackHandler
+import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.withInfiniteAnimationFrameMillis
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
@@ -12,11 +13,10 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.material3.Icon
-import androidx.compose.material3.VerticalDivider
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -27,7 +27,9 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.scale
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.drawscope.scale
@@ -42,14 +44,18 @@ import com.myxoz.life.LocalScreens
 import com.myxoz.life.R
 import com.myxoz.life.Theme
 import com.myxoz.life.screens.feed.main.msToDisplay
-import com.myxoz.life.screens.person.displayperson.ButtonGroup
-import com.myxoz.life.ui.theme.OldColors
+import com.myxoz.life.ui.ToggleIconButton
+import com.myxoz.life.ui.theme.FontSize
+import com.myxoz.life.ui.theme.TypoStyle
 import com.myxoz.life.utils.collectAsMutableNonNullState
 import com.myxoz.life.utils.collectAsMutableState
 import com.myxoz.life.utils.rippleClick
+import com.myxoz.life.utils.toDp
 import com.myxoz.life.utils.toPx
+import com.myxoz.life.utils.windowPadding
 import com.myxoz.life.viewmodels.SocialGraphViewModel
 import kotlinx.coroutines.launch
+import kotlin.math.abs
 import kotlin.math.cos
 import kotlin.math.sin
 import kotlin.math.sqrt
@@ -57,7 +63,7 @@ import kotlin.math.sqrt
 const val REPULSION_FORCE = 900_000f // How much nodes hate each other
 const val SPRING_LENGTH = 400f      // Ideal distance between connected nodes
 const val SPRING_STIFFNESS = 0.7f  // How strong the edges are
-const val DAMPING = 0.10f           // Friction (0.9 = loses 10% speed per frame)
+const val DAMPING = .1f           // Friction (0.9 = loses 10% speed per frame)
 const val CENTER_STRENGTH = 0.01f   // Keeps graph centered
 
 @Composable
@@ -186,7 +192,7 @@ fun SocialGraph(socialGraphViewModel: SocialGraphViewModel){
             textAlign = Paint.Align.CENTER
         }
 
-        val CurrentTheme = Theme
+        @Suppress("LocalVariableName") val CurrentTheme = Theme
         Canvas(
             modifier = Modifier
                 .fillMaxSize()
@@ -301,63 +307,40 @@ fun SocialGraph(socialGraphViewModel: SocialGraphViewModel){
         }
         Row(
             Modifier
-                .align(Alignment.BottomEnd)
-                .padding(20.dp)
-                .background(Theme.surfaceContainerHighest, CircleShape),
+                .align(Alignment.BottomCenter)
+                .padding(bottom = windowPadding.calculateBottomPadding() + 10.dp)
+            ,
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(5.dp)
         ) {
-            val list = remember { arrayOf("All", "1y", "30d", "1w") }
-            ButtonGroup(
-                list,
-                200.dp,
-                socialGraphViewModel.chartScale,
-            ) {
-                coroutineScope.launch {
-                    socialGraphViewModel.regenerateNodes()
-                }
-            }
-            val height = 20.dp
-            VerticalDivider(Modifier.height(height), color = OldColors.DIVIDERS)
-            Box(
-                Modifier
-                    .size(30.dp)
-                    .clip(CircleShape)
-                    .rippleClick {
-                        socialGraphViewModel.showTimes.value = !socialGraphViewModel.showTimes.value
-                    }
-                    .padding(5.dp)
-            ) {
-                Icon(
-                    painterResource(
-                        if(showTimes) R.drawable.hide_time else R.drawable.time
-                    ),
-                    "Me",
-                    Modifier.fillMaxSize(),
-                    tint = OldColors.SECONDARYFONT
-                )
+            ToggleIconButton(socialGraphViewModel.addMyself, painterResource(R.drawable.graph_hub)) {
+                coroutineScope.launch { socialGraphViewModel.regenerateNodes() }
             }
             Box(
                 Modifier
-                    .padding(end = 5.dp)
-                    .size(30.dp)
                     .clip(CircleShape)
-                    .rippleClick {
-                        val newMyself = !addMyself
-                        socialGraphViewModel.addMyself.value = newMyself
+                    .background(Theme.primary)
+                    .height(50.dp)
+                    .rippleClick{
+                        socialGraphViewModel.chartScale.value = (socialGraphViewModel.chartScale.value + 1) % 4
                         coroutineScope.launch {
                             socialGraphViewModel.regenerateNodes()
                         }
                     }
-                    .padding(5.dp)
+                    .padding(horizontal = 20.dp)
+                ,
+                contentAlignment = Alignment.Center
             ) {
-                Icon(
-                    painterResource(R.drawable.contacts),
-                    "Me",
-                    Modifier.fillMaxSize(),
-                    tint = OldColors.SECONDARYFONT
-                )
+                val list = remember { arrayOf("All", "1y", "30d", "1w") } // Edit mod 4 above
+                val state by socialGraphViewModel.chartScale.collectAsMutableState()
+                val fontSize = FontSize.MEDIUM.size.toDp()
+                list.forEachIndexed { i, it ->
+                    val alpha by animateFloatAsState(if (i == state + 1 || i == state - 1) .5f else if(state == i) 1f else 0f)
+                    val offsetMult by animateFloatAsState((i - state).toFloat())
+                    Text(it, Modifier.offset(y = fontSize * offsetMult).alpha(alpha).scale((2-abs(offsetMult)) * .5f), style = TypoStyle(Theme.onPrimary, FontSize.MEDIUM))
+                }
             }
+            ToggleIconButton(socialGraphViewModel.showTimes, painterResource(R.drawable.time))
         }
     }
 }

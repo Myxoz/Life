@@ -46,6 +46,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.vector.rememberVectorPainter
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
@@ -63,14 +64,14 @@ import com.myxoz.life.Theme
 import com.myxoz.life.api.API
 import com.myxoz.life.api.syncables.PersonSyncable
 import com.myxoz.life.screens.feed.dayoverview.edgeToEdgeGradient
-import com.myxoz.life.screens.feed.fullscreenevent.InputField
+import com.myxoz.life.ui.BOTTOMSEARCHBARHEIGHT
+import com.myxoz.life.ui.BottomSearchBar
 import com.myxoz.life.ui.rememberAsymmetricalVerticalCornerRadius
 import com.myxoz.life.ui.theme.FontFamily
 import com.myxoz.life.ui.theme.FontSize
 import com.myxoz.life.ui.theme.OldColors
 import com.myxoz.life.ui.theme.TypoStyle
 import com.myxoz.life.utils.MaterialShapes
-import com.myxoz.life.utils.combinedRippleClick
 import com.myxoz.life.utils.filteredWith
 import com.myxoz.life.utils.rippleClick
 import com.myxoz.life.utils.toDp
@@ -89,353 +90,323 @@ fun Contacts(contactsViewModel: ContactsViewModel){
     Scaffold(
         containerColor = Theme.background
     ) { innerPadding ->
-        Column(
+        Box(
             Modifier
                 .fillMaxSize()
             ,
-            verticalArrangement = Arrangement.Bottom
+            Alignment.BottomCenter
         ) {
-            val screens = LocalScreens.current
+            var search by remember { mutableStateOf("") }
             val context = LocalContext.current
             val db = LocalStorage.current
-            val settings = LocalSettings.current
-            val screenWidthPx = LocalConfiguration.current.screenWidthDp.dp.toPx(LocalDensity.current)
-            val lifeContacts by contactsViewModel.lifeContacts.collectAsState()
-            val deviceContacts by contactsViewModel.deviceContacts.collectAsState()
-            var search by remember { mutableStateOf("") }
-            val showIcons by contactsViewModel.showIcons.collectAsState()
-            val ordering = remember {
-                arrayOf('F', '*', 'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z', 'C')
-            }
-            val favoriteIds = remember {
-                (db.prefs.getStringSet("favorite_people", setOf())  ?: setOf()).mapNotNull { it.toLongOrNull() }.toMutableStateList()
-            }
-            LaunchedEffect(Unit) {
-                withContext(Dispatchers.IO){
-                    contactsViewModel.refetchLifeContacts()
-                    if(settings.features.addNewPerson.hasAssured()) contactsViewModel.fetchDeviceContacts(context)
-                }
-            }
-            val filteredLifeContacts = remember(search, lifeContacts.hashCode() /* Idk if needed but lists... */) {
-                lifeContacts.filteredWith(search, {it.fullName?:""}) {it.name}
-            }
-            val filteredDeviceContacts = remember(search, deviceContacts.hashCode()) {
-                deviceContacts
-                    .filteredWith(search, {it.fullName?:""}) {it.name}
-            }
-            val scrollState = rememberScrollState(contactsViewModel.scrollDistance)
-            contactsViewModel.scrollDistance = scrollState.value
-            LazyColumn(
+            Column(
                 Modifier
-                    .fillMaxWidth()
-                    .weight(1f)
-                    .edgeToEdgeGradient(Theme.background, innerPadding)
+                    .fillMaxWidth(.95f)
+                    .fillMaxHeight()
                 ,
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.Bottom,
-                reverseLayout = true
+                verticalArrangement = Arrangement.Bottom
             ) {
-                item {  //  End due to reverse layout
-                    Spacer(Modifier.height(innerPadding.calculateBottomPadding()))
+                val screens = LocalScreens.current
+                val settings = LocalSettings.current
+                val screenWidthPx = LocalConfiguration.current.screenWidthDp.dp.toPx(LocalDensity.current)
+                val lifeContacts by contactsViewModel.lifeContacts.collectAsState()
+                val deviceContacts by contactsViewModel.deviceContacts.collectAsState()
+                val showIcons by contactsViewModel.showIcons.collectAsState()
+                val ordering = remember {
+                    arrayOf('F', '*', 'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z', 'C')
                 }
-                ordering.forEach { letter ->
-                    val items = when (letter) {
-                        'F' -> filteredLifeContacts.filter { favoriteIds.contains(it.id) }
-                        '*' -> filteredLifeContacts.filter { it.name.getOrNull(0)?.isLetter() == false && !favoriteIds.contains(it.id)}
-                        'C' -> filteredDeviceContacts
-                        else -> filteredLifeContacts.filter { it.name.getOrNull(0)?.lowercase()?.getOrNull(0) == letter && !favoriteIds.contains(it.id) }
+                val favoriteIds = remember {
+                    (db.prefs.getStringSet("favorite_people", setOf())  ?: setOf()).mapNotNull { it.toLongOrNull() }.toMutableStateList()
+                }
+                LaunchedEffect(Unit) {
+                    withContext(Dispatchers.IO){
+                        contactsViewModel.refetchLifeContacts()
+                        if(settings.features.addNewPerson.hasAssured()) contactsViewModel.fetchDeviceContacts(context)
                     }
+                }
+                val filteredLifeContacts = remember(search, lifeContacts.hashCode() /* Idk if needed but lists... */) {
+                    lifeContacts.filteredWith(search, {it.fullName?:""}) {it.name}
+                }
+                val filteredDeviceContacts = remember(search, deviceContacts.hashCode()) {
+                    deviceContacts
+                        .filteredWith(search, {it.fullName?:""}) {it.name}
+                }
+                val scrollState = rememberScrollState(contactsViewModel.scrollDistance)
+                contactsViewModel.scrollDistance = scrollState.value
+                LazyColumn(
+                    Modifier
+                        .fillMaxWidth()
+                        .weight(1f)
+                        .edgeToEdgeGradient(Theme.background, innerPadding)
+                    ,
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.Bottom,
+                    reverseLayout = true
+                ) {
+                    item {  //  End due to reverse layout
+                        Spacer(Modifier.height(innerPadding.calculateBottomPadding() + BOTTOMSEARCHBARHEIGHT))
+                    }
+                    ordering.forEach { letter ->
+                        val items = when (letter) {
+                            'F' -> filteredLifeContacts.filter { favoriteIds.contains(it.id) }
+                            '*' -> filteredLifeContacts.filter { it.name.getOrNull(0)?.isLetter() == false && !favoriteIds.contains(it.id)}
+                            'C' -> filteredDeviceContacts
+                            else -> filteredLifeContacts.filter { it.name.getOrNull(0)?.lowercase()?.getOrNull(0) == letter && !favoriteIds.contains(it.id) }
+                        }
 
-                    if(items.isEmpty()) return@forEach
+                        if(items.isEmpty()) return@forEach
 
-                    // Header item
-                    items(items, key = { "${letter}_${it.id}_${it.name}_${it.phoneNumber}" }) { contact ->
-                        val isFirst = contact == items.firstOrNull()
-                        val isLast = contact == items.lastOrNull()
-                        val shape = rememberAsymmetricalVerticalCornerRadius(isFirst, isLast, 40, true)
-                        val offsetX = remember { Animatable(0f) }
-                        val coroutineScope = rememberCoroutineScope()
-                        val swipedRight = offsetX.value > 0
-                        val platform = if(!swipedRight) PersonSyncable.getOrderedSocials(contact.socials).getOrNull(0)?.platform else null
-                        Box(
-                            Modifier
-                                .fillMaxWidth(.95f)
-                                .padding(vertical = 1.dp)
-                                .draggable(
-                                    rememberDraggableState {
-                                        coroutineScope.launch {
-                                            offsetX.snapTo(offsetX.value + it)
-                                        }
-                                    },
-                                    Orientation.Horizontal,
-                                    onDragStopped = {
-                                        if (swipedRight) {
-                                            /* Empirically set this */
-                                            if (it > 1000f && contact.phoneNumber != null) {
-                                                val number = ("tel:" + contact.phoneNumber).toUri()
-                                                val intent =
-                                                    Intent(if (settings.features.callFromLife.hasAssured()) Intent.ACTION_CALL else Intent.ACTION_DIAL)
-                                                intent.setData(number)
-                                                intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-                                                context.startActivity(intent)
-                                                delay(1000)
-                                            }
-                                        } else {
-                                            if (it < -1000f && platform != null) {
-                                                platform.openPlatform(
-                                                    context,
-                                                    contact.socials[0].handle,
-                                                    contact.phoneNumber
-                                                )
-                                                delay(1000)
-                                            }
-                                        }
-                                        offsetX.animateTo(targetValue = 0f)
-                                    }
-                                )
-                        ) {
-                            Row(
+                        // Header item
+                        items(items, key = { "${letter}_${it.id}_${it.name}_${it.phoneNumber}" }) { contact ->
+                            val isFirst = contact == items.firstOrNull()
+                            val isLast = contact == items.lastOrNull()
+                            val shape = rememberAsymmetricalVerticalCornerRadius(isFirst, isLast, 40, true)
+                            val offsetX = remember { Animatable(0f) }
+                            val coroutineScope = rememberCoroutineScope()
+                            val swipedRight = offsetX.value > 0
+                            val platform = if(!swipedRight) PersonSyncable.getOrderedSocials(contact.socials).getOrNull(0)?.platform else null
+                            Box(
                                 Modifier
-                                    .matchParentSize()
-                                    .background(
-                                        if (offsetX.value == 0f) Theme.surfaceContainerHigh else if (swipedRight) if (contact.phoneNumber != null) OldColors.Transactions.PLUS else Theme.primary else platform?.color
-                                            ?: Theme.primary, shape
+                                    .padding(vertical = 1.dp)
+                                    .draggable(
+                                        rememberDraggableState {
+                                            coroutineScope.launch {
+                                                offsetX.snapTo(offsetX.value + it)
+                                            }
+                                        },
+                                        Orientation.Horizontal,
+                                        onDragStopped = {
+                                            if (swipedRight) {
+                                                /* Empirically set this */
+                                                if (it > 1000f && contact.phoneNumber != null) {
+                                                    val number = ("tel:" + contact.phoneNumber).toUri()
+                                                    val intent =
+                                                        Intent(if (settings.features.callFromLife.hasAssured()) Intent.ACTION_CALL else Intent.ACTION_DIAL)
+                                                    intent.setData(number)
+                                                    intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                                                    context.startActivity(intent)
+                                                    delay(1000)
+                                                }
+                                            } else {
+                                                if (it < -1000f && platform != null) {
+                                                    platform.openPlatform(
+                                                        context,
+                                                        contact.socials[0].handle,
+                                                        contact.phoneNumber
+                                                    )
+                                                    delay(1000)
+                                                }
+                                            }
+                                            offsetX.animateTo(targetValue = 0f)
+                                        }
                                     )
-                                    .padding(horizontal = 10.dp)
-                                ,
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.spacedBy(10.dp, if(swipedRight) Alignment.Start else Alignment.End)
-                            ){
-                                val fontSize = FontSize.LARGE.size
-                                if(swipedRight) {
-                                    val hasPhone = contact.phoneNumber!=null
-                                    Icon(painterResource(if(hasPhone) R.drawable.phone else R.drawable.close), "Call", Modifier.size(fontSize.toDp()), Theme.background)
-                                    Text(if(hasPhone) "Anrufen" else "Keine Nummer hinterlegt", style = TextStyle.Default.copy(color = Theme.background, fontSize = fontSize))
-                                } else {
-                                    Icon(painterResource(platform?.icon?:R.drawable.close), "Call", Modifier.size(fontSize.toDp()), Theme.background)
-                                    Text(platform?.fullName?:"Keine Platform", style = TextStyle.Default.copy(color = Theme.background, fontSize = fontSize))
-                                }
-                            }
-                            Column(
-                                Modifier
-                                    .fillMaxSize()
-                                    .offset { IntOffset(offsetX.value.roundToInt(), 0) }
-                                    .alpha(
-                                        1 - (abs(offsetX.value) / screenWidthPx * 2).coerceIn(
-                                            0f,
-                                            1f
-                                        )
-                                    )
-                                    .background(Theme.surfaceContainerHigh, shape)
                             ) {
                                 Row(
                                     Modifier
-                                        .clip(shape)
-                                        .fillMaxWidth()
-                                        .rippleClick {
-                                            if (contact.id != 0L) {
-                                                screens.openPersonDetails(contact.id)
-                                            } else {
-                                                // Open existing contact by number
-                                                val phoneNumber =
-                                                    contact.phoneNumber ?: return@rippleClick
-                                                val uri = Uri.withAppendedPath(
-                                                    ContactsContract.PhoneLookup.CONTENT_FILTER_URI,
-                                                    Uri.encode(phoneNumber)
-                                                )
-                                                val cursor = context.contentResolver.query(
-                                                    uri,
-                                                    arrayOf(ContactsContract.PhoneLookup._ID),
-                                                    null, null, null
-                                                )
-                                                if (cursor != null && cursor.moveToFirst()) {
-                                                    val contactId = cursor.getLong(
-                                                        cursor.getColumnIndexOrThrow(
-                                                            ContactsContract.PhoneLookup._ID
-                                                        )
-                                                    )
-                                                    cursor.close()
-                                                    val contactUri = ContentUris.withAppendedId(
-                                                        ContactsContract.Contacts.CONTENT_URI,
-                                                        contactId
-                                                    )
-                                                    val intent = Intent(Intent.ACTION_VIEW)
-                                                    intent.setData(contactUri)
-                                                    context.startActivity(intent)
-                                                }
-                                            }
-                                        }
-                                        .padding(vertical = 12.dp, horizontal = 12.dp)
+                                        .matchParentSize()
+                                        .background(
+                                            if (offsetX.value == 0f) Theme.surfaceContainerHigh else if (swipedRight) if (contact.phoneNumber != null) OldColors.Transactions.PLUS else Theme.primary else platform?.color
+                                                ?: Theme.primary, shape
+                                        )
+                                        .padding(horizontal = 10.dp)
                                     ,
-                                    horizontalArrangement = Arrangement.SpaceBetween,
-                                    verticalAlignment = Alignment.CenterVertically
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(10.dp, if(swipedRight) Alignment.Start else Alignment.End)
+                                ){
+                                    val fontSize = FontSize.LARGE.size
+                                    if(swipedRight) {
+                                        val hasPhone = contact.phoneNumber!=null
+                                        Icon(painterResource(if(hasPhone) R.drawable.phone else R.drawable.close), "Call", Modifier.size(fontSize.toDp()), Theme.background)
+                                        Text(if(hasPhone) "Anrufen" else "Keine Nummer hinterlegt", style = TextStyle.Default.copy(color = Theme.background, fontSize = fontSize))
+                                    } else {
+                                        Icon(painterResource(platform?.icon?:R.drawable.close), "Call", Modifier.size(fontSize.toDp()), Theme.background)
+                                        Text(platform?.fullName?:"Keine Platform", style = TextStyle.Default.copy(color = Theme.background, fontSize = fontSize))
+                                    }
+                                }
+                                Column(
+                                    Modifier
+                                        .fillMaxSize()
+                                        .offset { IntOffset(offsetX.value.roundToInt(), 0) }
+                                        .alpha(
+                                            1 - (abs(offsetX.value) / screenWidthPx * 2).coerceIn(
+                                                0f,
+                                                1f
+                                            )
+                                        )
+                                        .background(Theme.surfaceContainerHigh, shape)
                                 ) {
-                                    val fontSize = FontSize.LARGE.size.toDp()
                                     Row(
                                         Modifier
-                                            .fillMaxHeight()
-                                            .weight(1f),
-                                       verticalAlignment = Alignment.CenterVertically,
-                                        horizontalArrangement = Arrangement.spacedBy(6.dp)
-                                    ) {
-                                        Text(
-                                            contact.name,
-                                            Modifier,
-                                            style = TypoStyle(Theme.primary, FontSize.LARGE)
-                                        )
-                                        if(!showIcons) return@Row
-                                        val textSize = FontSize.LARGE.size.toDp()
-                                        val icons = remember {
-                                            val list = mutableListOf(
-                                                contact.home?.let { R.drawable.house },
-                                                contact.iban?.let { R.drawable.pay_with_card },
-                                                contact.phoneNumber?.let { R.drawable.phone },
-                                                contact.fullName?.let { R.drawable.id_card },
-                                                contact.birthday?.let { R.drawable.birthday },
-                                            )
-                                            list.addAll(contact.socials.map { it.platform.icon })
-                                            list
-                                        }
-                                        Row(
-                                            verticalAlignment = Alignment.CenterVertically,
-                                            horizontalArrangement = Arrangement.spacedBy(2.dp)
-                                        ) {
-                                            for (i in icons) {
-                                                if(i == null) continue
-                                                Icon(painterResource(i), null, Modifier.size(textSize * .8f), tint = Theme.secondary.copy(.35f))
-                                            }
-                                        }
-                                    }
-                                    if(letter!='C') {
-                                        Box(Modifier
-                                            .size(fontSize)
-                                            .background(
-                                                if (letter == 'F') Theme.primary else Theme.primary.copy(.2f),
-                                                MaterialShapes.Flower.toShape()
-                                            )
-                                            .clip(CircleShape)
+                                            .clip(shape)
+                                            .fillMaxWidth()
                                             .rippleClick {
-                                                if (letter != 'F' && !favoriteIds.contains(contact.id)) {
-                                                    favoriteIds.add(contact.id)
+                                                if (contact.id != 0L) {
+                                                    screens.openPersonDetails(contact.id)
                                                 } else {
-                                                    favoriteIds.remove(contact.id)
-                                                }
-                                                db.prefs.edit {
-                                                    putStringSet(
-                                                        "favorite_people",
-                                                        favoriteIds.map { it.toString() }.toSet()
+                                                    // Open existing contact by number
+                                                    val phoneNumber =
+                                                        contact.phoneNumber ?: return@rippleClick
+                                                    val uri = Uri.withAppendedPath(
+                                                        ContactsContract.PhoneLookup.CONTENT_FILTER_URI,
+                                                        Uri.encode(phoneNumber)
                                                     )
+                                                    val cursor = context.contentResolver.query(
+                                                        uri,
+                                                        arrayOf(ContactsContract.PhoneLookup._ID),
+                                                        null, null, null
+                                                    )
+                                                    if (cursor != null && cursor.moveToFirst()) {
+                                                        val contactId = cursor.getLong(
+                                                            cursor.getColumnIndexOrThrow(
+                                                                ContactsContract.PhoneLookup._ID
+                                                            )
+                                                        )
+                                                        cursor.close()
+                                                        val contactUri = ContentUris.withAppendedId(
+                                                            ContactsContract.Contacts.CONTENT_URI,
+                                                            contactId
+                                                        )
+                                                        val intent = Intent(Intent.ACTION_VIEW)
+                                                        intent.setData(contactUri)
+                                                        context.startActivity(intent)
+                                                    }
                                                 }
                                             }
-                                        )
-                                    } else {
-                                        Box(Modifier
-                                            .size(fontSize)
-                                            .clip(CircleShape)
-                                            .rippleClick {
-                                                coroutineScope.launch {
-                                                    PersonSyncable(
-                                                        API.generateId(),
-                                                        contact.name,
-                                                        null,
-                                                        contact.phoneNumber,
-                                                        null,
-                                                        null,
-                                                        null,
-                                                        contact.socials
-                                                    ).saveAndSync(db)
-                                                    contactsViewModel.refetchLifeContacts()
-                                                }
-                                            }
+                                            .padding(vertical = 12.dp, horizontal = 12.dp)
+                                        ,
+                                        horizontalArrangement = Arrangement.SpaceBetween,
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        val fontSize = FontSize.LARGE.size.toDp()
+                                        Row(
+                                            Modifier
+                                                .fillMaxHeight()
+                                                .weight(1f),
+                                            verticalAlignment = Alignment.CenterVertically,
+                                            horizontalArrangement = Arrangement.spacedBy(6.dp)
                                         ) {
-                                            Icon(Icons.Default.Add, "New", Modifier.fillMaxSize(), Theme.primary)
+                                            Text(
+                                                contact.name,
+                                                Modifier,
+                                                style = TypoStyle(Theme.primary, FontSize.LARGE)
+                                            )
+                                            if(!showIcons) return@Row
+                                            val textSize = FontSize.LARGE.size.toDp()
+                                            val icons = remember {
+                                                val list = mutableListOf(
+                                                    contact.home?.let { R.drawable.house },
+                                                    contact.iban?.let { R.drawable.pay_with_card },
+                                                    contact.phoneNumber?.let { R.drawable.phone },
+                                                    contact.fullName?.let { R.drawable.id_card },
+                                                    contact.birthday?.let { R.drawable.birthday },
+                                                )
+                                                list.addAll(contact.socials.map { it.platform.icon })
+                                                list
+                                            }
+                                            Row(
+                                                verticalAlignment = Alignment.CenterVertically,
+                                                horizontalArrangement = Arrangement.spacedBy(2.dp)
+                                            ) {
+                                                for (i in icons) {
+                                                    if(i == null) continue
+                                                    Icon(painterResource(i), null, Modifier.size(textSize * .8f), tint = Theme.secondary.copy(.35f))
+                                                }
+                                            }
+                                        }
+                                        if(letter!='C') {
+                                            Box(Modifier
+                                                .size(fontSize)
+                                                .background(
+                                                    if (letter == 'F') Theme.primary else Theme.primary.copy(.2f),
+                                                    MaterialShapes.Flower.toShape()
+                                                )
+                                                .clip(CircleShape)
+                                                .rippleClick {
+                                                    if (letter != 'F' && !favoriteIds.contains(contact.id)) {
+                                                        favoriteIds.add(contact.id)
+                                                    } else {
+                                                        favoriteIds.remove(contact.id)
+                                                    }
+                                                    db.prefs.edit {
+                                                        putStringSet(
+                                                            "favorite_people",
+                                                            favoriteIds.map { it.toString() }.toSet()
+                                                        )
+                                                    }
+                                                }
+                                            )
+                                        } else {
+                                            Box(Modifier
+                                                .size(fontSize)
+                                                .clip(CircleShape)
+                                                .rippleClick {
+                                                    coroutineScope.launch {
+                                                        PersonSyncable(
+                                                            API.generateId(),
+                                                            contact.name,
+                                                            null,
+                                                            contact.phoneNumber,
+                                                            null,
+                                                            null,
+                                                            null,
+                                                            contact.socials
+                                                        ).saveAndSync(db)
+                                                        contactsViewModel.refetchLifeContacts()
+                                                    }
+                                                }
+                                            ) {
+                                                Icon(Icons.Default.Add, "New", Modifier.fillMaxSize(), Theme.primary)
+                                            }
                                         }
                                     }
                                 }
                             }
                         }
-                    }
-                    item(key = "header_$letter") { // Due to reverse  Layout
-                        Text(
-                            when(letter){ 'F' -> "Favoriten"; 'C' -> "Kontakte"; else -> letter.uppercase()},
-                            Modifier
-                                .fillMaxWidth(.95f)
-                                .padding(top = 20.dp, bottom = 5.dp),
-                            style = TypoStyle(Theme.secondary, FontSize.LARGE, if(letter == 'F') FontFamily.Display else null)
-                        )
-                    }
-                }
-            }
-            Row(
-                Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 10.dp)
-                    .padding(bottom = innerPadding.calculateBottomPadding())
-                ,
-                horizontalArrangement = Arrangement.spacedBy(10.dp)
-            ) {
-                Box(
-                    Modifier
-                        .weight(1f)
-                ) {
-                    InputField(
-                        null,
-                        "Suchen",
-                    ) {
-                        search = it
-                    }
-                }
-                val lineHeight = FontSize.LARGE.size.toDp() + 16.dp  * 2 /* TextFieldPadding * 2 */
-                val shape = MaterialShapes.Cookie12Sided.toShape()
-                val coroutineScope = rememberCoroutineScope()
-                Box(
-                    Modifier
-                        .size(lineHeight)
-                        .background(Theme.primaryContainer, shape)
-                        .padding(5.dp)
-                        .clip(shape)
-                        .combinedRippleClick(
-                            {
-                                if (search.isNotBlank()) {
-                                    coroutineScope.launch {
-                                        PersonSyncable(
-                                            API.generateId(),
-                                            search,
-                                            null,
-                                            null,
-                                            null,
-                                            null,
-                                            null,
-                                            listOf(),
-                                        ).saveAndSync(db)
-                                        contactsViewModel.refetchLifeContacts()
-                                        Toast.makeText(context, "Erstellt!", Toast.LENGTH_LONG)
-                                            .show()
-                                    }
-                                } else {
-                                    Toast.makeText(
-                                        context,
-                                        "Gib einen Namen ein",
-                                        Toast.LENGTH_LONG
-                                    ).show()
-                                }
-                            }
-                        ) {
-                            Toast.makeText(
-                                context,
-                                "Halte gedrückt zum erstellen",
-                                Toast.LENGTH_LONG
-                            ).show()
+                        item(key = "header_$letter") { // Due to reverse  Layout
+                            Text(
+                                when(letter){ 'F' -> "Favoriten"; 'C' -> "Kontakte"; else -> letter.uppercase()},
+                                Modifier
+                                    .fillMaxWidth(.95f)
+                                    .padding(top = 20.dp, bottom = 5.dp),
+                                style = TypoStyle(Theme.secondary, FontSize.LARGE, if(letter == 'F') FontFamily.Display else null)
+                            )
                         }
-                ) {
-                    Icon(Icons.Rounded.Add, "New", Modifier.fillMaxSize(), Theme.onPrimary)
+                    }
                 }
-                Spacer(Modifier.height(50.dp))
             }
-        }
-        Box(
-            Modifier.fillMaxSize()
-        ) {
+            val coroutineScope = rememberCoroutineScope()
+            BottomSearchBar(
+                Theme.background,
+                innerPadding.calculateBottomPadding(),
+                {search = it},
+                rememberVectorPainter(Icons.Rounded.Add),
+                {
+                    if (search.isNotBlank()) {
+                        coroutineScope.launch {
+                            PersonSyncable(
+                                API.generateId(),
+                                search,
+                                null,
+                                null,
+                                null,
+                                null,
+                                null,
+                                listOf(),
+                            ).saveAndSync(db)
+                            contactsViewModel.refetchLifeContacts()
+                            Toast.makeText(context, "Erstellt!", Toast.LENGTH_LONG).show()
+                        }
+                    } else {
+                        Toast.makeText(context, "Gib einen Namen ein", Toast.LENGTH_LONG).show()
+                    }
+                },
+            ) {
+                Toast.makeText(
+                    context,
+                    "Halte gedrückt zum erstellen",
+                    Toast.LENGTH_LONG
+                ).show()
+            }
             Box(
                 Modifier
                     .align(Alignment.TopEnd)
@@ -458,5 +429,5 @@ fun Contacts(contactsViewModel: ContactsViewModel){
                 )
             }
         }
-    }
+        }
 }

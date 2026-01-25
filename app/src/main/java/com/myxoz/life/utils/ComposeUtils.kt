@@ -4,6 +4,10 @@ import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.asPaddingValues
+import androidx.compose.foundation.layout.systemBars
 import androidx.compose.material3.ripple
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.MutableState
@@ -75,3 +79,7 @@ fun <T> MutableStateFlow<T?>.collectAsMutableNonNullState(defValue: T): MutableS
         }
     }
 }
+
+
+val windowPadding: PaddingValues
+    @Composable get() = WindowInsets.systemBars.asPaddingValues(LocalDensity.current)

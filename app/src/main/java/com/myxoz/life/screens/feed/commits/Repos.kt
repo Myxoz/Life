@@ -40,7 +40,8 @@ import com.myxoz.life.Theme
 import com.myxoz.life.android.integration.GitHub
 import com.myxoz.life.api.syncables.CommitSyncable
 import com.myxoz.life.screens.feed.dayoverview.edgeToEdgeGradient
-import com.myxoz.life.screens.feed.fullscreenevent.InputField
+import com.myxoz.life.ui.BOTTOMSEARCHBARHEIGHT
+import com.myxoz.life.ui.BottomSearchBar
 import com.myxoz.life.ui.rememberAsymmetricalVerticalCornerRadius
 import com.myxoz.life.ui.theme.FontFamily
 import com.myxoz.life.ui.theme.FontSize
@@ -72,21 +73,21 @@ fun FullScreenRepos(){
     Scaffold(
         containerColor = Theme.background
     ) {  innerPadding ->
-        Column(
+        Box(
             Modifier
-                .fillMaxSize(),
-            horizontalAlignment = Alignment.CenterHorizontally
+                .fillMaxSize()
+            ,
+            contentAlignment = Alignment.BottomCenter
         ) {
             LazyColumn(
                 Modifier
                     .fillMaxWidth(.95f)
-                    .weight(1f)
                     .edgeToEdgeGradient(Theme.background, innerPadding)
                 ,
                 reverseLayout = true
             ) {
                 item {
-                    Spacer(Modifier.height(innerPadding.calculateBottomPadding()))
+                    Spacer(Modifier.height(innerPadding.calculateBottomPadding() + BOTTOMSEARCHBARHEIGHT))
                 }
                 itemsIndexed(displayedRepos, {i, it -> it.commitSha}) {i, it ->
                     val calendar = remember { Calendar.getInstance() }
@@ -110,20 +111,11 @@ fun FullScreenRepos(){
                     Spacer(Modifier.height(innerPadding.calculateTopPadding()))
                 }
             }
-            Box(
-                Modifier
-                    .fillMaxWidth()
-                    .background(Theme.background)
-                    .padding(10.dp)
-                    .padding(bottom = innerPadding.calculateBottomPadding())
-            )  {
-                InputField(
-                    null,
-                    "Suchen",
-                ) { t ->
-                    displayedRepos = repos.filteredWith(t, {it.repoOwner}) {it.repoName}
-                }
-            }
+            BottomSearchBar(
+                Theme.background,
+                innerPadding.calculateBottomPadding(),
+                {t -> displayedRepos = repos.filteredWith(t, {it.repoOwner}) { it.repoName }}
+            )
         }
     }
 }
@@ -141,21 +133,21 @@ fun FullScreenRepo(name: String){
     Scaffold(
         containerColor = Theme.background
     ) {  innerPadding ->
-        Column(
+        Box(
             Modifier
-                .fillMaxSize(),
-            horizontalAlignment = Alignment.CenterHorizontally
+                .fillMaxSize()
+            ,
+            contentAlignment = Alignment.BottomCenter
         ) {
             LazyColumn(
                 Modifier
                     .fillMaxWidth(.95f)
-                    .weight(1f)
                     .edgeToEdgeGradient(Theme.background, innerPadding)
                 ,
                 reverseLayout = true
             ) {
                 item {
-                    Spacer(Modifier.height(innerPadding.calculateBottomPadding()))
+                    Spacer(Modifier.height(innerPadding.calculateBottomPadding() + BOTTOMSEARCHBARHEIGHT))
                 }
                 itemsIndexed(displayedCommits, {i, it -> it.commitSha}) {i, it ->
                 val calendar = remember { Calendar.getInstance() }
@@ -181,20 +173,11 @@ fun FullScreenRepo(name: String){
                     Spacer(Modifier.height(innerPadding.calculateTopPadding()))
                 }
             }
-            Box(
-                Modifier
-                    .fillMaxWidth()
-                    .background(Theme.background)
-                    .padding(10.dp)
-                    .padding(bottom = innerPadding.calculateBottomPadding())
-            )  {
-                InputField(
-                    null,
-                    "Suchen",
-                ) { t ->
-                    displayedCommits = repos.filteredWith(t, {it.repoOwner}) {it.repoName}
-                }
-            }
+            BottomSearchBar(
+                Theme.background,
+                innerPadding.calculateBottomPadding(),
+                {t -> displayedCommits = repos.filteredWith(t, {"\n"}) {it.commitMessage?:""}}
+            )
         }
     }
 }
