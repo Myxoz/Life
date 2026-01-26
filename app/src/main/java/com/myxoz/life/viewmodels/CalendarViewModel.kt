@@ -5,6 +5,7 @@ import androidx.compose.runtime.mutableStateListOf
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.myxoz.life.android.autodetect.AutoDetect
+import com.myxoz.life.api.jsonObjArray
 import com.myxoz.life.api.syncables.SyncedEvent
 import com.myxoz.life.dbwrapper.BankingEntity
 import com.myxoz.life.dbwrapper.StorageManager
@@ -30,7 +31,7 @@ class CalendarViewModel(private val settings: Settings, private val storage: Sto
     val dayAmount = MutableStateFlow(2)
     var selectDayPopup = MutableStateFlow(false)
     val proposedEvents = mutableStateListOf<ProposedEvent>()
-    val futureBankEntries = mutableStateListOf<BankingEntity>()
+    val futureBankEntries = getFututreBankEntries()
     val minuteFlow = flow {
         emit(System.currentTimeMillis())
         while (true){
@@ -44,9 +45,28 @@ class CalendarViewModel(private val settings: Settings, private val storage: Sto
     )
 
     var lastEventUpdateTs = MutableStateFlow(0L)
-
     private var initialized = false
 
+    fun getFututreBankEntries(): List<BankingEntity>{
+        return JSONArray(storage.prefs.getString("payments", null) ?: "[]").jsonObjArray.map {
+            BankingEntity(
+                "",
+                true,
+                true, // Semantic value, but works
+                -it.getInt("amount"),
+                "EUR",
+                "",
+                it.getLong("timestamp"),
+                "Unbekannt",
+                "",
+                "",
+                "",
+                0,
+                it.getLong("timestamp"),
+                it.getLong("timestamp")
+            )
+        }
+    }
     fun initialize(context: Context) {
         if (initialized) return
         initialized = true
@@ -55,32 +75,6 @@ class CalendarViewModel(private val settings: Settings, private val storage: Sto
             withContext(Dispatchers.IO) {
                 proposedEvents.addAll(AutoDetect.autoDetectEvents(context, settings, storage))
             }
-
-            // Load future bank entries
-            val payments = JSONArray(storage.prefs.getString("payments", null) ?: "[]")
-            val entries = mutableListOf<BankingEntity>()
-            for (i in 0 until payments.length()) {
-                val it = payments.getJSONObject(i)
-                entries.add(
-                    BankingEntity(
-                        "",
-                        false,
-                        false,
-                        -it.getInt("amount"),
-                        "EUR",
-                        "",
-                        it.getLong("timestamp"),
-                        it.getString("to"),
-                        "",
-                        "",
-                        "",
-                        0,
-                        it.getLong("timestamp"),
-                        it.getLong("timestamp")
-                    )
-                )
-            }
-            futureBankEntries.addAll(entries)
         }
     }
 

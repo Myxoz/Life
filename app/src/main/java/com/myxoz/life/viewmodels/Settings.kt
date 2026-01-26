@@ -91,8 +91,8 @@ class Settings(val prefs: SharedPreferences, context: Context, activity: Activit
         )
         val readPaymentNotifications = Feature(
             READPAYMENTNOTIFICATIONS,
-            "Google Pay im Feed anzeigen",
-            "Fängt die Google Wallet Benachrichtigungen ab und zeigt sie im Kalender an",
+            "Bargeldlose Bezahlungen im Feed anzeigen",
+            "Diese Einstellung fängt nur die Benachrichtigungen von \"Digitales Bezahlen\" (de.fiduciagad.android.wlwallet) ab. Wenn diese App nicht installiert ist, ist diese Option funktionslos",
             listOf(permissions.readNotifications),
             prefs
         )

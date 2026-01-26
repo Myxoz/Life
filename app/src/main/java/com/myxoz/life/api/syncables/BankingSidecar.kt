@@ -2,11 +2,12 @@ package com.myxoz.life.api.syncables
 
 import com.myxoz.life.api.ServerSyncableCompanion
 import com.myxoz.life.api.Syncable
-import com.myxoz.life.screens.feed.fullscreenevent.getEventId
 import com.myxoz.life.dbwrapper.BankingSidecarEntity
 import com.myxoz.life.dbwrapper.StorageManager
+import com.myxoz.life.screens.feed.fullscreenevent.getEventId
 import org.json.JSONObject
 
+@Deprecated("Using BankingSidecar is depracated and should only be used for backwards compatibility")
 class BankingSidecar(
     id: Long,
     val transactionId: String,

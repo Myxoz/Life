@@ -118,7 +118,7 @@ fun DayComposable(
     val endOfDay = remember { date.plusDays(1).atStartOfDay(zone).toEpochSecond()*1000L }
     var dayEntity: DaysEntity? by remember { mutableStateOf(null) }
     var events by remember { mutableStateOf(viewModel.dayCache[date]?.toList() ?: listOf()) }
-    val hoursToday = remember { ((endOfDay- startOfDay) / (3600*1000)).toInt() }
+    val hoursToday = remember { ((endOfDay - startOfDay) / (3600*1000)).toInt() }
     var oneHourDp by remember { mutableStateOf(0.dp) }
     val hourInPx = with(density) { oneHourDp.toPx() }
     val calendar = remember { Calendar.getInstance() }

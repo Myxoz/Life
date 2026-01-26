@@ -37,7 +37,6 @@ import androidx.navigation.navArgument
 import com.myxoz.life.android.notifications.createNotificationChannels
 import com.myxoz.life.api.API
 import com.myxoz.life.api.jsonObjArray
-import com.myxoz.life.api.syncables.BankingSidecar
 import com.myxoz.life.api.syncables.SyncedEvent
 import com.myxoz.life.dbwrapper.DatabaseProvider
 import com.myxoz.life.dbwrapper.StorageManager
@@ -172,6 +171,7 @@ class MainActivity : ComponentActivity() {
                     // Routine checks
                     if(!settings.features.stepCounting.has.value){
                         db.proposedSteps.clearAll() // Not recording is expensive, we just discard all proposedSteps each time
+                        // 26.1.2026 There must be a better solution for this TODO
                     }
                     withContext(Dispatchers.IO){
                         val payments = prefs.getString("payments", null)?:"[]"
@@ -180,23 +180,17 @@ class MainActivity : ComponentActivity() {
                             val date = payment.getLong("timestamp")
                             val amount = payment.getInt("amount")
                             val entries = db.banking.findPossibleMobileTransaction(
-                                date,
-                                date + 7*24*60*1000L*60 /* 7 Werktage, ab dann nicht mehr zuordbar */,
+                                date - 60*1000L,
+                                date + 60*1000L,
                                 -amount
-                            )
+                            ) // Rounding seams to be 60s check in future
                             if(entries.size != 1) {
                                 println("Trying to create banking sidecar for \n${payment.toString(2)}\n was unsuccessful due to ${entries.size} possible entries:\n$entries\n")
                                 continue
                             }
                             json.remove(payment)
-                            val entry = entries[0]
-                            BankingSidecar(
-                                API.generateId(),
-                                entry.id,
-                                payment.getString("to"),
-                                date
-                            ).saveAndSync(db)
-                            println("Successfully created sidecar for ${entry.id}\n${payment.toString(2)}\n")
+                            // We dont care, just remove it when the transaction exists
+                            println("Successfully found transaction belonging to ${entries[0].id}:\n${payment.toString(2)}\n")
                         }
                         prefs.edit {
                             putString("payments", JSONArray().apply { json.forEach { put(it) } }.toString())

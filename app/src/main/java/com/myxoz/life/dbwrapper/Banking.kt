@@ -68,6 +68,7 @@ data class BankingEntity(
             return bankingEntries
         }
     }
+    fun isWirelessPayment() = card && transfer
 }
 
 @Dao
@@ -110,7 +111,7 @@ interface BankingDao {
     @Query("SELECT * FROM banking WHERE id IN (:ids)")
     suspend fun getTransactionByIds(ids: List<String>): List<BankingEntity>
 
-    @Query("SELECT * FROM banking WHERE value_date > :start AND value_date < :end AND amount_cents = :amount")
+    @Query("SELECT * FROM banking WHERE purpose_date IS NOT NULL AND purpose_date > :start AND purpose_date < :end AND amount_cents = :amount")
     suspend fun findPossibleMobileTransaction(start: Long, end: Long, amount: Int): List<BankingEntity>
 
     @Query("SELECT * FROM banking WHERE value_date = (SELECT MAX(value_date) FROM banking)")

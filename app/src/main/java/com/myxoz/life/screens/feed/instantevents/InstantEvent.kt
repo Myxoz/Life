@@ -34,9 +34,9 @@ import com.myxoz.life.R
 import com.myxoz.life.dbwrapper.BankingEntity
 import com.myxoz.life.dbwrapper.StorageManager
 import com.myxoz.life.dbwrapper.formatCents
-import com.myxoz.life.ui.theme.OldColors
 import com.myxoz.life.ui.theme.FontColor
 import com.myxoz.life.ui.theme.FontSize
+import com.myxoz.life.ui.theme.OldColors
 import com.myxoz.life.ui.theme.TypoStyleOld
 import com.myxoz.life.utils.rippleClick
 import com.myxoz.life.viewmodels.CalendarViewModel
@@ -75,7 +75,7 @@ class InstantEvent(
                 Icon(
                     painterResource(icon),
                     "Card",
-                    Modifier.Companion.height(oneHourDp / (if (icon == R.drawable.gpay) 3f else 2f)),
+                    Modifier.Companion.height(oneHourDp / 2f),
                     tint = OldColors.PRIMARYFONT
                 )
                 Spacer(Modifier.Companion.height((if (icon == R.drawable.pay_with_card) 2.dp else 4.dp)))
@@ -101,7 +101,7 @@ class InstantEvent(
         suspend fun getEntriesBetween(db: StorageManager, startOfDay: Long, endOfDay: Long, viewModel: CalendarViewModel): List<InstantEventGroup> {
             val entries = BankingEntity.getAllBankingEntriesFor(db, startOfDay, endOfDay, viewModel.futureBankEntries).mapNotNull {
                 InstantEvent(
-                    if(it.card) R.drawable.pay_with_card else R.drawable.gpay,
+                    if(it.isWirelessPayment()) R.drawable.wireless_pay else if(it.card) R.drawable.pay_with_card else R.drawable.bank_transfer,
                     it.amountCents.formatCents(),
                     it.purposeDate?:return@mapNotNull null,
                 ) { nav ->
@@ -185,7 +185,7 @@ class InstantEvent(
                                         "Card",
                                         Modifier.Companion
                                             .padding(start = .15f * instantEventDisplaySize)
-                                            .height(oneHourDp / (if (ev.icon == R.drawable.gpay) 6f else 4f)),
+                                            .height(oneHourDp / 4f),
                                         tint = OldColors.PRIMARYFONT
                                     )
                                     Spacer(Modifier.Companion.width((if (ev.icon == R.drawable.pay_with_card) 2.dp else 4.dp)))

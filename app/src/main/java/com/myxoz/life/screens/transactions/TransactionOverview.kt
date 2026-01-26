@@ -86,8 +86,8 @@ fun TransactionOverview(transactionId: String, bankViewModel: LargeDataCache){
     val transactionAtHand = remember { runBlocking /* Review if not clean */ { db.banking.getTransactionById(transactionId)?: JSONObject(db.prefs.getString("transactionAtHand", null)?:"{}").let {
         BankingEntity(
             "",
-            false,
-            false,
+            true,
+            true,
             it.getInt("amount"),
             "EUR",
             "",
@@ -151,10 +151,9 @@ fun TransactionOverview(transactionId: String, bankViewModel: LargeDataCache){
             Text(
                 run {
                     val transactionType = when {
-                        transactionAtHand.transfer -> "Überweisung"
+                        transactionAtHand.isWirelessPayment() -> "Bargeldlos"
                         transactionAtHand.card -> "Kartenzahlung"
-                        transactionSidecar != null || transactionAtHand.id.isBlank() -> "Google Pay"
-                        else -> ""
+                        else -> "Überweisung"
                     }
 
                     val timestamp =
@@ -162,8 +161,7 @@ fun TransactionOverview(transactionId: String, bankViewModel: LargeDataCache){
                             ?: transactionSidecar?.date?.formatTimeStamp(calendar)
                             ?: ""
 
-                    val separator =
-                        if (transactionType.isNotEmpty() && timestamp.isNotEmpty()) " · " else ""
+                    val separator = if (transactionType.isNotEmpty() && timestamp.isNotEmpty()) " · " else ""
 
                     "$transactionType$separator$timestamp"
                 },
@@ -334,19 +332,19 @@ fun BankingEntryComposable(entry: Pair<BankingEntity, BankingSidecarEntity?>, is
                 Icon(
                     painterResource(
                         when {
+                            entry.first.isWirelessPayment() -> R.drawable.wireless_pay
                             card -> R.drawable.pay_with_card
-                            transfer -> R.drawable.bank_transfer
-                            else -> R.drawable.gpay
+                            else -> R.drawable.bank_transfer
                         }
                     ),
                     "Payment Type",
                     Modifier
                         .height(height)
-                        .width(if(!transfer && !card) height*2.5f else height),
+                        .width(height),
                     Theme.secondary
                 )
-                if(card || transfer) Text(
-                    if(card) "Kartenzahlung" else "Überweisung",
+                Text(
+                    if(entry.first.isWirelessPayment()) "Bargeldlos" else if(card) "Kartenzahlung" else "Überweisung",
                     style = TypoStyle(Theme.secondary, FontSize.MEDIUMM)
                 )
             }
