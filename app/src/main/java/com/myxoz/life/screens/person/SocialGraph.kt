@@ -221,7 +221,6 @@ fun SocialGraph(socialGraphViewModel: SocialGraphViewModel){
                                 return@detectTapGestures
                             }
                             selectedNode = clicked.personId
-                            println("Clicked on: ${clicked.name}")
                         } else {
                             selectedNode = null // Deselect if clicking empty space
                         }

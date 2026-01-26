@@ -3,6 +3,7 @@ package com.myxoz.life.api
 import android.security.keystore.KeyGenParameterSpec
 import android.security.keystore.KeyProperties
 import android.util.Base64
+import android.util.Log
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import org.json.JSONObject
@@ -51,10 +52,10 @@ class Security(
             conn.disconnect()
             result
         } catch (_: UnknownHostException) {
-            println("Offline")
+            Log.w(API.LOGTAG, "Offline")
             null
         } catch (e: Exception) {
-            println("Exception in try: $e")
+            Log.e(API.LOGTAG,"Exception while fetching", e)
             e.printStackTrace()
             null
         }

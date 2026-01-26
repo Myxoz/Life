@@ -1,6 +1,7 @@
 package com.myxoz.life.screens.person.displayperson
 
 import android.content.Intent
+import android.util.Log
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateContentSize
@@ -787,7 +788,7 @@ fun ListEditingField(isEditing: Boolean, displayText: String, subtext: String?, 
 fun String.censorLast(amount: Int, censor: String) = substring(0, (length - amount).coerceIn(0, length))+substring((length - amount).coerceIn(0, length)).map { c -> if(!c.isWhitespace()) censor else c }.joinToString("")
 
 fun <T> NavController.navigateForResult(route: String, key: String, addAditonalContext: (NavigateForResultAditionalContext.()->Unit)? = null, onComplete: (T)->Unit){
-    println("Navigating for result in $key")
+    Log.d("NavController","Navigating for result in $key")
     val handle = currentBackStackEntry?.savedStateHandle ?: return
     handle.remove<T>(key)
     val data = handle.getLiveData<T>(key)
@@ -795,7 +796,7 @@ fun <T> NavController.navigateForResult(route: String, key: String, addAditonalC
     navigate(route)
     val observer = object: Observer<T> {
         override fun onChanged(value: T) {
-            println("Received result for $key")
+            Log.d("NavController","Received result for $key: $value")
             onComplete(value)
             data.removeObserver(this)
             handle.remove<T>(key)

@@ -40,15 +40,9 @@ import org.json.JSONObject
 fun ModifyLocation(){
     val db = LocalStorage.current
     val nav = LocalNavController.current
-    val coroutineScope = rememberCoroutineScope()
     val defaultLocation = remember {
         db.prefs.getString("editing_location", null)?.let {
-            println(it)
-            Location.fromJSON(JSONObject(it)).apply {
-                coroutineScope.launch {
-                    println(this@apply.toJson(db))
-                }
-            }
+            Location.fromJSON(JSONObject(it))
         }?.apply {
             db.prefs.edit {
                 remove("editing_location")

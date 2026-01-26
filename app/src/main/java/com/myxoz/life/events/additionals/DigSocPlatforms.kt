@@ -1,5 +1,6 @@
 package com.myxoz.life.events.additionals
 
+import android.util.Log
 import com.myxoz.life.R
 
 enum class DigSocPlatform(override val id: Int, override val drawable: Int): TagLike {
@@ -10,6 +11,6 @@ enum class DigSocPlatform(override val id: Int, override val drawable: Int): Tag
     Nachrichten(5, R.drawable.message),
     ;
     companion object {
-        fun getById(id: Int): DigSocPlatform? = DigSocPlatform.entries.firstOrNull { it.id == id }.apply { if(this==null) println("Couldnt find app with id $id in DigSocEntry.getById") }
+        fun getById(id: Int): DigSocPlatform? = DigSocPlatform.entries.firstOrNull { it.id == id }.apply { if(this==null) Log.e("DigSocPlatform", "Couldnt find app with id $id in DigSocEntry.getById") }
     }
 }

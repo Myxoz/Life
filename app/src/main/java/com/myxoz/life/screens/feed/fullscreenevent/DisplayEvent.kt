@@ -239,7 +239,7 @@ fun DisplayEvent(fullEvent: SyncedEvent){
                                     AndroidUtils.openLink(
                                         context,
                                         HVV.constructLink(if(isFrom) location else null, if(isFrom) null else location)
-                                            .apply { println(this) })
+                                    )
                                 }
                                 .padding(vertical = 8.dp),
                             horizontalArrangement = Arrangement.spacedBy(

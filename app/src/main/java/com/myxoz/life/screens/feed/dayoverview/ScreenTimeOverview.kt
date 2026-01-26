@@ -68,7 +68,6 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.withContext
 import java.time.LocalDate
 import java.time.ZoneId
-import java.util.Date
 
 @Composable
 fun ScreenTimeOverview(epochDay: Long){
@@ -89,7 +88,6 @@ fun ScreenTimeOverview(epochDay: Long){
 
                 if (events.hasNextEvent()) {
                     events.getNextEvent(e)
-                    println("Earliest event at: ${Date(e.timeStamp)}")
                 }
                 getMappedUsageDataBetween(
                     context,

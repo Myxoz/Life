@@ -5,8 +5,8 @@ import android.content.SharedPreferences
 import android.util.Log
 import androidx.compose.runtime.Stable
 import androidx.core.content.edit
-import com.myxoz.life.screens.feed.fullscreenevent.getEventId
 import com.myxoz.life.dbwrapper.StorageManager
+import com.myxoz.life.screens.feed.fullscreenevent.getEventId
 import com.myxoz.life.viewmodels.Settings
 import org.json.JSONArray
 import org.json.JSONObject
@@ -27,7 +27,7 @@ class API(
         isSyncing = true
         val elementsPerRequest = 50
         var offset = 0
-        println("Sending entries to server...")
+        Log.i(LOGTAG, "Sending entries to server...")
         while (true) {
             val lastNEntries = buildList {
                 for (entry in db.waitingSync.getLastNWaitingSyncEntries(
@@ -38,24 +38,24 @@ class API(
                         val x = Syncable.from(entry, db)
                         x?.let { add(it) }
                     } catch (e: Exception) {
-                        Log.e("API", "Failed to create Syncable from $entry", e)
+                        Log.e(LOGTAG, "Failed to create Syncable from $entry", e)
                     }
                 }
             }
             if (lastNEntries.isEmpty()) {
-                println("None to send")
+                Log.i(LOGTAG, "None to send")
                 break
             }
 
             val json = JSONArray()
             for (entry in lastNEntries) {
                 entry.toJson(db)?.also { json.put(it) }
-                    ?: println("Couldnt stringify ${entry.id} of type ${entry.calendarId} ($entry)")
+                    ?: Log.w(LOGTAG, "Couldnt stringify ${entry.id} of type ${entry.calendarId} ($entry)")
             }
 
-            println("JSON:\n" + json.toString(2))
+            Log.i(LOGTAG,"JSON:\n" + json.toString(2))
             val response = send(Method.Send, json.toString(), offset)
-            println("Server responded:\n$response\n")
+            Log.i(LOGTAG,"Server responded:\n$response\n")
             if (response == null) {
                 isSyncing = false
                 return 0
@@ -63,36 +63,35 @@ class API(
             val resJson = JSONObject(response)
             resJson
                 .getJSONArray("msg")
-                .forEach { println("Server reported: $it") }
+                .forEach { Log.i(LOGTAG,"Server reported msg: $it") }
             resJson.getJSONArray("entries").jsonObjArray.forEach {
                 db.waitingSync.deleteWaitingSync(it.getEventId(), it.getInt("type"))
             }
             if (lastNEntries.size < elementsPerRequest) break
-            println("More to go")
+            Log.i(LOGTAG,"Server isn't done sending chunked responses...")
         }
         var serverLastUpdate: Long
         var updateAmount = 0
-        println("Get new entries...")
+        Log.i(LOGTAG,"Get new entries...")
         while (true) {
             val responseText = send(Method.Resync, "[]", offset)
             if (responseText == null) {
                 isSyncing = false; return 0
             }
             if (!responseText.trim().startsWith("{")) {
-                println("API Unexpected response: $responseText")
-                println("${System.currentTimeMillis()} is the current time")
+                Log.w(LOGTAG,"API Unexpected response: $responseText current time: ${System.currentTimeMillis()}")
                 isSyncing = false
                 return 0
             }
             val response = JSONObject(responseText)
-            println("Server entries:\n" + response.toString(2))
+            Log.i(LOGTAG, "Server entries:\n" + response.toString(2))
             val jsonArray = response.getJSONArray("e").jsonObjArray
             serverLastUpdate = response.getLong("date")
             if (jsonArray.isEmpty()) break
             updateAmount += jsonArray.size
-            Log.i("API", "Batch received ${jsonArray.size} events")
+            Log.i(LOGTAG, "Batch received ${jsonArray.size} events")
             jsonArray.forEach {
-                println(it)
+                Log.i(LOGTAG, it.toString(2))
                 ServerSyncable.overwriteByJson(db, it)
             }
             if (jsonArray.size < elementsPerRequest) break
@@ -128,6 +127,7 @@ class API(
     }
 
     companion object {
+        const val LOGTAG = "API"
         fun generateId(): Long {
             return Random.nextLong(0, Long.MAX_VALUE)
         }

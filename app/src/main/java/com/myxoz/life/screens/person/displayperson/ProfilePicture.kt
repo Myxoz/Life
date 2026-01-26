@@ -1,6 +1,7 @@
 package com.myxoz.life.screens.person.displayperson
 
 import android.graphics.Bitmap
+import android.util.Log
 import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.animateFloatAsState
@@ -94,7 +95,7 @@ fun ProfilePictureWithText(photoPicker: PhotoPicker, profileInfoViewModel: Profi
         photoPicker.processedBitmap
             .drop(1)
             .collect {
-                println("Image selected / already passed bitmap, will be synced now $it")
+                Log.d("ImagePicker","Image selected / already passed bitmap, will be synced now $it")
                 if(it==null){
                     ProfilePictureSyncable.deleteBitmapFile(context, personId)
                 } else {

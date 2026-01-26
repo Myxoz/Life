@@ -3,12 +3,13 @@ package com.myxoz.life.api.syncables
 import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
+import android.util.Log
 import com.myxoz.life.MainActivity
 import com.myxoz.life.api.ServerSyncableCompanion
 import com.myxoz.life.api.Syncable
-import com.myxoz.life.screens.feed.fullscreenevent.getEventId
 import com.myxoz.life.dbwrapper.ProfilePictureStored
 import com.myxoz.life.dbwrapper.StorageManager
+import com.myxoz.life.screens.feed.fullscreenevent.getEventId
 import org.json.JSONObject
 import java.io.File
 import java.io.FileOutputStream
@@ -54,7 +55,7 @@ class ProfilePictureSyncable(val personId: Long): Syncable(SpecialSyncablesIds.P
                         val savedFile = saveBitmapToFile(context, bitmap, personId)
 
                         if (savedFile != null) {
-                            println("Saved ProfilePic Bitmap to ${savedFile.path}")
+                            Log.w("Calendar","Saved ProfilePic Bitmap to ${savedFile.path}")
                         }
                         bitmap.recycle()
                     }
@@ -77,8 +78,7 @@ class ProfilePictureSyncable(val personId: Long): Syncable(SpecialSyncablesIds.P
                 }
 
             } catch (e: Exception) {
-                println("Failed to overwrite Bitmap from ServerResponse")
-                e.printStackTrace()
+                Log.e("ImagePicker","Failed to overwrite Bitmap from ServerResponse", e)
             }
         }
         fun base64ToBitmap(base64String: String): Bitmap? {
@@ -86,8 +86,7 @@ class ProfilePictureSyncable(val personId: Long): Syncable(SpecialSyncablesIds.P
                 val decodedBytes = Base64.decode(base64String)
                 BitmapFactory.decodeByteArray(decodedBytes, 0, decodedBytes.size)
             } catch (e: Exception) {
-                println("Failed to decode bitmap from Base64")
-                e.printStackTrace()
+                Log.e("ImagePicker","Failed to decode bitmap from Base64", e)
                 null
             }
         }
@@ -97,12 +96,11 @@ class ProfilePictureSyncable(val personId: Long): Syncable(SpecialSyncablesIds.P
                 val fos = FileOutputStream(file)
                 bitmap.compress(Bitmap.CompressFormat.JPEG, 80, fos)
                 fos.flush(); fos.close()
-                println("Successfully saved Bitmap to ${file.path}")
+                Log.i("ImagePicker","Successfully saved Bitmap to ${file.path}")
                 return file
 
             } catch (e: Exception) {
-                println("Failed to save bitmap for ID $personId")
-                e.printStackTrace()
+                Log.e("ImagePicker","Failed to save bitmap for ID $personId", e)
                 return null
             }
         }
@@ -110,8 +108,7 @@ class ProfilePictureSyncable(val personId: Long): Syncable(SpecialSyncablesIds.P
             return try {
                 getProfilePicPath(context, personId).delete()
             } catch (e: Exception) {
-                println("Failed to delete Bitmap for $personId")
-                e.printStackTrace()
+                Log.e("ImagePicker","Failed to delete Bitmap for $personId", e)
                 false
             }
         }
@@ -126,8 +123,7 @@ class ProfilePictureSyncable(val personId: Long): Syncable(SpecialSyncablesIds.P
                 val file = getProfilePicPath(context, personId)
                 if (file.exists()) { BitmapFactory.decodeFile(file.absolutePath) } else null
             } catch (e: Exception) {
-                println("Failed to decode existing Bitmap")
-                e.printStackTrace()
+                Log.e("ImagePicker","Failed to decode existing Bitmap", e)
                 null
             }
         }

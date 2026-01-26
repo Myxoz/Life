@@ -1,6 +1,7 @@
 package com.myxoz.life.android.integration
 
 import android.content.Context
+import android.util.Log
 import androidx.annotation.StringRes
 import com.myxoz.life.R
 import com.myxoz.life.api.jsonObjArray
@@ -25,7 +26,7 @@ object MapBoxAPI {
             val token = context.getString(tokenResId)
             val fullUrl = "$baseUrl&access_token=$token"
 
-            val url = URL(fullUrl.also { println("Debug: fetches mapbox at $it") })
+            val url = URL(fullUrl.also { Log.d("MapBoxAPI","Debug: fetches mapbox at $it") })
             val connection = (url.openConnection() as HttpURLConnection).apply {
                 requestMethod = "GET"
                 setRequestProperty("accept", "*/*")
@@ -35,10 +36,10 @@ object MapBoxAPI {
                 connection.disconnect()
             }
         } catch (_: UnknownHostException) {
-            println("Offline")
+            Log.d("MapBoxAPI","Offline")
             null
         } catch (e: Exception) {
-            println("Exception in try: $e")
+            Log.d("MapBoxAPI","Exception in try: $e")
             e.printStackTrace()
             null
         }
@@ -57,7 +58,7 @@ object MapBoxAPI {
         context: Context,
         lat: Double,
         longitude: Double
-    ) = getWithMapboxToken(context, "https://api.mapbox.com/search/geocode/v6/reverse?latitude=$lat&longitude=$longitude").also { println("Mapbox reverse geocode: $it") }
+    ) = getWithMapboxToken(context, "https://api.mapbox.com/search/geocode/v6/reverse?latitude=$lat&longitude=$longitude").also { Log.w("MapBoxAPI","Mapbox reverse geocode: $it") }
 
     fun getLocationListFromAPIResponse(response: String): List<Location>{
         val features = JSONObject(response)

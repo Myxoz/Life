@@ -1,5 +1,6 @@
 package com.myxoz.life.events.additionals
 
+import android.util.Log
 import com.myxoz.life.R
 
 enum class Vehicle(override val id: Int, override val drawable: Int): TagLike{ // TODO CHange Taglike and include display name
@@ -13,6 +14,6 @@ enum class Vehicle(override val id: Int, override val drawable: Int): TagLike{ /
     RBahn(8, R.drawable.rbahn),
     ;
     companion object {
-        fun getById(id: Int): Vehicle? = Vehicle.entries.firstOrNull { it.id == id }.apply { if(this==null) println("Couldnt find vehicle with id $id in Vehicles.getById") }
+        fun getById(id: Int): Vehicle? = Vehicle.entries.firstOrNull { it.id == id }.apply { if(this==null) Log.e("Vehicle", "Couldnt find vehicle with id $id in Vehicles.getById") }
     }
 }

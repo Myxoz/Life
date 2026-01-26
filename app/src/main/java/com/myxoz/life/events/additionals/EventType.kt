@@ -1,5 +1,6 @@
 package com.myxoz.life.events.additionals
 
+import android.util.Log
 import androidx.compose.ui.graphics.Color
 import com.myxoz.life.ui.theme.OldColors
 
@@ -21,6 +22,6 @@ enum class EventType(val id: Int, val color: Color, val selectedColor: Color, va
     fun isPeopleEvent() = this in arrayOf(DigSoc, Social)
     companion object {
         val order = arrayOf(Sleep, Spont, Hobby, Learn, Travel, Social, DigSoc, Work);
-        fun getById(id: Int): EventType? = EventType.entries.firstOrNull { it.id == id }.apply { if(this==null) println("Couldnt find calendar with id $id in EventType.getById") }
+        fun getById(id: Int): EventType? = EventType.entries.firstOrNull { it.id == id }.apply { if(this==null) Log.w("Calendar","Couldnt find calendar with id $id in EventType.getById") }
     }
 }

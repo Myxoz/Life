@@ -3,6 +3,7 @@ package com.myxoz.life.android.notifications
 import android.icu.util.Calendar
 import android.service.notification.NotificationListenerService
 import android.service.notification.StatusBarNotification
+import android.util.Log
 import androidx.core.content.edit
 import org.json.JSONArray
 import org.json.JSONObject
@@ -24,7 +25,7 @@ class NotificationReaderService : NotificationListenerService() {
         val sDate = datePart[0].split(".")
         val time = datePart[1].split(":")
         if(datePart.size != 2 || sDate.size != 3 || time.size != 2) {
-            println("A payment notification couldnt be parsed, this is indication that a structural change of the notification happened")
+            Log.w("Transaction", "A payment notification couldnt be parsed, this is indication that a structural change of the notification happened")
             return
         }
         val calendar = Calendar.getInstance()
@@ -70,7 +71,7 @@ class NotificationReaderService : NotificationListenerService() {
             val text = sbn.notification.extras.getCharSequence("android.text")?.toString()
             val whenPosted = sbn.postTime
 
-            println("Package: $pkg, ID: $id, Tag: $tag, Title: $title, Text: $text, When: $whenPosted")
+            Log.d("NotificationListener", "Package: $pkg, ID: $id, Tag: $tag, Title: $title, Text: $text, When: $whenPosted")
         }
     }
 }

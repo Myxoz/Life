@@ -303,7 +303,6 @@ class ThreeStateBottomSheetState{
         offset.value = snapTarget
         lastVelocity.value = 0f
         progress.value = (snapTarget / snapHeightPx).coerceIn(0f, 1f)
-        println("${offset.value} ${lastVelocity.value} ${progress.value}")
     }
 }
 

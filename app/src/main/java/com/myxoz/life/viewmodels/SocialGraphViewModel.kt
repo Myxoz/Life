@@ -1,5 +1,6 @@
 package com.myxoz.life.viewmodels
 
+import android.util.Log
 import androidx.compose.ui.geometry.Offset
 import androidx.lifecycle.ViewModel
 import com.myxoz.life.dbwrapper.EventEntity
@@ -91,7 +92,7 @@ class SocialGraphViewModel(val db: StorageManager): ViewModel() {
                 }
             }
             val nodeList = nodes.values.toList()
-            println("We have ${nodeList.size} nodes with ${nodeList.sumOf { it.edges.size }.toFloat() / 2f} edges")
+            Log.d("SocialGraph","We have ${nodeList.size} nodes with ${nodeList.sumOf { it.edges.size }.toFloat() / 2f} edges")
             val radius = 500f
             nodeList.forEachIndexed { index, node ->
                 val angle = 2 * Math.PI * index / nodeList.size

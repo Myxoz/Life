@@ -113,7 +113,7 @@ class MainActivity : ComponentActivity() {
     ) { result ->
         if (result.resultCode == RESULT_OK) {
             val selectedImageUri: Uri? = result.data?.data
-            println("Selected uri is $selectedImageUri")
+            Log.d("ImagePicker", "Selected uri is $selectedImageUri")
             photoPicker.setURI(selectedImageUri?:return@registerForActivityResult, applicationContext)
         }
     }.apply { photoPicker.pickerLauncher = this }
@@ -164,7 +164,7 @@ class MainActivity : ComponentActivity() {
                             val it = keys.iterator()
                             while (it.hasNext()) {
                                 val key = it.next()
-                                println("[" + key + " = " + bundle.get(key) + "]")
+                                Log.d("Activity","[" + key + " = " + bundle.get(key) + "]")
                             }
                         }
                     }
@@ -185,12 +185,12 @@ class MainActivity : ComponentActivity() {
                                 -amount
                             ) // Rounding seams to be 60s check in future
                             if(entries.size != 1) {
-                                println("Trying to create banking sidecar for \n${payment.toString(2)}\n was unsuccessful due to ${entries.size} possible entries:\n$entries\n")
+                                Log.w("Transaction","Trying to create banking sidecar for \n${payment.toString(2)}\n was unsuccessful due to ${entries.size} possible entries:\n$entries\n")
                                 continue
                             }
                             json.remove(payment)
                             // We dont care, just remove it when the transaction exists
-                            println("Successfully found transaction belonging to ${entries[0].id}:\n${payment.toString(2)}\n")
+                            Log.i("Transaction", "Successfully found transaction belonging to ${entries[0].id}:\n${payment.toString(2)}\n")
                         }
                         prefs.edit {
                             putString("payments", JSONArray().apply { json.forEach { put(it) } }.toString())
@@ -355,7 +355,7 @@ class MainActivity : ComponentActivity() {
         }
     }
     private fun handleIntent(intent: Intent){
-        println("Maybe old intent")
+        Log.w("Activity", "Might be an old intent")
         handleSharingIntent(intent)
         val route = intent.getStringExtra("targetRoute") ?: return
         val navController = controller
@@ -370,7 +370,7 @@ class MainActivity : ComponentActivity() {
         }
     }
     override fun onNewIntent(intent: Intent) {
-        println("New Intent")
+        Log.w("Activity","New Intent")
         super.onNewIntent(intent)
         handleIntent(intent)
     }
@@ -391,7 +391,7 @@ class MainActivity : ComponentActivity() {
                 // Clear the intent extra to avoid reprocessing
                 intent.removeExtra("shared_travel_event")
             } catch (e: Exception) {
-                Log.e("MainActivity", "Failed to parse travel event from intent", e)
+                Log.e("Activity", "Failed to parse travel event from intent", e)
             }
         }
     }

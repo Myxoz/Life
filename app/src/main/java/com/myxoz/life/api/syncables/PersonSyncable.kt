@@ -3,15 +3,16 @@ package com.myxoz.life.api.syncables
 import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
+import android.util.Log
 import androidx.compose.ui.graphics.Color
 import com.myxoz.life.R
 import com.myxoz.life.api.ServerSyncableCompanion
 import com.myxoz.life.api.Syncable
 import com.myxoz.life.api.forEach
-import com.myxoz.life.screens.feed.fullscreenevent.getEventId
 import com.myxoz.life.dbwrapper.PersonEntity
 import com.myxoz.life.dbwrapper.SocialsEntity
 import com.myxoz.life.dbwrapper.StorageManager
+import com.myxoz.life.screens.feed.fullscreenevent.getEventId
 import com.myxoz.life.utils.AndroidUtils
 import com.myxoz.life.utils.getLongOrNull
 import com.myxoz.life.utils.getStringOrNull
@@ -191,11 +192,11 @@ class PersonSyncable(
 
             companion object {
                 fun getById(id: Int): Platform? = Platform.entries.firstOrNull { it.id == id }
-                    .apply { if (this == null) println("Couldnt find social with id $id in Platforms.getById") }
+                    .apply { if (this == null) Log.w("Person","Couldnt find social with id $id in Platforms.getById") }
 
                 fun getByName(name: String): Platform? =
                     Platform.entries.firstOrNull { it.short == name }
-                        .apply { if (this == null) println("Couldnt find social with name $name in Platforms.getById") }
+                        .apply { if (this == null) Log.w("Person","Couldnt find social with name $name in Platforms.getById") }
             }
         }
 
