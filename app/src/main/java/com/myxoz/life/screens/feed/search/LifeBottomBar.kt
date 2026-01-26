@@ -303,7 +303,7 @@ fun LifeBottomBar(calendarViewModel: CalendarViewModel){
         Spacer(Modifier.width(5.dp))
         Box(
             Modifier
-                .clip(MaterialShapes.Pill.toShape())
+                .clip(MaterialShapes.Puffy.toShape())
                 .size(rowHeight)
                 .background(Theme.primary)
                 .padding(7.dp)
@@ -311,7 +311,7 @@ fun LifeBottomBar(calendarViewModel: CalendarViewModel){
                     navController.navigate("menu")
                 }
         ) {
-            Icon(painterResource(R.drawable.app), "Life", Modifier.fillMaxSize(), Theme.onPrimary)
+            Icon(painterResource(R.drawable.menu), "Life", Modifier.fillMaxSize(), Theme.onPrimary)
         }
     }
 }
