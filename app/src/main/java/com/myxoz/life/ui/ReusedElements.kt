@@ -13,6 +13,7 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.gestures.detectVerticalDragGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -22,16 +23,15 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Icon
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -44,7 +44,6 @@ import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.Layout
 import androidx.compose.ui.layout.onGloballyPositioned
-import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.Dp
@@ -202,18 +201,15 @@ fun ThreeStateBottomSheet(
     innerPadding: PaddingValues,
     content: @Composable () -> Unit,
 ) {
-    val screenHeightDp = LocalConfiguration.current.screenHeightDp.dp + 1.dp /* Because rounded down */
-    Box(
-        Modifier
-            .fillMaxSize(),
+    BoxWithConstraints(
+        Modifier.fillMaxSize(),
         contentAlignment = Alignment.BottomCenter
     ) {
         val density = LocalDensity.current
-        var maxHeight by remember { mutableStateOf(0.dp) }
         val offset by state.offset.collectAsState()
         val minHeightPx = with(density) { minHeight.toPx() }
-        val screenHeightPx = with(density) { screenHeightDp.toPx()  } - minHeightPx
-        val heightDp = with(density) {minHeight + offset.toDp()}.coerceIn(minHeight, screenHeightDp)
+        val screenHeightPx = with(density) { maxHeight.toPx()  } - minHeightPx
+        val heightDp = with(density) {minHeight + offset.toDp()}.coerceIn(minHeight, maxHeight)
         val coroutineScope = rememberCoroutineScope()
         val lastVelocity by state.lastVelocity.collectAsState()
         val snapHeightPx = 0.7f * screenHeightPx
@@ -238,7 +234,6 @@ fun ThreeStateBottomSheet(
         }
         Box(
             Modifier
-                .fillMaxWidth()
                 .height(heightDp)
                 .background(color, shape)
                 .clip(shape)
@@ -271,7 +266,7 @@ fun ThreeStateBottomSheet(
                 )
         ) {
             MeasuredSheetContent(
-                {maxHeight = it}
+                {}
             ){
                 content()
             }
@@ -450,3 +445,8 @@ fun ToggleButton(active: MutableStateFlow<Boolean>, onClick: ((Boolean) -> Unit)
         content()
     }
 }
+val SCREENMAXWIDTH = 700.dp
+fun Modifier.setMaxTabletWidth() =
+    this
+        .widthIn(max = SCREENMAXWIDTH)
+        .fillMaxWidth(.95f)

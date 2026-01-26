@@ -2,6 +2,7 @@ package com.myxoz.life.viewmodels
 
 import android.content.Context
 import androidx.compose.runtime.mutableStateListOf
+import androidx.core.content.edit
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.myxoz.life.android.autodetect.AutoDetect
@@ -28,7 +29,13 @@ class CalendarViewModel(private val settings: Settings, private val storage: Sto
     val search = SearchField()
     val dayCache = mutableMapOf<LocalDate, List<SyncedEvent>>()
     val instantEventCache = mutableMapOf<LocalDate, List<InstantEvent.Companion.InstantEventGroup>>()
-    val dayAmount = MutableStateFlow(2)
+    val dayAmount = MutableStateFlow(
+        storage.prefs.getInt("displayed_days", 2)
+    ).apply {
+        viewModelScope.launch {
+            collect { storage.prefs.edit { putInt("displayed_days", it) } }
+        }
+    }
     var selectDayPopup = MutableStateFlow(false)
     val proposedEvents = mutableStateListOf<ProposedEvent>()
     val futureBankEntries = getFututreBankEntries()

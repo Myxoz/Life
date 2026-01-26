@@ -33,7 +33,6 @@ import androidx.compose.material3.DatePickerDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
-import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SwitchColors
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextFieldDefaults
@@ -74,10 +73,13 @@ import com.myxoz.life.events.DigSocEvent
 import com.myxoz.life.events.additionals.EventType
 import com.myxoz.life.screens.feed.main.msToDisplay
 import com.myxoz.life.ui.ActionBar
+import com.myxoz.life.ui.SCREENMAXWIDTH
+import com.myxoz.life.ui.setMaxTabletWidth
 import com.myxoz.life.ui.theme.FontSize
 import com.myxoz.life.ui.theme.TypoStyle
 import com.myxoz.life.utils.rippleClick
 import com.myxoz.life.utils.toDp
+import com.myxoz.life.utils.windowPadding
 import com.myxoz.life.viewmodels.LargeDataCache
 import com.myxoz.life.viewmodels.ProfileInfoModel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -103,33 +105,37 @@ fun ProfileFullScreen(
     LaunchedEffect(Unit) {
         profileInfoModel.updateStateIfOutdated(personId, context)
     }
-    Scaffold(
-        containerColor = Theme.background
-    ) { innerPadding ->
-        val verticalScrollState = rememberScrollState()
-        Box(
+    val verticalScrollState = rememberScrollState()
+    Box(
+        Modifier
+            .background(Theme.background)
+        ,
+        contentAlignment = Alignment.TopCenter
+    ){
+        val fontSize = FontSize.XLARGE.size.toDp() + 20.dp
+        val conf = LocalConfiguration.current
+        val screenWidth = min(conf.screenWidthDp, SCREENMAXWIDTH.value.toInt())
+        val smallerScreenDimension = min(screenWidth, conf.screenHeightDp).dp
+        val isProfilePictureFullScreen by profileInfoModel.isProfilePictureFullScreen.collectAsState()
+        val maxPbSize by animateDpAsState(smallerScreenDimension * if(isProfilePictureFullScreen) 1f else 0.5f)
+        val topBarHeight = 100.dp + maxPbSize + fontSize
+        Column(
             Modifier
                 .fillMaxSize()
-        ){
-            val fontSize = FontSize.XLARGE.size.toDp() + 20.dp
-            val conf = LocalConfiguration.current
-            val smallerScreenDimension = min(conf.screenWidthDp, conf.screenHeightDp).dp
-            val isProfilePictureFullScreen by profileInfoModel.isProfilePictureFullScreen.collectAsState()
-            val maxPbSize by animateDpAsState(smallerScreenDimension * if(isProfilePictureFullScreen) 1f else 0.5f)
-            val topBarHeight = 100.dp + maxPbSize + fontSize
+                .verticalScroll(verticalScrollState)
+            ,
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
             Column(
                 Modifier
-                    .fillMaxSize()
-                    .verticalScroll(verticalScrollState),
+                    .setMaxTabletWidth()
+                ,
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.spacedBy(15.dp)
             ) {
-                Spacer(Modifier.height(topBarHeight+innerPadding.calculateTopPadding()))
+                Spacer(Modifier.height(topBarHeight+ windowPadding.calculateTopPadding()))
                 ProfileInfo(largeDataCache, profileInfoModel)
                 Row(
-                    Modifier
-                        .fillMaxWidth(.95f)
-                    ,
                     horizontalArrangement = Arrangement.spacedBy(15.dp)
                 ) {
                     val birthday by profileInfoModel.birthday.collectAsState()
@@ -196,7 +202,6 @@ fun ProfileFullScreen(
                 }
                 Column(
                     Modifier
-                        .fillMaxWidth(.95f)
                         .background(Theme.surfaceContainerHigh, RoundedCornerShape(20.dp))
                         .clip(RoundedCornerShape(20.dp))
                         .rippleClick {}
@@ -314,68 +319,66 @@ fun ProfileFullScreen(
                         }
                     }
                 }
-                Spacer(Modifier.height(topBarHeight+innerPadding.calculateTopPadding()))
-                Spacer(Modifier.height(topBarHeight+innerPadding.calculateTopPadding()))
-                Spacer(Modifier.height(topBarHeight+innerPadding.calculateTopPadding()))
-            }
-            val scrollLength = with(LocalDensity.current){ verticalScrollState.value.toDp() }
-            Box(
-                Modifier
-                    .background(Theme.background)
-                    .padding(top = innerPadding.calculateTopPadding())
-            ){
-                ProfilePictureWithText(
-                    photoPicker,
-                    profileInfoModel,
-                    personId,
-                    scrollLength,
-                    fontSize,
-                    topBarHeight
-                ){
-                    profileInfoModel.isEditing.value = true
-                    profileInfoModel.isExtended.value = true
-                    profileInfoModel.name.value = it
-                }
+                Spacer(Modifier.height(windowPadding.calculateBottomPadding()))
             }
         }
-        UnmodalBottomSheet(isPickingBirthDay, {isPickingBirthDay=false}) {
-            val birthday by profileInfoModel.birthday.collectAsState()
-            val datePickerState = rememberDatePickerState(
-                initialSelectedDateMillis = birthday?.let {
-                    LocalDate.ofEpochDay(it).atStartOfDay(ZoneId.of("UTC")).toEpochSecond()*1000L
-                }
-            )
-            DatePicker(datePickerState, colors = datePickerColors())
-            ActionBar({
-                isPickingBirthDay = false
-            }, {
-                Icon(painterResource(R.drawable.close), "Close", Modifier.fillMaxSize(), Theme.onSecondaryContainer)
-            }, Theme.primaryContainer, {
+        val scrollLength = with(LocalDensity.current){ verticalScrollState.value.toDp() }
+        Box(
+            Modifier
+                .background(Theme.background)
+                .padding(top = windowPadding.calculateTopPadding())
+        ){
+            ProfilePictureWithText(
+                photoPicker,
+                profileInfoModel,
+                personId,
+                scrollLength,
+                fontSize,
+                topBarHeight
+            ){
                 profileInfoModel.isEditing.value = true
                 profileInfoModel.isExtended.value = true
-                profileInfoModel.birthday.value = datePickerState.selectedDateMillis?.let { millis ->
-                    Instant.ofEpochMilli(millis)
-                        .atZone(ZoneId.of("UTC"))
-                        .toLocalDate()
-                        .toEpochDay()
-                }
-                isPickingBirthDay = false
-            }) {
-                Text(
-                    "Eintragen",
-                    style = TypoStyle(
-                        Theme.primary,
-                        FontSize.LARGE
-                    ).copy(fontWeight = FontWeight.W900)
-                )
-                Spacer(Modifier.width(8.dp))
-                Icon(
-                    painterResource(R.drawable.arrow_right),
-                    "Continue",
-                    tint = Theme.primary,
-                    modifier = Modifier.height(20.dp)
-                )
+                profileInfoModel.name.value = it
             }
+        }
+    }
+    UnmodalBottomSheet(isPickingBirthDay, {isPickingBirthDay=false}) {
+        val birthday by profileInfoModel.birthday.collectAsState()
+        val datePickerState = rememberDatePickerState(
+            initialSelectedDateMillis = birthday?.let {
+                LocalDate.ofEpochDay(it).atStartOfDay(ZoneId.of("UTC")).toEpochSecond()*1000L
+            }
+        )
+        DatePicker(datePickerState, colors = datePickerColors())
+        ActionBar({
+            isPickingBirthDay = false
+        }, {
+            Icon(painterResource(R.drawable.close), "Close", Modifier.fillMaxSize(), Theme.onSecondaryContainer)
+        }, Theme.primaryContainer, {
+            profileInfoModel.isEditing.value = true
+            profileInfoModel.isExtended.value = true
+            profileInfoModel.birthday.value = datePickerState.selectedDateMillis?.let { millis ->
+                Instant.ofEpochMilli(millis)
+                    .atZone(ZoneId.of("UTC"))
+                    .toLocalDate()
+                    .toEpochDay()
+            }
+            isPickingBirthDay = false
+        }) {
+            Text(
+                "Eintragen",
+                style = TypoStyle(
+                    Theme.primary,
+                    FontSize.LARGE
+                ).copy(fontWeight = FontWeight.W900)
+            )
+            Spacer(Modifier.width(8.dp))
+            Icon(
+                painterResource(R.drawable.arrow_right),
+                "Continue",
+                tint = Theme.primary,
+                modifier = Modifier.height(20.dp)
+            )
         }
     }
 }

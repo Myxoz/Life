@@ -124,7 +124,6 @@ fun ProfileInfo(largeDataCache: LargeDataCache, profileInfoModel: ProfileInfoMod
     Box{
         Column(
             Modifier
-                .fillMaxWidth(.95f)
                 .background(Theme.surfaceContainerHigh, RoundedCornerShape(20.dp))
                 .padding(10.dp),
         ) {
@@ -141,7 +140,7 @@ fun ProfileInfo(largeDataCache: LargeDataCache, profileInfoModel: ProfileInfoMod
                         if(isExtended)
                             (if(platforms.isNotEmpty() || isEditing) platformBarHeight + 20.dp else 0.dp) +
                                     (if(iban!=null || isEditing) profileEntrySize + 20.dp else 0.dp) +
-                                    (if(location!=null && !isEditing) navigationIconSize + 10.dp + 10.dp + 5.dp else 0.dp ) +
+                                    (if(location!=null && !isEditing) navigationIconSize + 10.dp + 10.dp + 5.dp else (-2).dp) +
                                     20.dp + profileEntrySize /* Location */
                         else
                             0.dp

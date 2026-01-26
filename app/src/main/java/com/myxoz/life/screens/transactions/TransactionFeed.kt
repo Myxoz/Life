@@ -1,5 +1,6 @@
 package com.myxoz.life.screens.transactions
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -12,7 +13,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -31,10 +31,12 @@ import com.myxoz.life.dbwrapper.BankingEntity
 import com.myxoz.life.dbwrapper.BankingSidecarEntity
 import com.myxoz.life.dbwrapper.formatCents
 import com.myxoz.life.screens.feed.dayoverview.edgeToEdgeGradient
+import com.myxoz.life.ui.setMaxTabletWidth
 import com.myxoz.life.ui.theme.FontSize
 import com.myxoz.life.ui.theme.OldColors
 import com.myxoz.life.ui.theme.TypoStyle
 import com.myxoz.life.utils.rippleClick
+import com.myxoz.life.utils.windowPadding
 import com.myxoz.life.viewmodels.TransactionFeedViewModel
 import kotlinx.coroutines.flow.distinctUntilChanged
 import java.time.LocalDate
@@ -57,36 +59,33 @@ fun TransactionFeed(
             }
     }
 
-    Scaffold(
-        Modifier.fillMaxSize(),
-        containerColor = Theme.background
-    ) { innerPadding ->
-        LazyColumn(
-            modifier = Modifier
-                .edgeToEdgeGradient(Theme.background, innerPadding)
-                .fillMaxSize(),
-            state = listState,
-            reverseLayout = true,
-            horizontalAlignment = Alignment.CenterHorizontally
-        ) {
-            item {
-                Spacer(Modifier.height(innerPadding.calculateBottomPadding()))
-            }
-            items(
-                items = visibleDates,
-                key = { it.toEpochDay() },
-                contentType = { "date_group" }
-            ) { date ->
-                val transactions = transactionsByDate[date] ?: emptyList()
-                if (transactions.isNotEmpty()) {
-                    DateTransactionGroup(
-                        date = date,
-                        transactions = transactions,
-                        onTransactionClick = { tx ->
-                            nav.navigate("bank/transaction/${tx.id}")
-                        }
-                    )
-                }
+    val innerPadding = windowPadding
+    LazyColumn(
+        modifier = Modifier
+            .background(Theme.background)
+            .edgeToEdgeGradient(Theme.background, innerPadding)
+            .fillMaxSize(),
+        state = listState,
+        reverseLayout = true,
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        item {
+            Spacer(Modifier.height(innerPadding.calculateBottomPadding()))
+        }
+        items(
+            items = visibleDates,
+            key = { it.toEpochDay() },
+            contentType = { "date_group" }
+        ) { date ->
+            val transactions = transactionsByDate[date] ?: emptyList()
+            if (transactions.isNotEmpty()) {
+                DateTransactionGroup(
+                    date = date,
+                    transactions = transactions,
+                    onTransactionClick = { tx ->
+                        nav.navigate("bank/transaction/${tx.id}")
+                    }
+                )
             }
         }
     }
@@ -102,7 +101,7 @@ private fun DateTransactionGroup(
     Column(
         modifier = Modifier
             .padding(top = 20.dp, bottom = 10.dp)
-            .fillMaxWidth(.95f)
+            .setMaxTabletWidth()
         ,
         verticalArrangement = Arrangement.spacedBy(5.dp),
         horizontalAlignment = Alignment.CenterHorizontally

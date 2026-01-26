@@ -2,6 +2,7 @@ package com.myxoz.life.screens.pick
 
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -15,7 +16,6 @@ import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
-import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -36,11 +36,14 @@ import com.myxoz.life.R
 import com.myxoz.life.Theme
 import com.myxoz.life.api.syncables.Location
 import com.myxoz.life.screens.feed.dayoverview.edgeToEdgeGradient
-import com.myxoz.life.screens.feed.fullscreenevent.InputField
+import com.myxoz.life.ui.BOTTOMSEARCHBARHEIGHT
+import com.myxoz.life.ui.BottomSearchBar
+import com.myxoz.life.ui.setMaxTabletWidth
 import com.myxoz.life.ui.theme.FontSize
 import com.myxoz.life.ui.theme.TypoStyle
 import com.myxoz.life.utils.filteredWith
 import com.myxoz.life.utils.rippleClick
+import com.myxoz.life.utils.windowPadding
 import kotlinx.coroutines.launch
 
 @Composable
@@ -60,26 +63,34 @@ fun PickExistingLocation(){
         val filter = nav.previousBackStackEntry?.savedStateHandle?.get<String?>("pequery")?:return@LaunchedEffect
         filtered = allLocations.filteredWith(filter, {it.toAddress(true)}) { it.name }
     }
-    Scaffold(
-        containerColor = Theme.background,
-    ) { innerPadding ->
-        BackHandler(true) {
-            nav.previousBackStackEntry?.savedStateHandle?.set("pelocation", null)
-            nav.navigateUp()
-        }
-        Column(
+    BackHandler(true) {
+        nav.previousBackStackEntry?.savedStateHandle?.set("pelocation", null)
+        nav.navigateUp()
+    }
+    Box(
+        Modifier
+            .fillMaxSize()
+        ,
+        Alignment.BottomCenter
+    ) {
+        val innerPadding = windowPadding
+        LazyColumn(
             Modifier
                 .fillMaxSize()
+                .edgeToEdgeGradient(Theme.background, innerPadding)
+            ,
+            reverseLayout = true, // IMPORTANT
+            verticalArrangement = Arrangement.Bottom,
+            horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            LazyColumn(
-                Modifier
-                    .weight(1f)
-                    .edgeToEdgeGradient(Theme.background, innerPadding)
-                ,
-                reverseLayout = true, // IMPORTANT
-                verticalArrangement = Arrangement.Bottom
-            ){
-                itemsIndexed(filtered, { _, it -> it.id}){ i, it ->
+            item { // At the bottom
+                Spacer(Modifier.height(innerPadding.calculateBottomPadding() + BOTTOMSEARCHBARHEIGHT))
+            }
+            itemsIndexed(filtered, { _, it -> it.id}){ i, it ->
+                Box(
+                    Modifier
+                        .setMaxTabletWidth()
+                ) {
                     Row(
                         Modifier
                             .clip(RoundedCornerShape(15.dp))
@@ -115,23 +126,22 @@ fun PickExistingLocation(){
                     }
                     if(i != filtered.size-1) HorizontalDivider(color = Theme.outlineVariant)
                 }
-                item { // At the start
-                    Spacer(Modifier.height(innerPadding.calculateTopPadding()))
-                }
             }
-            Column(
-                Modifier
-                    .fillMaxWidth()
-                    .padding(10.dp)
-            ){
-                InputField(
-                    nav.previousBackStackEntry?.savedStateHandle?.get("pequery"),
-                    "Suchen"
-                ) { filter ->
+            item { // At the start
+                Spacer(Modifier.height(innerPadding.calculateTopPadding()))
+            }
+        }
+        Box(
+            Modifier
+                .setMaxTabletWidth()
+        ) {
+            BottomSearchBar(
+                Theme.background,
+                innerPadding.calculateBottomPadding(),
+                { filter ->
                     filtered = allLocations.filteredWith(filter, {it.toAddress(true)}) { it.name }
                 }
-                Spacer(Modifier.height(innerPadding.calculateBottomPadding()))
-            }
+            )
         }
     }
 }

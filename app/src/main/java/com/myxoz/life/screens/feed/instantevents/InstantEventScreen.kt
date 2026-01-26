@@ -4,6 +4,7 @@ import android.icu.util.Calendar
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
@@ -17,7 +18,6 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Icon
-import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
@@ -29,21 +29,28 @@ import androidx.compose.ui.unit.dp
 import com.myxoz.life.LocalNavController
 import com.myxoz.life.LocalStorage
 import com.myxoz.life.Theme
+import com.myxoz.life.ui.setMaxTabletWidth
 import com.myxoz.life.ui.theme.FontFamily
 import com.myxoz.life.ui.theme.FontSize
 import com.myxoz.life.ui.theme.TypoStyle
 import com.myxoz.life.utils.formatMinutes
 import com.myxoz.life.utils.rippleClick
 import com.myxoz.life.utils.toDp
+import com.myxoz.life.utils.windowPadding
 import com.myxoz.life.viewmodels.CalendarViewModel
 import kotlinx.coroutines.runBlocking
 
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun InstantEventsScreen(start: Long, end: Long, calendarViewModel: CalendarViewModel){
-    Scaffold(
-        containerColor = Theme.background
-    ) { innerPadding ->
+    Box(
+        Modifier
+            .background(Theme.background)
+            .fillMaxSize()
+            .verticalScroll(rememberScrollState())
+        ,
+        Alignment.BottomCenter
+    ) {
         val calendar = Calendar.getInstance()
         val nav = LocalNavController.current
         val db = LocalStorage.current
@@ -59,9 +66,8 @@ fun InstantEventsScreen(start: Long, end: Long, calendarViewModel: CalendarViewM
         }
         FlowRow(
             Modifier
-                .fillMaxSize()
-                .padding(innerPadding)
-                .verticalScroll(rememberScrollState())
+                .setMaxTabletWidth()
+                .padding(windowPadding)
             ,
             maxItemsInEachRow = 2,
             verticalArrangement = Arrangement.Bottom,

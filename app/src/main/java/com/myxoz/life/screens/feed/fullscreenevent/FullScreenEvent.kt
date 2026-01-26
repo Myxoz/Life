@@ -13,18 +13,18 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
-import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
@@ -51,6 +51,7 @@ import com.myxoz.life.Theme
 import com.myxoz.life.api.API
 import com.myxoz.life.dbwrapper.WaitingSyncEntity
 import com.myxoz.life.ui.ActionBar
+import com.myxoz.life.ui.setMaxTabletWidth
 import com.myxoz.life.ui.theme.FontColor
 import com.myxoz.life.ui.theme.FontSize
 import com.myxoz.life.ui.theme.OldColors
@@ -60,6 +61,7 @@ import com.myxoz.life.utils.animateColorSchemeAsState
 import com.myxoz.life.utils.formatTimeStamp
 import com.myxoz.life.utils.rememberColorScemeFromColor
 import com.myxoz.life.utils.rippleClick
+import com.myxoz.life.utils.windowPadding
 import com.myxoz.life.viewmodels.InspectedEventViewModel
 import kotlinx.coroutines.launch
 
@@ -72,19 +74,22 @@ fun FullScreenEvent(inspectedEventViewModel: InspectedEventViewModel){
     val api = LocalAPI.current
     val screens = LocalScreens.current
     val isEditing by inspectedEventViewModel.isEditing.collectAsState()
-    Scaffold(
-        Modifier.fillMaxSize(),
-        containerColor = Theme.surfaceContainer
-    ) { innerPadding ->
-        val colorScheme = rememberColorScemeFromColor(event.proposed.type.color, event)
-        val animatedColorScheme = animateColorSchemeAsState(colorScheme)
-        CompositionLocalProvider(
-            LocalColors provides animatedColorScheme
+    val colorScheme = rememberColorScemeFromColor(event.proposed.type.color, event)
+    val animatedColorScheme = animateColorSchemeAsState(colorScheme)
+    CompositionLocalProvider(
+        LocalColors provides animatedColorScheme
+    ) {
+        Box(
+            Modifier
+                .background(Theme.background)
+                .fillMaxSize()
+            ,
+            contentAlignment = Alignment.BottomCenter
         ) {
             Column(
                 Modifier
-                    .fillMaxSize()
-                    .padding(innerPadding)
+                    .padding(windowPadding)
+                    .setMaxTabletWidth()
                 ,
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
@@ -92,7 +97,7 @@ fun FullScreenEvent(inspectedEventViewModel: InspectedEventViewModel){
                 TimeBar(
                     event.proposed,
                     if(now >= event.proposed.start) if(now <= event.proposed.end) (now-event.proposed.start) / (event.proposed.end-event.proposed.start).toFloat() else 1f else 0f,
-                    Theme.background
+                    Theme.surfaceContainer
                 ) {
                     if(isEditing) inspectedEventViewModel.setInspectedEventTo(event.copy(proposedEvent = it))
                 }
@@ -106,8 +111,8 @@ fun FullScreenEvent(inspectedEventViewModel: InspectedEventViewModel){
                     ) {
                         Column(
                             Modifier
-                                .fillMaxHeight()
-                                .fillMaxWidth(.95f),
+                                .fillMaxSize()
+                            ,
                             verticalArrangement = Arrangement.SpaceBetween
                         ) {
                             DisplayEvent(event)
@@ -151,8 +156,9 @@ fun FullScreenEvent(inspectedEventViewModel: InspectedEventViewModel){
                     ) {
                         Column(
                             Modifier
-                                .fillMaxHeight()
-                                .fillMaxWidth(.95f),
+                                .fillMaxSize()
+                                .verticalScroll(rememberScrollState())
+                            ,
                             verticalArrangement = Arrangement.spacedBy(10.dp, Alignment.Bottom)
                         ) {
                             ModifyEvent(inspectedEventViewModel)

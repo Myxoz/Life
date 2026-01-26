@@ -26,7 +26,6 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.KeyboardArrowUp
 import androidx.compose.material3.Icon
-import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -57,12 +56,14 @@ import com.myxoz.life.Theme
 import com.myxoz.life.screens.feed.main.msToDisplay
 import com.myxoz.life.screens.options.getMappedUsageDataBetween
 import com.myxoz.life.ui.rememberAsymmetricalVerticalCornerRadius
+import com.myxoz.life.ui.setMaxTabletWidth
 import com.myxoz.life.ui.theme.FontFamily
 import com.myxoz.life.ui.theme.FontSize
 import com.myxoz.life.ui.theme.OldColors
 import com.myxoz.life.ui.theme.TypoStyle
 import com.myxoz.life.utils.rippleClick
 import com.myxoz.life.utils.toDp
+import com.myxoz.life.utils.windowPadding
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.withContext
@@ -109,95 +110,89 @@ fun ScreenTimeOverview(epochDay: Long){
             totalExceptTopFive = db.days.getDay(epochDay.toInt())?.screenTimeMs?.minus(db.dayScreenTime.getScreenTimesByDay(epochDay).sumOf { it.duration }) ?: 0L
         }
     }
-    Scaffold(
+    val innerPadding = windowPadding
+    Box(
         Modifier
+            .edgeToEdgeGradient(Theme.background, innerPadding)
             .fillMaxSize()
+            .verticalScroll(rememberScrollState())
         ,
-        containerColor = Theme.background
-    ) { innerPadding ->
-        Box(
+        contentAlignment = Alignment.TopCenter
+    ) {
+        Column(
             Modifier
-                .fillMaxSize()
+                .setMaxTabletWidth()
+                .fillMaxHeight()
             ,
-            contentAlignment = Alignment.Center
         ) {
+            val date = LocalDate.ofEpochDay(epochDay)
+            val dateStr = "${date.dayOfMonth}.${date.month.value}.${date.year}"
+            Spacer(Modifier.height(innerPadding.calculateTopPadding()+ 10.dp))
+            Text(
+                "Screentime $dateStr",
+                style = TypoStyle(Theme.primary, FontSize.XLARGE, FontFamily.Display).copy(
+                    fontWeight = FontWeight.Bold
+                )
+            )
+            Spacer(Modifier.height(20.dp))
+            val pm = remember { context.packageManager }
             Column(
                 Modifier
-                    .edgeToEdgeGradient(Theme.background, innerPadding)
-                    .fillMaxHeight()
-                    .fillMaxWidth(.95f)
-                    .verticalScroll(rememberScrollState())
+                    .fillMaxWidth()
+                    .animateContentSize()
                 ,
+                verticalArrangement = Arrangement.spacedBy(3.dp)
             ) {
-                val date = LocalDate.ofEpochDay(epochDay)
-                val dateStr = "${date.dayOfMonth}.${date.month.value}.${date.year}"
-                Spacer(Modifier.height(innerPadding.calculateTopPadding()+ 10.dp))
-                Text(
-                    "Screentime $dateStr",
-                    style = TypoStyle(Theme.primary, FontSize.XLARGE, FontFamily.Display).copy(
-                        fontWeight = FontWeight.Bold
-                    )
-                )
-                Spacer(Modifier.height(20.dp))
-                val pm = remember { context.packageManager }
-                Column(
+                screenTime.forEachIndexed { i, it  ->
+                    AppItemComposable(it, pm, i == 0, i == screenTime.size - 1 && showsMore)
+                }
+            }
+            Spacer(Modifier.height(3.dp))
+            AnimatedVisibility(!showsMore) {
+                Row(
                     Modifier
                         .fillMaxWidth()
-                        .animateContentSize()
-                    ,
-                    verticalArrangement = Arrangement.spacedBy(3.dp)
-                ) {
-                    screenTime.forEachIndexed { i, it  ->
-                        AppItemComposable(it, pm, i == 0, i == screenTime.size - 1 && showsMore)
-                    }
-                }
-                Spacer(Modifier.height(3.dp))
-                AnimatedVisibility(!showsMore) {
-                    Row(
-                        Modifier
-                            .fillMaxWidth()
-                            .clip(rememberAsymmetricalVerticalCornerRadius(screenTime.isEmpty(), true))
-                            .rippleClick {
-                                val zone = ZoneId.systemDefault()
-                                getMappedUsageDataBetween(
-                                    context,
-                                    LocalDate.ofEpochDay(epochDay).atStartOfDay(zone)
-                                        .toEpochSecond() * 1000L,
-                                    LocalDate.ofEpochDay(epochDay + 1).atStartOfDay(zone)
-                                        .toEpochSecond() * 1000L
-                                )
-                                    .entries
-                                    .sortedBy { -it.value }
-                                    .apply { screenTime.clear() }
-                                    .forEach {
-                                        screenTime.add(AppItem(it.key, it.value))
-                                    }
-                                showsMore = true
-                            }
-                            .background(Theme.surfaceContainerHigh)
-                            .padding(10.dp)
-                        ,
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Icon(
-                            Icons.Rounded.KeyboardArrowUp,
-                            "Open",
-                            Modifier.size(FontSize.LARGE.size.toDp()  + 10.dp),
-                            Theme.primary
-                        )
-                        Row(
-                            Modifier.weight(1f),
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(10.dp)
-                        ) {
-                            Text("Other", style = TypoStyle(Theme.primary, FontSize.LARGE))
+                        .clip(rememberAsymmetricalVerticalCornerRadius(screenTime.isEmpty(), true))
+                        .rippleClick {
+                            val zone = ZoneId.systemDefault()
+                            getMappedUsageDataBetween(
+                                context,
+                                LocalDate.ofEpochDay(epochDay).atStartOfDay(zone)
+                                    .toEpochSecond() * 1000L,
+                                LocalDate.ofEpochDay(epochDay + 1).atStartOfDay(zone)
+                                    .toEpochSecond() * 1000L
+                            )
+                                .entries
+                                .sortedBy { -it.value }
+                                .apply { screenTime.clear() }
+                                .forEach {
+                                    screenTime.add(AppItem(it.key, it.value))
+                                }
+                            showsMore = true
                         }
-                        Text(totalExceptTopFive.toInt().msToDisplay(), style = TypoStyle(Theme.secondary, FontSize.MEDIUM))
+                        .background(Theme.surfaceContainerHigh)
+                        .padding(10.dp)
+                    ,
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Icon(
+                        Icons.Rounded.KeyboardArrowUp,
+                        "Open",
+                        Modifier.size(FontSize.LARGE.size.toDp()  + 10.dp),
+                        Theme.primary
+                    )
+                    Row(
+                        Modifier.weight(1f),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(10.dp)
+                    ) {
+                        Text("Other", style = TypoStyle(Theme.primary, FontSize.LARGE))
                     }
+                    Text(totalExceptTopFive.toInt().msToDisplay(), style = TypoStyle(Theme.secondary, FontSize.MEDIUM))
                 }
-                Spacer(Modifier.height(innerPadding.calculateBottomPadding()))
             }
+            Spacer(Modifier.height(innerPadding.calculateBottomPadding()))
         }
     }
 }

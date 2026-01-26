@@ -14,18 +14,18 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Icon
-import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -60,8 +60,11 @@ import com.myxoz.life.api.syncables.PersonSyncable
 import com.myxoz.life.dbwrapper.BankingEntity
 import com.myxoz.life.dbwrapper.BankingSidecarEntity
 import com.myxoz.life.dbwrapper.formatCents
+import com.myxoz.life.screens.feed.dayoverview.edgeToEdgeGradient
 import com.myxoz.life.screens.options.ME_ID
+import com.myxoz.life.ui.SCREENMAXWIDTH
 import com.myxoz.life.ui.rememberAsymmetricalVerticalCornerRadius
+import com.myxoz.life.ui.setMaxTabletWidth
 import com.myxoz.life.ui.theme.FontColor
 import com.myxoz.life.ui.theme.FontFamily
 import com.myxoz.life.ui.theme.FontSize
@@ -72,6 +75,7 @@ import com.myxoz.life.utils.formatMinutes
 import com.myxoz.life.utils.formatTimeStamp
 import com.myxoz.life.utils.rippleClick
 import com.myxoz.life.utils.toDp
+import com.myxoz.life.utils.windowPadding
 import com.myxoz.life.viewmodels.LargeDataCache
 import kotlinx.coroutines.runBlocking
 import org.json.JSONObject
@@ -102,14 +106,19 @@ fun TransactionOverview(transactionId: String, bankViewModel: LargeDataCache){
         )
     } } }
     val transactionSidecar = remember { runBlocking { db.bankingSidecar.getSidecar(transactionId) } }
-    Scaffold(
-        Modifier.fillMaxSize(),
-        containerColor = Theme.background
-    ) { innerPadding ->
+    val innerPadding = windowPadding
+    Box(
+        Modifier
+            .fillMaxSize()
+            .verticalScroll(rememberScrollState())
+        ,
+        Alignment.TopCenter
+    ) {
         Column(
             Modifier
-                .verticalScroll(rememberScrollState())
-                .padding(horizontal = 30.dp),
+                .widthIn(max = SCREENMAXWIDTH)
+                .fillMaxWidth(.9f)
+            ,
             verticalArrangement = Arrangement.spacedBy(10.dp, Alignment.Top)
         ) {
             Spacer(Modifier.height(innerPadding.calculateTopPadding()))
@@ -141,46 +150,54 @@ fun TransactionOverview(transactionId: String, bankViewModel: LargeDataCache){
                 style = TypoStyle(Theme.secondary, FontSize.LARGE),
                 textAlign = TextAlign.Center
             )
-            BankCard(
-                transactionAtHand.fromName + if (transactionSidecar != null) " (${transactionSidecar.name})" else "",
-                transactionAtHand.fromIban,
-                bankViewModel
-            )
-            val calendar = remember { Calendar.getInstance() }
-            val screens = LocalScreens.current
-            Text(
-                run {
-                    val transactionType = when {
-                        transactionAtHand.isWirelessPayment() -> "Bargeldlos"
-                        transactionAtHand.card -> "Kartenzahlung"
-                        else -> "Überweisung"
-                    }
-
-                    val timestamp =
-                        transactionAtHand.purposeDate?.formatTimeStamp(calendar)
-                            ?: transactionSidecar?.date?.formatTimeStamp(calendar)
-                            ?: ""
-
-                    val separator = if (transactionType.isNotEmpty() && timestamp.isNotEmpty()) " · " else ""
-
-                    "$transactionType$separator$timestamp"
-                },
+            Column (
                 Modifier
-                    .rippleClick(transactionAtHand.purposeDate != null || transactionSidecar?.date != null){
-                        (transactionAtHand.purposeDate ?: transactionSidecar?.date)?.let {
-                            screens.openCalendarAt(
-                                Instant
-                                    .ofEpochMilli(it)
-                                    .atZone(ZoneId.systemDefault())
-                                    .toLocalDate()
-                            )
-                        }
-                    }
-                    .align(Alignment.End)
+                    .align(Alignment.CenterHorizontally)
                 ,
-                textAlign = TextAlign.End,
-                style = TypoStyle(Theme.secondary, FontSize.SMALL)
-            )
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.spacedBy(10.dp)
+            ) {
+                BankCard(
+                    transactionAtHand.fromName + if (transactionSidecar != null) " (${transactionSidecar.name})" else "",
+                    transactionAtHand.fromIban,
+                    bankViewModel
+                )
+                val calendar = remember { Calendar.getInstance() }
+                val screens = LocalScreens.current
+                Text(
+                    run {
+                        val transactionType = when {
+                            transactionAtHand.isWirelessPayment() -> "Bargeldlos"
+                            transactionAtHand.card -> "Kartenzahlung"
+                            else -> "Überweisung"
+                        }
+
+                        val timestamp =
+                            transactionAtHand.purposeDate?.formatTimeStamp(calendar)
+                                ?: transactionSidecar?.date?.formatTimeStamp(calendar)
+                                ?: ""
+
+                        val separator = if (transactionType.isNotEmpty() && timestamp.isNotEmpty()) " · " else ""
+
+                        "$transactionType$separator$timestamp"
+                    },
+                    Modifier
+                        .rippleClick(transactionAtHand.purposeDate != null || transactionSidecar?.date != null){
+                            (transactionAtHand.purposeDate ?: transactionSidecar?.date)?.let {
+                                screens.openCalendarAt(
+                                    Instant
+                                        .ofEpochMilli(it)
+                                        .atZone(ZoneId.systemDefault())
+                                        .toLocalDate()
+                                )
+                            }
+                        }
+                        .align(Alignment.End)
+                    ,
+                    textAlign = TextAlign.End,
+                    style = TypoStyle(Theme.secondary, FontSize.SMALL)
+                )
+            }
             if (transactionAtHand.bookingTime.isNotBlank()) {
                 Spacer(Modifier.height(40.dp))
                 TransactionEntry("Buchungsdatum", transactionAtHand.bookingTime)
@@ -217,45 +234,42 @@ fun MyCard(largeDataCache: LargeDataCache){
     val balance = if(showBalance) runBlocking {
         db.banking.getLastTransactionDay()
     } else listOf()
-    Scaffold(
-        Modifier.fillMaxSize(),
-        containerColor = Theme.background
-    ) { innerPadding ->
+    val innerPadding = windowPadding
+    Box(
+        Modifier
+            .widthIn(max = SCREENMAXWIDTH)
+            .fillMaxWidth(.9f)
+        ,
+        Alignment.Center
+    ) {
         Box(
             Modifier
-                .padding(horizontal = 30.dp)
-                .fillMaxSize(),
-            contentAlignment = Alignment.Center
-        ) {
-            Box(
-                Modifier
-                    .padding(vertical = 50.dp + innerPadding.calculateTopPadding() + 10.dp)
-                    .background(Theme.surfaceContainer, CircleShape)
-                    .clip(CircleShape)
-                    .rippleClick {
-                        showBalance = !showBalance
-                        db.prefs.edit {
-                            putBoolean("show_balance", showBalance)
-                        }
+                .padding(vertical = 50.dp + innerPadding.calculateTopPadding() + 10.dp)
+                .background(Theme.surfaceContainer, CircleShape)
+                .clip(CircleShape)
+                .rippleClick {
+                    showBalance = !showBalance
+                    db.prefs.edit {
+                        putBoolean("show_balance", showBalance)
                     }
-                    .fillMaxWidth()
-                    .padding(vertical = 20.dp)
-                    .align(Alignment.TopCenter)
-            ) {
-                Text(
-                    if (showBalance) finalDailyBalance(balance).toInt()
-                        .formatCents(true) else "· · · , · · €",
-                    Modifier
-                        .fillMaxWidth(),
-                    color = Theme.primary,
-                    fontFamily = FontFamily.Display.family,
-                    fontSize = FontSize.XXLARGE.size,
-                    textAlign = TextAlign.Center
-                )
-            }
-            BankCard(self?.fullname?:"Ich", self?.iban?:"***", largeDataCache)
-            Spacer(Modifier.height(innerPadding.calculateBottomPadding()))
+                }
+                .fillMaxWidth()
+                .padding(vertical = 20.dp)
+                .align(Alignment.TopCenter)
+        ) {
+            Text(
+                if (showBalance) finalDailyBalance(balance).toInt()
+                    .formatCents(true) else "· · · , · · €",
+                Modifier
+                    .fillMaxWidth(),
+                color = Theme.primary,
+                fontFamily = FontFamily.Display.family,
+                fontSize = FontSize.XXLARGE.size,
+                textAlign = TextAlign.Center
+            )
         }
+        BankCard(self?.fullname?:"Ich", self?.iban?:"***", largeDataCache)
+        Spacer(Modifier.height(innerPadding.calculateBottomPadding()))
     }
 }
 @Composable
@@ -272,34 +286,28 @@ fun TransactionList(epochDay: Long) {
             ).map { it to db.bankingSidecar.getSidecar(it.id) }
         }
     }
-    Scaffold(
-        Modifier.fillMaxSize(),
-        containerColor = Theme.surfaceContainer
-    ) { innerPadding ->
-        Box(
-            Modifier
-                .fillMaxWidth()
-            ,
-            contentAlignment = Alignment.Center
-        ) {
-        Column(
-            Modifier
-                .verticalScroll(rememberScrollState())
-                .fillMaxWidth(.95f)
-                .fillMaxHeight()
-            ,
-            verticalArrangement = Arrangement.spacedBy(5.dp, Alignment.Bottom),
-            horizontalAlignment = Alignment.CenterHorizontally
-        ) {
-            Spacer(Modifier.height(innerPadding.calculateTopPadding()))
-                bankingEntries.forEachIndexed { i, it ->
-                    BankingEntryComposable(it, i == 0, i == bankingEntries.size-1) {
-                        nav.navigate("bank/transaction/${it.first.id}")
-                    }
+    val innerPadding = windowPadding
+    Column(
+        Modifier
+            .background(Theme.background)
+            .edgeToEdgeGradient(Theme.background, innerPadding)
+            .fillMaxSize()
+        ,
+        verticalArrangement = Arrangement.spacedBy(5.dp, Alignment.Bottom),
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        Spacer(Modifier.height(innerPadding.calculateTopPadding()))
+        bankingEntries.forEachIndexed { i, it ->
+            Box(
+                Modifier
+                    .setMaxTabletWidth()
+            ) {
+                BankingEntryComposable(it, i == 0, i == bankingEntries.size-1) {
+                    nav.navigate("bank/transaction/${it.first.id}")
                 }
             }
-            Spacer(Modifier.height(innerPadding.calculateBottomPadding()))
         }
+        Spacer(Modifier.height(innerPadding.calculateBottomPadding()))
     }
 }
 
@@ -422,7 +430,6 @@ fun BankCard(from: String, fromIBAN: String, largeDataCache: LargeDataCache?) {
 
     Box(
         Modifier
-            .fillMaxWidth()
             .graphicsLayer {
                 this.rotationY = rotationY
                 this.rotationX = rotationX
@@ -433,6 +440,8 @@ fun BankCard(from: String, fromIBAN: String, largeDataCache: LargeDataCache?) {
             .zIndex(1f)
             .shadow(10.dp, RoundedCornerShape(10))
             .height(220.dp)
+            .aspectRatio(1.5857725f)
+            // Based on https://de.wikipedia.org/wiki/ISO/IEC_7810#ID-1
             .background(
                 Brush.radialGradient(
                     listOf(

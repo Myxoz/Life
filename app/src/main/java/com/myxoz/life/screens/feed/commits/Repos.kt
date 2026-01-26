@@ -18,7 +18,6 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.Icon
-import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.VerticalDivider
 import androidx.compose.runtime.Composable
@@ -43,6 +42,7 @@ import com.myxoz.life.screens.feed.dayoverview.edgeToEdgeGradient
 import com.myxoz.life.ui.BOTTOMSEARCHBARHEIGHT
 import com.myxoz.life.ui.BottomSearchBar
 import com.myxoz.life.ui.rememberAsymmetricalVerticalCornerRadius
+import com.myxoz.life.ui.setMaxTabletWidth
 import com.myxoz.life.ui.theme.FontFamily
 import com.myxoz.life.ui.theme.FontSize
 import com.myxoz.life.ui.theme.OldColors
@@ -53,6 +53,7 @@ import com.myxoz.life.utils.formatTimeStamp
 import com.myxoz.life.utils.plural
 import com.myxoz.life.utils.plus
 import com.myxoz.life.utils.rippleClick
+import com.myxoz.life.utils.windowPadding
 import kotlinx.coroutines.runBlocking
 
 @Composable
@@ -70,51 +71,54 @@ fun FullScreenRepos(){
         }
     }
     var displayedRepos by remember { mutableStateOf(repos) }
-    Scaffold(
-        containerColor = Theme.background
-    ) {  innerPadding ->
-        Box(
+    val innerPadding = windowPadding
+    Box(
+        Modifier
+            .fillMaxSize()
+        ,
+        contentAlignment = Alignment.BottomCenter
+    ) {
+        LazyColumn(
             Modifier
-                .fillMaxSize()
+                .fillMaxWidth()
+                .edgeToEdgeGradient(Theme.background, innerPadding)
             ,
-            contentAlignment = Alignment.BottomCenter
+            reverseLayout = true,
+            horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            LazyColumn(
-                Modifier
-                    .fillMaxWidth(.95f)
-                    .edgeToEdgeGradient(Theme.background, innerPadding)
-                ,
-                reverseLayout = true
-            ) {
-                item {
-                    Spacer(Modifier.height(innerPadding.calculateBottomPadding() + BOTTOMSEARCHBARHEIGHT))
-                }
-                itemsIndexed(displayedRepos, {i, it -> it.commitSha}) {i, it ->
-                    val calendar = remember { Calendar.getInstance() }
-                    Item(
-                        it.repoOwner+"/",
-                        it.repoName,
-                        "Last commit: ${it.commitDate?.formatTimeStamp(calendar)}",
-                        null,
-                        false,
-                        i == 0,
-                        i == displayedRepos.size-1,
-                        {
-                            nav.navigate("commits/repo/${it.repoName}")
-                        }
-                    ) {
-                        AndroidUtils.openLink(context, GitHub.generateLinkForRepo(it))
+            item {
+                Spacer(Modifier.height(innerPadding.calculateBottomPadding() + BOTTOMSEARCHBARHEIGHT))
+            }
+            itemsIndexed(displayedRepos, {i, it -> it.commitSha}) {i, it ->
+                val calendar = remember { Calendar.getInstance() }
+                Item(
+                    it.repoOwner+"/",
+                    it.repoName,
+                    "Last commit: ${it.commitDate?.formatTimeStamp(calendar)}",
+                    null,
+                    false,
+                    i == 0,
+                    i == displayedRepos.size-1,
+                    {
+                        nav.navigate("commits/repo/${it.repoName}")
                     }
-                }
-                // Due to reverse layout
-                item {
-                    Spacer(Modifier.height(innerPadding.calculateTopPadding()))
+                ) {
+                    AndroidUtils.openLink(context, GitHub.generateLinkForRepo(it))
                 }
             }
+            // Due to reverse layout
+            item {
+                Spacer(Modifier.height(innerPadding.calculateTopPadding()))
+            }
+        }
+        Box(
+            Modifier
+                .setMaxTabletWidth()
+        ) {
             BottomSearchBar(
                 Theme.background,
                 innerPadding.calculateBottomPadding(),
-                {t -> displayedRepos = repos.filteredWith(t, {it.repoOwner}) { it.repoName }}
+                { t -> displayedRepos = repos.filteredWith(t, { it.repoOwner }) { it.repoName } }
             )
         }
     }
@@ -130,49 +134,52 @@ fun FullScreenRepo(name: String){
         }
     }
     var displayedCommits by remember { mutableStateOf(repos) }
-    Scaffold(
-        containerColor = Theme.background
-    ) {  innerPadding ->
-        Box(
+    val innerPadding = windowPadding
+    Box(
+        Modifier
+            .fillMaxSize()
+        ,
+        contentAlignment = Alignment.BottomCenter
+    ) {
+        LazyColumn(
             Modifier
-                .fillMaxSize()
+                .fillMaxWidth()
+                .edgeToEdgeGradient(Theme.background, innerPadding)
             ,
-            contentAlignment = Alignment.BottomCenter
+            reverseLayout = true,
+            horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            LazyColumn(
-                Modifier
-                    .fillMaxWidth(.95f)
-                    .edgeToEdgeGradient(Theme.background, innerPadding)
-                ,
-                reverseLayout = true
-            ) {
-                item {
-                    Spacer(Modifier.height(innerPadding.calculateBottomPadding() + BOTTOMSEARCHBARHEIGHT))
-                }
-                itemsIndexed(displayedCommits, {i, it -> it.commitSha}) {i, it ->
+            item {
+                Spacer(Modifier.height(innerPadding.calculateBottomPadding() + BOTTOMSEARCHBARHEIGHT))
+            }
+            itemsIndexed(displayedCommits, {i, it -> it.commitSha}) {i, it ->
                 val calendar = remember { Calendar.getInstance() }
-                    Item(
-                        "By ${it.commitAuthor} <${it.commitEmail}>",
-                        it.commitMessage?:"",
-                        "${it.additions} Addition${it.additions.plural("s")} · " +
-                                "${it.deletions} Deletion${it.deletions.plural("s")} · " +
-                                "${it.filesChanged} File${it.filesChanged.plural("s")} changed",
-                        it.commitDate?.formatTimeStamp(calendar),
-                        true,
-                        i == 0,
-                        i == displayedCommits.size-1,
-                        {
-                            nav.navigate("commits/commit/${it.commitSha}")
-                        }
-                    ) {
-                        AndroidUtils.openLink(context, it.commitUrl?:"")
+                Item(
+                    "By ${it.commitAuthor} <${it.commitEmail}>",
+                    it.commitMessage?:"",
+                    "${it.additions} Addition${it.additions.plural("s")} · " +
+                            "${it.deletions} Deletion${it.deletions.plural("s")} · " +
+                            "${it.filesChanged} File${it.filesChanged.plural("s")} changed",
+                    it.commitDate?.formatTimeStamp(calendar),
+                    true,
+                    i == 0,
+                    i == displayedCommits.size-1,
+                    {
+                        nav.navigate("commits/commit/${it.commitSha}")
                     }
-                }
-                // Due to reverse layout
-                item {
-                    Spacer(Modifier.height(innerPadding.calculateTopPadding()))
+                ) {
+                    AndroidUtils.openLink(context, it.commitUrl?:"")
                 }
             }
+            // Due to reverse layout
+            item {
+                Spacer(Modifier.height(innerPadding.calculateTopPadding()))
+            }
+        }
+        Box(
+            Modifier
+                .setMaxTabletWidth()
+        ) {
             BottomSearchBar(
                 Theme.background,
                 innerPadding.calculateBottomPadding(),
@@ -185,7 +192,7 @@ fun FullScreenRepo(name: String){
 private fun Item(subTitle: String, title: String, subsubTitle: String, date: String?, smaller: Boolean, isFirst: Boolean, isLast: Boolean, onClick: (()->Unit)? = null, onClickAction: ()->Unit){
     Row(
         Modifier
-            .fillMaxWidth()
+            .setMaxTabletWidth()
             .height(IntrinsicSize.Min)
             .padding(vertical = 3.dp)
             .clip(rememberAsymmetricalVerticalCornerRadius(isFirst, isLast, reverse = true))

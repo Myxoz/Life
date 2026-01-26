@@ -57,6 +57,8 @@ import com.myxoz.life.LocalStorage
 import com.myxoz.life.Theme
 import com.myxoz.life.api.syncables.ProfilePictureSyncable
 import com.myxoz.life.dbwrapper.ProfilePictureStored
+import com.myxoz.life.ui.SCREENMAXWIDTH
+import com.myxoz.life.ui.setMaxTabletWidth
 import com.myxoz.life.ui.theme.FontFamily
 import com.myxoz.life.ui.theme.FontSize
 import com.myxoz.life.ui.theme.TypoStyle
@@ -79,7 +81,7 @@ fun ProfilePictureWithText(photoPicker: PhotoPicker, profileInfoViewModel: Profi
     val smallPbPadding = 10.dp
     @Suppress("UnnecessaryVariable", "RedundantSuppression") // LOL
     val smallPbSize = fontSize
-    val maxHeight = topBarHeight-smallPbSize-smallPbPadding*2
+    val maxHeight = topBarHeight - smallPbSize - smallPbPadding*2
     val progress = 1-min(maxHeight, scrollLength)/maxHeight
     val fontPadding = 20.dp
     val style = TypoStyle(Theme.primary, FontSize.XLARGE, FontFamily.Display)
@@ -113,17 +115,18 @@ fun ProfilePictureWithText(photoPicker: PhotoPicker, profileInfoViewModel: Profi
     }
     Box(
         Modifier
-            .fillMaxWidth()
+            .setMaxTabletWidth()
             .background(Theme.background)
             .height(progress*(maxHeight)+smallPbSize+smallPbPadding*2)
     ){
         val conf = LocalConfiguration.current
-        val smallerScreenDimension = min(conf.screenWidthDp, conf.screenHeightDp).dp
+        val screenWidth = min(conf.screenWidthDp, SCREENMAXWIDTH.value.toInt())
+        val smallerScreenDimension = min(screenWidth, conf.screenHeightDp).dp
         val isProfilePictureFullScreen by profileInfoViewModel.isProfilePictureFullScreen.collectAsState()
         val fullScreenProgress by animateFloatAsState(if(isProfilePictureFullScreen) 1f else 0f)
         val maxPbSize = smallerScreenDimension * (fullScreenProgress *.45f + 0.5f)
         val largePbPadding = 50.dp
-        val topLeftPbX = progress*((LocalConfiguration.current.screenWidthDp.dp-maxPbSize)/2 - smallPbPadding)+smallPbPadding
+        val topLeftPbX = progress*((screenWidth.dp-maxPbSize)/2 - smallPbPadding)+smallPbPadding
         val topLeftPbY = progress*(largePbPadding-smallPbPadding)+smallPbPadding
         val pbSize = progress*(maxPbSize-smallPbSize)+smallPbSize
         val radius = progress*(maxPbSize+fontPadding-smallPbPadding)+smallPbPadding
@@ -220,8 +223,8 @@ fun ProfilePictureWithText(photoPicker: PhotoPicker, profileInfoViewModel: Profi
             Modifier
                 .align(Alignment.BottomCenter)
                 .padding(bottom = 1.dp)
-                .fillMaxWidth(.95f)
-                .background(Theme.outline .copy(alpha = 1 - progress), CircleShape)
+                .fillMaxWidth()
+                .background(Theme.outline.copy(alpha = 1 - progress), CircleShape)
                 .height(2.dp),
         )
     }

@@ -70,7 +70,8 @@ fun colorSchemeFromColor(color: Color): ColorScheme =
         tertiaryContainer = Color(0xE8333333).compositeOver(color),
         outlineVariant = Color(0xE0555555).compositeOver(color),
         surfaceContainerHigh = Color(0xE0222222).compositeOver(color),
-        background = color
+        background = Color(0xEE080808).compositeOver(color),
+        surfaceContainer = color
     )
 
 @Composable

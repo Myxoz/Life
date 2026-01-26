@@ -27,7 +27,6 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Icon
-import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
@@ -68,6 +67,8 @@ import com.myxoz.life.screens.feed.main.msToDisplay
 import com.myxoz.life.screens.feed.main.screenTimeGoal
 import com.myxoz.life.screens.feed.main.stepsGoal
 import com.myxoz.life.screens.options.getUsageDataBetween
+import com.myxoz.life.ui.SCREENMAXWIDTH
+import com.myxoz.life.ui.setMaxTabletWidth
 import com.myxoz.life.ui.theme.FontFamily
 import com.myxoz.life.ui.theme.FontSize
 import com.myxoz.life.ui.theme.OldColors
@@ -77,10 +78,12 @@ import com.myxoz.life.utils.diagrams.PieChart
 import com.myxoz.life.utils.formatMToDistance
 import com.myxoz.life.utils.rippleClick
 import com.myxoz.life.utils.toShape
+import com.myxoz.life.utils.windowPadding
 import kotlinx.coroutines.delay
 import java.time.LocalDate
 import java.time.ZoneId
 import java.time.temporal.ChronoUnit
+import kotlin.math.min
 
 @Composable
 fun DayOverviewComposable(navController: NavController, epochDay: Long){
@@ -148,16 +151,19 @@ fun DayOverviewComposable(navController: NavController, epochDay: Long){
     }
     val showSteps by settings.features.stepCounting.has.collectAsState()
     if(isToday && showSteps) StepCounterTrigger { steps = it }
-    Scaffold(
-        Modifier.fillMaxSize(),
-        containerColor = Theme.background
-    ) { innerPadding ->
+    val innerPadding = windowPadding
+    Box(
+        Modifier
+            .fillMaxSize()
+            .verticalScroll(rememberScrollState())
+            .edgeToEdgeGradient(Theme.background, innerPadding)
+        ,
+        Alignment.BottomCenter
+    ) {
         Column(
             Modifier
-                .edgeToEdgeGradient(Theme.background, innerPadding)
-                .padding(horizontal = 20.dp)
-                .fillMaxSize()
-                .verticalScroll(rememberScrollState()),
+                .setMaxTabletWidth()
+            ,
             verticalArrangement = Arrangement.spacedBy(20.dp)
         ) {
             Text(
@@ -185,7 +191,7 @@ fun DayOverviewComposable(navController: NavController, epochDay: Long){
             ) {
                 Text("Aufteilung", style = TypoStyle(Theme.primary, FontSize.MEDIUM), modifier = Modifier.fillMaxWidth())
                 Spacer(Modifier.height(10.dp))
-                val screenWidth = LocalConfiguration.current.screenWidthDp.dp
+                val screenWidth = min(LocalConfiguration.current.screenWidthDp, SCREENMAXWIDTH.value.toInt()).dp
                 Box(Modifier.size(screenWidth*.7f)){
                     pieChart.Render()
                 }

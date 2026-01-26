@@ -739,10 +739,7 @@ fun JSONObject.getEventId() = getString("id").toLong()
 @Composable
 fun TimeBar(event: ProposedEvent, progress: Float = 0f, color: Color, setEventTo: (ProposedEvent) -> Unit){
     val screens = LocalScreens.current
-    Box(
-        Modifier
-            .fillMaxWidth(.95f)
-    ) {
+    Box {
         Column(
             Modifier
                 .fillMaxWidth()

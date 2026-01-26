@@ -3,6 +3,7 @@ package com.myxoz.life.screens.options
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
@@ -16,7 +17,6 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Icon
-import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -28,11 +28,13 @@ import androidx.compose.ui.unit.dp
 import com.myxoz.life.LocalNavController
 import com.myxoz.life.R
 import com.myxoz.life.Theme
+import com.myxoz.life.ui.setMaxTabletWidth
 import com.myxoz.life.ui.theme.FontFamily
 import com.myxoz.life.ui.theme.FontSize
 import com.myxoz.life.ui.theme.TypoStyle
 import com.myxoz.life.utils.combinedRippleClick
 import com.myxoz.life.utils.toDp
+import com.myxoz.life.utils.windowPadding
 
 const val ME_ID = 1L
 @OptIn(ExperimentalLayoutApi::class)
@@ -44,14 +46,19 @@ fun SettingsComposable(){
     )
     val context = LocalContext.current
     val nav = LocalNavController.current
-    Scaffold(
-        containerColor = Theme.background
-    ) { innerPadding ->
+    Box(
+        Modifier
+            .background(Theme.background)
+            .fillMaxSize()
+            .verticalScroll(rememberScrollState())
+        ,
+        Alignment.BottomCenter
+    ) {
         FlowRow(
             Modifier
-                .fillMaxSize()
-                .padding(innerPadding)
-                .verticalScroll(rememberScrollState()),
+                .setMaxTabletWidth()
+                .padding(windowPadding)
+            ,
             maxItemsInEachRow = 2,
             verticalArrangement = Arrangement.Bottom,
             horizontalArrangement = Arrangement.End
