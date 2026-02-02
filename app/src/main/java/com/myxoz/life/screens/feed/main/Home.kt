@@ -1,6 +1,5 @@
 package com.myxoz.life.screens.feed.main
 
-import android.content.Context.MODE_PRIVATE
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -27,7 +26,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -39,10 +37,8 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.navigation.compose.currentBackStackEntryAsState
-import com.myxoz.life.LocalAPI
 import com.myxoz.life.LocalNavController
 import com.myxoz.life.LocalSettings
-import com.myxoz.life.LocalStorage
 import com.myxoz.life.R
 import com.myxoz.life.Theme
 import com.myxoz.life.screens.feed.search.LifeBottomBar
@@ -64,19 +60,20 @@ import java.time.ZoneId
 @Composable
 fun HomeComposable(calendarViewModel: CalendarViewModel, inspectedEventViewModel: InspectedEventViewModel){
     var showDayPopup by remember { mutableStateOf(false) }
+    var isSelectDayVisible by remember { mutableStateOf(false) }
 
-    val db = LocalStorage.current
-    val api = LocalAPI.current
     val nav = LocalNavController.current
     val currentBackStackEntry by nav.currentBackStackEntryAsState()
     LaunchedEffect(currentBackStackEntry) {
         val currentRoute = currentBackStackEntry?.destination?.route
         if (currentRoute == "home") {
-            showDayPopup = db.days.getDay(LocalDate.now().minusDays(1).toEpochDay().toInt()) == null && !inspectedEventViewModel.isEditing.value
+            calendarViewModel.yesterdaySummaryAdded.collect {
+                showDayPopup = (it == null) && !inspectedEventViewModel.isEditing.value
+            }
         }
     }
     LaunchedEffect(Unit) {
-        if(api.resyncLastDays() != 0) calendarViewModel.refreshEvents()
+        calendarViewModel.resync()
     }
 
     Scaffold(
@@ -90,7 +87,7 @@ fun HomeComposable(calendarViewModel: CalendarViewModel, inspectedEventViewModel
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
             Box(Modifier.weight(1f)) {
-                CalendarComposable(calendarViewModel, inspectedEventViewModel)
+                CalendarComposable(calendarViewModel, inspectedEventViewModel) {showDayPopup = true}
             }
             LifeBottomBar(calendarViewModel)
         }
@@ -145,15 +142,7 @@ fun HomeComposable(calendarViewModel: CalendarViewModel, inspectedEventViewModel
                     ) {
                         val context = LocalContext.current
                         if(stepCountEnabled) {
-                            var steps by remember {
-                                mutableIntStateOf(0)
-                            }
-                            LaunchedEffect(Unit) {
-                                steps = db.proposedSteps.getStepsByDay(day.toEpochDay())?.steps
-                                    ?: context.getSharedPreferences("steps", MODE_PRIVATE).run {
-                                        getLong("saved_steps", 0L) - getLong("steps_at_midnight", 0L)
-                                    }.toInt()
-                            }
+                            val steps by calendarViewModel.lastInsertedSteps.collectAsState()
                             Text(
                                 "Schritte",
                                 style = TypoStyle(Theme.primary, FontSize.SMALL)
@@ -174,7 +163,7 @@ fun HomeComposable(calendarViewModel: CalendarViewModel, inspectedEventViewModel
                                     context,
                                     day.atStartOfDay(zone).toEpochSecond() * 1000L,
                                     day.plusDays(1).atStartOfDay(zone).toEpochSecond() * 1000L
-                                ).toInt()
+                                )
                             }
                             Spacer(Modifier.height(20.dp))
                             Text(
@@ -182,7 +171,7 @@ fun HomeComposable(calendarViewModel: CalendarViewModel, inspectedEventViewModel
                                 style = TypoStyle(Theme.primary, FontSize.SMALL)
                             )
                             Text(
-                                screenTime.msToDisplay(),
+                                screenTime.formatMsToDuration(),
                                 style = TypoStyle(
                                     Theme.secondary,
                                     FontSize.XLARGE,
@@ -226,13 +215,12 @@ fun HomeComposable(calendarViewModel: CalendarViewModel, inspectedEventViewModel
                 }
             }
         }
-        val isSelectDayVisible by calendarViewModel.selectDayPopup.collectAsState()
-        UnmodalBottomSheet(isSelectDayVisible, {calendarViewModel.selectDayPopup.value = false}) {
+        UnmodalBottomSheet(isSelectDayVisible, {isSelectDayVisible = false}) {
             val datePickerState = rememberDatePickerState()
             DatePicker(datePickerState, colors = datePickerColors())
             ActionBar(
                 {
-                    calendarViewModel.selectDayPopup.value = false
+                    isSelectDayVisible = false
                 },
                 {
                     Icon(painterResource(R.drawable.close), "Close", Modifier.fillMaxSize(), tint = Theme.onSecondaryContainer)
@@ -245,7 +233,7 @@ fun HomeComposable(calendarViewModel: CalendarViewModel, inspectedEventViewModel
                         .toLocalDate()
                 }?: return@ActionBar
                 calendarViewModel.setDay(selectedDay)
-                calendarViewModel.selectDayPopup.value = false
+                isSelectDayVisible = false
             }) {
                 Text(
                     "Auswählen",

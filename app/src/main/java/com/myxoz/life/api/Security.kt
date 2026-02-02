@@ -18,6 +18,7 @@ import java.security.PrivateKey
 import java.security.PublicKey
 import java.security.Signature
 import javax.net.ssl.HttpsURLConnection
+import kotlin.random.Random
 
 class Security(
     private val alias: String = "private_token"
@@ -66,7 +67,8 @@ class Security(
         currentTime: Long,
         bodyStr: String,
         method: API.Method,
-        offset: Int?
+        offset: Int?,
+        publicKey: String = getBase64Public()
     ): JSONObject {
         val sha = sha256Hex(bodyStr)
 
@@ -84,10 +86,9 @@ class Security(
 
         val signature = sign(canonical.toByteArray(Charsets.UTF_8))
         val signatureB64 = Base64.encodeToString(signature, Base64.NO_WRAP)
-        val pubKeyB64 = getBase64Public()
 
         val out = JSONObject()
-        out.put("public_key", pubKeyB64)
+        out.put("public_key", publicKey)
         out.put("timestamp", currentTime)
         out.put("last_update", lastUpdate)
         out.put("signature", signatureB64)
@@ -147,5 +148,101 @@ class Security(
         val d = MessageDigest.getInstance("SHA-256")
         val b = d.digest(s.toByteArray(Charsets.UTF_8))
         return b.joinToString("") { "%02x".format(it) }
+    }
+
+    suspend fun testSign(urlString: String, lastUpdate: Long, currentTimeMillis: Long) = withContext(Dispatchers.IO) {
+        val baseBody = """{"ping":${Random.nextInt()}}"""
+        val offset = 0
+        val method = API.Method.Verify
+
+        fun sendRaw(json: JSONObject): Boolean? {
+            val url = URL(urlString)
+            val conn = (url.openConnection() as HttpsURLConnection).apply {
+                requestMethod = "POST"
+                doInput = true
+                doOutput = true
+                setRequestProperty("Content-Type", "application/json; charset=UTF-8")
+            }
+            conn.outputStream.use {
+                it.write(json.toString().toByteArray(Charsets.UTF_8))
+            }
+            val code = conn.responseCode
+            val codeIsSuccess = code in 200..299
+            try {
+                BufferedReader(InputStreamReader(
+                    if (codeIsSuccess) conn.inputStream else conn.errorStream
+                )).readText()
+            } catch (_: Exception) {
+                return null
+            }
+            conn.disconnect()
+            return codeIsSuccess
+        }
+
+        run {
+            val body = generateSignedBody(lastUpdate, currentTimeMillis, baseBody, method, offset)
+            val resp = sendRaw(body)
+            if(resp != true){
+                return@withContext "Server rejected valid signature. Make sure to add the device."
+            }
+        }
+
+        // 2. Modified body (must fail)
+        run {
+            val body = generateSignedBody(lastUpdate, currentTimeMillis, baseBody, method, offset)
+            body.put("body", """{"ping":${Random.nextInt()}}""")
+            val resp = sendRaw(body)
+            if(resp != false){
+                return@withContext "Server didnt reject invalid sign for body."
+            }
+        }
+
+        run {
+            val body = generateSignedBody(lastUpdate, currentTimeMillis, baseBody, method, offset)
+            body.put("method", "r")
+            val resp = sendRaw(body)
+            if(resp != false){
+                return@withContext "Server didn't reject wrong method"
+            }
+        }
+
+        run {
+            val pk = getBase64Public()
+            val corruptedPk = pk.toCharArray().apply { shuffle() }.joinToString("")
+            val body = generateSignedBody(
+                lastUpdate, currentTimeMillis, baseBody, method, offset, corruptedPk
+            )
+            val resp = sendRaw(body)
+            if(resp != false){
+                return@withContext "Server didnt reject altered public key"
+            }
+        }
+
+        run {
+            val body = generateSignedBody(lastUpdate, currentTimeMillis, baseBody, method, offset)
+            val sig = body.getString("signature")
+            val corruptedSig = sig.toCharArray().apply { shuffle() }.joinToString("")
+            body.put("signature", corruptedSig)
+            val resp = sendRaw(body)
+            if(resp != false){
+                return@withContext "Server didnt reject altered signature"
+            }
+        }
+
+        run {
+            val body = generateSignedBody(
+                lastUpdate,
+                currentTimeMillis - 600_000, // 10 minutes old
+                baseBody,
+                method,
+                offset
+            )
+            val resp = sendRaw(body)
+            if(resp != false){
+                return@withContext "Server didnt reject outdates ts"
+            }
+        }
+
+        return@withContext null
     }
 }

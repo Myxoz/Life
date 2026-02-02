@@ -1,20 +1,15 @@
 package com.myxoz.life.events.additionals
 
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
-import com.myxoz.life.api.syncables.PersonSyncable
-import com.myxoz.life.api.forEach
-import com.myxoz.life.dbwrapper.PeopleMappingEntity
-import com.myxoz.life.dbwrapper.StorageManager
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.withContext
+import com.myxoz.life.dbwrapper.events.PeopleMappingEntity
+import com.myxoz.life.dbwrapper.events.WriteEventDetailsDao
+import com.myxoz.life.utils.forEach
 import org.json.JSONArray
 import org.json.JSONObject
 
 interface PeopleEvent {
     val people: List<Long>
-    suspend fun savePeopleMapping(db: StorageManager, eventId: Long, people: List<Long>) {
-        db.peopleMapping.insertAll(
+    suspend fun savePeopleMapping(db: WriteEventDetailsDao, eventId: Long, people: List<Long>) {
+        db.insertAllPeopleMappings(
             people.map {
                 PeopleMappingEntity(
                     eventId,
@@ -25,17 +20,6 @@ interface PeopleEvent {
     }
     fun JSONObject.addPeople(): JSONObject = put("people", JSONArray().apply { people.forEach { put(it.toString()) } })
     companion object {
-        @Composable
-        fun GetFullNames(db: StorageManager, list: List<Long>, onDone: (List<PersonSyncable>)->Unit){
-            LaunchedEffect(list) {
-                withContext(Dispatchers.IO){
-                    onDone(list
-                        .mapNotNull { db.people.getPersonById(it) }
-                        .map { PersonSyncable.from(db, it) }
-                    )
-                }
-            }
-        }
         fun getPeopleFromJson(jsonObject: JSONObject) = jsonObject.getJSONArray("people").run {
             val list = mutableListOf<Long>()
             forEach {

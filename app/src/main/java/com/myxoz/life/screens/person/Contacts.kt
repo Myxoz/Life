@@ -40,7 +40,6 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
-import androidx.compose.runtime.toMutableStateList
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
@@ -53,15 +52,13 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
-import androidx.core.content.edit
 import androidx.core.net.toUri
 import com.myxoz.life.LocalScreens
 import com.myxoz.life.LocalSettings
-import com.myxoz.life.LocalStorage
 import com.myxoz.life.R
 import com.myxoz.life.Theme
-import com.myxoz.life.api.API
 import com.myxoz.life.api.syncables.PersonSyncable
+import com.myxoz.life.api.API
 import com.myxoz.life.screens.feed.dayoverview.edgeToEdgeGradient
 import com.myxoz.life.ui.BOTTOMSEARCHBARHEIGHT
 import com.myxoz.life.ui.BottomSearchBar
@@ -72,6 +69,7 @@ import com.myxoz.life.ui.theme.FontSize
 import com.myxoz.life.ui.theme.OldColors
 import com.myxoz.life.ui.theme.TypoStyle
 import com.myxoz.life.utils.MaterialShapes
+import com.myxoz.life.utils.collectAsMutableState
 import com.myxoz.life.utils.filteredWith
 import com.myxoz.life.utils.rippleClick
 import com.myxoz.life.utils.toDp
@@ -79,10 +77,8 @@ import com.myxoz.life.utils.toPx
 import com.myxoz.life.utils.toShape
 import com.myxoz.life.utils.windowPadding
 import com.myxoz.life.viewmodels.ContactsViewModel
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 import kotlin.math.abs
 import kotlin.math.roundToInt
 
@@ -98,7 +94,6 @@ fun Contacts(contactsViewModel: ContactsViewModel){
     ) {
         var search by remember { mutableStateOf("") }
         val context = LocalContext.current
-        val db = LocalStorage.current
         Column(
             Modifier
                 .fillMaxHeight()
@@ -108,20 +103,15 @@ fun Contacts(contactsViewModel: ContactsViewModel){
             val screens = LocalScreens.current
             val settings = LocalSettings.current
             val screenWidthPx = LocalConfiguration.current.screenWidthDp.dp.toPx(LocalDensity.current)
-            val lifeContacts by contactsViewModel.lifeContacts.collectAsState()
-            val deviceContacts by contactsViewModel.deviceContacts.collectAsState()
+            val lifeContacts by contactsViewModel.getAllLifeContacts.collectAsState(listOf())
+            val deviceContacts by contactsViewModel.getAllDeviceContacts().collectAsState()
             val showIcons by contactsViewModel.showIcons.collectAsState()
             val ordering = remember {
                 arrayOf('F', '*', 'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z', 'C')
             }
-            val favoriteIds = remember {
-                (db.prefs.getStringSet("favorite_people", setOf())  ?: setOf()).mapNotNull { it.toLongOrNull() }.toMutableStateList()
-            }
+            var favoriteIds by contactsViewModel.favoriteIds.collectAsMutableState()
             LaunchedEffect(Unit) {
-                withContext(Dispatchers.IO){
-                    contactsViewModel.refetchLifeContacts()
-                    if(settings.features.addNewPerson.hasAssured()) contactsViewModel.fetchDeviceContacts(context)
-                }
+                if(settings.features.addNewPerson.hasAssured()) contactsViewModel.requestRefetchDeviceContacts()
             }
             val filteredLifeContacts = remember(search, lifeContacts.hashCode() /* Idk if needed but lists... */) {
                 lifeContacts.filteredWith(search, {it.fullName?:""}) {it.name}
@@ -240,7 +230,7 @@ fun Contacts(contactsViewModel: ContactsViewModel){
                                         .clip(shape)
                                         .fillMaxWidth()
                                         .rippleClick {
-                                            if (contact.id != 0L) {
+                                            if (contact.id != -1L) {
                                                 screens.openPersonDetails(contact.id)
                                             } else {
                                                 // Open existing contact by number
@@ -323,15 +313,9 @@ fun Contacts(contactsViewModel: ContactsViewModel){
                                             .clip(CircleShape)
                                             .rippleClick {
                                                 if (letter != 'F' && !favoriteIds.contains(contact.id)) {
-                                                    favoriteIds.add(contact.id)
+                                                    favoriteIds += contact.id
                                                 } else {
-                                                    favoriteIds.remove(contact.id)
-                                                }
-                                                db.prefs.edit {
-                                                    putStringSet(
-                                                        "favorite_people",
-                                                        favoriteIds.map { it.toString() }.toSet()
-                                                    )
+                                                    favoriteIds -= contact.id
                                                 }
                                             }
                                         )
@@ -341,17 +325,18 @@ fun Contacts(contactsViewModel: ContactsViewModel){
                                             .clip(CircleShape)
                                             .rippleClick {
                                                 coroutineScope.launch {
-                                                    PersonSyncable(
-                                                        API.generateId(),
-                                                        contact.name,
-                                                        null,
-                                                        contact.phoneNumber,
-                                                        null,
-                                                        null,
-                                                        null,
-                                                        contact.socials
-                                                    ).saveAndSync(db)
-                                                    contactsViewModel.refetchLifeContacts()
+                                                    contactsViewModel.createNewContact(
+                                                        PersonSyncable(
+                                                            API.generateId(),
+                                                            contact.name,
+                                                            null,
+                                                            contact.phoneNumber,
+                                                            null,
+                                                            null,
+                                                            null,
+                                                            contact.socials
+                                                        )
+                                                    )
                                                 }
                                             }
                                         ) {
@@ -387,17 +372,18 @@ fun Contacts(contactsViewModel: ContactsViewModel){
                 {
                     if (search.isNotBlank()) {
                         coroutineScope.launch {
-                            PersonSyncable(
-                                API.generateId(),
-                                search,
-                                null,
-                                null,
-                                null,
-                                null,
-                                null,
-                                listOf(),
-                            ).saveAndSync(db)
-                            contactsViewModel.refetchLifeContacts()
+                            contactsViewModel.createNewContact(
+                                PersonSyncable(
+                                    API.generateId(),
+                                    search,
+                                    null,
+                                    null,
+                                    null,
+                                    null,
+                                    null,
+                                    listOf(),
+                                )
+                            )
                             Toast.makeText(context, "Erstellt!", Toast.LENGTH_LONG).show()
                         }
                     } else {
@@ -405,11 +391,7 @@ fun Contacts(contactsViewModel: ContactsViewModel){
                     }
                 },
             ) {
-                Toast.makeText(
-                    context,
-                    "Halte gedrückt zum erstellen",
-                    Toast.LENGTH_LONG
-                ).show()
+                Toast.makeText(context, "Halte gedrückt zum erstellen", Toast.LENGTH_LONG).show()
             }
         }
         Box(

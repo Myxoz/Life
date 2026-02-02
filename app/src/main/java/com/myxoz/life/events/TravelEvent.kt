@@ -19,11 +19,8 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalDensity
@@ -32,23 +29,21 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.times
-import com.myxoz.life.LocalStorage
-import com.myxoz.life.api.syncables.Location
-import com.myxoz.life.api.jsonObjArray
-import com.myxoz.life.dbwrapper.EventEntity
-import com.myxoz.life.dbwrapper.StorageManager
-import com.myxoz.life.dbwrapper.TravelEntity
-import com.myxoz.life.dbwrapper.VehicleEntity
+import com.myxoz.life.LocalScreens
+import com.myxoz.life.dbwrapper.events.EventEntity
+import com.myxoz.life.dbwrapper.events.ReadEventDetailsDao
+import com.myxoz.life.dbwrapper.events.TravelEntity
+import com.myxoz.life.dbwrapper.events.VehicleEntity
+import com.myxoz.life.dbwrapper.events.WriteEventDetailsDao
 import com.myxoz.life.events.additionals.EventType
 import com.myxoz.life.events.additionals.TimedTagLikeContainer
 import com.myxoz.life.events.additionals.Vehicle
 import com.myxoz.life.ui.ArrowDirection
 import com.myxoz.life.ui.drawArrowBehind
 import com.myxoz.life.ui.theme.OldColors
+import com.myxoz.life.utils.jsonObjArray
 import com.myxoz.life.utils.toPx
 import com.myxoz.life.utils.toSp
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.withContext
 import org.json.JSONArray
 import org.json.JSONObject
 
@@ -61,10 +56,8 @@ class TravelEvent(
     val to: Long,
     val vehicles: List<TimedTagLikeContainer<Vehicle>>
 ): ProposedEvent(start, end, EventType.Travel, uss, usl) {
-    var decodedFrom: Location? = null
-    var decodedTo: Location? = null
-    override suspend fun saveEventSpecifics(db: StorageManager, id: Long): Boolean {
-        db.travel.insertEvent(
+    override suspend fun saveEventSpecifics(writeEventDetailsDao: WriteEventDetailsDao, id: Long): Boolean {
+        writeEventDetailsDao.insertTravel(
             TravelEntity(
                 id,
                 from,
@@ -72,7 +65,7 @@ class TravelEvent(
             )
         )
         vehicles.forEach {
-            db.vehicle.insertVehicle(
+            writeEventDetailsDao.insertVehicle(
                 VehicleEntity(
                     id,
                     it.type.id,
@@ -90,10 +83,12 @@ class TravelEvent(
         isSmall: Boolean,
         blockHeight: Int
     ) {
-        val db = LocalStorage.current
+        val profileInfoModel = LocalScreens.current.profileInfoModel
         val blockHeight =  getBlockHeight(startOfDay, endOfDay)
-        var fromDisplay by remember { mutableStateOf(decodedFrom?.name ?:"Von") }
-        var toDisplay by remember { mutableStateOf(decodedTo?.name ?: "Nach") }
+        val from by profileInfoModel.getLocationById(from).collectAsState(null)
+        val to by profileInfoModel.getLocationById(to).collectAsState(null)
+        val fromDisplay = from?.name ?: "Von"
+        val toDisplay = to?.name ?: "Nach"
         val density = LocalDensity.current
         val size = when(blockHeight){
             1 -> ((0.8f) * oneHourDp/4f)
@@ -104,18 +99,6 @@ class TravelEvent(
             else -> 10.dp
         }
         val fontSize = size.toSp(density)
-        LaunchedEffect(from, to) {
-            withContext(Dispatchers.IO){
-                db.location.getLocationById(from)?.also {
-                    fromDisplay = it.name
-                    decodedFrom = Location.from(it)
-                }
-                db.location.getLocationById(to)?.also {
-                    toDisplay = it.name
-                    decodedTo = Location.from(it)
-                }
-            }
-        }
         when(blockHeight){
             in -Int.MIN_VALUE..2 -> {
                 Row(
@@ -226,9 +209,9 @@ class TravelEvent(
         }
     }
 
-    override suspend fun eraseEventSpecificsFromDB(db: StorageManager, id: Long) {
-        db.travel.removeById(id)
-        db.vehicle.removeById(id)
+    override suspend fun eraseEventSpecificsFromDB(db: WriteEventDetailsDao, id: Long) {
+        db.removeTravel(id)
+        db.removeVehicleById(id)
     }
     override fun addEventSpecifics(jsonObject: JSONObject): JSONObject = jsonObject
         .put("from", from.toString())
@@ -258,9 +241,9 @@ class TravelEvent(
                 }
             )
 
-        suspend fun from(db: StorageManager, event: EventEntity): TravelEvent? {
-            val ev = db.travel.getEvent(event.id)?:return null
-            val ve = db.vehicle.getEvent(event.id)
+        suspend fun from(db: ReadEventDetailsDao, event: EventEntity): TravelEvent? {
+            val ev = db.getTavel(event.id)?:return null
+            val ve = db.getVehicles(event.id)
             return TravelEvent(
                 event.start,
                 event.end,

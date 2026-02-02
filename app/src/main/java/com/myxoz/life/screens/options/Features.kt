@@ -37,10 +37,10 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.unit.dp
-import com.myxoz.life.LocalAPI
 import com.myxoz.life.LocalSettings
 import com.myxoz.life.R
 import com.myxoz.life.Theme
+import com.myxoz.life.dbwrapper.DayScreenTimeEntity
 import com.myxoz.life.screens.feed.dayoverview.edgeToEdgeGradient
 import com.myxoz.life.screens.person.displayperson.switchColors
 import com.myxoz.life.ui.setMaxTabletWidth
@@ -49,13 +49,14 @@ import com.myxoz.life.ui.theme.OldColors
 import com.myxoz.life.ui.theme.TypoStyle
 import com.myxoz.life.utils.rippleClick
 import com.myxoz.life.utils.windowPadding
+import com.myxoz.life.viewmodels.CalendarViewModel
 import com.myxoz.life.viewmodels.Settings
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.launch
 import kotlin.math.max
 
 @Composable
-fun SettingsPermissionComposable() {
+fun SettingsPermissionComposable(calendarViewModel: CalendarViewModel) {
     val innerPadding = windowPadding
     Box(
         Modifier
@@ -102,19 +103,19 @@ fun SettingsPermissionComposable() {
                     HorizontalDivider(Modifier.padding(horizontal = 15.dp), color = Theme.outlineVariant)
                 }
                 HorizontalDivider(Modifier.padding(horizontal = 15.dp), color = Theme.outlineVariant)
-                val api = LocalAPI.current
                 val coroutineScope = rememberCoroutineScope()
                 val context = LocalContext.current
                 val clipboard = LocalClipboardManager.current
                 FeatureItem(settings.features.syncWithServer) {
                     coroutineScope.launch {
                         if(it){
-                            if(api.testSign()) {
+                            val check = calendarViewModel.testSign()
+                            if(check != null) {
                                 Toast.makeText(context, "Verifiziert", Toast.LENGTH_SHORT).show()
                                 settings.features.syncWithServer.set(true)
                             } else {
-                                Toast.makeText(context, "Publickey kopiert; Keine Verifizierung möglich", Toast.LENGTH_LONG).show()
-                                clipboard.setText(AnnotatedString(api.security.getBase64Public()))
+                                Toast.makeText(context, check, Toast.LENGTH_LONG).show()
+                                clipboard.setText(AnnotatedString(calendarViewModel.getBase64Public()))
                             }
                         } else {
                             settings.features.syncWithServer.set(false)
@@ -317,12 +318,12 @@ fun getUsageDataBetween(context: Context, start: Long, end: Long): Long {
     return totalForeground
 }
 
-fun getMappedUsageDataBetween(context: Context, start: Long, end: Long): Map<String, Long> {
+fun getMappedUsageDataBetween(context: Context, start: Long, end: Long): List<DayScreenTimeEntity> {
     val usageMap = mutableMapOf<String, Long>()
     processUsageEvents(context, start, end) { pkg, sessionStart, sessionEnd ->
         usageMap[pkg] = usageMap.getOrDefault(pkg, 0L) + max(0L, sessionEnd - sessionStart)
     }
-    return usageMap
+    return usageMap.map { DayScreenTimeEntity(0L, it.key, it.value) }
 }
 
 fun getUsageDataSessions(context: Context, start: Long, end: Long): List<UsageDataSession> {

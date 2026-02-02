@@ -16,10 +16,9 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -28,9 +27,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
-import com.myxoz.life.LocalStorage
+import com.myxoz.life.LocalScreens
 import com.myxoz.life.Theme
-import com.myxoz.life.api.syncables.Location
 import com.myxoz.life.events.additionals.TagLike
 import com.myxoz.life.screens.feed.fullscreenevent.ImeActionClicked
 import com.myxoz.life.screens.feed.fullscreenevent.InputField
@@ -49,18 +47,9 @@ fun MultipleLoctionBar(
     placeholder: String,
     updateLocations: (List<Long>)->Unit
 ){
-    val db = LocalStorage.current
     val selectedLocations = remember { defaultSelectedLocations.toMutableStateList() }
-    val allLocations = remember { mutableStateListOf<Location>() }
-    LaunchedEffect(Unit) {
-        val locations = db.location.getAllLocations()
-        allLocations.clear()
-        allLocations.addAll(
-            locations.map{
-                Location.from(it)
-            }
-        )
-    }
+    val mapViewModel = LocalScreens.current.mapViewModel
+    val allLocations by mapViewModel.getAllLocations.collectAsState(listOf())
     var search: String? by remember {
         mutableStateOf(null)
     }

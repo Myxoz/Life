@@ -1,15 +1,15 @@
 package com.myxoz.life.api.syncables
 
 import com.myxoz.life.api.Syncable
-import com.myxoz.life.dbwrapper.StorageManager
+import com.myxoz.life.api.API
 import org.json.JSONObject
 
 class DeleteEntry(calendarId: Int, id: Long) : Syncable(calendarId, id) {
-    override suspend fun specificsToJson(db: StorageManager): JSONObject =
+    override suspend fun specificsToJson(): JSONObject? =
         JSONObject()
             .put("type", calendarId)
             .put("tags", 1)
             .put("id", id.toString())
 
-    override suspend fun saveToDB(db: StorageManager) = Unit
+    override suspend fun saveToDB(db: API.WriteSyncableDaos) = Unit
 }

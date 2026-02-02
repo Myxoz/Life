@@ -27,7 +27,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -42,11 +41,9 @@ import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.times
 import com.myxoz.life.LocalNavController
-import com.myxoz.life.LocalStorage
+import com.myxoz.life.LocalScreens
 import com.myxoz.life.R
 import com.myxoz.life.Theme
-import com.myxoz.life.api.syncables.Location
-import com.myxoz.life.api.syncables.PersonSyncable
 import com.myxoz.life.events.additionals.TagLike
 import com.myxoz.life.ui.theme.FontSize
 import com.myxoz.life.ui.theme.TypoStyle
@@ -72,22 +69,16 @@ fun LifeBottomBar(calendarViewModel: CalendarViewModel){
         val setWidth by calendarViewModel.dayAmount.collectAsState()
         val width by animateFloatAsState(setWidth.toFloat())
         val rowHeight = FontSize.LARGE.size.toDp() + 20.dp
-        val db = LocalStorage.current
-        val allPeopleMap by produceState(mapOf()) {
-            val allPeople = db.people.getAllPeople()
-            val map = mutableMapOf<Long, PersonSyncable>()
-            for (entity in allPeople) {
-                map[entity.id] = PersonSyncable.from(db, entity)
-            }
-            value = map
+        val profileViewModel = LocalScreens.current.profileInfoModel
+        val allPeople by profileViewModel.getAlPeopleFlow.collectAsState(listOf())
+        val allPeopleMap = remember(allPeople) {
+            // I'm still impressed this works
+            allPeople.groupBy { it.id }.mapValues { it.value.first() }
         }
-        val allLocations by produceState(mapOf()) {
-            val allLocations = db.location.getAllLocations()
-            val map = mutableMapOf<Long, Location>()
-            for (entity in allLocations) {
-                map[entity.id] = Location.from(entity)
-            }
-            value = map
+        val mapViewModel = LocalScreens.current.mapViewModel
+        val allLocations by mapViewModel.getAllLocations.collectAsState(listOf())
+        val allLocationsMap = remember(allLocations) {
+            allPeople.groupBy { it.id }.mapValues { it.value.first() }
         }
         Row(
             Modifier
@@ -181,8 +172,8 @@ fun LifeBottomBar(calendarViewModel: CalendarViewModel){
                     val locationsTo by search.locationFrom.collectAsState()
                     for (string in arrayOf(
                         if (people.isNotEmpty()) "Mit: " + people.mapNotNull { allPeopleMap[it] }.joinToString(", ") { it.name } else null,
-                        if (locationsFrom.isNotEmpty()) "Abfahrt: " + locationsFrom.mapNotNull { allLocations[it] }.joinToString(", ") { it.name } else null,
-                        if (locationsTo.isNotEmpty()) "Ankunft: " + locationsTo.mapNotNull { allLocations[it] }.joinToString(", ") { it.name } else null,
+                        if (locationsFrom.isNotEmpty()) "Abfahrt: " + locationsFrom.mapNotNull { allLocationsMap[it] }.joinToString(", ") { it.name } else null,
+                        if (locationsTo.isNotEmpty()) "Ankunft: " + locationsTo.mapNotNull { allLocationsMap[it] }.joinToString(", ") { it.name } else null,
                     )) {
                         if(string==null) continue
                         Box(

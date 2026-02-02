@@ -83,8 +83,9 @@ import com.myxoz.life.R
 import com.myxoz.life.Theme
 import com.myxoz.life.android.contacts.AndroidContacts
 import com.myxoz.life.android.integration.HVV
-import com.myxoz.life.api.syncables.Location
+import com.myxoz.life.api.syncables.LocationSyncable
 import com.myxoz.life.api.syncables.PersonSyncable
+import com.myxoz.life.screens.feed.fullscreenevent.getId
 import com.myxoz.life.ui.Chip
 import com.myxoz.life.ui.theme.FontSize
 import com.myxoz.life.ui.theme.TypoStyle
@@ -103,7 +104,7 @@ import kotlin.math.roundToInt
 
 private const val animationDuration = 300 // Default Compose Speed
 @Composable
-fun ProfileInfo(largeDataCache: LargeDataCache, profileInfoModel: ProfileInfoModel){
+fun ProfileInfo(largeDataCache: LargeDataCache, profileInfoModel: ProfileInfoModel, personId: Long){
     val coroutineScope = rememberCoroutineScope()
     val context = LocalContext.current
     val screens = LocalScreens.current
@@ -112,12 +113,12 @@ fun ProfileInfo(largeDataCache: LargeDataCache, profileInfoModel: ProfileInfoMod
         value = PhoneNumberParser(largeDataCache)
     }
     val isEditing by profileInfoModel.isEditing.collectAsState()
-    val isExtended by profileInfoModel.isExtended.collectAsState()
+    val isExtendedFlow by profileInfoModel.isExtended.collectAsState()
+    val isExtended = isExtendedFlow || isEditing
     val focusManager = LocalFocusManager.current
     BackHandler(isEditing) {
         coroutineScope.launch {
-            profileInfoModel.setStateToDb()
-            profileInfoModel.isEditing.value = false
+            profileInfoModel.discardChanges(personId)
         }
         focusManager.clearFocus(true)
     }
@@ -127,20 +128,19 @@ fun ProfileInfo(largeDataCache: LargeDataCache, profileInfoModel: ProfileInfoMod
                 .background(Theme.surfaceContainerHigh, RoundedCornerShape(20.dp))
                 .padding(10.dp),
         ) {
+            val inspectedPerson by profileInfoModel.getInspectedPerson(personId).collectAsState(null)
             val extendProgress by animateFloatAsState(if (isExtended) 1f else 0f, animationSpec = tween(animationDuration))
             val profileEntrySize =
                 FontSize.MEDIUM.size.toDp() + 4.dp + 5.dp + FontSize.LARGE.size.toDp() + 5.dp + FontSize.SMALL.size.toDp() * 2 + 4.dp // Two line small  height
-            val location by profileInfoModel.home.collectAsState()
             val navigationIconSize = FontSize.MEDIUM.size.toDp()
             val platforms by profileInfoModel.platforms.collectAsState()
-            val iban by profileInfoModel.iban.collectAsState()
             val platformBarHeight = FontSize.MEDIUM.size.toDp() + 10.dp + 4.dp + FontSize.MEDIUM.size.toDp() + 10.dp
             val containerHight by animateDpAsState(
                 (
                         if(isExtended)
                             (if(platforms.isNotEmpty() || isEditing) platformBarHeight + 20.dp else 0.dp) +
-                                    (if(iban!=null || isEditing) profileEntrySize + 20.dp else 0.dp) +
-                                    (if(location!=null && !isEditing) navigationIconSize + 10.dp + 10.dp + 5.dp else (-2).dp) +
+                                    (if(inspectedPerson?.iban!=null || isEditing) profileEntrySize + 20.dp else 0.dp) +
+                                    (if(inspectedPerson?.home!=null && !isEditing) navigationIconSize + 10.dp + 10.dp + 5.dp else (-2).dp) +
                                     20.dp + profileEntrySize /* Location */
                         else
                             0.dp
@@ -160,9 +160,7 @@ fun ProfileInfo(largeDataCache: LargeDataCache, profileInfoModel: ProfileInfoMod
                     "Voller Name",
                     painterResource(R.drawable.id_card)
                 ) {
-                    val fullNameState by profileInfoModel.fullName.collectAsState()
-                    val displayText =
-                        fullNameState?.let {
+                    val displayText = inspectedPerson?.fullName?.let {
                             buildString {
                                 val whiteSpaces = it.count { c-> c == ' ' }
                                 when(whiteSpaces){
@@ -192,22 +190,27 @@ fun ProfileInfo(largeDataCache: LargeDataCache, profileInfoModel: ProfileInfoMod
                         isEditing,
                         displayText ?: "???",
                         null,
-                        profileInfoModel.fullName,
+                        inspectedPerson?.fullName,
                         "Voller Name"
-                    )
+                    ) { text ->
+                        profileInfoModel.edit(personId){
+                            it.copy(fullName = text)
+                        }
+                    }
                 }
                 Spacer(Modifier.height(20.dp))
                 ListEntry(
                     "Handynummer",
                     painterResource(R.drawable.phone)
                 ) {
-                    val phone by profileInfoModel.phone.collectAsState()
-                    val formatedPhone = phone?.let { phoneParser?.parse(it) }
+                    val formatedPhone = inspectedPerson?.phoneNumber?.let { phoneParser?.parse(it) }
                     val censoredPlaces =
                         if (formatedPhone != null) (formatedPhone.substringAfter(" ").length * (1 - extendProgress)).roundToInt() else 3
                     val fullyFormatedNumber = formatedPhone?.censorLast(censoredPlaces, " •")
-                    val savedInContacts by profileInfoModel.savedInContacts.collectAsState()
-                    val subtext = if (!isExtended) null else phone?.let { phoneParser?.getPhoneInfo(it) }
+                    val savedInContacts by (inspectedPerson?.phoneNumber?.let { phone ->
+                        profileInfoModel.getSavedInContacts(phone)
+                    } ?: MutableStateFlow(null)).collectAsState(null)
+                    val subtext = if (!isExtended) null else inspectedPerson?.phoneNumber?.let { phoneParser?.getPhoneInfo(it) }
                     Row(
                         horizontalArrangement = Arrangement.SpaceBetween,
                         verticalAlignment = Alignment.CenterVertically
@@ -219,12 +222,16 @@ fun ProfileInfo(largeDataCache: LargeDataCache, profileInfoModel: ProfileInfoMod
                                 isEditing,
                                 fullyFormatedNumber ?: "???",
                                 subtext,
-                                profileInfoModel.phone,
+                                inspectedPerson?.phoneNumber,
                                 "Handynummer",
                                 KeyboardType.Phone
-                            )
+                            ) { text ->
+                                profileInfoModel.edit(personId){
+                                    it.copy(phoneNumber = text)
+                                }
+                            }
                         }
-                        if(phone != null && !savedInContacts) {
+                        if(inspectedPerson?.phoneNumber!=null && savedInContacts != true) {
                             Spacer(Modifier.width(10.dp))
                             Icon(
                                 painterResource(R.drawable.save_contact),
@@ -233,11 +240,14 @@ fun ProfileInfo(largeDataCache: LargeDataCache, profileInfoModel: ProfileInfoMod
                                     .clip(CircleShape)
                                     .background(Theme.primaryContainer)
                                     .rippleClick{
-                                        AndroidContacts.openSaveContactIntent(context, phone, profileInfoModel.name.value)
+                                        AndroidContacts.openSaveContactIntent(context, inspectedPerson?.phoneNumber, inspectedPerson?.name)
                                         coroutineScope.launch {
-                                            while (!profileInfoModel.savedInContacts.value) {
+                                            while(
+                                                !profileInfoModel.getSavedInContactsNOW(
+                                                    inspectedPerson?.phoneNumber?:return@launch
+                                                )
+                                            ) {
                                                 delay(100)
-                                                profileInfoModel.updateIsSavedInContacts(context)
                                             }
                                         }
                                     }
@@ -249,21 +259,25 @@ fun ProfileInfo(largeDataCache: LargeDataCache, profileInfoModel: ProfileInfoMod
                         }
                     }
                 }
-                if(iban!=null || isEditing)  {
+                if(inspectedPerson?.iban!=null || isEditing)  {
                     Spacer(Modifier.height(20.dp))
                     ListEntry(
                         "IBAN",
                         painterResource(R.drawable.pay_with_card)
                     ) {
                         val ibanInformation: String? =
-                            iban?.let { if(it.length > 4) largeDataCache.getIbanInformation(it.substring(4)) else null }
+                            inspectedPerson?.iban?.let { if(it.length > 4) largeDataCache.getIbanInformation(it.substring(4)) else null }
                         ListEditingField(
                             isEditing,
-                            iban?.chunked(4)?.joinToString(" ") ?: "???",
+                            inspectedPerson?.iban?.chunked(4)?.joinToString(" ") ?: "???",
                             ibanInformation,
-                            profileInfoModel.iban,
+                            inspectedPerson?.iban,
                             "IBAN"
-                        )
+                        ) { text ->
+                            profileInfoModel.edit(personId){
+                                it.copy(iban = text)
+                            }
+                        }
                     }
                 }
                 if(platforms.isNotEmpty() || isEditing) {
@@ -300,7 +314,7 @@ fun ProfileInfo(largeDataCache: LargeDataCache, profileInfoModel: ProfileInfoMod
                                                     it.platform.openPlatform(
                                                         context,
                                                         it.handle,
-                                                        profileInfoModel.phone.value
+                                                        inspectedPerson?.phoneNumber
                                                     )
                                                 }
                                                 .padding(vertical = 5.dp, horizontal = 10.dp)
@@ -386,6 +400,7 @@ fun ProfileInfo(largeDataCache: LargeDataCache, profileInfoModel: ProfileInfoMod
                         }
                     }
                 }
+                val displayLocation by profileInfoModel.getLocationById(inspectedPerson?.home).collectAsState(null)
                 Spacer(Modifier.height(20.dp))
                 ListEntry(
                     "Adresse",
@@ -394,16 +409,16 @@ fun ProfileInfo(largeDataCache: LargeDataCache, profileInfoModel: ProfileInfoMod
                     if(!isEditing) {
                         ListEditingField(
                             false,
-                            location?.toAddress(true) ?:"???",
-                            location?.toCords(),
-                            remember { MutableStateFlow(null) },
+                            displayLocation?.toAddress(true) ?:"???",
+                            displayLocation?.toCords(),
+                            null,
                             ""
-                        )
+                        ){} // Read only
                     } else {
                         Row(
                             verticalAlignment = Alignment.CenterVertically
                         ) {
-                            location?.name?.let {
+                            displayLocation?.name?.let {
                                 Text(it, style = TypoStyle(Theme.onSecondaryContainer, FontSize.LARGE))
                                 Spacer(Modifier.width(10.dp))
                             }
@@ -412,19 +427,16 @@ fun ProfileInfo(largeDataCache: LargeDataCache, profileInfoModel: ProfileInfoMod
                                     nav.navigateForResult<String?>(
                                         "pick/existing/location",
                                         "pelocation"
-                                    ) {
-                                        if(it!=null){
-                                            val parsedLoc = Location.fromJSON(JSONObject(it))
-                                            profileInfoModel.home.value = parsedLoc
-                                        } else {
-                                            profileInfoModel.home.value = null
+                                    ) { res ->
+                                        profileInfoModel.edit(personId){
+                                            it.copy(home = res?.let { res -> JSONObject(res).getId() })
                                         }
                                     }
                                 },
                                 spacing = 5.dp,
                                 color = Theme.secondaryContainer
                             ) {
-                                Text(if(location!=null) "Ändern" else "Hinzufügen", style = TypoStyle(Theme.onSecondaryContainer, FontSize.MEDIUM))
+                                Text(if(displayLocation!=null) "Ändern" else "Hinzufügen", style = TypoStyle(Theme.onSecondaryContainer, FontSize.MEDIUM))
                                 Icon(
                                     Icons.AutoMirrored.Rounded.KeyboardArrowRight,
                                     "Continue",
@@ -432,11 +444,13 @@ fun ProfileInfo(largeDataCache: LargeDataCache, profileInfoModel: ProfileInfoMod
                                     tint = Theme.onSecondaryContainer
                                 )
                             }
-                            if(location != null) {
+                            if(displayLocation != null) {
                                 Spacer(Modifier.width(5.dp))
                                 Chip(
                                     {
-                                        profileInfoModel.home.value = null
+                                        profileInfoModel.edit(personId){
+                                            it.copy(home = null)
+                                        }
                                     },
                                     color = Theme.secondaryContainer
                                 ) {
@@ -481,7 +495,7 @@ fun ProfileInfo(largeDataCache: LargeDataCache, profileInfoModel: ProfileInfoMod
                     }
                     val screenWidthPx = LocalConfiguration.current.screenWidthDp.dp.toPx()
                     NavigationOption("Life Maps", R.drawable.gmaps) {
-                        location?.also {
+                        displayLocation?.also {
                             screens.openLocation(
                                 it,
                                 screenWidthPx
@@ -493,12 +507,12 @@ fun ProfileInfo(largeDataCache: LargeDataCache, profileInfoModel: ProfileInfoMod
                             context,
                             HVV.constructLink(
                                 null,
-                                profileInfoModel.home.value
+                                displayLocation
                             )
                         )
                     }
                     NavigationOption("Google Maps", R.drawable.gmaps) {
-                        Location.openInGoogleMaps(context, profileInfoModel.home.value)
+                        LocationSyncable.openInGoogleMaps(context, displayLocation)
                     }
                 }
             }
@@ -509,7 +523,7 @@ fun ProfileInfo(largeDataCache: LargeDataCache, profileInfoModel: ProfileInfoMod
                     .height(height + 10.dp),
                 horizontalArrangement = Arrangement.spacedBy(5.dp)
             ) {
-                val phoneNumber by profileInfoModel.phone.collectAsState()
+                val phoneNumber = inspectedPerson?.phoneNumber
                 AnimatedVisibility(
                     !isEditing && phoneNumber!=null,
                     enter = fadeIn(tween(animationDuration)) + expandHorizontally(tween(animationDuration)),
@@ -519,7 +533,7 @@ fun ProfileInfo(largeDataCache: LargeDataCache, profileInfoModel: ProfileInfoMod
                     val context = LocalContext.current
                     Chip(
                         {
-                            val number = ("tel:" + (profileInfoModel.phone.value ?: return@Chip)).toUri()
+                            val number = ("tel:" + (phoneNumber ?: return@Chip)).toUri()
                             val intent = Intent(if(features.callFromLife.hasAssured()) Intent.ACTION_CALL else Intent.ACTION_DIAL)
                             intent.setData(number)
                             intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
@@ -564,7 +578,7 @@ fun ProfileInfo(largeDataCache: LargeDataCache, profileInfoModel: ProfileInfoMod
                         }
                     }
                 }
-                val lastInteraction by profileInfoModel.lastInteraction.collectAsState()
+                val lastInteraction by profileInfoModel.lastInteractionFlow(personId).collectAsState(null)
                 AnimatedVisibility(
                     !isEditing,
                     enter = fadeIn(tween(animationDuration)) + expandHorizontally(tween(animationDuration)),
@@ -573,7 +587,7 @@ fun ProfileInfo(largeDataCache: LargeDataCache, profileInfoModel: ProfileInfoMod
                     if (lastInteraction != null) {
                         Chip(
                             {
-                                screens.openSocialGraphWithNodeSelected(profileInfoModel.id.value, lastInteraction?.end)
+                                screens.openSocialGraphWithNodeSelected(personId, lastInteraction?.proposed?.end)
                             },
                             color = Theme.secondaryContainer
                         ) {
@@ -621,7 +635,7 @@ fun ProfileInfo(largeDataCache: LargeDataCache, profileInfoModel: ProfileInfoMod
                 }
             }
         }
-        Box( Modifier.align(Alignment.TopEnd)) {
+        Box(Modifier.align(Alignment.TopEnd)) {
             val offset by animateDpAsState(if(!isEditing) 0.dp else 30.dp+10.dp, tween(animationDuration))
             Box(
                 Modifier
@@ -630,8 +644,7 @@ fun ProfileInfo(largeDataCache: LargeDataCache, profileInfoModel: ProfileInfoMod
                     .clip(CircleShape)
                     .rippleClick {
                         coroutineScope.launch {
-                            profileInfoModel.setStateToDb()
-                            profileInfoModel.isEditing.value = false
+                            profileInfoModel.discardChanges(personId)
                             focusManager.clearFocus(true)
                         }
                     }
@@ -657,13 +670,11 @@ fun ProfileInfo(largeDataCache: LargeDataCache, profileInfoModel: ProfileInfoMod
                 .rippleClick {
                     if (isEditing) {
                         coroutineScope.launch {
-                            profileInfoModel.saveAndSync()
+                            profileInfoModel.saveAndStageChanges(personId)
                             focusManager.clearFocus(true)
                         }
-                        profileInfoModel.isEditing.value = false
                     } else {
-                        profileInfoModel.isEditing.value = true
-                        profileInfoModel.isExtended.value = true
+                        profileInfoModel.edit(personId){it}
                     }
                 }
                 .background(Theme.secondaryContainer, CircleShape)
@@ -729,15 +740,14 @@ fun ListEntry(title: String, icon: Painter, text: @Composable ()->Unit){
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
-fun ListEditingField(isEditing: Boolean, displayText: String, subtext: String?, text: MutableStateFlow<String?>, placeHolder: String, keyboardType: KeyboardType = KeyboardType.Text){
+fun ListEditingField(isEditing: Boolean, displayText: String, subtext: String?, text: String?, placeHolder: String, keyboardType: KeyboardType = KeyboardType.Text, onEdit: (String)->Unit){
     if(isEditing) {
-        val value by text.collectAsState()
         var hasFocus by remember { mutableStateOf(false) }
         val focusManager = LocalFocusManager.current
         BasicTextField(
-            value?:"",
+            text?:"",
             {
-                text.value = it
+                onEdit(it)
             },
             Modifier
                 .onFocusChanged {
@@ -756,7 +766,7 @@ fun ListEditingField(isEditing: Boolean, displayText: String, subtext: String?, 
             },
             cursorBrush = SolidColor(Theme.primary),
             decorationBox = {
-                if(!hasFocus && value?.isBlank()?:true) Text(placeHolder, style = TypoStyle(Theme.secondary, FontSize.LARGE)) else it()
+                if(!hasFocus && text?.isBlank()?:true) Text(placeHolder, style = TypoStyle(Theme.secondary, FontSize.LARGE)) else it()
             }
         )
     } else {

@@ -4,13 +4,15 @@ import android.icu.util.Calendar
 import android.service.notification.NotificationListenerService
 import android.service.notification.StatusBarNotification
 import android.util.Log
-import androidx.core.content.edit
-import org.json.JSONArray
-import org.json.JSONObject
+import com.myxoz.life.repositories.MainApplication
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.launch
+import kotlin.coroutines.EmptyCoroutineContext
 
 class NotificationReaderService : NotificationListenerService() {
     override fun onNotificationPosted(sbn: StatusBarNotification?) {
         if (sbn == null) return
+        val repo = (applicationContext as MainApplication).repositories
 
         // Only handle Google Wallet
         if (sbn.packageName != "de.fiduciagad.android.wlwallet") return
@@ -37,19 +39,8 @@ class NotificationReaderService : NotificationListenerService() {
         calendar.set(Calendar.MINUTE, time[1].toIntOrNull()?:return)
         calendar.set(Calendar.SECOND, 0)
 
-        val payment = JSONObject().apply {
-            put("amount", cents)
-            put("timestamp", calendar.timeInMillis)
-        }
-
-        val prefs = getSharedPreferences("MainActivity", MODE_PRIVATE)
-        val paymentsRaw = prefs.getString("payments", "[]")?:"[]"
-        val paymentsArray = JSONArray(paymentsRaw)
-
-        paymentsArray.put(payment)
-
-        prefs.edit {
-            putString("payments", paymentsArray.toString())
+        CoroutineScope(EmptyCoroutineContext).launch {
+            repo.bankingRepo.putFutureTransaction(-cents, calendar.timeInMillis, null)
         }
     }
     override fun onListenerConnected() {

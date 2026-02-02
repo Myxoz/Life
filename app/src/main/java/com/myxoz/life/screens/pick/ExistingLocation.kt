@@ -18,10 +18,9 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
@@ -31,10 +30,8 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import com.myxoz.life.LocalNavController
-import com.myxoz.life.LocalStorage
 import com.myxoz.life.R
 import com.myxoz.life.Theme
-import com.myxoz.life.api.syncables.Location
 import com.myxoz.life.screens.feed.dayoverview.edgeToEdgeGradient
 import com.myxoz.life.ui.BOTTOMSEARCHBARHEIGHT
 import com.myxoz.life.ui.BottomSearchBar
@@ -44,25 +41,18 @@ import com.myxoz.life.ui.theme.TypoStyle
 import com.myxoz.life.utils.filteredWith
 import com.myxoz.life.utils.rippleClick
 import com.myxoz.life.utils.windowPadding
+import com.myxoz.life.viewmodels.MapViewModel
 import kotlinx.coroutines.launch
 
 @Composable
-fun PickExistingLocation(){
-    val db = LocalStorage.current
+fun PickExistingLocation(mapViewModel: MapViewModel){
     val nav = LocalNavController.current
-    val allLocations by produceState(listOf()) {
-        val locations = db.location.getAllLocations()
-        value = locations.map { Location.from(it) }.sortedBy { it.name }
-    }
-    var filtered by remember(allLocations) {
-        mutableStateOf(allLocations)
+    var search by remember { mutableStateOf(nav.previousBackStackEntry?.savedStateHandle?.get("pequery")?:"") }
+    val allLocations by mapViewModel.getAllLocations.collectAsState(listOf())
+    val filtered = remember(search, allLocations) {
+        allLocations.filteredWith(search, {it.toAddress(true)}) { it.name }
     }
     val coroutineScope = rememberCoroutineScope()
-    LaunchedEffect(allLocations) {
-        if(allLocations.isEmpty()) return@LaunchedEffect
-        val filter = nav.previousBackStackEntry?.savedStateHandle?.get<String?>("pequery")?:return@LaunchedEffect
-        filtered = allLocations.filteredWith(filter, {it.toAddress(true)}) { it.name }
-    }
     BackHandler(true) {
         nav.previousBackStackEntry?.savedStateHandle?.set("pelocation", null)
         nav.navigateUp()
@@ -86,7 +76,8 @@ fun PickExistingLocation(){
             item { // At the bottom
                 Spacer(Modifier.height(innerPadding.calculateBottomPadding() + BOTTOMSEARCHBARHEIGHT))
             }
-            itemsIndexed(filtered, { _, it -> it.id}){ i, it ->
+            itemsIndexed(filtered, { _, it -> it.id}){ i, location ->
+                val location = location
                 Box(
                     Modifier
                         .setMaxTabletWidth()
@@ -96,7 +87,7 @@ fun PickExistingLocation(){
                             .clip(RoundedCornerShape(15.dp))
                             .rippleClick{
                                 coroutineScope.launch {
-                                    nav.previousBackStackEntry?.savedStateHandle?.set("pelocation", it.toJson(db).toString())
+                                    nav.previousBackStackEntry?.savedStateHandle?.set("pelocation", location.toJson().toString())
                                     nav.navigateUp()
                                 }
                             }
@@ -114,12 +105,12 @@ fun PickExistingLocation(){
                         )
                         Column{
                             Text(
-                                it.name,
+                                location.name,
                                 style = TypoStyle(Theme.primary, FontSize.LARGE)
                             )
                             Spacer(Modifier.height(2.dp))
                             Text(
-                                it.toAddress(false),
+                                location.toAddress(false),
                                 style = TypoStyle(Theme.secondary, FontSize.SMALLM)
                             )
                         }
@@ -139,7 +130,7 @@ fun PickExistingLocation(){
                 Theme.background,
                 innerPadding.calculateBottomPadding(),
                 { filter ->
-                    filtered = allLocations.filteredWith(filter, {it.toAddress(true)}) { it.name }
+                    search = filter
                 }
             )
         }

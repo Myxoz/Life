@@ -71,11 +71,10 @@ import androidx.lifecycle.viewModelScope
 import com.mapbox.geojson.Point
 import com.mapbox.maps.CameraOptions
 import com.myxoz.life.LocalNavController
-import com.myxoz.life.LocalStorage
 import com.myxoz.life.R
 import com.myxoz.life.Theme
 import com.myxoz.life.android.integration.MapBoxAPI
-import com.myxoz.life.api.syncables.Location
+import com.myxoz.life.api.syncables.LocationSyncable
 import com.myxoz.life.screens.person.displayperson.ListEditingField
 import com.myxoz.life.screens.person.displayperson.ListEntry
 import com.myxoz.life.screens.person.displayperson.navigateForResult
@@ -112,7 +111,6 @@ fun MapSheet(mapViewModel: MapViewModel, innerPadding: PaddingValues){
     val isEditing by mapViewModel.isEditing.collectAsState()
     val state = mapViewModel.sheetState
     val minSheetHeight = FontSize.XLARGE.size.toDp() + 30.dp * 2
-    val db = LocalStorage.current
     ThreeStateBottomSheet(
         state,
         minSheetHeight,
@@ -147,7 +145,7 @@ fun MapSheet(mapViewModel: MapViewModel, innerPadding: PaddingValues){
                         }
                         val response = MapBoxAPI.getLocationListFromAPIResponse(MapBoxAPI.reverseGeocode(context, coords.latitude(), coords.longitude()) ?: return@LaunchedEffect)
                         mapViewModel.decodedLocation.value = response.getOrNull(0)?.let {
-                            Location(it.name,
+                            LocationSyncable(it.name,
                                 coords.longitude(),
                                 coords.latitude(),
                                 it.radiusM, it.ssid, it.street, it.number, it.city, it.country, it.id)
@@ -238,7 +236,7 @@ fun MapSheet(mapViewModel: MapViewModel, innerPadding: PaddingValues){
                                 .background(Theme.primaryContainer, shape)
                                 .clip(shape)
                                 .rippleClick{
-                                    if(loc == null) { // Add new Location
+                                    if(loc == null) { // Add new Location enter edit
                                         mapViewModel.setSheetLocation(decodedLocation)
                                         mapViewModel.decodedLocation.value = null
                                         mapViewModel.isEditing.value = true
@@ -256,10 +254,11 @@ fun MapSheet(mapViewModel: MapViewModel, innerPadding: PaddingValues){
                                                 return@rippleClick
                                             }
                                             coroutineScope.launch {
-                                                (reason.first?:return@launch).saveAndSync(db)
+                                                mapViewModel.saveAndSync(
+                                                    (reason.first?:return@launch)
+                                                )
                                                 mapViewModel.isEditing.value = false
                                                 mapViewModel.setSheetLocation(reason.first)
-                                                mapViewModel.refetchLocations.value = System.currentTimeMillis()
                                             }
                                         }
                                     }
@@ -313,13 +312,16 @@ fun MapSheet(mapViewModel: MapViewModel, innerPadding: PaddingValues){
                             "Koordinaten",
                             painterResource(R.drawable.location)
                         ) {
+                            val coordsInput by mapViewModel.coordsInput.collectAsState()
                             ListEditingField(
                                 isEditing,
                                 "%.6f, %.6f".format(coords.latitude(), coords.longitude()),
-                                Location.coordsToDMS(coords.latitude(), coords.longitude()),
-                                mapViewModel.coordsInput,
+                                LocationSyncable.coordsToDMS(coords.latitude(), coords.longitude()),
+                                coordsInput,
                                 "Koordinaten"
-                            )
+                            ) {
+                                mapViewModel.coordsInput.value = it
+                            }
                         }
                     }
                     LaunchedEffect(Unit) {
@@ -354,50 +356,62 @@ fun MapSheet(mapViewModel: MapViewModel, innerPadding: PaddingValues){
                         "Radius in Metern",
                         painterResource(R.drawable.radius)
                     ) {
+                        val radiusMField by mapViewModel.radiusMInput.collectAsState()
                         ListEditingField(
                             isEditing,
                             loc?.radiusM?.toString()?:"",
                             null,
-                            mapViewModel.radiusMInput,
+                            radiusMField,
                             "Radius"
-                        )
+                        ) { text ->
+                            mapViewModel.radiusMInput.value = text
+                        }
                     }
                 }
                 ListEntry(
                     "Hausnummer",
                     painterResource(R.drawable.house)
                 ) {
+                    val numberInp by mapViewModel.numberInput.collectAsState()
                     ListEditingField(
                         isEditing,
                         mixedLocation?.number ?: "???",
                         null,
-                        mapViewModel.numberInput,
+                        numberInp,
                         "Nummer"
-                    )
+                    ) { text ->
+                        mapViewModel.numberInput.value = text
+                    }
                 }
                 ListEntry(
                     "Straße",
                     painterResource(R.drawable.road)
                 ) {
+                    val streetInp by mapViewModel.streetInput.collectAsState()
                     ListEditingField(
                         isEditing,
                         mixedLocation?.street ?: "???",
                         null,
-                        mapViewModel.streetInput,
+                        streetInp,
                         "Straße"
-                    )
+                    ) { text ->
+                        mapViewModel.streetInput.value = text
+                    }
                 }
                 ListEntry(
                     "Ort, Land",
                     painterResource(R.drawable.globe)
                 ) {
+                    val cityCountryInput by mapViewModel.cityCountryInput.collectAsState()
                     ListEditingField(
                         isEditing,
                         if(mixedLocation != null) (mixedLocation.city?.let { "$it, " } ?: "") + mixedLocation.country else "Lädt...",
                         null,
-                        mapViewModel.cityCountryInput,
+                        cityCountryInput,
                         "Ort, Land"
-                    )
+                    ) { text ->
+                        mapViewModel.cityCountryInput.value = text
+                    }
                 }
                 AnimatedVisibility(
                     loc != null
@@ -406,13 +420,16 @@ fun MapSheet(mapViewModel: MapViewModel, innerPadding: PaddingValues){
                         "SSID",
                         painterResource(R.drawable.wifi)
                     ) {
+                        val ssidInput by mapViewModel.ssidInput.collectAsState()
                         ListEditingField(
                             isEditing,
                             loc?.ssid?:"???",
                             null,
-                            mapViewModel.ssidInput,
+                            ssidInput,
                             "WLAN-Name"
-                        )
+                        ) { text ->
+                            mapViewModel.ssidInput.value = text
+                        }
                     }
                 }
             } else { // No location selected: Searchox
@@ -427,18 +444,7 @@ fun MapSheet(mapViewModel: MapViewModel, innerPadding: PaddingValues){
                         )
                     )
                 }
-                LaunchedEffect(lifeQueryValue.text) {
-                    val query = lifeQueryValue.text.takeIf { it.isNotBlank() } ?: return@LaunchedEffect Unit.apply {
-                        mapViewModel.lifeSearchResults.value = null
-                    }
-                    val locations = db.location.getAllLocations().map { Location.from(it) }
-                    mapViewModel.mapBoxSearchResults.value = null
-                    mapViewModel.lifeSearchResults.value = locations.filteredWith(query, {
-                        it.toAddress()
-                    }){
-                        it.name
-                    }.take(5)
-                }
+                val allLocations by mapViewModel.getAllLocations.collectAsState(listOf())
                 Box(
                     Modifier
                         .fillMaxWidth()
@@ -457,9 +463,22 @@ fun MapSheet(mapViewModel: MapViewModel, innerPadding: PaddingValues){
                     }
                     BasicTextField(
                         lifeQueryValue,
-                        {
-                            lifeQueryValue = it
-                            mapViewModel.lifeQuery.value = it.text
+                        { text ->
+                            lifeQueryValue = text
+                            mapViewModel.lifeQuery.value = text.text
+                            mapViewModel.mapBoxSearchResults.value = null
+                            if(text.text.isEmpty()) {
+                                mapViewModel.lifeSearchResults.value = null
+                            } else {
+                                mapViewModel.lifeSearchResults.value = allLocations.filteredWith(
+                                    lifeQueryValue.text,
+                                    {
+                                        it.toAddress()
+                                    }
+                                ) {
+                                    it.name
+                                }.take(5)
+                            }
                         },
                         Modifier
                             .padding(vertical = 5.dp)
@@ -499,7 +518,7 @@ fun MapSheet(mapViewModel: MapViewModel, innerPadding: PaddingValues){
                     }
                 }
                 val screenWidthPx = with(LocalDensity.current) { LocalConfiguration.current.screenWidthDp.dp.toPx() }
-                fun selectLocation(location: Location, newComposition: Boolean){
+                fun selectLocation(location: LocationSyncable, newComposition: Boolean){
                     if(location.id == -1L) {
                         mapViewModel.setSheetLocation(null)
                         mapViewModel.selectedCoordinates.value = Point.fromLngLat(location.longitude, location.lat)
@@ -552,7 +571,7 @@ fun MapSheet(mapViewModel: MapViewModel, innerPadding: PaddingValues){
                                             setOrRemove("pequery", mapViewModel.lifeQuery.value)
                                         }
                                     ) {
-                                        selectLocation(Location.fromJSON(
+                                        selectLocation(LocationSyncable.fromJSON(
                                             JSONObject(
                                                 it ?: return@navigateForResult
                                             )

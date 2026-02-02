@@ -41,15 +41,11 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import com.myxoz.life.LocalAPI
 import com.myxoz.life.LocalColors
 import com.myxoz.life.LocalNavController
 import com.myxoz.life.LocalScreens
-import com.myxoz.life.LocalStorage
 import com.myxoz.life.R
 import com.myxoz.life.Theme
-import com.myxoz.life.api.API
-import com.myxoz.life.dbwrapper.WaitingSyncEntity
 import com.myxoz.life.ui.ActionBar
 import com.myxoz.life.ui.setMaxTabletWidth
 import com.myxoz.life.ui.theme.FontColor
@@ -70,8 +66,6 @@ fun FullScreenEvent(inspectedEventViewModel: InspectedEventViewModel){
     val event by inspectedEventViewModel.event.collectAsState()
     val calendar = remember { Calendar.getInstance() }
     val nav = LocalNavController.current
-    val db = LocalStorage.current
-    val api = LocalAPI.current
     val screens = LocalScreens.current
     val isEditing by inspectedEventViewModel.isEditing.collectAsState()
     val colorScheme = rememberColorScemeFromColor(event.proposed.type.color, event)
@@ -184,19 +178,8 @@ fun FullScreenEvent(inspectedEventViewModel: InspectedEventViewModel){
                                 isSending = true
                                 affectsDelete = true
                                 if(event.id != -1L) { // If the event is a new one, ignore everything, just close
-                                    db.waitingSync.deleteWaitingSync( // If the event is jet to be synced, discard the sync request
-                                        event.id,
-                                        event.proposed.type.id
-                                    )
-                                    db.waitingSync.insertWaitingSync(
-                                        WaitingSyncEntity(
-                                            event.id,
-                                            -event.proposed.type.id,
-                                            System.currentTimeMillis()
-                                        )
-                                    )
-                                    event.proposed.eraseFromDB(db, event.id) // Delete if causes troubles
-                                    api.resyncLastDays()
+                                    inspectedEventViewModel.removeSyncedEvent(event)
+                                    inspectedEventViewModel.resync()
                                 }
                                 inspectedEventViewModel.setEditing(false)
                                 isSending = false
@@ -233,16 +216,8 @@ fun FullScreenEvent(inspectedEventViewModel: InspectedEventViewModel){
                                 ).show()
                                 if (valid == null) coroutineScope.launch {
                                     isSending = true
-                                    if (event.id != -1L) {
-                                        event.proposed.eraseFromDB(db, event.id)
-                                    }
-                                    event.proposed.insertAndSyncEvent(
-                                        db,
-                                        api,
-                                        event.id.takeIf { it != -1L } ?: API.generateId(),
-                                        System.currentTimeMillis(),
-                                        if(event.id == -1L) null else System.currentTimeMillis() // Adjusted on server side, but if offline / sync is off
-                                    )
+                                    inspectedEventViewModel.updateOrCreateSyncedEvent(event)
+                                    inspectedEventViewModel.resync()
                                     inspectedEventViewModel.setEditing(false)
                                     isSending = false
                                     wasSuccessful = true

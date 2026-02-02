@@ -3,9 +3,10 @@ package com.myxoz.life.events
 import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.unit.Dp
-import com.myxoz.life.dbwrapper.EventEntity
-import com.myxoz.life.dbwrapper.HobbyEntiy
-import com.myxoz.life.dbwrapper.StorageManager
+import com.myxoz.life.dbwrapper.events.EventEntity
+import com.myxoz.life.dbwrapper.events.HobbyEntiy
+import com.myxoz.life.dbwrapper.events.ReadEventDetailsDao
+import com.myxoz.life.dbwrapper.events.WriteEventDetailsDao
 import com.myxoz.life.events.additionals.DetailsEvent
 import com.myxoz.life.events.additionals.EventTag
 import com.myxoz.life.events.additionals.EventType
@@ -27,9 +28,9 @@ class HobbyEvent(
     override val details: String?
 ): ProposedEvent(start, end, EventType.Hobby, uss, usl), TagEvent, TitleEvent, DetailsEvent
 {
-    override suspend fun saveEventSpecifics(db: StorageManager, id: Long): Boolean {
-        storeTags(db.tags, id)
-        db.hobby.insertHobby(
+    override suspend fun saveEventSpecifics(writeEventDetailsDao: WriteEventDetailsDao, id: Long): Boolean {
+        storeTags(writeEventDetailsDao, id)
+        writeEventDetailsDao.insertHobby(
             HobbyEntiy(
                 id,
                 title,
@@ -62,9 +63,9 @@ class HobbyEvent(
         )
     }
 
-    override suspend fun eraseEventSpecificsFromDB(db: StorageManager, id: Long) {
-        db.tags.removeById(id)
-        db.hobby.removeById(id)
+    override suspend fun eraseEventSpecificsFromDB(db: WriteEventDetailsDao, id: Long) {
+        db.removeHobby(id)
+        db.removeTags(id)
     }
     override fun addEventSpecifics(jsonObject: JSONObject): JSONObject = jsonObject.addTitle().addTags().addDetails()
 
@@ -79,14 +80,14 @@ class HobbyEvent(
         fun fromJson(json: JSONObject, start: Long, end: Long, uss: Boolean, usl: Boolean) = HobbyEvent(
             start, end, uss, usl, json.getTagsFromJson(), json.getString("title"), json.getStringOrNull("details")?.ifEmpty { null }
         )
-        suspend fun from(db: StorageManager, event: EventEntity): HobbyEvent? {
-            val hobbyEntity = db.hobby.getHobby(event.id) ?: return null
+        suspend fun from(db: ReadEventDetailsDao, event: EventEntity): HobbyEvent? {
+            val hobbyEntity = db.getHobby(event.id) ?: return null
             return HobbyEvent(
                 event.start,
                 event.end,
                 event.uss,
                 event.usl,
-                db.tags.getTagsByEventId(event.id)
+                db.getTagsByEventId(event.id)
                     .mapNotNull { EventTag.getTagById(it) },
                 hobbyEntity.title,
                 hobbyEntity.details

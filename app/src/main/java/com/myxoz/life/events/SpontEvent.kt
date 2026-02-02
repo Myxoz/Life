@@ -3,9 +3,10 @@ package com.myxoz.life.events
 import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.unit.Dp
-import com.myxoz.life.dbwrapper.EventEntity
-import com.myxoz.life.dbwrapper.SpontEntiy
-import com.myxoz.life.dbwrapper.StorageManager
+import com.myxoz.life.dbwrapper.events.EventEntity
+import com.myxoz.life.dbwrapper.events.ReadEventDetailsDao
+import com.myxoz.life.dbwrapper.events.SpontEntity
+import com.myxoz.life.dbwrapper.events.WriteEventDetailsDao
 import com.myxoz.life.events.additionals.EventTag
 import com.myxoz.life.events.additionals.EventType
 import com.myxoz.life.events.additionals.TagEvent
@@ -23,10 +24,10 @@ class SpontEvent(
     override val eventTags: List<EventTag>,
     override val title: String
 ): ProposedEvent(start, end, EventType.Spont, uss, usl), TagEvent, TitleEvent {
-    override suspend fun saveEventSpecifics(db: StorageManager, id: Long): Boolean {
-        storeTags(db.tags, id)
-        db.spont.insertEvent(
-            SpontEntiy(
+    override suspend fun saveEventSpecifics(writeEventDetailsDao: WriteEventDetailsDao, id: Long): Boolean {
+        storeTags(writeEventDetailsDao, id)
+        writeEventDetailsDao.insertSpont(
+            SpontEntity(
                 id,
                 title
             )
@@ -46,9 +47,9 @@ class SpontEvent(
         RenderTagAndTitleBar(eventTags, title, oneHourDp, blockHeight, OldColors.Calendar.Spont.Tag, OldColors.Calendar.Spont.TEXT)
     }
 
-    override suspend fun eraseEventSpecificsFromDB(db: StorageManager, id: Long) {
-        db.tags.removeById(id)
-        db.spont.removeById(id)
+    override suspend fun eraseEventSpecificsFromDB(db: WriteEventDetailsDao, id: Long) {
+        db.removeTags(id)
+        db.removeSpont(id)
     }
     override fun addEventSpecifics(jsonObject: JSONObject): JSONObject = jsonObject.addTitle().addTags()
 
@@ -64,14 +65,14 @@ class SpontEvent(
             start, end, uss, usl, json.getTagsFromJson(),
             json.getString("title")
         )
-        suspend fun from(db: StorageManager, event: EventEntity) = SpontEvent(
+        suspend fun from(db: ReadEventDetailsDao, event: EventEntity) = SpontEvent(
             event.start,
             event.end,
             event.uss,
             event.usl,
-            db.tags.getTagsByEventId(event.id)
+            db.getTagsByEventId(event.id)
                 .mapNotNull { EventTag.getTagById(it) },
-            db.spont.getEvent(event.id)?.title ?: ""
+            db.getSpont(event.id)?.title ?: ""
         )
     }
 }

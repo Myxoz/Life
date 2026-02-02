@@ -1,6 +1,6 @@
 package com.myxoz.life.events
 
-import android.content.Context
+import android.content.SharedPreferences
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.Row
@@ -20,15 +20,16 @@ import androidx.compose.ui.unit.times
 import com.myxoz.life.R
 import com.myxoz.life.android.autodetect.AutoDetect
 import com.myxoz.life.android.autodetect.AutoDetectSleep
-import com.myxoz.life.dbwrapper.EventEntity
-import com.myxoz.life.dbwrapper.StorageManager
+import com.myxoz.life.dbwrapper.events.EventEntity
+import com.myxoz.life.dbwrapper.events.ReadEventDetailsDao
+import com.myxoz.life.dbwrapper.events.WriteEventDetailsDao
 import com.myxoz.life.events.additionals.EventType
 import com.myxoz.life.ui.theme.OldColors
 import com.myxoz.life.utils.toSp
 import org.json.JSONObject
 
 class SleepEvent(start: Long, end: Long, uss: Boolean, usl: Boolean): ProposedEvent(start, end, EventType.Sleep, uss, usl), AutoDetect.AutoDetectEvent {
-    override suspend fun saveEventSpecifics(db: StorageManager, id: Long): Boolean = true
+    override suspend fun saveEventSpecifics(writeEventDetailsDao: WriteEventDetailsDao, id: Long): Boolean = true
 
     @Composable
     override fun BoxScope.RenderContent(
@@ -64,10 +65,10 @@ class SleepEvent(start: Long, end: Long, uss: Boolean, usl: Boolean): ProposedEv
         }
     }
 
-    override suspend fun eraseEventSpecificsFromDB(db: StorageManager, id: Long) = Unit
+    override suspend fun eraseEventSpecificsFromDB(db: WriteEventDetailsDao, id: Long) = Unit
     override fun addEventSpecifics(jsonObject: JSONObject): JSONObject = jsonObject // No specific parts
     override fun copyWithTimes(start: Long, end: Long, uss: Boolean, usl: Boolean) = SleepEvent(start, end, uss, usl)
-    override fun ignoreProposed(context: Context) = ingoreAutoDetectable(this, AutoDetectSleep.SPK, context)
+    override fun ignoreProposed(prefs: SharedPreferences) = ingoreAutoDetectable(this, AutoDetectSleep.SPK, prefs)
 
     override fun getInvalidReason(): String? = null // Sleep cant be invalid
 
@@ -75,6 +76,6 @@ class SleepEvent(start: Long, end: Long, uss: Boolean, usl: Boolean): ProposedEv
         fun fromJson(json: JSONObject, start: Long, end: Long, uss: Boolean, usl: Boolean): ProposedEvent = SleepEvent(
             start, end, uss, usl
         )
-        fun from(db: StorageManager, event: EventEntity) = SleepEvent(event.start, event.end, event.uss, event.usl)
+        fun from(db: ReadEventDetailsDao, event: EventEntity) = SleepEvent(event.start, event.end, event.uss, event.usl)
     }
 }

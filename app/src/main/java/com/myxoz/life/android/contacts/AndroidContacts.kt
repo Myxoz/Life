@@ -62,7 +62,7 @@ object AndroidContacts {
             }
 
             PersonSyncable(
-                id = 0,
+                id = -1,
                 name = contact.first,
                 fullName = null,
                 phoneNumber = contact.second,

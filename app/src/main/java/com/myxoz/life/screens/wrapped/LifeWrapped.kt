@@ -39,8 +39,9 @@ import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalHapticFeedback
-import com.myxoz.life.LocalStorage
+import com.myxoz.life.api.API
 import com.myxoz.life.api.syncables.PersonSyncable
+import com.myxoz.life.api.syncables.SyncedEvent
 import com.myxoz.life.events.ProposedEvent
 import com.myxoz.life.events.SocialEvent
 import com.myxoz.life.events.TravelEvent
@@ -49,6 +50,8 @@ import com.myxoz.life.events.additionals.EventType
 import com.myxoz.life.events.additionals.PeopleEvent
 import com.myxoz.life.events.additionals.TagEvent
 import com.myxoz.life.events.additionals.Vehicle
+import com.myxoz.life.viewmodels.CalendarViewModel
+import com.myxoz.life.viewmodels.ProfileInfoModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -58,15 +61,14 @@ import java.time.ZoneId
 const val PAGELOADDELAY = 300L
 const val DAYSINYEAR = 75
 @Composable
-fun LifeWrappedScreen() {
+fun LifeWrappedScreen(db: API.ReadSyncableDaos, profileInfoModel: ProfileInfoModel) {
     var pages by remember {
         mutableStateOf(listOf<WrappedPage>(IntroTitlePage()))
     }
     val contextObject = remember {
-        WrappedPage.LifeWrappedCallContext()
+        WrappedPage.LifeWrappedCallContext(profileInfoModel)
     }
     val context = LocalContext.current
-    val db = LocalStorage.current
     LaunchedEffect(Unit) {
         withContext(Dispatchers.IO){
             val futurePages = mutableListOf<WrappedPage>()
@@ -77,11 +79,11 @@ fun LifeWrappedScreen() {
             val endOfYearDate = LocalDate.ofYearDay(year + 1, 1)
             val startOfYear = startOfYearDate.atStartOfDay(zone).toEpochSecond() * 1000L
             val endOfYear = endOfYearDate.atStartOfDay(zone).toEpochSecond() * 1000L
-            val allYearEvents = db.events.getEventsBetween(
+            val allYearEvents = db.eventDetailsDao.getEventsBetween(
                 startOfYear,
                 endOfYear
             ).mapNotNull {
-                ProposedEvent.from(db, it)
+                SyncedEvent.from(db.eventDetailsDao, it)?.proposed
             }
             futurePages.add(IntroTitlePage())
             futurePages.add(YearPage(year))
@@ -124,8 +126,8 @@ fun LifeWrappedScreen() {
                     futurePages.add(MostUsedTagsForFavActivity(mostUsedTags, false))
                 }
             }
-            val allPeople = db.people.getAllPeople().map { PersonSyncable.from(db, it) }
-            val firstPeopleEvents = db.people.getFirstEventsFor(allPeople.map { it.id }).mapNotNull { ProposedEvent.from(db, it) as? PeopleEvent }
+            val allPeople = db.peopleDao.getAllPeople().map { PersonSyncable.from(db.peopleDao, it) }
+            val firstPeopleEvents = db.peopleDao.getFirstEventsFor(allPeople.map { it.id }).mapNotNull { ProposedEvent.from(db.eventDetailsDao, it) as? PeopleEvent }
             val newPeople = allPeople.filter { e -> firstPeopleEvents.find { e.id in it.people }?.let { it is ProposedEvent && it.start >= startOfYear && it.end <= endOfYear } == true }
             futurePages.add(NewSocialContact(newPeople.size))
             val mostInteractedPeople = mutableMapOf<Long, Long>()
@@ -166,7 +168,7 @@ fun LifeWrappedScreen() {
                     mostTagedSocialEvent.values.sortedByDescending { it.duration }
                 )
             )
-            val commits = db.commits.getCommitsForDay(startOfYear, endOfYear)
+            val commits = db.commitsDao.getCommitsForDay(startOfYear, endOfYear)
             val additions = commits.sumOf { it.additions ?: 0 }
             val deletions = commits.sumOf { it.deletions ?: 0 }
             val changes = additions + deletions
@@ -202,7 +204,7 @@ fun LifeWrappedScreen() {
                     )
                 )
             }
-            val allDays = db.days.getDaysBetween(startOfYearDate.toEpochDay() - 1, endOfYearDate.toEpochDay()) // Between non inclusive
+            val allDays = db.daysDao.getDaysBetween(startOfYearDate.toEpochDay() - 1, endOfYearDate.toEpochDay()) // Between non inclusive
             val totalSteps = allDays.sumOf { it.steps }
             futurePages.add(
                 WalkingStats(
@@ -211,7 +213,7 @@ fun LifeWrappedScreen() {
                 )
             )
             val totalScreenTime = allDays.sumOf { it.screenTimeMs / 1000 }
-            val mostUsedApp = db.dayScreenTime.getScreenTimesByRange(startOfYearDate.toEpochDay() - 1, endOfYearDate.toEpochDay())
+            val mostUsedApp = db.daysDao.getScreenTimesByRange(startOfYearDate.toEpochDay() - 1, endOfYearDate.toEpochDay())
                 .groupBy { it.packagename }
                 .map { it.key to it.value.sumOf { it.duration / 1000 } }
                 .sortedByDescending { it.second }

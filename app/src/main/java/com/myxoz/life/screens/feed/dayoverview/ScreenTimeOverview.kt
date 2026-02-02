@@ -1,7 +1,5 @@
 package com.myxoz.life.screens.feed.dayoverview
 
-import android.app.usage.UsageEvents
-import android.app.usage.UsageStatsManager
 import android.content.pm.PackageManager
 import android.content.pm.PackageManager.MATCH_UNINSTALLED_PACKAGES
 import androidx.compose.animation.AnimatedVisibility
@@ -29,13 +27,11 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableLongStateOf
-import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
-import androidx.compose.runtime.snapshots.SnapshotStateList
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.MotionDurationScale
@@ -51,10 +47,10 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.core.graphics.drawable.toBitmap
-import com.myxoz.life.LocalStorage
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.myxoz.life.Theme
-import com.myxoz.life.screens.feed.main.msToDisplay
-import com.myxoz.life.screens.options.getMappedUsageDataBetween
+import com.myxoz.life.dbwrapper.DayScreenTimeEntity
+import com.myxoz.life.screens.feed.main.formatMsToDuration
 import com.myxoz.life.ui.rememberAsymmetricalVerticalCornerRadius
 import com.myxoz.life.ui.setMaxTabletWidth
 import com.myxoz.life.ui.theme.FontFamily
@@ -64,52 +60,25 @@ import com.myxoz.life.ui.theme.TypoStyle
 import com.myxoz.life.utils.rippleClick
 import com.myxoz.life.utils.toDp
 import com.myxoz.life.utils.windowPadding
+import com.myxoz.life.viewmodels.DayOverviewViewModel
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.withContext
 import java.time.LocalDate
-import java.time.ZoneId
 
 @Composable
-fun ScreenTimeOverview(epochDay: Long){
-    var totalExceptTopFive by remember { mutableLongStateOf(0L) }
-    val db = LocalStorage.current
-    val isToday = remember { LocalDate.now().toEpochDay() ==  epochDay }
-    val screenTime: SnapshotStateList<AppItem> = remember { mutableStateListOf() }
-    var showsMore by remember { mutableStateOf(false) }
+fun ScreenTimeOverview(date: LocalDate, dayOverviewViewModel: DayOverviewViewModel){
+    val isToday = remember { LocalDate.now() == date }
+    val daySummary by dayOverviewViewModel.getDaySummary(date).collectAsState(null)
+    var showsMore by remember { mutableStateOf(isToday) }
+    val displayedEntries by if(showsMore) {
+        dayOverviewViewModel.getScreentimeLive(date)
+    } else {
+        remember(daySummary) { MutableStateFlow(daySummary?.topApps?.sortedByDescending { it.duration }?:listOf()) }
+        // Thats how you ductape stuff
+    }.collectAsStateWithLifecycle(listOf())
+    val accumulatedTime by dayOverviewViewModel.getScreentime(date).collectAsStateWithLifecycle(0L)
     val context = LocalContext.current
-    LaunchedEffect(Unit) {
-        if(isToday){
-            val zone = ZoneId.systemDefault()
-            showsMore = true
-            while (true){
-                val usageStatsManager = context.getSystemService(UsageStatsManager::class.java)
-                val events = usageStatsManager.queryEvents(0, System.currentTimeMillis())
-                val e = UsageEvents.Event()
-
-                if (events.hasNextEvent()) {
-                    events.getNextEvent(e)
-                }
-                getMappedUsageDataBetween(
-                    context,
-                    LocalDate.ofEpochDay(epochDay).atStartOfDay(zone).toInstant().toEpochMilli(),
-                    System.currentTimeMillis()
-                )
-                    .entries
-                    .sortedBy { -it.value }
-                    .forEach {
-                        screenTime.removeIf { a -> a.packageName == it.key }
-                        screenTime.add(AppItem(it.key, it.value))
-                    }
-                delay(1000)
-            }
-        } else {
-            db.dayScreenTime.getScreenTimesByDay(epochDay).sortedBy { -it.duration }.forEach {
-                screenTime.add(AppItem(it.packagename, it.duration))
-            }
-            totalExceptTopFive = db.days.getDay(epochDay.toInt())?.screenTimeMs?.minus(db.dayScreenTime.getScreenTimesByDay(epochDay).sumOf { it.duration }) ?: 0L
-        }
-    }
     val innerPadding = windowPadding
     Box(
         Modifier
@@ -125,7 +94,6 @@ fun ScreenTimeOverview(epochDay: Long){
                 .fillMaxHeight()
             ,
         ) {
-            val date = LocalDate.ofEpochDay(epochDay)
             val dateStr = "${date.dayOfMonth}.${date.month.value}.${date.year}"
             Spacer(Modifier.height(innerPadding.calculateTopPadding()+ 10.dp))
             Text(
@@ -143,8 +111,8 @@ fun ScreenTimeOverview(epochDay: Long){
                 ,
                 verticalArrangement = Arrangement.spacedBy(3.dp)
             ) {
-                screenTime.forEachIndexed { i, it  ->
-                    AppItemComposable(it, pm, i == 0, i == screenTime.size - 1 && showsMore)
+                displayedEntries.forEachIndexed { i, it  ->
+                    AppItemComposable(it, pm, i == 0, i == displayedEntries.size - 1 && showsMore)
                 }
             }
             Spacer(Modifier.height(3.dp))
@@ -152,22 +120,8 @@ fun ScreenTimeOverview(epochDay: Long){
                 Row(
                     Modifier
                         .fillMaxWidth()
-                        .clip(rememberAsymmetricalVerticalCornerRadius(screenTime.isEmpty(), true))
+                        .clip(rememberAsymmetricalVerticalCornerRadius(displayedEntries.isEmpty(), true))
                         .rippleClick {
-                            val zone = ZoneId.systemDefault()
-                            getMappedUsageDataBetween(
-                                context,
-                                LocalDate.ofEpochDay(epochDay).atStartOfDay(zone)
-                                    .toEpochSecond() * 1000L,
-                                LocalDate.ofEpochDay(epochDay + 1).atStartOfDay(zone)
-                                    .toEpochSecond() * 1000L
-                            )
-                                .entries
-                                .sortedBy { -it.value }
-                                .apply { screenTime.clear() }
-                                .forEach {
-                                    screenTime.add(AppItem(it.key, it.value))
-                                }
                             showsMore = true
                         }
                         .background(Theme.surfaceContainerHigh)
@@ -189,30 +143,29 @@ fun ScreenTimeOverview(epochDay: Long){
                     ) {
                         Text("Other", style = TypoStyle(Theme.primary, FontSize.LARGE))
                     }
-                    Text(totalExceptTopFive.toInt().msToDisplay(), style = TypoStyle(Theme.secondary, FontSize.MEDIUM))
+                    Text((accumulatedTime - displayedEntries.sumOf { it.duration }).formatMsToDuration(), style = TypoStyle(Theme.secondary, FontSize.MEDIUM))
                 }
             }
             Spacer(Modifier.height(innerPadding.calculateBottomPadding()))
         }
     }
 }
-private data class AppItem(val packageName: String, val duration: Long)
 @Composable
-private fun AppItemComposable(item: AppItem, pm: PackageManager, isFirst: Boolean, isLast: Boolean){
-    var icon: ImageBitmap? by remember(item.packageName) { mutableStateOf(null) }
-    var recoveredName: String? by remember(item.packageName) { mutableStateOf(null) }
-    var showsPackageName by remember(item.packageName) { mutableStateOf(false) }
-    LaunchedEffect(item.packageName) {
+private fun AppItemComposable(item: DayScreenTimeEntity, pm: PackageManager, isFirst: Boolean, isLast: Boolean){
+    var icon: ImageBitmap? by remember(item.packagename) { mutableStateOf(null) }
+    var recoveredName: String? by remember(item.packagename) { mutableStateOf(null) }
+    var showsPackageName by remember(item.packagename) { mutableStateOf(false) }
+    LaunchedEffect(item.packagename) {
         val scale = coroutineContext[MotionDurationScale]?.scaleFactor ?: 1f
         // Wait for animations to finish before trying to load icons
         // delay((300 * scale).toLong())
         val ic = withContext(Dispatchers.IO) {
-            if(item.packageName=="") {
+            if(item.packagename=="") {
                 recoveredName="Other"
                 return@withContext null
             }
             try {
-                val info = pm.getApplicationInfo(item.packageName, MATCH_UNINSTALLED_PACKAGES)
+                val info = pm.getApplicationInfo(item.packagename, MATCH_UNINSTALLED_PACKAGES)
                 recoveredName = info.loadLabel(pm).toString()
                 val rawIcon = pm.getApplicationIcon(info)
                 return@withContext rawIcon.toBitmap(64, 64).asImageBitmap()
@@ -239,15 +192,15 @@ private fun AppItemComposable(item: AppItem, pm: PackageManager, isFirst: Boolea
             horizontalArrangement = Arrangement.spacedBy(10.dp)
         ) {
             icon?.let {
-                Image(it, recoveredName?:item.packageName, Modifier
+                Image(it, recoveredName?:item.packagename, Modifier
                     .size(FontSize.LARGE.size.toDp() + 10.dp)
                 )
             } ?: Box(
                 Modifier.background(OldColors.SECONDARY, CircleShape).size(FontSize.LARGE.size.toDp() + 10.dp)
             )
-            Text((if(showsPackageName) null else recoveredName)?:item.packageName, style = TypoStyle(Theme.primary, FontSize.LARGE))
+            Text((if(showsPackageName) null else recoveredName)?:item.packagename, style = TypoStyle(Theme.primary, FontSize.LARGE))
         }
-        Text(item.duration.toInt().msToDisplay(), style = TypoStyle(Theme.secondary, FontSize.MEDIUM))
+        Text(item.duration.formatMsToDuration(), style = TypoStyle(Theme.secondary, FontSize.MEDIUM))
     }
 }
 fun Modifier.edgeToEdgeGradient(color: Color, innerPadding: PaddingValues): Modifier {

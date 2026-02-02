@@ -27,9 +27,8 @@ import androidx.compose.ui.unit.dp
 import com.myxoz.life.LocalNavController
 import com.myxoz.life.LocalScreens
 import com.myxoz.life.Theme
-import com.myxoz.life.dbwrapper.BankingEntity
-import com.myxoz.life.dbwrapper.BankingSidecarEntity
-import com.myxoz.life.dbwrapper.formatCents
+import com.myxoz.life.dbwrapper.banking.formatCents
+import com.myxoz.life.repositories.BankingRepo
 import com.myxoz.life.screens.feed.dayoverview.edgeToEdgeGradient
 import com.myxoz.life.ui.setMaxTabletWidth
 import com.myxoz.life.ui.theme.FontSize
@@ -37,25 +36,23 @@ import com.myxoz.life.ui.theme.OldColors
 import com.myxoz.life.ui.theme.TypoStyle
 import com.myxoz.life.utils.rippleClick
 import com.myxoz.life.utils.windowPadding
-import com.myxoz.life.viewmodels.TransactionFeedViewModel
+import com.myxoz.life.viewmodels.TransactionViewModel
 import kotlinx.coroutines.flow.distinctUntilChanged
 import java.time.LocalDate
 
 @Composable
 fun TransactionFeed(
-    state: TransactionFeedViewModel
+    transactionViewModel: TransactionViewModel
 ) {
     val nav = LocalNavController.current
-    val transactionsByDate by state.transactionsByDate.collectAsState()
-    val visibleDates by state.visibleDates.collectAsState()
-    val listState = state.lazyListState
+    val visibleDates by transactionViewModel.visibleDates.collectAsState()
+    val listState = transactionViewModel.lazyListState
 
     LaunchedEffect(listState) {
-        state.refreshCache()
         snapshotFlow { listState.layoutInfo.visibleItemsInfo.lastOrNull()?.index }
             .distinctUntilChanged()
             .collect { lastVisible ->
-                state.onLastVisibleIndexChanged(lastVisible)
+                transactionViewModel.onLastVisibleIndexChanged(lastVisible)
             }
     }
 
@@ -77,13 +74,15 @@ fun TransactionFeed(
             key = { it.toEpochDay() },
             contentType = { "date_group" }
         ) { date ->
-            val transactions = transactionsByDate[date] ?: emptyList()
+            val transactions by transactionViewModel.getOnDay(date).collectAsState(listOf())
+            if(transactions.isEmpty()) Spacer(Modifier.height(1.dp))
+            val screens = LocalScreens.current
             if (transactions.isNotEmpty()) {
                 DateTransactionGroup(
                     date = date,
                     transactions = transactions,
                     onTransactionClick = { tx ->
-                        nav.navigate("bank/transaction/${tx.id}")
+                        screens.openTransaction(tx)
                     }
                 )
             }
@@ -94,8 +93,8 @@ fun TransactionFeed(
 @Composable
 private fun DateTransactionGroup(
     date: LocalDate,
-    transactions: List<Pair<BankingEntity, BankingSidecarEntity?>>,
-    onTransactionClick: (BankingEntity) -> Unit
+    transactions: List<BankingRepo.BankingDisplayEntity>,
+    onTransactionClick: (BankingRepo.BankingDisplayEntity) -> Unit
 ) {
     val screens = LocalScreens.current
     Column(
@@ -107,9 +106,9 @@ private fun DateTransactionGroup(
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         transactions.forEachIndexed { i, tx ->
-            key(tx.first.id) {  // Ensure stable composition
+            key(tx.entity.id) {  // Ensure stable composition
                 BankingEntryComposable(tx, i == 0, i == transactions.size-1) {
-                    onTransactionClick(tx.first)
+                    onTransactionClick(tx)
                 }
             }
         }
@@ -134,7 +133,7 @@ private fun DateTransactionGroup(
                         screens.openCalendarAt(date)
                     }
             )
-            val sum = transactions.sumOf { it.first.amountCents }
+            val sum = transactions.sumOf { it.entity.amountCents }
             Text(
                 text = sum.formatCents(true),
                 fontSize = FontSize.MEDIUM.size,

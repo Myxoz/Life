@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.myxoz.life.api.syncables.SyncedEvent
 import com.myxoz.life.events.EmptyEvent
+import com.myxoz.life.repositories.AppRepositories
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -11,7 +12,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.stateIn
 
-class InspectedEventViewModel: ViewModel() {
+class InspectedEventViewModel(val repos: AppRepositories): ViewModel() {
     private val _event = MutableStateFlow(SyncedEvent(-1L, 0L, null, EmptyEvent(0L, 0L, false, usl = false)))
     val event = _event.asStateFlow()
 
@@ -36,4 +37,7 @@ class InspectedEventViewModel: ViewModel() {
     fun setEditing(isNowEditing: Boolean){
         _isEditing.value = isNowEditing
     }
+    suspend fun removeSyncedEvent(event: SyncedEvent) = repos.calendarRepo.removeSyncedEvent(event)
+    suspend fun updateOrCreateSyncedEvent(event: SyncedEvent) = repos.calendarRepo.updateOrCreateSyncedEvent(event)
+    suspend fun resync() = repos.api.resync()
 }

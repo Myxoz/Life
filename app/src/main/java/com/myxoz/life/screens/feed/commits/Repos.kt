@@ -21,6 +21,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.material3.VerticalDivider
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -33,11 +34,9 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.myxoz.life.LocalNavController
-import com.myxoz.life.LocalStorage
 import com.myxoz.life.R
 import com.myxoz.life.Theme
 import com.myxoz.life.android.integration.GitHub
-import com.myxoz.life.api.syncables.CommitSyncable
 import com.myxoz.life.screens.feed.dayoverview.edgeToEdgeGradient
 import com.myxoz.life.ui.BOTTOMSEARCHBARHEIGHT
 import com.myxoz.life.ui.BottomSearchBar
@@ -54,23 +53,14 @@ import com.myxoz.life.utils.plural
 import com.myxoz.life.utils.plus
 import com.myxoz.life.utils.rippleClick
 import com.myxoz.life.utils.windowPadding
-import kotlinx.coroutines.runBlocking
+import com.myxoz.life.viewmodels.CommitsViewModel
 
 @Composable
-fun FullScreenRepos(){
+fun FullScreenRepos(commitsViewModel: CommitsViewModel){
     val nav = LocalNavController.current
     val context = LocalContext.current
-    val db = LocalStorage.current
-    val repos = remember {
-        runBlocking {
-            db.commits.getAllRepos()
-                .groupBy { it.repoOwner+"/"+it.repoName }.map { it.value[0] }
-                    // if the last two commits have matching dates
-                .map { CommitSyncable.from(it) }
-                .sortedByDescending { it.commitDate }
-        }
-    }
-    var displayedRepos by remember { mutableStateOf(repos) }
+    val repos by commitsViewModel.getAllRepos.collectAsState(listOf())
+    var displayedRepos by remember(repos) { mutableStateOf(repos) }
     val innerPadding = windowPadding
     Box(
         Modifier
@@ -124,16 +114,13 @@ fun FullScreenRepos(){
     }
 }
 @Composable
-fun FullScreenRepo(name: String){
+fun FullScreenRepo(name: String, commitsViewModel: CommitsViewModel){
     val nav = LocalNavController.current
     val context = LocalContext.current
-    val db = LocalStorage.current
-    val repos = remember {
-        runBlocking {
-            db.commits.getAllForRepo(name).sortedByDescending { it.commitDate }
-        }
+    val allCommits by commitsViewModel.getAllCommitsFor(name).collectAsState(listOf())
+    var displayedCommits by remember(allCommits) {
+        mutableStateOf(allCommits)
     }
-    var displayedCommits by remember { mutableStateOf(repos) }
     val innerPadding = windowPadding
     Box(
         Modifier
@@ -183,7 +170,7 @@ fun FullScreenRepo(name: String){
             BottomSearchBar(
                 Theme.background,
                 innerPadding.calculateBottomPadding(),
-                {t -> displayedCommits = repos.filteredWith(t, {"\n"}) {it.commitMessage?:""}}
+                {t -> displayedCommits = allCommits.filteredWith(t, {"\n"}) {it.commitMessage?:""}}
             )
         }
     }

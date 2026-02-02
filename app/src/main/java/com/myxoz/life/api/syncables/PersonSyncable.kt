@@ -8,14 +8,15 @@ import androidx.compose.ui.graphics.Color
 import com.myxoz.life.R
 import com.myxoz.life.api.ServerSyncableCompanion
 import com.myxoz.life.api.Syncable
-import com.myxoz.life.api.forEach
-import com.myxoz.life.dbwrapper.PersonEntity
-import com.myxoz.life.dbwrapper.SocialsEntity
-import com.myxoz.life.dbwrapper.StorageManager
-import com.myxoz.life.screens.feed.fullscreenevent.getEventId
+import com.myxoz.life.dbwrapper.people.PersonEntity
+import com.myxoz.life.dbwrapper.people.ReadPeopleDao
+import com.myxoz.life.dbwrapper.people.SocialsEntity
+import com.myxoz.life.api.API
+import com.myxoz.life.screens.feed.fullscreenevent.getId
 import com.myxoz.life.utils.AndroidUtils
 import com.myxoz.life.utils.getLongOrNull
 import com.myxoz.life.utils.getStringOrNull
+import com.myxoz.life.utils.jsonObjArray
 import org.json.JSONArray
 import org.json.JSONObject
 
@@ -29,8 +30,8 @@ class PersonSyncable(
     val birthday: Long?,
     val socials: List<Socials>
 ) : Syncable(SpecialSyncablesIds.PEOPLE, id) {
-    override suspend fun saveToDB(db: StorageManager) {
-        db.people.insertPerson(
+    override suspend fun saveToDB(db: API.WriteSyncableDaos) {
+        db.peopleDao.insertPerson(
             PersonEntity(
                 id,
                 name,
@@ -41,15 +42,25 @@ class PersonSyncable(
                 birthday,
             )
         )
-        db.socials.removeAllFromPerson(id)
-        socials.forEach {
-            db.socials.insertSocial(
+        db.peopleDao.removeAllSocialsFor(id)
+        db.peopleDao.insertAllSocials(
+            socials.map {
                 SocialsEntity(id, it.platform.id, it.handle)
-            )
-        }
+            }
+        )
     }
 
-    override suspend fun specificsToJson(db: StorageManager): JSONObject = JSONObject()
+    fun copy(
+        name: String = this.name,
+        fullName: String? = this.fullName,
+        phoneNumber: String? = this.phoneNumber,
+        iban: String? = this.iban,
+        home: Long? = this.home,
+        birthday: Long? = this.birthday,
+        socials: List<Socials> = this.socials
+    ) = PersonSyncable(id, name, fullName, phoneNumber, iban, home, birthday, socials)
+
+    override suspend fun specificsToJson(): JSONObject? = JSONObject()
         .put("name", name)
         .put("fullname", fullName ?: JSONObject.NULL)
         .put("phone", phoneNumber ?: JSONObject.NULL)
@@ -69,30 +80,27 @@ class PersonSyncable(
             }
         )
 
-    companion object : ServerSyncableCompanion {
-        override suspend fun overwriteByJson(db: StorageManager, it: JSONObject) {
-            val id = it.getEventId()
-            db.people.insertPerson(
-                PersonEntity(
+    companion object : ServerSyncableCompanion<PersonSyncable> {
+        override fun fromJSON(json: JSONObject): PersonSyncable {
+            val id = json.getId()
+            val name = json.getString("name")
+            val fullName = json.getStringOrNull("fullname")
+            val phone = json.getStringOrNull("phone")
+            val iban = json.getStringOrNull("iban")
+            val home = json.getLongOrNull("home")
+            val birthday = json.getLongOrNull("birthday")
+            val platforms = json.getJSONArray("socials").jsonObjArray.map {
+                SocialsEntity(
                     id,
-                    it.getString("name"),
-                    it.getStringOrNull("fullname"),
-                    it.getStringOrNull("phone"),
-                    it.getStringOrNull("iban"),
-                    it.getLongOrNull("home"),
-                    it.getLongOrNull("birthday"),
-                )
-            )
-            db.socials.removeAllFromPerson(id)
-            it.getJSONArray("socials").forEach {
-                db.socials.insertSocial(
-                    SocialsEntity(
-                        id,
-                        (it as JSONObject).getInt("platform"),
-                        it.getString("handle")
-                    )
+                    it.getInt("platform"),
+                    it.getString("handle")
                 )
             }
+            return PersonSyncable(
+                id, name, fullName, phone, iban, home, birthday, platforms.mapNotNull {
+                    Socials.from(it)
+                }
+            )
         }
 
         enum class Platform(
@@ -218,8 +226,8 @@ class PersonSyncable(
             }
         }
 
-        suspend fun from(db: StorageManager, dbEntry: PersonEntity): PersonSyncable {
-            val socials = db.socials.getSocialsFromPerson(dbEntry.id)
+        suspend fun from(db: ReadPeopleDao, dbEntry: PersonEntity): PersonSyncable {
+            val socials = db.getSocialsByPerson(dbEntry.id)
             return PersonSyncable(
                 dbEntry.id,
                 dbEntry.name,

@@ -2,8 +2,9 @@ package com.myxoz.life.android.autodetect
 
 import android.content.Context
 import android.content.Context.MODE_PRIVATE
+import android.content.SharedPreferences
 import androidx.core.content.edit
-import com.myxoz.life.dbwrapper.StorageManager
+import com.myxoz.life.dbwrapper.people.ReadPeopleDao
 import com.myxoz.life.events.ProposedEvent
 import com.myxoz.life.viewmodels.Settings
 import org.json.JSONObject
@@ -11,10 +12,8 @@ import org.json.JSONObject
 object AutoDetect {
     private data class AutoDetectType(val spk: String, val feature: Settings.Features.Feature, val getSessions: suspend ()->List<ProposedEvent>)
 
-    /**
-     * Always call from IO Dispatcher, running on main will cause lag
-     */
-    suspend fun autoDetectEvents(context: Context, settings: Settings, db: StorageManager): List<ProposedEvent>{
+    /** Always call from IO Dispatcher, running on main will cause lag */
+    suspend fun autoDetectEvents(context: Context, settings: Settings, db: ReadPeopleDao): List<ProposedEvent>{
         val autoDetectList = arrayOf(
             AutoDetectType(
                 AutoDetectSleep.SPK,
@@ -29,7 +28,7 @@ object AutoDetect {
                 AutoDetectCall.getSessions(context, db)
             }
         )
-        val prefs = context.getSharedPreferences("autodetect", MODE_PRIVATE)
+        val prefs = context.getSharedPreferences(AUTODETECT_PREFS, MODE_PRIVATE)
         val events = mutableListOf<ProposedEvent>()
         for (autodetectable in autoDetectList) {
             if(!autodetectable.feature.hasAssured()) continue
@@ -62,8 +61,7 @@ object AutoDetect {
         return events
     }
     interface AutoDetectEvent {
-        fun ingoreAutoDetectable(event: ProposedEvent, spk: String, context: Context) {
-            val prefs = context.getSharedPreferences("autodetect", MODE_PRIVATE)
+        fun ingoreAutoDetectable(event: ProposedEvent, spk: String, prefs: SharedPreferences) {
             val data = (prefs.getStringSet(spk, null) ?: setOf<String>()).toMutableSet()
             data.add(event.toJson().toString())
             prefs.edit {
@@ -71,4 +69,5 @@ object AutoDetect {
             }
         }
     }
+    const val AUTODETECT_PREFS = "autodetect"
 }

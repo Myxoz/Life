@@ -1,10 +1,6 @@
 package com.myxoz.life.screens.feed.main
 
-import android.content.Context.MODE_PRIVATE
 import android.icu.util.Calendar
-import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.core.tween
-import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -34,10 +30,8 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -64,20 +58,15 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.times
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.myxoz.life.LocalAPI
 import com.myxoz.life.LocalNavController
 import com.myxoz.life.LocalSettings
-import com.myxoz.life.LocalStorage
 import com.myxoz.life.R
 import com.myxoz.life.Theme
-import com.myxoz.life.api.API
 import com.myxoz.life.api.syncables.SyncedEvent
-import com.myxoz.life.dbwrapper.DaysEntity
 import com.myxoz.life.events.EmptyEvent
 import com.myxoz.life.events.ProposedEvent
 import com.myxoz.life.screens.feed.dayoverview.getWeekDayByInt
 import com.myxoz.life.screens.feed.instantevents.InstantEvent
-import com.myxoz.life.screens.options.getUsageDataBetween
 import com.myxoz.life.ui.theme.FontColor
 import com.myxoz.life.ui.theme.FontFamily
 import com.myxoz.life.ui.theme.FontSize
@@ -85,14 +74,13 @@ import com.myxoz.life.ui.theme.OldColors
 import com.myxoz.life.ui.theme.TypoStyle
 import com.myxoz.life.ui.theme.TypoStyleOld
 import com.myxoz.life.utils.MaterialShapes
+import com.myxoz.life.utils.def
 import com.myxoz.life.utils.rippleClick
 import com.myxoz.life.utils.toDp
 import com.myxoz.life.utils.toShape
 import com.myxoz.life.viewmodels.CalendarViewModel
 import com.myxoz.life.viewmodels.InspectedEventViewModel
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 import java.time.LocalDate
 import java.time.ZoneId
 import kotlin.math.min
@@ -101,14 +89,13 @@ const val screenTimeGoal = 1000f*3600*4f
 const val stepsGoal = 6000f
 @Composable
 fun DayComposable(
-    viewModel: CalendarViewModel,
+    calendarViewModel: CalendarViewModel,
     inspectedEventViewModel: InspectedEventViewModel,
     isToday: Boolean,
     date: LocalDate,
     fullWidth: Dp,
 ){
     val navController = LocalNavController.current
-    val db = LocalStorage.current
     val context = LocalContext.current
     val density = LocalDensity.current
     val settings = LocalSettings.current
@@ -116,48 +103,11 @@ fun DayComposable(
     val zone = remember { ZoneId.systemDefault() }
     val startOfDay = remember { date.atStartOfDay(zone).toEpochSecond()*1000L }
     val endOfDay = remember { date.plusDays(1).atStartOfDay(zone).toEpochSecond()*1000L }
-    var dayEntity: DaysEntity? by remember { mutableStateOf(null) }
-    var events by remember { mutableStateOf(viewModel.dayCache[date]?.toList() ?: listOf()) }
     val hoursToday = remember { ((endOfDay - startOfDay) / (3600*1000)).toInt() }
     var oneHourDp by remember { mutableStateOf(0.dp) }
     val hourInPx = with(density) { oneHourDp.toPx() }
     val calendar = remember { Calendar.getInstance() }
-    var instantEvents by remember { mutableStateOf(viewModel.instantEventCache[date]?.toList() ?: listOf()) }
-    var birthdayAmount by remember { mutableIntStateOf(0) }
-    val lastUpdateTs by viewModel.lastEventUpdateTs.collectAsState()
     val width = fullWidth*.97f
-    LaunchedEffect(Unit) {
-        if (!isToday) {
-            dayEntity = db.days.getDay(date.toEpochDay().toInt())
-        } else {
-            val calendar = Calendar.getInstance()
-            val end = calendar.timeInMillis
-            calendar.set(Calendar.MILLISECONDS_IN_DAY, 0)
-            val start = calendar.timeInMillis
-            dayEntity = DaysEntity(
-                0,
-                if(settings.features.screentime.hasAssured()) getUsageDataBetween(context, start, end).toInt() else 0,
-                if(settings.features.stepCounting.has.value) context.getSharedPreferences("steps", MODE_PRIVATE).run {
-                    getLong("saved_steps", 0L) - getLong("steps_at_midnight", 0L)
-                }.toInt()  else 0,
-                0,
-                0,
-                0
-            )
-        }
-        birthdayAmount = db.people.getPeopleWithBirthdayAt(date).size
-    }
-    LaunchedEffect(lastUpdateTs) {
-        withContext(Dispatchers.IO){
-            val dbEvents = db.events.getEventsBetween(startOfDay, endOfDay).mapNotNull { SyncedEvent.from(db, it)}
-            viewModel.dayCache[date] = dbEvents
-            events = dbEvents
-
-            val mix = InstantEvent.getEntriesBetween(db, startOfDay, endOfDay, viewModel)
-            viewModel.instantEventCache[date] = mix
-            instantEvents = mix
-        }
-    }
     Column(
         Modifier
             .width(fullWidth)
@@ -227,7 +177,9 @@ fun DayComposable(
                     },
                 horizontalArrangement = Arrangement.spacedBy(10.dp)
             ) {
-                repeat(birthdayAmount) {
+                val daysSummaries by calendarViewModel.getDaySummary(date).collectAsState(null)
+                val birthdayPeople by calendarViewModel.getPeopleWithBirthdayAt(date).collectAsState(listOf())
+                repeat(birthdayPeople.size) {
                     Icon(
                         painterResource(R.drawable.birthday),
                         "Birthday",
@@ -235,26 +187,27 @@ fun DayComposable(
                         Theme.secondary
                     )
                 }
-                val dayEntity = dayEntity
-                val screentime by settings.features.screentime.has.collectAsState()
-                val steps by settings.features.stepCounting.has.collectAsState()
-                if (dayEntity != null) {
-                    if (screentime || dayEntity.screenTimeMs != 0) {
-                        DayPill(
-                            painterResource(R.drawable.screentime),
-                            "${dayEntity.screenTimeMs / 1000 / 3600}h ${dayEntity.screenTimeMs / 1000 / 60 % 60}m",
-                            (dayEntity.screenTimeMs / screenTimeGoal).coerceIn(0f, 1f),
-                            OldColors.SCREENTIME
-                        )
-                    }
-                    if (steps || dayEntity.steps != 0) {
-                        DayPill(
-                            painterResource(R.drawable.shoe),
-                            "${dayEntity.steps}",
-                            (dayEntity.steps / stepsGoal).coerceIn(0f, 1f),
-                            OldColors.STEPS
-                        )
-                    }
+                val screentimePermission by settings.features.screentime.has.collectAsState()
+                val stepsPermission by settings.features.stepCounting.has.collectAsState()
+                val listenedScreentime by calendarViewModel.getScreentime(date).collectAsStateWithLifecycle(0L)
+
+                if (screentimePermission &&  (isToday || daysSummaries!=null)) {
+                    DayPill(
+                        painterResource(R.drawable.screentime),
+                        listenedScreentime.formatMsToDuration(true),
+                        (listenedScreentime / screenTimeGoal).coerceIn(0f, 1f),
+                        OldColors.SCREENTIME
+                    )
+                }
+                val steps by calendarViewModel.steps.collectAsState()
+                val displayedSteps = (if(isToday) steps else daysSummaries?.steps?.toLong()).def(0L)
+                if (stepsPermission && (daysSummaries != null || isToday)) {
+                    DayPill(
+                        painterResource(R.drawable.shoe),
+                        displayedSteps.toString(),
+                        (displayedSteps / stepsGoal).coerceIn(0f, 1f),
+                        OldColors.STEPS
+                    )
                 }
             }
         }
@@ -309,17 +262,15 @@ fun DayComposable(
             ) {
                 val isEditing by inspectedEventViewModel.isEditing.collectAsState()
                 val newEvent by inspectedEventViewModel.event.collectAsState()
+                val collectedProposedEvents by calendarViewModel.getProposedEventsAt(date).collectAsState(listOf())
+                val coroutineScope = rememberCoroutineScope()
 
                 val instantEventSize = InstantEvent.INSTANTEVENTSIZE*oneHourDp
-                val segments = SegmentedEvent.getSegmentedEvents(
-                    events,
-                    instantEvents,
-                    (InstantEvent.INSTANTEVENTSIZE * 3600L).toLong() * 1000L
-                )
+                val segments by calendarViewModel.getSegmentedEvents(date).collectAsState(listOf())
                 for(segmentedEvent in segments) {
                     if(isEditing && segmentedEvent.event.id == newEvent.id) continue
                     val haptic = LocalHapticFeedback.current
-                    segmentedEvent.Render(viewModel, events, oneHourDp, instantEventSize, startOfDay, endOfDay, width, !isEditing, {
+                    segmentedEvent.Render(calendarViewModel, oneHourDp, instantEventSize, startOfDay, endOfDay, width, !isEditing, {
                         haptic.performHapticFeedback(HapticFeedbackType.LongPress)
                         inspectedEventViewModel.setEditing(true)
                         inspectedEventViewModel.setInspectedEventTo(
@@ -330,21 +281,26 @@ fun DayComposable(
                         navController.navigate("fullscreen_event")
                     }
                 }
-                for (group in instantEvents) {
+                val collectedInstantEvents by calendarViewModel.getInstantEventsForDay(date).collectAsState(listOf())
+                for (group in collectedInstantEvents) {
                     group.Render(startOfDay, endOfDay, oneHourDp)
                 }
-                for(event in viewModel.proposedEvents) {
+                for(event in collectedProposedEvents) {
                     Box(Modifier
                         .fillMaxHeight()
                         .fillMaxWidth()
                         .align(Alignment.CenterStart)) {
-                        event.render(oneHourDp, startOfDay, endOfDay,{viewModel.removeProposedEvent(event, context)}) {
-                            viewModel.refreshEvents()
+                        event.Render(oneHourDp, startOfDay, endOfDay,{
+                            coroutineScope.launch {
+                                calendarViewModel.removeProposedEvent(event)
+                            }
+                        }) {
+                            calendarViewModel.saveProposedEvent(event)
                         }
                     }
                 }
                 run {
-                    val time by viewModel.minuteFlow.collectAsStateWithLifecycle()
+                    val time by calendarViewModel.minuteFlow.collectAsStateWithLifecycle()
                     calendar.timeInMillis = time
                     val currentHour = calendar.get(Calendar.HOUR_OF_DAY)
                     val currentMinute = calendar.get(Calendar.MINUTE)
@@ -563,15 +519,15 @@ fun DayComposable(
     }
 }
 
-fun Int.msToDisplay(ignoreSeconds: Boolean=false): String {
+fun Long.formatMsToDuration(ignoreSeconds: Boolean=false): String {
     val t = this/1000
     val h = (t/3600)
     val m = (t/60)%60
     val s = t%60
     return "" +
-            (if(h!=0) "${h}h" else "") +
-            "${if(h!=0 && m!=0) if(m<=9) " 0" else " " else ""}${if(m!=0) "${m}m" else ""}" +
-            if(!ignoreSeconds) "${if((h!=0 || m!=0) && s<=9) " 0" else " "}${s}s" else ""
+            (if(h!=0L) "${h}h" else "") +
+            "${if(h!=0L && m!=0L) if(m<=9) " 0" else " " else ""}${if(m!=0L) "${m}m" else ""}" +
+            if(!ignoreSeconds) "${if((h!=0L || m!=0L) && s<=9) " 0" else " "}${s}s" else ""
 }
 
 @Composable
@@ -625,66 +581,49 @@ open class DefinedDurationEvent(val start: Long, val end: Long) {
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
-fun ProposedEvent.render(oneHour: Dp, startOfDay: Long, endOfDay: Long, removeProposedEvent: ()->Unit, rerenderDay: () -> Unit){
-    var visible by remember { mutableStateOf(true) }
-    val db = LocalStorage.current
-    val api = LocalAPI.current
-    AnimatedVisibility(visible, exit = fadeOut(tween(500))) {
+fun ProposedEvent.Render(oneHour: Dp, startOfDay: Long, endOfDay: Long, removeProposedEvent: ()->Unit, syncEvent: ()->Unit){
+    Box(
+        Modifier
+            .padding(top = getTopPadding(oneHour, startOfDay))
+            .height(getHeightDp(oneHour, startOfDay, endOfDay))
+            .background(type.color.copy(.5f), RoundedCornerShape(10.dp))
+            .fillMaxWidth()
+    ) {
         Box(
             Modifier
-                .padding(top = getTopPadding(oneHour, startOfDay))
-                .height(getHeightDp(oneHour, startOfDay, endOfDay))
-                .background(type.color.copy(.5f), RoundedCornerShape(10.dp))
-                .fillMaxWidth()
+                .fillMaxSize()
+                .alpha(.5f)
+        ) {
+            RenderContent(oneHour, startOfDay, endOfDay, false,
+                getBlockHeight(startOfDay, endOfDay)
+            )
+        }
+        Row(
+            Modifier
+                .clip(RoundedCornerShape(10.dp))
+                .fillMaxSize(),
         ) {
             Box(
                 Modifier
-                    .fillMaxSize()
-                    .alpha(.5f)
-            ) {
-                RenderContent(oneHour, startOfDay, endOfDay, false,
-                    getBlockHeight(startOfDay, endOfDay)
-                )
-            }
-            Row(
-                Modifier
+                    .fillMaxHeight()
+                    .weight(1f)
+                    .background(OldColors.ACCEPT)
                     .clip(RoundedCornerShape(10.dp))
-                    .fillMaxSize(),
-            ) {
-                val coroutine = rememberCoroutineScope()
-                Box(
-                    Modifier
-                        .fillMaxHeight()
-                        .weight(1f)
-                        .background(OldColors.ACCEPT)
-                        .clip(RoundedCornerShape(10.dp))
-                        .rippleClick {
-                            coroutine.launch {
-                                if (this@render.insertAndSyncEvent(
-                                        db,
-                                        api,
-                                        API.generateId(),
-                                        System.currentTimeMillis(),
-                                        null
-                                    )
-                                ) {
-                                    removeProposedEvent()
-                                    rerenderDay()
-                                }
-                            }
-                        }
-                )
-                Box(
-                    Modifier
-                        .fillMaxHeight()
-                        .weight(1f)
-                        .background(OldColors.DECLINE)
-                        .clip(RoundedCornerShape(10.dp))
-                        .combinedClickable(onLongClick = {
-                            removeProposedEvent(); visible = false
-                        }) {}
-                )
-            }
+                    .rippleClick {
+                        syncEvent()
+                        removeProposedEvent()
+                    }
+            )
+            Box(
+                Modifier
+                    .fillMaxHeight()
+                    .weight(1f)
+                    .background(OldColors.DECLINE)
+                    .clip(RoundedCornerShape(10.dp))
+                    .combinedClickable(onLongClick = {
+                        removeProposedEvent()
+                    }) {}
+            )
         }
     }
 }

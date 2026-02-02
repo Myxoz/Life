@@ -23,6 +23,8 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.material3.VerticalDivider
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -35,11 +37,9 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.myxoz.life.LocalNavController
 import com.myxoz.life.LocalScreens
-import com.myxoz.life.LocalStorage
 import com.myxoz.life.R
 import com.myxoz.life.Theme
 import com.myxoz.life.android.integration.GitHub
-import com.myxoz.life.api.syncables.CommitSyncable
 import com.myxoz.life.screens.feed.dayoverview.edgeToEdgeGradient
 import com.myxoz.life.ui.setMaxTabletWidth
 import com.myxoz.life.ui.theme.FontFamily
@@ -50,19 +50,15 @@ import com.myxoz.life.utils.AndroidUtils
 import com.myxoz.life.utils.formatTimeStamp
 import com.myxoz.life.utils.rippleClick
 import com.myxoz.life.utils.windowPadding
-import kotlinx.coroutines.runBlocking
+import com.myxoz.life.viewmodels.CommitsViewModel
 import java.time.Instant
 import java.time.ZoneId
 
 @Composable
-fun FullScreenCommit(sha: String){
+fun FullScreenCommit(sha: String, commitsViewModel: CommitsViewModel){
     val context = LocalContext.current
-    val db = LocalStorage.current
-    val commit = remember {
-        runBlocking {
-            CommitSyncable.from(db.commits.getBySha(sha)!!)
-        }
-    }
+    val commit by commitsViewModel.getCommit(sha).collectAsState(null)
+    val displayCommit = commit ?: return
     val innerPadding = windowPadding
     Box(
         Modifier
@@ -70,7 +66,7 @@ fun FullScreenCommit(sha: String){
             .fillMaxHeight()
             .verticalScroll(rememberScrollState())
         ,
-        contentAlignment = Alignment.Center
+        contentAlignment = Alignment.TopCenter
     ) {
         Column(
             Modifier
@@ -88,11 +84,11 @@ fun FullScreenCommit(sha: String){
                 val calendar = remember { Calendar.getInstance() }
                 val nav = LocalNavController.current
                 Text(
-                    "${commit.repoOwner}/${commit.repoName}",
+                    "${displayCommit.repoOwner}/${displayCommit.repoName}",
                     Modifier
                         .weight(1f)
                         .rippleClick{
-                            nav.navigate("commits/repo/${commit.repoName}")
+                            nav.navigate("commits/repo/${displayCommit.repoName}")
                         }
                     ,
                     style = TypoStyle(Theme.secondary, FontSize.MEDIUM),
@@ -101,10 +97,10 @@ fun FullScreenCommit(sha: String){
                 )
                 val screens = LocalScreens.current
                 Text(
-                    commit.commitDate?.formatTimeStamp(calendar) ?: "",
+                    displayCommit.commitDate?.formatTimeStamp(calendar) ?: "",
                     Modifier
                         .rippleClick{
-                            commit.commitDate?.let {
+                            displayCommit.commitDate?.let {
                                 screens.openCalendarAt(
                                     Instant
                                         .ofEpochMilli(it)
@@ -120,12 +116,12 @@ fun FullScreenCommit(sha: String){
             }
             Spacer(Modifier.height(30.dp))
             Text(
-                commit.commitMessage?:"Keine",
+                displayCommit.commitMessage?:"Keine",
                 style = TypoStyle(Theme.primary, FontSize.XLARGE, FontFamily.Display)
-                    .copy(fontStyle = if(commit.commitMessage == null) FontStyle.Italic else FontStyle.Normal)
+                    .copy(fontStyle = if(displayCommit.commitMessage == null) FontStyle.Italic else FontStyle.Normal)
             )
             Spacer(Modifier.height(10.dp))
-            Text(commit.commitSha, style = TypoStyle(Theme.tertiary, FontSize.MEDIUM))
+            Text(displayCommit.commitSha, style = TypoStyle(Theme.tertiary, FontSize.MEDIUM))
             Spacer(Modifier.height(20.dp))
             Row(
                 Modifier
@@ -134,7 +130,7 @@ fun FullScreenCommit(sha: String){
                     .background(Theme.surfaceContainer, RoundedCornerShape(25.dp))
                     .clip(RoundedCornerShape(25.dp))
                     .rippleClick{
-                        AndroidUtils.openLink(context, commit.commitUrl?:return@rippleClick)
+                        AndroidUtils.openLink(context, displayCommit.commitUrl?:return@rippleClick)
                     }
                     .padding(vertical = 10.dp)
             ) {
@@ -150,9 +146,9 @@ fun FullScreenCommit(sha: String){
                         Text(value.toString(), color = color, fontSize = FontSize.XXLARGE.size, fontFamily = FontFamily.Display.family)
                     }
                 }
-                AddDelItem("Additions", commit.additions?:0, OldColors.Commits.ADDITION)
+                AddDelItem("Additions", displayCommit.additions?:0, OldColors.Commits.ADDITION)
                 VerticalDivider(color = Theme.outlineVariant)
-                AddDelItem("Deletion", commit.deletions?:0, OldColors.Commits.DELETION)
+                AddDelItem("Deletion", displayCommit.deletions?:0, OldColors.Commits.DELETION)
             }
             Spacer(Modifier.height(20.dp))
             HorizontalDivider(color = Theme.outline)
@@ -160,7 +156,7 @@ fun FullScreenCommit(sha: String){
             Column(
                 verticalArrangement = Arrangement.spacedBy(10.dp)
             ) {
-                for (modification in commit.modifications.sortedByDescending { it.changes }) {
+                for (modification in displayCommit.modifications.sortedByDescending { it.changes }) {
                     Row(
                         Modifier
                             .fillMaxWidth()
@@ -216,7 +212,7 @@ fun FullScreenCommit(sha: String){
                             Modifier
                                 .clip(CircleShape)
                                 .rippleClick{
-                                    AndroidUtils.openLink(context, GitHub.generateLinkForFileOfCommit(commit, modification))
+                                    AndroidUtils.openLink(context, GitHub.generateLinkForFileOfCommit(displayCommit, modification))
                                 }
                                 .padding(20.dp)
                                 .size(30.dp)

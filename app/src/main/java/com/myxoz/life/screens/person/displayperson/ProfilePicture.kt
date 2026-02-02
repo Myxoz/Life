@@ -1,6 +1,5 @@
 package com.myxoz.life.screens.person.displayperson
 
-import android.graphics.Bitmap
 import android.util.Log
 import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.animateFloat
@@ -53,10 +52,8 @@ import androidx.compose.ui.unit.min
 import androidx.compose.ui.unit.times
 import androidx.graphics.shapes.Morph
 import androidx.graphics.shapes.toPath
-import com.myxoz.life.LocalStorage
 import com.myxoz.life.Theme
 import com.myxoz.life.api.syncables.ProfilePictureSyncable
-import com.myxoz.life.dbwrapper.ProfilePictureStored
 import com.myxoz.life.ui.SCREENMAXWIDTH
 import com.myxoz.life.ui.setMaxTabletWidth
 import com.myxoz.life.ui.theme.FontFamily
@@ -74,10 +71,8 @@ import kotlin.math.sin
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
-fun ProfilePictureWithText(photoPicker: PhotoPicker, profileInfoViewModel: ProfileInfoModel, personId: Long, scrollLength: Dp, fontSize: Dp, topBarHeight: Dp, updateText: (String)-> Unit){
+fun ProfilePictureWithText(photoPicker: PhotoPicker, profileInfoViewModel: ProfileInfoModel, personId: Long, scrollLength: Dp, fontSize: Dp, topBarHeight: Dp){
     val context = LocalContext.current
-    val processedBitmap: Bitmap? by profileInfoViewModel.picture.collectAsState()
-    val db = LocalStorage.current
     val smallPbPadding = 10.dp
     @Suppress("UnnecessaryVariable", "RedundantSuppression") // LOL
     val smallPbSize = fontSize
@@ -85,11 +80,11 @@ fun ProfilePictureWithText(photoPicker: PhotoPicker, profileInfoViewModel: Profi
     val progress = 1-min(maxHeight, scrollLength)/maxHeight
     val fontPadding = 20.dp
     val style = TypoStyle(Theme.primary, FontSize.XLARGE, FontFamily.Display)
+    val inspectedPerson by profileInfoViewModel.getInspectedPerson(personId).collectAsState(null)
     val textMessurer = rememberTextMeasurer()
-    val name by profileInfoViewModel.name.collectAsState()
     val textWidth = with(LocalDensity.current){
         textMessurer.measure(
-            name?:"Name",
+            inspectedPerson?.name?:"Name",
             style
         ).size.width.toDp()
     }
@@ -98,19 +93,9 @@ fun ProfilePictureWithText(photoPicker: PhotoPicker, profileInfoViewModel: Profi
             .drop(1)
             .collect {
                 Log.d("ImagePicker","Image selected / already passed bitmap, will be synced now $it")
-                if(it==null){
-                    ProfilePictureSyncable.deleteBitmapFile(context, personId)
-                } else {
-                    ProfilePictureSyncable.saveBitmapToFile(context, it, personId)
-                    profileInfoViewModel.picture.value = it
-                }
-                db.profilePictureDao.insertProfilePicture(
-                    ProfilePictureStored(
-                        personId,
-                        it != null
-                    )
+                profileInfoViewModel.updateProfilePicture(personId,
+                    it?.let { ProfilePictureSyncable.bitmapToBase64(it) }
                 )
-                ProfilePictureSyncable(personId).addToWaitingSyncDao(db)
             }
     }
     Box(
@@ -132,7 +117,8 @@ fun ProfilePictureWithText(photoPicker: PhotoPicker, profileInfoViewModel: Profi
         val radius = progress*(maxPbSize+fontPadding-smallPbPadding)+smallPbPadding
         val degree = PI/2*(progress.pow(.75f))
         val textOffsetY = sin(degree)*radius + topLeftPbY
-        val textOffsetX = cos(degree)*radius + topLeftPbX + (if(processedBitmap!=null) (1-progress)*pbSize else 0.dp) + progress*(pbSize - textWidth)/2
+        val bitmap by profileInfoViewModel.getProfilePicture(personId).collectAsState(null)
+        val textOffsetX = cos(degree)*radius + topLeftPbX + (if(bitmap!=null) (1-progress)*pbSize else 0.dp) + progress*(pbSize - textWidth)/2
         Box(
             Modifier
                 .offset(
@@ -141,7 +127,7 @@ fun ProfilePictureWithText(photoPicker: PhotoPicker, profileInfoViewModel: Profi
                 )
                 .size(pbSize)
         ){
-            val bitmap = processedBitmap?.asImageBitmap()
+            val bitmap = bitmap?.asImageBitmap()
             val morph = remember {
                 Morph(MaterialShapes.Cookie9Sided, MaterialShapes.Square)
             }
@@ -201,9 +187,11 @@ fun ProfilePictureWithText(photoPicker: PhotoPicker, profileInfoViewModel: Profi
         ) {
             val focusManager = LocalFocusManager.current
             BasicTextField(
-                name?:"",
-                {
-                    updateText(it)
+                inspectedPerson?.name?:"",
+                { value ->
+                    profileInfoViewModel.edit(personId){
+                        it.copy(name = value)
+                    }
                 },
                 Modifier
                     .width(textWidth),

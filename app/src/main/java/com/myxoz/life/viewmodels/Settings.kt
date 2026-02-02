@@ -101,6 +101,7 @@ class Settings(val prefs: SharedPreferences, context: Context, activity: Activit
         class Feature(val spk: String, val name: String, val description: String, val reliesOn: List<Permissions.Permission>, val prefs: SharedPreferences) {
             private val _flow = MutableStateFlow(prefs.getBoolean(spk, false))
             val has = _flow.asStateFlow()
+            /** It's enough to call this once, taking permission away is not possible while the app is running. This will restart the application. */
             fun hasAssured() = has.value && reliesOn.all { it.checkEnabled() }
             init {
                 if(_flow.value){

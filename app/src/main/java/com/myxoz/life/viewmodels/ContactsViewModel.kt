@@ -1,33 +1,33 @@
 package com.myxoz.life.viewmodels
 
-import android.content.Context
+import androidx.core.content.edit
 import androidx.lifecycle.ViewModel
-import com.myxoz.life.android.contacts.AndroidContacts
+import androidx.lifecycle.viewModelScope
 import com.myxoz.life.api.syncables.PersonSyncable
-import com.myxoz.life.dbwrapper.StorageManager
+import com.myxoz.life.repositories.AppRepositories
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.toSet
+import kotlinx.coroutines.launch
 
-class ContactsViewModel(val db: StorageManager): ViewModel() {
-    val deviceContacts = MutableStateFlow(listOf<PersonSyncable>())
-    var lifeContacts = MutableStateFlow(listOf<PersonSyncable>())
+class ContactsViewModel(private val repos: AppRepositories): ViewModel() {
+    val favoriteIds = MutableStateFlow(
+        (repos.prefs.getStringSet("favorite_people", setOf())  ?: setOf()).mapNotNull { it.toLongOrNull() }
+    )
+    fun getAllDeviceContacts() = repos.contactRepo.allContacts
+    /** Call only from Dispatcher.IO else massive lag spikes, fetches all device contacts and udpates old ones, if size changes */
+    fun requestRefetchDeviceContacts() = repos.contactRepo.refetchDeviceContacts()
+    val getAllLifeContacts = repos.peopleRepo.getAllPeople()
     var showIcons = MutableStateFlow(false)
     var scrollDistance = 0
-    /**
-    * Call only from Dispatcher.IO else massive lag spikes, fetches all device contacts and udpates old ones, if size changes
-     */
-    suspend fun fetchDeviceContacts(context: Context){
-        val newContacts = AndroidContacts.getAllContacts(context)
-        refetchLifeContacts()
-        if(newContacts.size != deviceContacts.value.size) deviceContacts.value = newContacts.filter {
-            lifeContacts.value.none { lc ->
-                it.phoneNumber?.trim()?.replace("\\D".toRegex(), "") == lc.phoneNumber?.trim()?.replace("\\D".toRegex(), "")
+    suspend fun createNewContact(syncable: PersonSyncable) = repos.peopleRepo.updateAndStageSync(syncable)
+    init {
+        viewModelScope.launch {
+            favoriteIds.collect {
+                repos.prefs.edit{
+                    putStringSet("favorite_people", favoriteIds.map { it.toString() }.toSet())
+                }
             }
         }
-    /* Update if size changes, update if problematic */
     }
-    suspend fun refetchLifeContacts(){
-        val newContacts = db.people.getAllPeople().map { PersonSyncable.from(db, it) }
-        if(newContacts.asComparableString(db).hashCode() != lifeContacts.value.asComparableString(db).hashCode()) lifeContacts.value = newContacts
-    }
-    private suspend fun List<PersonSyncable>.asComparableString(db: StorageManager) = this.map { it.toJson(db).toString() }.joinToString(";")
 }

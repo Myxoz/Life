@@ -6,6 +6,37 @@ import androidx.room.Room
 import androidx.room.RoomDatabase
 import androidx.room.migration.Migration
 import androidx.sqlite.db.SupportSQLiteDatabase
+import com.myxoz.life.dbwrapper.banking.BankingEntity
+import com.myxoz.life.dbwrapper.banking.BankingSidecarEntity
+import com.myxoz.life.dbwrapper.banking.ReadBankingDao
+import com.myxoz.life.dbwrapper.banking.WriteBankingDao
+import com.myxoz.life.dbwrapper.commits.CommitEntity
+import com.myxoz.life.dbwrapper.commits.ReadCommitsDao
+import com.myxoz.life.dbwrapper.commits.WriteCommitsDao
+import com.myxoz.life.dbwrapper.days.DaysEntity
+import com.myxoz.life.dbwrapper.days.ReadDaysDao
+import com.myxoz.life.dbwrapper.days.WriteDaysDao
+import com.myxoz.life.dbwrapper.events.DigSocEntity
+import com.myxoz.life.dbwrapper.events.DigSocMappingEntity
+import com.myxoz.life.dbwrapper.events.EventEntity
+import com.myxoz.life.dbwrapper.events.HobbyEntiy
+import com.myxoz.life.dbwrapper.events.LearnEntity
+import com.myxoz.life.dbwrapper.events.PeopleMappingEntity
+import com.myxoz.life.dbwrapper.events.ReadEventDetailsDao
+import com.myxoz.life.dbwrapper.events.SocialEntity
+import com.myxoz.life.dbwrapper.events.SpontEntity
+import com.myxoz.life.dbwrapper.events.TagsEntity
+import com.myxoz.life.dbwrapper.events.TravelEntity
+import com.myxoz.life.dbwrapper.events.VehicleEntity
+import com.myxoz.life.dbwrapper.events.WorkEntity
+import com.myxoz.life.dbwrapper.events.WriteEventDetailsDao
+import com.myxoz.life.dbwrapper.locations.ReadLocationsDao
+import com.myxoz.life.dbwrapper.locations.WriteLocationsDao
+import com.myxoz.life.dbwrapper.people.PersonEntity
+import com.myxoz.life.dbwrapper.people.ProfilePictureStored
+import com.myxoz.life.dbwrapper.people.ReadPeopleDao
+import com.myxoz.life.dbwrapper.people.SocialsEntity
+import com.myxoz.life.dbwrapper.people.WritePeopleDao
 
 const val currVer = 34
 val migration = object : Migration(currVer-1, currVer) {
@@ -34,7 +65,7 @@ val migration = object : Migration(currVer-1, currVer) {
         WaitingSyncEntity::class,
         ProposedStepsEntity::class,
         EventEntity::class,
-        SpontEntiy::class,
+        SpontEntity::class,
         TagsEntity::class,
         HobbyEntiy::class,
         LearnEntity::class,
@@ -54,30 +85,27 @@ val migration = object : Migration(currVer-1, currVer) {
     version = currVer,
     exportSchema = true
 ) abstract class AppDatabase : RoomDatabase() {
-    abstract fun workDao(): WorkDao
-    abstract fun commitsDao(): CommitDao
-    abstract fun digsocMappingDao(): DigSocMappingDao
-    abstract fun digsocDao(): DigSocDao
-    abstract fun peopleDao(): PeopleDao
-    abstract fun daysDao(): DaysDao
-    abstract fun bankingDao(): BankingDao
-    abstract fun dayScreenTimeDao(): DayScreenTimeDao
+    abstract fun readEventsDetailsDao(): ReadEventDetailsDao
+    abstract fun writeEventDetailsDao(): WriteEventDetailsDao
+
+    abstract fun readPeopleDao(): ReadPeopleDao
+    abstract fun writePeopleDao(): WritePeopleDao
+
+    abstract fun readDaysDao(): ReadDaysDao
+    abstract fun writeDaysDao(): WriteDaysDao
+
+    abstract fun readLocationsDao(): ReadLocationsDao
+    abstract fun writeLocationsDao(): WriteLocationsDao
+
+    abstract fun readCommitsDao(): ReadCommitsDao
+    abstract fun writeCommitsDao(): WriteCommitsDao
+
+    abstract fun readBankingDao(): ReadBankingDao
+    abstract fun writeBankingDao(): WriteBankingDao
+
+    abstract fun databaseCleanupDao(): DatabaseCleanupDao
     abstract fun waitingSyncDao(): WaitingSyncDao
     abstract fun proposedStepsDao(): ProposedStepsDao
-    abstract fun eventsDao(): EventsDao
-    abstract fun spontDao(): SpontDao
-    abstract fun tagsDao(): TagsDao
-    abstract fun hobbyDao(): HobbyDao
-    abstract fun learnDao(): LearnDao
-    abstract fun socialDao(): SocialDao
-    abstract fun peopleMappingDao(): PeopleMappingDao
-    abstract fun travelDao(): TravelDao
-    abstract fun vehicleDao(): VehicleDao
-    abstract fun locationDao(): LocationDao
-    abstract fun bankingSideCarDao(): BankingSidecarDao
-    abstract fun databaseCleanupDao(): DatabaseCleanupDao
-    abstract fun profilePicture(): ProfilePictureDao
-    abstract fun socialsDao(): SocialsDao
 }
 object DatabaseProvider {
     @Volatile
@@ -100,7 +128,7 @@ object DatabaseProvider {
  * 2. Add entity to [AppDatabase] and dao (above)
  * 3. Create [migration] (INTEGER/STRING (NOT NULL)) and increase [currVer]
  * 4. Relaunch on devices to apply changed
- * 5. Add dao to API e.x. after [StorageManager]
+ * 5. Add dao to API e.x. after [Daos]
  * 6. Add to CleanupDao [DatabaseCleanupDao.clearAllExceptPersistent]
  *
  * Guide to create new calendar:
@@ -109,7 +137,7 @@ object DatabaseProvider {
  * 8. Create event renderer and EventClass by copying a file from [com.myxoz.life.events]
  * 9. Add to [com.myxoz.life.events.ProposedEvent.from]
  * 10. Add to when in [com.myxoz.life.events.ProposedEvent.getProposedEventByJson]
- * 11. Add to [com.myxoz.life.api.ServerSyncable.overwriteByJson] AEFL
+ * 11. Add to [com.myxoz.life.api.ServerSyncable.overwriteDBByJsonAfterRepoUpdates] AEFL
  * 12. Add to modify/add screen [com.myxoz.life.screens.feed.fullscreenevent.ModifyEvent] CalendarChip and to the content renderer
  * 13. Add to display screen [com.myxoz.life.screens.feed.fullscreenevent.DisplayEvent]
  * 14. Add to [com.myxoz.life.screens.feed.main.SegmentedEvent.getSegmentedEvents] to be rendered at all
@@ -120,7 +148,7 @@ object DatabaseProvider {
  *
  * Guide to create new Syncable:
  * 7. Create a new Syncable: Syncable in [com.myxoz.life.api]
- * 8. Add to [com.myxoz.life.api.Syncable.SpecialSyncablesIds] and then [com.myxoz.life.api.ServerSyncable.overwriteByJson]
+ * 8. Add to [com.myxoz.life.api.Syncable.SpecialSyncablesIds] and then [com.myxoz.life.api.ServerSyncable.overwriteDBByJsonAfterRepoUpdates]
  * 9. Add to [com.myxoz.life.api.Syncable.from] (only when also syncable)
  * 10. Go to serverside ( sshvim myxoz:~/myxoz.de/life/_api.php )
  * 11. Add to delete from db (only when also syncable) (SRMDB)

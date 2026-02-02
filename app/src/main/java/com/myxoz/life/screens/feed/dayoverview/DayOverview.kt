@@ -1,11 +1,5 @@
 package com.myxoz.life.screens.feed.dayoverview
 
-import android.content.Context
-import android.content.Context.MODE_PRIVATE
-import android.hardware.Sensor
-import android.hardware.SensorEvent
-import android.hardware.SensorEventListener
-import android.hardware.SensorManager
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -29,44 +23,32 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableLongStateOf
-import androidx.compose.runtime.mutableStateListOf
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.saveable.rememberSaveable
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.platform.LocalConfiguration
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import androidx.navigation.NavController
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.myxoz.life.LocalNavController
 import com.myxoz.life.LocalScreens
 import com.myxoz.life.LocalSettings
-import com.myxoz.life.LocalStorage
 import com.myxoz.life.R
 import com.myxoz.life.Theme
 import com.myxoz.life.api.syncables.PersonSyncable
-import com.myxoz.life.api.syncables.ProfilePictureSyncable
-import com.myxoz.life.dbwrapper.BankingEntity
-import com.myxoz.life.dbwrapper.formatCents
-import com.myxoz.life.events.additionals.EventType
-import com.myxoz.life.screens.feed.main.msToDisplay
+import com.myxoz.life.dbwrapper.banking.formatCents
+import com.myxoz.life.repositories.BankingRepo
+import com.myxoz.life.screens.feed.main.formatMsToDuration
 import com.myxoz.life.screens.feed.main.screenTimeGoal
 import com.myxoz.life.screens.feed.main.stepsGoal
-import com.myxoz.life.screens.options.getUsageDataBetween
 import com.myxoz.life.ui.SCREENMAXWIDTH
 import com.myxoz.life.ui.setMaxTabletWidth
 import com.myxoz.life.ui.theme.FontFamily
@@ -79,78 +61,29 @@ import com.myxoz.life.utils.formatMToDistance
 import com.myxoz.life.utils.rippleClick
 import com.myxoz.life.utils.toShape
 import com.myxoz.life.utils.windowPadding
-import kotlinx.coroutines.delay
+import com.myxoz.life.viewmodels.DayOverviewViewModel
 import java.time.LocalDate
-import java.time.ZoneId
 import java.time.temporal.ChronoUnit
 import kotlin.math.min
 
 @Composable
-fun DayOverviewComposable(navController: NavController, epochDay: Long){
-    val db = LocalStorage.current
+fun DayOverviewComposable(date: LocalDate, dayOverviewViewModel: DayOverviewViewModel){
     val settings = LocalSettings.current
-    val isToday = remember { LocalDate.now().toEpochDay() ==  epochDay }
-    var happyness: Int? by remember { mutableStateOf(null) }
-    var stress: Int? by remember { mutableStateOf(null) }
-    var successfulness: Int? by remember { mutableStateOf(null) }
-    var screenTime: Long? by remember { mutableStateOf(null) }
-    var steps: Long? by remember { mutableStateOf(null) }
-    val bankingEntries = remember { mutableStateListOf<BankingEntity>() }
-    var birthdays by remember { mutableStateOf(listOf<PersonSyncable>()) }
-    val pieChart = remember { PieChart() }
+    val isToday = remember(LocalDate.now()) { LocalDate.now() == date }
+    val birthdays by dayOverviewViewModel.getAllBirthdaysAt(date).collectAsState(listOf())
+    val summary by dayOverviewViewModel.getDaySummary(date).collectAsState(null)
+    val bankingDisplayEntitys by dayOverviewViewModel.getAllTransactions(date).collectAsState(listOf())
+    val chart = remember { PieChart() }
+    val chartData by dayOverviewViewModel.getPieChart(date).collectAsState(mapOf())
+    LaunchedEffect(chartData) {
+        chart.update(chartData)
+        println("We definitly launched the chart?! $chartData")
+    }
     val dateString = remember {
-        val date = LocalDate.ofEpochDay(epochDay)
         "${getWeekDayByInt(date.dayOfWeek.value - 1)} ${date.dayOfMonth}.${date.month.value}.${date.year}"
     }
-    val context = LocalContext.current
-    LaunchedEffect(Unit) {
-        val day = db.days.getDay(epochDay.toInt())
-        if(day != null) {
-            happyness = day.happyness
-            stress = day.stress
-            successfulness = day.successfulness
-            screenTime = day.screenTimeMs.toLong()
-            steps = day.steps.toLong()
-        }
-        val date = LocalDate.ofEpochDay(epochDay)
-        val zone = ZoneId.systemDefault()
-        bankingEntries.clear()
-        bankingEntries.addAll(
-            db.banking.getFullDayTransactions(
-                date.atStartOfDay(zone).toEpochSecond()*1000L,
-                date.plusDays(1).atStartOfDay(zone).toEpochSecond()*1000L
-            )
-        )
-        birthdays = db.people.getPeopleWithBirthdayAt(date).map { PersonSyncable.from(db, it) }
-        val total = mutableMapOf<String, Long>()
-        val startOfDay = LocalDate.ofEpochDay(epochDay).atStartOfDay(zone).toEpochSecond()*1000L
-        val endOfDay = LocalDate.ofEpochDay(epochDay).plusDays(1).atStartOfDay(zone).toEpochSecond()*1000L
-        db.events.getEventsBetween(startOfDay, endOfDay).sortedBy { it.start }.forEach {
-            val duration = it.end.coerceAtMost(endOfDay) - it.start.coerceAtLeast(startOfDay)
-            total[it.type.toString()] = total[it.type.toString()]?.plus(duration) ?: duration
-        }
-        pieChart.update(total.mapValues {
-            val cal = EventType.getById(it.key.toIntOrNull()?:return@mapValues PieChart.Companion.PieChartPart(EventType.Empty.color, 0.0))
-            PieChart.Companion.PieChartPart(cal?.color ?: EventType.Empty.color, it.value.toDouble())
-        }) //  Also in SummarizeDay
-
-
-        // Nogo section, this wents into a while true loop (if today), write async operation above
-        if(isToday && settings.features.screentime.has.value) {
-            val zone = ZoneId.systemDefault()
-            while (true){
-                screenTime =
-                    getUsageDataBetween(
-                        context,
-                        LocalDate.ofEpochDay(epochDay).atStartOfDay(zone).toEpochSecond()*1000L,
-                        System.currentTimeMillis()
-                    )
-                delay(1000)
-            }
-        }
-    }
+    val screenTime by dayOverviewViewModel.getScreentime(date).collectAsStateWithLifecycle(0L)
     val showSteps by settings.features.stepCounting.has.collectAsState()
-    if(isToday && showSteps) StepCounterTrigger { steps = it }
     val innerPadding = windowPadding
     Box(
         Modifier
@@ -173,13 +106,20 @@ fun DayOverviewComposable(navController: NavController, epochDay: Long){
                 ),
                 modifier = Modifier.padding(top = innerPadding.calculateTopPadding() + 10.dp, bottom = 10.dp)
             )
-            FeelingsBlock(happyness, stress, successfulness)
+            FeelingsBlock(summary?.happyness, summary?.stress, summary?.successfulness)
             Spacer(Modifier)
+            val steps = if(isToday) {
+                val step by dayOverviewViewModel.getAllSteps.collectAsState()
+                step
+            } else {
+                summary?.steps?.toLong()
+            }
             if(showSteps) DisplayStepsBlock(steps)
-            if(birthdays.isNotEmpty()) BirthdayBlock(birthdays,LocalDate.ofEpochDay(epochDay))
+            if(birthdays.isNotEmpty()) BirthdayBlock(birthdays,date, dayOverviewViewModel)
             val screentime by settings.features.screentime.has.collectAsState()
-            if(screentime) DisplayTimeBlock(screenTime) { navController.navigate("day/$epochDay/screentime") }
-            if (bankingEntries.isNotEmpty()) BankingBlock(bankingEntries) { navController.navigate("day/$epochDay/transactions") }
+            val nav = LocalNavController.current
+            if(screentime) DisplayTimeBlock(screenTime) { nav.navigate("day/${date.toEpochDay()}/screentime") }
+            if(bankingDisplayEntitys.isNotEmpty()) BankingBlock(bankingDisplayEntitys) { nav.navigate("day/${date.toEpochDay()}/transactions") }
             Column (
                 Modifier
                     .fillMaxWidth()
@@ -193,7 +133,7 @@ fun DayOverviewComposable(navController: NavController, epochDay: Long){
                 Spacer(Modifier.height(10.dp))
                 val screenWidth = min(LocalConfiguration.current.screenWidthDp, SCREENMAXWIDTH.value.toInt()).dp
                 Box(Modifier.size(screenWidth*.7f)){
-                    pieChart.Render()
+                    chart.Render()
                 }
             }
             Spacer(Modifier.height(innerPadding.calculateBottomPadding()))
@@ -202,7 +142,7 @@ fun DayOverviewComposable(navController: NavController, epochDay: Long){
 }
 
 @Composable
-fun BirthdayBlock(birthdays: List<PersonSyncable>, selectedDate: LocalDate){
+fun BirthdayBlock(birthdays: List<PersonSyncable>, selectedDate: LocalDate, dayOverviewViewModel: DayOverviewViewModel){
     val screens = LocalScreens.current
     Column (
         Modifier
@@ -220,11 +160,8 @@ fun BirthdayBlock(birthdays: List<PersonSyncable>, selectedDate: LocalDate){
                 .fillMaxWidth()
                 .horizontalScroll(rememberScrollState())
         ) {
-            val context = LocalContext.current
             birthdays.forEach { person ->
-                val profilePicture by produceState<ImageBitmap?>(null) {
-                    value = ProfilePictureSyncable.loadBitmapByPerson(context, person.id)?.asImageBitmap()
-                }
+                val profilePicture by dayOverviewViewModel.getProfilePicture(person.id).collectAsState(null)
                 Box {
                     Column(
                         Modifier
@@ -243,7 +180,7 @@ fun BirthdayBlock(birthdays: List<PersonSyncable>, selectedDate: LocalDate){
                                 .size(70.dp)
                                 .clip(MaterialShapes.Cookie9Sided.toShape())
                         ) {
-                            val image = profilePicture
+                            val image = remember(profilePicture) { profilePicture?.asImageBitmap() }
                             if(image != null) {
                                 Image(
                                     image,
@@ -351,7 +288,7 @@ fun DisplayTimeBlock(timeInMs: Long?, openScreenTime: ()->Unit){
                     .background(OldColors.SCREENTIME, CircleShape)
             )
             Text(
-                timeInMs?.toInt()?.msToDisplay()?:"--h --m --s",
+                timeInMs?.formatMsToDuration()?:"--h --m --s",
                 style = TypoStyle(Theme.onPrimaryContainer, FontSize.XLARGE, FontFamily.Display),
                 modifier =
                     Modifier
@@ -416,7 +353,7 @@ fun DisplayStepsBlock(steps: Long?){
 }
 
 @Composable
-fun BankingBlock(bankingEntries: List<BankingEntity>, openBankingMenu: ()->Unit){
+fun BankingBlock(bankingEntries: List<BankingRepo.BankingDisplayEntity>, openBankingMenu: ()->Unit){
     Column (
         Modifier
             .fillMaxWidth()
@@ -428,43 +365,12 @@ fun BankingBlock(bankingEntries: List<BankingEntity>, openBankingMenu: ()->Unit)
     ) {
         Text("Überweisungen", style = TypoStyle(Theme.primary, FontSize.MEDIUM))
         Spacer(Modifier.height(10.dp))
+        val sum = bankingEntries.sumOf { it.entity.amountCents }
         Text(
-            bankingEntries.sumOf { it.amountCents }.formatCents(),
-            style = TypoStyle(if(bankingEntries.sumOf { it.amountCents } >= 0) OldColors.Transactions.PLUS else OldColors.Transactions.MINUS, FontSize.XLARGE, FontFamily.Display),
+            sum.formatCents(),
+            style = TypoStyle(if(sum >= 0) OldColors.Transactions.PLUS else OldColors.Transactions.MINUS, FontSize.XLARGE, FontFamily.Display),
         )
     }
-}
-
-@Composable
-fun StepCounterTrigger(trigger: (Long)->Unit) {
-    val context = LocalContext.current
-    val sensorManager = remember { context.getSystemService(Context.SENSOR_SERVICE) as SensorManager }
-    val stepSensor = remember { sensorManager.getDefaultSensor(Sensor.TYPE_STEP_COUNTER) }
-    val midnight = remember { context.getSharedPreferences("steps", MODE_PRIVATE).getLong("steps_at_midnight", 0L) }
-
-    var steps: Long by rememberSaveable { mutableLongStateOf(0L) }
-
-    DisposableEffect(stepSensor) {
-        if (stepSensor == null) {
-            onDispose { }
-        } else {
-            val listener = object : SensorEventListener {
-                override fun onSensorChanged(event: SensorEvent) {
-                    steps = event.values[0].toLong()-midnight
-                }
-
-                override fun onAccuracyChanged(sensor: Sensor?, accuracy: Int) {}
-            }
-
-            sensorManager.registerListener(listener, stepSensor, SensorManager.SENSOR_DELAY_FASTEST)
-
-            onDispose {
-                sensorManager.unregisterListener(listener)
-            }
-        }
-    }
-
-    trigger(steps)
 }
 fun getMonthByCalendarMonth(month: Int): String{
     return listOf("Jan", "Feb", "Mär", "Apr", "Mai", "Juni", "Juli", "Aug", "Sep", "Okt", "Nov", "Dez")[month]

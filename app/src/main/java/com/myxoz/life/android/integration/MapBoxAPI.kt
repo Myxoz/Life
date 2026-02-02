@@ -4,10 +4,10 @@ import android.content.Context
 import android.util.Log
 import androidx.annotation.StringRes
 import com.myxoz.life.R
-import com.myxoz.life.api.jsonObjArray
-import com.myxoz.life.api.syncables.Location
+import com.myxoz.life.api.syncables.LocationSyncable
 import com.myxoz.life.utils.getJSONObjectOrNull
 import com.myxoz.life.utils.getStringOrNull
+import com.myxoz.life.utils.jsonObjArray
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import org.json.JSONObject
@@ -60,7 +60,7 @@ object MapBoxAPI {
         longitude: Double
     ) = getWithMapboxToken(context, "https://api.mapbox.com/search/geocode/v6/reverse?latitude=$lat&longitude=$longitude").also { Log.w("MapBoxAPI","Mapbox reverse geocode: $it") }
 
-    fun getLocationListFromAPIResponse(response: String): List<Location>{
+    fun getLocationListFromAPIResponse(response: String): List<LocationSyncable>{
         val features = JSONObject(response)
             .getJSONArray("features")
             .jsonObjArray
@@ -68,7 +68,7 @@ object MapBoxAPI {
         return features.mapNotNull {
             val searchedItem = it.getJSONObjectOrNull("properties")?:return@mapNotNull null
             val details = searchedItem.getJSONObjectOrNull("context")?:return@mapNotNull null
-            Location(
+            LocationSyncable(
                 searchedItem.getStringOrNull("name_preferred") ?: "Name",
                 searchedItem.getJSONObjectOrNull("coordinates")?.getDouble("longitude")?:return@mapNotNull null,
                 searchedItem.getJSONObjectOrNull("coordinates")?.getDouble("latitude")?:return@mapNotNull null,

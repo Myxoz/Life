@@ -33,22 +33,23 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.core.content.edit
-import com.myxoz.life.LocalAPI
 import com.myxoz.life.LocalSettings
-import com.myxoz.life.LocalStorage
-import com.myxoz.life.api.syncables.PersonSyncable
+import com.myxoz.life.api.API
 import com.myxoz.life.api.Syncable
-import com.myxoz.life.ui.theme.OldColors
+import com.myxoz.life.dbwrapper.Daos
 import com.myxoz.life.ui.theme.FontColor
 import com.myxoz.life.ui.theme.FontSize
+import com.myxoz.life.ui.theme.OldColors
 import com.myxoz.life.ui.theme.TypoStyleOld
 import com.myxoz.life.utils.formatTimeStamp
-import com.myxoz.life.viewmodels.ContactsViewModel
 import kotlinx.coroutines.launch
 import java.io.File
 
 @Composable
-fun DebugScreen(){
+fun DebugScreen(
+    db: Daos,
+    api: API
+){
     Scaffold(
         Modifier.fillMaxSize(),
         containerColor = OldColors.BACKGROUND
@@ -59,8 +60,6 @@ fun DebugScreen(){
                 .padding(innerPadding)
         ) {
             val context = LocalContext.current
-            val db = LocalStorage.current
-            val api = LocalAPI.current
             val coroutineScope = rememberCoroutineScope()
             val prefs = remember { context.getSharedPreferences("steps", MODE_PRIVATE) }
             val sprefs = remember { context.getSharedPreferences("MainActivity", MODE_PRIVATE) }
@@ -94,46 +93,6 @@ fun DebugScreen(){
             }) {
                 Text("Update steps")
             }
-            Button({
-                coroutineScope.launch {
-                    val allPeople = db.people.getAllPeople()
-                    allPeople.forEach {
-                        PersonSyncable.from(db, it.copy(phoneNumber = it.phoneNumber?.replace(" ", "")))
-                            .saveAndSync(db)
-                    }
-                }
-            }) {
-                Text("Fix Phone numbers to remove spaces")
-            }
-            Button({
-                coroutineScope.launch {
-                    val newConactsViewModel = ContactsViewModel(db)
-                    newConactsViewModel.refetchLifeContacts()
-                    newConactsViewModel.fetchDeviceContacts(context)
-                    newConactsViewModel.lifeContacts.value.forEach {
-                        val socials = it.socials.toMutableList()
-                        if(socials.none { p -> p.platform == PersonSyncable.Companion.Platform.WhatsApp }) {
-                            if(newConactsViewModel.deviceContacts.value.find { lc ->
-                                    it.phoneNumber?.trim()?.replace("\\D".toRegex(), "") == lc.phoneNumber?.trim()?.replace("\\D".toRegex(), "")
-                                }?.socials?.any { it.platform == PersonSyncable.Companion.Platform.WhatsApp }==true)  {
-                                socials.add(PersonSyncable.Companion.Socials(PersonSyncable.Companion.Platform.WhatsApp, "WhatsApp"))
-                                PersonSyncable(
-                                    it.id,
-                                    it.name,
-                                    it.fullName,
-                                    it.phoneNumber,
-                                    it.iban,
-                                    it.home,
-                                    it.birthday,
-                                    socials,
-                                ).saveAndSync(db)
-                            }
-                        }
-                    }
-                }
-            }) {
-                Text("Fix whatsapp contacts (outdated)")
-            }
             var shouldWipeDp by remember { mutableIntStateOf(0) }
             Button({
                 shouldWipeDp += 1
@@ -145,7 +104,7 @@ fun DebugScreen(){
                         }
                         db.cleanupDb.clearAllExceptPersistent()
                         File(context.filesDir, Syncable.SpecialSyncablesIds.PROFILEPICTURE.toString()).deleteRecursively() // Delete Profile Pics
-                        api.lastUpdate = 0
+                        api.resetLastUpdateDebug()
                     }
                 }
             }) {

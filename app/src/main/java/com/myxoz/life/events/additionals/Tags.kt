@@ -1,9 +1,9 @@
 package com.myxoz.life.events.additionals
 
 import com.myxoz.life.R
-import com.myxoz.life.api.forEach
-import com.myxoz.life.dbwrapper.TagsDao
-import com.myxoz.life.dbwrapper.TagsEntity
+import com.myxoz.life.dbwrapper.events.TagsEntity
+import com.myxoz.life.dbwrapper.events.WriteEventDetailsDao
+import com.myxoz.life.utils.forEach
 import org.json.JSONArray
 import org.json.JSONObject
 
@@ -39,7 +39,7 @@ interface TagLike {
 }
 interface TagEvent {
     val eventTags: List<EventTag>
-    suspend fun storeTags(tagsDao: TagsDao, id: Long){
+    suspend fun storeTags(tagsDao: WriteEventDetailsDao, id: Long){
         eventTags.forEach {
             tagsDao.insertTag(
                 TagsEntity(

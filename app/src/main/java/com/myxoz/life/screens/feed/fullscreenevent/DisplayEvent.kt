@@ -23,11 +23,9 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -37,12 +35,10 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.unit.dp
 import com.myxoz.life.LocalScreens
-import com.myxoz.life.LocalStorage
 import com.myxoz.life.R
 import com.myxoz.life.Theme
 import com.myxoz.life.android.integration.HVV
-import com.myxoz.life.api.syncables.Location
-import com.myxoz.life.api.syncables.PersonSyncable
+import com.myxoz.life.api.syncables.LocationSyncable
 import com.myxoz.life.api.syncables.SyncedEvent
 import com.myxoz.life.events.DigSocEvent
 import com.myxoz.life.events.SocialEvent
@@ -64,14 +60,11 @@ import com.myxoz.life.utils.formatTimeStamp
 import com.myxoz.life.utils.rippleClick
 import com.myxoz.life.utils.toDp
 import com.myxoz.life.utils.toPx
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.withContext
 
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun DisplayEvent(fullEvent: SyncedEvent){
     val context = LocalContext.current
-    val db = LocalStorage.current
     val screens = LocalScreens.current
     Column(
         Modifier
@@ -152,14 +145,8 @@ fun DisplayEvent(fullEvent: SyncedEvent){
             }
         }
         if (fullEvent.proposed is PeopleEvent) {
-            var displayedPeople by remember {
-                mutableStateOf(
-                    listOf<PersonSyncable>()
-                )
-            }
-            PeopleEvent.GetFullNames(db, fullEvent.proposed.people) {
-                displayedPeople = it
-            }
+            val profileViewModel = LocalScreens.current.profileInfoModel
+            val displayedPeople by profileViewModel.getPeople(fullEvent.proposed.people).collectAsState(listOf())
             Spacer(Modifier.height(10.dp))
             Text("Mit:", style = TypoStyle(Theme.onSecondaryContainer, FontSize.LARGE))
             FlowRow(
@@ -197,19 +184,12 @@ fun DisplayEvent(fullEvent: SyncedEvent){
             }
         }
         if (fullEvent.proposed is TravelEvent) {
-            var from: Location? by remember { mutableStateOf(null) }
-            var to: Location? by remember { mutableStateOf(null) }
+            val profileViewModel = LocalScreens.current.profileInfoModel
+            val from by profileViewModel.getLocationById(fullEvent.proposed.from).collectAsState(null)
+            val to by profileViewModel.getLocationById(fullEvent.proposed.to).collectAsState(null)
             val size = FontSize.MEDIUM.size.toDp()
-            LaunchedEffect(Unit) {
-                withContext(Dispatchers.IO) {
-                    db.location.getLocationById(fullEvent.proposed.from)
-                        ?.also { from = Location.from(it) }
-                    db.location.getLocationById(fullEvent.proposed.to)
-                        ?.also { to = Location.from(it) }
-                }
-            }
             @Composable
-            fun RenderLocation(location: Location?, isFrom: Boolean) {
+            fun RenderLocation(location: LocationSyncable?, isFrom: Boolean) {
                 Column(
                     Modifier
                         .fillMaxWidth()
@@ -270,7 +250,7 @@ fun DisplayEvent(fullEvent: SyncedEvent){
                                 .background(Theme.primaryContainer, CircleShape)
                                 .clip(CircleShape)
                                 .rippleClick {
-                                    Location.openInGoogleMaps(
+                                    LocationSyncable.openInGoogleMaps(
                                         context,
                                         location
                                     )
@@ -319,7 +299,7 @@ fun DisplayEvent(fullEvent: SyncedEvent){
                                 .padding(vertical = 2.dp)
                                 .clip(CircleShape)
                                 .background(Theme.primaryContainer).rippleClick {
-                                    Location.openRouteInGoogleMaps(
+                                    LocationSyncable.openRouteInGoogleMaps(
                                         context,
                                         from?.toAddress()?.substringBeforeLast(","),
                                         from?.lat,

@@ -22,6 +22,7 @@ import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
+import com.mapbox.annotation.MapboxExperimental
 import com.mapbox.geojson.Point
 import com.mapbox.maps.CameraOptions
 import com.mapbox.maps.EdgeInsets
@@ -41,10 +42,8 @@ import com.mapbox.maps.plugin.gestures.OnMapClickListener
 import com.mapbox.maps.plugin.locationcomponent.createDefault2DPuck
 import com.mapbox.maps.plugin.locationcomponent.location
 import com.myxoz.life.LocalSettings
-import com.myxoz.life.LocalStorage
 import com.myxoz.life.R
 import com.myxoz.life.Theme
-import com.myxoz.life.api.syncables.Location
 import com.myxoz.life.ui.theme.OldColors
 import com.myxoz.life.viewmodels.MapViewModel
 import kotlinx.coroutines.launch
@@ -53,6 +52,7 @@ import kotlin.math.atan2
 import kotlin.math.cos
 import kotlin.math.sin
 
+@OptIn(MapboxExperimental::class)
 @Composable
 fun MapBoxMap(mapViewModel: MapViewModel, innerPadding: PaddingValues){
     var sheetHeight by remember { mutableStateOf(0.dp) }
@@ -62,19 +62,14 @@ fun MapBoxMap(mapViewModel: MapViewModel, innerPadding: PaddingValues){
             sheetHeight = it
         }
     }
-    val db = LocalStorage.current
     val sheetLocation by mapViewModel.sheetLocation.collectAsState()
     val selectedCoordinates by mapViewModel.selectedCoordinates.collectAsState()
     val selectCoordsOnMap by mapViewModel.selectCoordsOnMap.collectAsState()
     val isEditing by mapViewModel.isEditing.collectAsState()
-    val refetchLocations by mapViewModel.refetchLocations.collectAsState()
-    var allLocations by remember { mutableStateOf(listOf<Location>()) }
+    val allLocations by mapViewModel.getAllLocations.collectAsState(listOf())
     val viewPortState = mapViewModel.cameraOptions
     var mapBoxInitialRender by remember { mutableStateOf(false) }
     val coroutineScope = rememberCoroutineScope()
-    LaunchedEffect(refetchLocations) {
-        allLocations = db.location.getAllLocations().map { Location.from(it) }
-    }
     val snapHeight by state.snapHeight.collectAsState()
     val shrunkArea = sheetHeight.coerceIn(0.dp, snapHeight)
     MapboxMap(
@@ -98,8 +93,7 @@ fun MapBoxMap(mapViewModel: MapViewModel, innerPadding: PaddingValues){
                 }
             } else {
                 coroutineScope.launch {
-                    val dbLocation = db.location.queryByCoordinate(it.latitude(), it.longitude())
-                        ?.let { Location.from(it) }
+                    val dbLocation = mapViewModel.queryByCoordinate(it.latitude(), it.longitude())
                     mapViewModel.setSheetLocation(dbLocation)
                     mapViewModel.selectedCoordinates.value =
                         dbLocation?.let { loc -> Point.fromLngLat(loc.longitude, loc.lat) } ?: it

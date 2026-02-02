@@ -21,6 +21,7 @@ import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
 class PieChart(){
@@ -28,7 +29,7 @@ class PieChart(){
     fun update(newComponents: Map<String, PieChartPart>) {
         val mutComponents = components.value.mapValues { PieChartPart(it.value.color, 0.0) }.toMutableMap()
         newComponents.forEach { mutComponents[it.key] = it.value }
-        components.value = mutComponents
+        components.update { mutComponents }
     }
     @Composable
     fun Render(){

@@ -1,6 +1,5 @@
 package com.myxoz.life.screens.feed.summarizeday
 
-import android.content.Context.MODE_PRIVATE
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.animateFloatAsState
@@ -55,15 +54,12 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.times
-import com.myxoz.life.LocalAPI
 import com.myxoz.life.LocalNavController
 import com.myxoz.life.LocalSettings
-import com.myxoz.life.LocalStorage
 import com.myxoz.life.R
 import com.myxoz.life.Theme
 import com.myxoz.life.api.syncables.FullDaySyncable
 import com.myxoz.life.dbwrapper.DayScreenTimeEntity
-import com.myxoz.life.events.additionals.EventType
 import com.myxoz.life.screens.options.getMappedUsageDataBetween
 import com.myxoz.life.screens.options.getUsageDataBetween
 import com.myxoz.life.ui.theme.FontColor
@@ -73,14 +69,13 @@ import com.myxoz.life.ui.theme.TypoStyle
 import com.myxoz.life.ui.theme.TypoStyleOld
 import com.myxoz.life.utils.diagrams.PieChart
 import com.myxoz.life.utils.rippleClick
+import com.myxoz.life.viewmodels.DayOverviewViewModel
 import java.time.LocalDate
 import java.time.ZoneId
 import kotlin.math.abs
 
 @Composable
-fun SummarizeDay() {
-    val api = LocalAPI.current
-    val db = LocalStorage.current
+fun SummarizeDay(dayOverviewViewModel: DayOverviewViewModel) {
     Scaffold(
         Modifier.fillMaxSize(),
         containerColor = Theme.background
@@ -179,10 +174,10 @@ fun SummarizeDay() {
                 ) {
                     var liffySubText by remember { mutableStateOf("") }
                     LaunchedEffect(Unit) {
-                        val last3Days = db.days.getLastNDays(3)
-                        val last30Days = db.days.getLastNDays(30)
-                        val average3Days = last3Days.map { it.happyness }.average().takeIf { !it.isNaN() } ?: 0.0
-                        val average30Days = last30Days.map { it.happyness }.average().takeIf { !it.isNaN() } ?: 0.0
+                        val last3Days = dayOverviewViewModel.getLastNDaysAsNonFlow(3)
+                        val last30Days = dayOverviewViewModel.getLastNDaysAsNonFlow(30)
+                        val average3Days = last3Days.mapNotNull { it?.happyness ?: return@mapNotNull null}.average().takeIf { !it.isNaN() } ?: 0.0
+                        val average30Days = last30Days.mapNotNull { it?.happyness ?: return@mapNotNull null }.average().takeIf { !it.isNaN() } ?: 0.0
                         last3DaysSetter = average3Days.toFloat()
                         last30DaysSetter = average30Days.toFloat()
                         liffySubText = when (average3Days - average30Days) {
@@ -209,10 +204,10 @@ fun SummarizeDay() {
                 ) {
                     var liffySubText by remember { mutableStateOf("") }
                     LaunchedEffect(Unit) {
-                        val last3Days = db.days.getLastNDays(3)
-                        val last30Days = db.days.getLastNDays(30)
-                        val average3Days = last3Days.map { it.stress }.average().takeIf { !it.isNaN() } ?: 0.0
-                        val average30Days = last30Days.map { it.stress }.average().takeIf { !it.isNaN() } ?: 0.0
+                        val last3Days = dayOverviewViewModel.getLastNDaysAsNonFlow(3)
+                        val last30Days = dayOverviewViewModel.getLastNDaysAsNonFlow(30)
+                        val average3Days = last3Days.mapNotNull { it?.stress ?: return@mapNotNull null}.average().takeIf { !it.isNaN() } ?: 0.0
+                        val average30Days = last30Days.mapNotNull { it?.stress ?: return@mapNotNull null }.average().takeIf { !it.isNaN() } ?: 0.0
                         last3DaysSetter = average3Days.toFloat()
                         last30DaysSetter = average30Days.toFloat()
                         liffySubText = when (average3Days - average30Days) {
@@ -239,10 +234,10 @@ fun SummarizeDay() {
                 ) {
                     var liffySubText by remember { mutableStateOf("") }
                     LaunchedEffect(Unit) {
-                        val last3Days = db.days.getLastNDays(3)
-                        val last30Days = db.days.getLastNDays(30)
-                        val average3Days = last3Days.map { it.successfulness }.average().takeIf { !it.isNaN() } ?: 0.0
-                        val average30Days = last30Days.map { it.successfulness }.average().takeIf { !it.isNaN() } ?: 0.0
+                        val last3Days = dayOverviewViewModel.getLastNDaysAsNonFlow(3)
+                        val last30Days = dayOverviewViewModel.getLastNDaysAsNonFlow(30)
+                        val average3Days = last3Days.mapNotNull { it?.successfulness ?: return@mapNotNull null}.average().takeIf { !it.isNaN() } ?: 0.0
+                        val average30Days = last30Days.mapNotNull { it?.successfulness ?: return@mapNotNull null }.average().takeIf { !it.isNaN() } ?: 0.0
                         last3DaysSetter = average3Days.toFloat()
                         last30DaysSetter = average30Days.toFloat()
                         liffySubText = when (average3Days - average30Days) {
@@ -384,7 +379,6 @@ fun SummarizeDay() {
                     enter = fadeIn(tween(fadeInDuration))
                 ) {
                     val context = LocalContext.current
-                    val stepsDao = db.proposedSteps
                     val settings = LocalSettings.current
                     val pieChart = remember { PieChart() }
                     LaunchedEffect(Unit) {
@@ -394,51 +388,29 @@ fun SummarizeDay() {
                             recordedHappyness,
                             recordedStress,
                             recordedSuccessfulness,
-                            if(settings.features.stepCounting.hasAssured())
-                            stepsDao.getStepsByDay(day.toEpochDay())?.steps
-                                ?: context.getSharedPreferences("steps", MODE_PRIVATE).run {
-                                    getLong("saved_steps", 0L) - getLong("steps_at_midnight", 0L)
-                                }.toInt() else 0,
+                            if(settings.features.stepCounting.hasAssured()) dayOverviewViewModel.lastInsertedSteps.value.toInt() else 0,
                             if(settings.features.stepCounting.hasAssured()) getUsageDataBetween(
                                 context,
                                 day.atStartOfDay(zone).toEpochSecond() * 1000L,
                                 day.plusDays(1).atStartOfDay(zone).toEpochSecond() * 1000L
                             ).toInt() else 0,
+                            getMappedUsageDataBetween(
+                                context,
+                                day.atStartOfDay(zone).toEpochSecond() * 1000L,
+                                day.plusDays(1).atStartOfDay(zone).toEpochSecond() * 1000L
+                            )
+                                .sortedByDescending { it.duration }
+                                .take(5)
+                                .map {
+                                    DayScreenTimeEntity(day.toEpochDay(), it.packagename, it.duration)
+                                }
+                            ,
                             day.toEpochDay()
                         )
-                        val usageData = getMappedUsageDataBetween(
-                            context,
-                            day.atStartOfDay(zone).toEpochSecond() * 1000L,
-                            day.plusDays(1).atStartOfDay(zone).toEpochSecond() * 1000L
-                        )
-                        val dayScreenTimeDao = db.dayScreenTime
-                        usageData
-                            .entries
-                            .sortedBy { -it.value }
-                            .take(5)
-                            .forEach {
-                                dayScreenTimeDao.insertDayScreenTime(
-                                    DayScreenTimeEntity(
-                                        day.toEpochDay(),
-                                        it.key,
-                                        it.value
-                                    )
-                                )
-                            }
-                        fullDayEvent.saveAndSync(db)
-                        api.resyncLastDays()
-                        stepsDao.deleteDay(day.toEpochDay())
-                        val total = mutableMapOf<String, Long>()
-                        val startOfDay = day.atStartOfDay(zone).toEpochSecond()*1000L
-                        val endOfDay = day.plusDays(1).atStartOfDay(zone).toEpochSecond()*1000L
-                        db.events.getEventsBetween(startOfDay, endOfDay).sortedBy { it.start }.forEach {
-                            val duration = it.end.coerceAtMost(endOfDay) - it.start.coerceAtLeast(startOfDay)
-                            total[it.type.toString()] = total[it.type.toString()]?.plus(duration) ?: duration
+                        dayOverviewViewModel.setAndStageDaySummary(fullDayEvent)
+                        dayOverviewViewModel.getPieChart(day).collect {
+                            pieChart.update(it)
                         }
-                        pieChart.update(total.mapValues {
-                            val cal = EventType.getById(it.key.toIntOrNull()?:return@mapValues PieChart.Companion.PieChartPart(EventType.Empty.color, 0.0))
-                            PieChart.Companion.PieChartPart(cal?.color ?: EventType.Empty.color, it.value.toDouble())
-                        })
                     }
                     Column(
                         Modifier

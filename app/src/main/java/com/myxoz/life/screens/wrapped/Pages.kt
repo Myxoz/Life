@@ -25,6 +25,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.remember
@@ -49,14 +50,13 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.unit.times
 import com.myxoz.life.api.syncables.PersonSyncable
-import com.myxoz.life.api.syncables.ProfilePictureSyncable
 import com.myxoz.life.events.additionals.EventTag
 import com.myxoz.life.events.additionals.EventType
 import com.myxoz.life.events.additionals.Vehicle
-import com.myxoz.life.ui.theme.OldColors
 import com.myxoz.life.ui.theme.FontColor
 import com.myxoz.life.ui.theme.FontFamily
 import com.myxoz.life.ui.theme.FontSize
+import com.myxoz.life.ui.theme.OldColors
 import com.myxoz.life.ui.theme.TypoStyleOld
 import com.myxoz.life.utils.MaterialShapes
 import com.myxoz.life.utils.def
@@ -64,6 +64,7 @@ import com.myxoz.life.utils.formatMToDistance
 import com.myxoz.life.utils.plural
 import com.myxoz.life.utils.toDp
 import com.myxoz.life.utils.toShape
+import com.myxoz.life.viewmodels.ProfileInfoModel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlin.math.PI
@@ -79,7 +80,7 @@ abstract class WrappedPage {
     var previousColorConfig: LifeWrappedColorContext? = null
     @Composable
     abstract fun LifeWrappedCallContext.Content()
-    class LifeWrappedCallContext {
+    class LifeWrappedCallContext(val profileInfoModel: ProfileInfoModel) {
         var flow = MutableStateFlow(
             LifeWrappedColorContext(
                 OldColors.Calendar.Hobby.BG,
@@ -250,7 +251,6 @@ class NewSocialContact(val amount: Int) : WrappedPage() {
 }
 
 class TopThreeSocialContacts(val people: List<Pair<PersonSyncable, Long>>, context: Context) : WrappedPage() {
-    val bitmaps = people.take(3).map { ProfilePictureSyncable.loadBitmapByPerson(context, it.first.id)?.asImageBitmap() }
     @Composable
     override fun LifeWrappedCallContext.Content() {
         ScreenScaffold {
@@ -273,6 +273,7 @@ class TopThreeSocialContacts(val people: List<Pair<PersonSyncable, Long>>, conte
                 people.take(3).forEachIndexed { rindex, person ->
                     val index = 2-rindex
                     val sizeMod = (1f - rindex/10.toFloat())
+                    val revealed = step > 5 + 10*index
                     Box(
                         Modifier
                             .size((pbSize*.35 * sizeMod).dp)
@@ -281,25 +282,22 @@ class TopThreeSocialContacts(val people: List<Pair<PersonSyncable, Long>>, conte
                                 y = (pbSize / 2 + cos(progress + index * Math.PI * 2 / 3) * 0.325 * pbSize - 0.175 * pbSize * sizeMod).dp,
                             )
                     ) {
-                        val revealed = step > 5 + 10*index
-                        val bitMap = bitmaps[rindex]
-                        if(bitMap!=null) {
+                        val rawBitmap by profileInfoModel.getProfilePicture(person.first.id).collectAsState(null)
+                        rawBitmap?.let { bitmap ->
                             val revealPogress by animateFloatAsState(if(step > 10 + 10*index) 1f else 0f,  tween(ANIDURATION*5, easing = LinearEasing))
                             Image(
-                                bitMap,
+                                remember(bitmap) { bitmap.asImageBitmap() },
                                 "Profilepicture",
                                 Modifier
                                     .fillMaxSize()
                                     .blur(radius = (1-revealPogress) * 25.dp, edgeTreatment = BlurredEdgeTreatment.Unbounded)
                                     .clip(MaterialShapes.Cookie9Sided.toShape())
                             )
-                        } else {
-                            Box(
+                        } ?: Box(
                                 Modifier
                                     .fillMaxSize()
                                     .background(OldColors.BACKGROUND, MaterialShapes.Cookie9Sided.toShape())
                             )
-                        }
 
                         Box(
                             Modifier
@@ -350,7 +348,6 @@ class TopThreeSocialContacts(val people: List<Pair<PersonSyncable, Long>>, conte
 }
 
 class SpecialNewcommer(val person: PersonSyncable, val ranking: Int, val time: Long, context: Context): WrappedPage(){
-    val bitmap = ProfilePictureSyncable.loadBitmapByPerson(context, person.id)?.asImageBitmap()
     @Composable
     override fun LifeWrappedCallContext.Content() {
         ScreenScaffold {
@@ -369,25 +366,24 @@ class SpecialNewcommer(val person: PersonSyncable, val ranking: Int, val time: L
                     Modifier
                         .size(pbSize.dp)
                 ) {
-                    if (bitmap != null) {
+                    val pp by profileInfoModel.getProfilePicture(person.id).collectAsState(null)
+                    pp?.let { bitmap ->
                         Image(
-                            bitmap,
+                            remember(bitmap) { bitmap.asImageBitmap() },
                             "Profilepicture",
                             Modifier
                                 .fillMaxSize()
                                 .blur(radius = 0.dp, edgeTreatment = BlurredEdgeTreatment.Unbounded)
                                 .clip(MaterialShapes.Cookie9Sided.toShape())
                         )
-                    } else {
-                        Box(
-                            Modifier
-                                .fillMaxSize()
-                                .background(
-                                    OldColors.BACKGROUND,
-                                    MaterialShapes.Cookie9Sided.toShape()
-                                )
-                        )
-                    }
+                    } ?: Box(
+                        Modifier
+                            .fillMaxSize()
+                            .background(
+                                OldColors.BACKGROUND,
+                                MaterialShapes.Cookie9Sided.toShape()
+                            )
+                    )
                     Text(
                         "${ranking}.",
                         Modifier

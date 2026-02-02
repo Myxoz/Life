@@ -43,7 +43,7 @@ import androidx.compose.ui.unit.dp
 import com.myxoz.life.LocalScreens
 import com.myxoz.life.R
 import com.myxoz.life.Theme
-import com.myxoz.life.screens.feed.main.msToDisplay
+import com.myxoz.life.screens.feed.main.formatMsToDuration
 import com.myxoz.life.ui.ToggleIconButton
 import com.myxoz.life.ui.theme.FontSize
 import com.myxoz.life.ui.theme.TypoStyle
@@ -70,12 +70,8 @@ const val CENTER_STRENGTH = 0.01f   // Keeps graph centered
 fun SocialGraph(socialGraphViewModel: SocialGraphViewModel){
     val screens = LocalScreens.current
     val coroutineScope = rememberCoroutineScope()
-    val addMyself by socialGraphViewModel.addMyself.collectAsState()
     val nodes by socialGraphViewModel.nodes.collectAsState()
     val totalWeight by socialGraphViewModel.totalWeight.collectAsState()
-    LaunchedEffect(Unit) {
-        socialGraphViewModel.regenerateNodes()
-    }
     var frameTrigger by remember { mutableLongStateOf(0L) }
     val showTimes by socialGraphViewModel.showTimes.collectAsState()
     LaunchedEffect(nodes.size) {
@@ -271,7 +267,7 @@ fun SocialGraph(socialGraphViewModel: SocialGraphViewModel){
                 if(showTimes)
                     for (edge in relevantEdges) {
                         drawContext.canvas.nativeCanvas.drawText(
-                            (edge.weight  * 500 /* Div by two due to double counting */).toInt().msToDisplay(true),
+                            (edge.weight  * 500 /* Div by two due to double counting */).formatMsToDuration(true),
                             (edge.nodeA.position.x + edge.nodeB.position.x) / 2,
                             (edge.nodeA.position.y + edge.nodeB.position.y) / 2,
                             relevantEdgeTextPaint
@@ -312,30 +308,25 @@ fun SocialGraph(socialGraphViewModel: SocialGraphViewModel){
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(5.dp)
         ) {
-            ToggleIconButton(socialGraphViewModel.addMyself, painterResource(R.drawable.graph_hub)) {
-                coroutineScope.launch { socialGraphViewModel.regenerateNodes() }
-            }
+            ToggleIconButton(socialGraphViewModel.addMyself, painterResource(R.drawable.graph_hub)) {}
+            var chartScale by socialGraphViewModel.chartScale.collectAsMutableState()
             Box(
                 Modifier
                     .clip(CircleShape)
                     .background(Theme.primary)
                     .height(50.dp)
                     .rippleClick{
-                        socialGraphViewModel.chartScale.value = (socialGraphViewModel.chartScale.value + 1) % 4
-                        coroutineScope.launch {
-                            socialGraphViewModel.regenerateNodes()
-                        }
+                        chartScale = (chartScale+1) % 4
                     }
                     .padding(horizontal = 20.dp)
                 ,
                 contentAlignment = Alignment.Center
             ) {
                 val list = remember { arrayOf("All", "1y", "30d", "1w") } // Edit mod 4 above
-                val state by socialGraphViewModel.chartScale.collectAsMutableState()
                 val fontSize = FontSize.MEDIUM.size.toDp()
                 list.forEachIndexed { i, it ->
-                    val alpha by animateFloatAsState(if (i == state + 1 || i == state - 1) .5f else if(state == i) 1f else 0f)
-                    val offsetMult by animateFloatAsState((i - state).toFloat())
+                    val alpha by animateFloatAsState(if (i == chartScale + 1 || i == chartScale - 1) .5f else if(chartScale == i) 1f else 0f)
+                    val offsetMult by animateFloatAsState((i - chartScale).toFloat())
                     Text(it, Modifier.offset(y = fontSize * offsetMult).alpha(alpha).scale((2-abs(offsetMult)) * .5f), style = TypoStyle(Theme.onPrimary, FontSize.MEDIUM))
                 }
             }

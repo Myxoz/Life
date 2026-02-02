@@ -11,6 +11,7 @@ import androidx.activity.SystemBarStyle
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.activity.viewModels
 import androidx.compose.animation.core.FiniteAnimationSpec
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
@@ -27,7 +28,6 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
-import androidx.core.content.edit
 import androidx.navigation.NavController
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
@@ -35,13 +35,10 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import com.myxoz.life.android.notifications.createNotificationChannels
-import com.myxoz.life.api.API
-import com.myxoz.life.api.jsonObjArray
 import com.myxoz.life.api.syncables.SyncedEvent
-import com.myxoz.life.dbwrapper.DatabaseProvider
-import com.myxoz.life.dbwrapper.StorageManager
 import com.myxoz.life.events.ProposedEvent
 import com.myxoz.life.events.TravelEvent
+import com.myxoz.life.repositories.MainApplication
 import com.myxoz.life.screens.LocalScreensProvider
 import com.myxoz.life.screens.ModifyLocation
 import com.myxoz.life.screens.feed.commits.FullScreenCommit
@@ -72,41 +69,50 @@ import com.myxoz.life.screens.wrapped.LifeWrappedScreen
 import com.myxoz.life.utils.rememberTextSelectionColors
 import com.myxoz.life.utils.systemColorScheme
 import com.myxoz.life.viewmodels.CalendarViewModel
+import com.myxoz.life.viewmodels.CommitsViewModel
 import com.myxoz.life.viewmodels.ContactsViewModel
+import com.myxoz.life.viewmodels.DayOverviewViewModel
 import com.myxoz.life.viewmodels.InspectedEventViewModel
+import com.myxoz.life.viewmodels.InstantEventsViewModel
 import com.myxoz.life.viewmodels.LargeDataCache
+import com.myxoz.life.viewmodels.LocationEditingViewModel
+import com.myxoz.life.viewmodels.MainViewModelFactory
 import com.myxoz.life.viewmodels.MapViewModel
 import com.myxoz.life.viewmodels.ProfileInfoModel
 import com.myxoz.life.viewmodels.Settings
 import com.myxoz.life.viewmodels.SocialGraphViewModel
-import com.myxoz.life.viewmodels.TransactionFeedViewModel
-import com.myxoz.life.viewmodels.viewModel
+import com.myxoz.life.viewmodels.TransactionViewModel
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
-import org.json.JSONArray
 import org.json.JSONObject
 import java.time.LocalDate
-import java.time.ZoneId
 import kotlin.system.exitProcess
 
 class MainActivity : ComponentActivity() {
-    private lateinit var db: StorageManager
     private lateinit var prefs: SharedPreferences
-    private lateinit var api: API
-    private lateinit var settings: Settings
-    private val calendarViewModel: CalendarViewModel by viewModel{
-        CalendarViewModel(settings, db)
+    private val repositories by lazy {
+        (application as MainApplication).repositories
     }
-    private val inspectedEventViewModel by viewModel{ InspectedEventViewModel() }
-    private val largeDataCache by viewModel{ LargeDataCache() }
-    private val profileInfoModel by viewModel{ ProfileInfoModel(db) }
-    private val contacsViewModel by viewModel{ ContactsViewModel(db) }
-    private val transactionFeedViewModel by viewModel{ TransactionFeedViewModel(db, ZoneId.systemDefault()) }
-    private val socialGraphViewModel by viewModel { SocialGraphViewModel(db) }
-    private val mapViewModel by viewModel { MapViewModel(prefs) }
+    private lateinit var settings: Settings
+    private val factory by lazy{
+        MainViewModelFactory(
+            (application as MainApplication).repositories,
+        )
+    }
+    private val calendarViewModel: CalendarViewModel by viewModels { factory }
+    private val inspectedEventViewModel: InspectedEventViewModel by viewModels { factory }
+    private val locationEditingViewModel: LocationEditingViewModel by viewModels { factory }
+    private val transactionViewModel: TransactionViewModel by viewModels { factory }
+    private val dayOverviewViewModel: DayOverviewViewModel by viewModels { factory }
+    private val instantEventsViewModel: InstantEventsViewModel by viewModels { factory }
+    private val largeDataCache: LargeDataCache by viewModels{ factory }
+    private val profileInfoModel: ProfileInfoModel by viewModels{ factory }
+    private val contacsViewModel: ContactsViewModel by viewModels{ factory }
+    private val socialGraphViewModel: SocialGraphViewModel by viewModels{ factory }
+    private val commitsViewModel: CommitsViewModel by viewModels{ factory }
+    private val mapViewModel: MapViewModel by viewModels{ factory }
     private val photoPicker = PhotoPicker()
     private val imagePickerLauncher = registerForActivityResult(
         ActivityResultContracts.StartActivityForResult()
@@ -123,14 +129,14 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         instance = this
         prefs = getSharedPreferences(localClassName, MODE_PRIVATE)
-        db = StorageManager(DatabaseProvider.getDatabase(applicationContext), prefs)
         settings = Settings(prefs, applicationContext, this)
         CoroutineScope(Dispatchers.IO).launch {
+            if(settings.permissions.contacts.checkEnabled())
+                contacsViewModel.requestRefetchDeviceContacts()
+            calendarViewModel.requireAllPeople()
+            calendarViewModel.requestAutoDetectedEventStart(settings)
             largeDataCache.preloadAll(applicationContext)
-            if(settings.features.addNewPerson.has.value) contacsViewModel.fetchDeviceContacts(applicationContext)
-            contacsViewModel.refetchLifeContacts()
         }
-        api = API(applicationContext, db, prefs, settings.features.syncWithServer)
         createNotificationChannels(applicationContext)
         handleIntent(intent)
         enableEdgeToEdge(SystemBarStyle.dark(0), SystemBarStyle.dark(0))
@@ -140,9 +146,7 @@ class MainActivity : ComponentActivity() {
             val colorScheme = systemColorScheme()
             val selectionColors = rememberTextSelectionColors(colorScheme)
             CompositionLocalProvider(
-                LocalAPI provides api,
                 LocalNavController provides navController,
-                LocalStorage provides db,
                 LocalSettings provides settings,
                 LocalScreens provides LocalScreensProvider(
                     profileInfoModel,
@@ -150,6 +154,9 @@ class MainActivity : ComponentActivity() {
                     socialGraphViewModel,
                     inspectedEventViewModel,
                     mapViewModel,
+                    transactionViewModel,
+                    instantEventsViewModel,
+                    locationEditingViewModel,
                     navController,
                     applicationContext
                 ),
@@ -168,34 +175,12 @@ class MainActivity : ComponentActivity() {
                             }
                         }
                     }
+                    // Ignore for now TODO
                     // Routine checks
-                    if(!settings.features.stepCounting.has.value){
-                        db.proposedSteps.clearAll() // Not recording is expensive, we just discard all proposedSteps each time
+//                    if(!settings.features.stepCounting.has.value){
+//                        db.proposedSteps.clearAll() // Not recording is expensive, we just discard all proposedSteps each time
                         // 26.1.2026 There must be a better solution for this TODO
-                    }
-                    withContext(Dispatchers.IO){
-                        val payments = prefs.getString("payments", null)?:"[]"
-                        val json = JSONArray(payments).jsonObjArray.toMutableList()
-                        for(payment in json.toList()){
-                            val date = payment.getLong("timestamp")
-                            val amount = payment.getInt("amount")
-                            val entries = db.banking.findPossibleMobileTransaction(
-                                date - 60*1000L,
-                                date + 60*1000L,
-                                -amount
-                            ) // Rounding seams to be 60s check in future
-                            if(entries.size != 1) {
-                                Log.w("Transaction","Trying to create banking sidecar for \n${payment.toString(2)}\n was unsuccessful due to ${entries.size} possible entries:\n$entries\n")
-                                continue
-                            }
-                            json.remove(payment)
-                            // We dont care, just remove it when the transaction exists
-                            Log.i("Transaction", "Successfully found transaction belonging to ${entries[0].id}:\n${payment.toString(2)}\n")
-                        }
-                        prefs.edit {
-                            putString("payments", JSONArray().apply { json.forEach { put(it) } }.toString())
-                        }
-                    }
+//                    }
                 }
                 val navigationTransitionSpec: FiniteAnimationSpec<Float> = remember {
                     tween(250)
@@ -222,14 +207,6 @@ class MainActivity : ComponentActivity() {
                         if(!showHome) { return@composable } // Do not render
                         HomeComposable(calendarViewModel, inspectedEventViewModel)
                     }
-                    /*
-                    composable("event/{eventId}", arguments = listOf(
-                        navArgument("eventId") { type = NavType.LongType }
-                    )) {
-                        val eventId = it.arguments?.getLong("eventId") ?: error("Needs eventsId to work")
-                        DisplayEvent()
-                    }
-                    */
                     composable("fullscreen_event") {
                         FullScreenEvent(inspectedEventViewModel)
                     }
@@ -240,10 +217,10 @@ class MainActivity : ComponentActivity() {
                         ProfileFullScreen(personId, photoPicker, largeDataCache, profileInfoModel)
                     }
                     composable("modify_event/add_location") {
-                        ModifyLocation()
+                        ModifyLocation(locationEditingViewModel)
                     }
                     composable("pick/existing/location") {
-                        PickExistingLocation()
+                        PickExistingLocation(mapViewModel)
                     }
                     composable("menu") {
                         MenuComposable()
@@ -252,13 +229,13 @@ class MainActivity : ComponentActivity() {
                         SettingsComposable()
                     }
                     composable("settings/permissions") {
-                        SettingsPermissionComposable()
+                        SettingsPermissionComposable(calendarViewModel)
                     }
                     composable("summarize_day") {
-                        SummarizeDay()
+                        SummarizeDay(dayOverviewViewModel)
                     }
                     composable("transactions") {
-                        TransactionFeed(transactionFeedViewModel)
+                        TransactionFeed(transactionViewModel)
                     }
                     composable("contacts") {
                         Contacts(contacsViewModel)
@@ -268,43 +245,36 @@ class MainActivity : ComponentActivity() {
                     )) {
                         val epochDay = (it.arguments?.getLong("epochDay") ?: 0).run { if(this == 0L) LocalDate.now().toEpochDay() else this}
                         // Semantic value: 0 == today, due to pending intent targetRoute, which isnt computable
-                        DayOverviewComposable(navController, epochDay)
+                        DayOverviewComposable(LocalDate.ofEpochDay(epochDay), dayOverviewViewModel)
                     }
-                    composable("instant_events_between/{start}/{end}", arguments = listOf(
-                        navArgument("start") { type = NavType.LongType },
-                        navArgument("end") { type = NavType.LongType }
-                    )) {
+                    composable("instant_events_between") {
                         val start = it.arguments?.getLong("start") ?: 0L
                         val end = it.arguments?.getLong("end") ?: 0L
-                        InstantEventsScreen(
-                            start,
-                            end,
-                            calendarViewModel
-                        )
+                        InstantEventsScreen(instantEventsViewModel)
                     }
                     composable("day/{epochDay}/screentime", arguments = listOf(
                         navArgument("epochDay") { type = NavType.LongType }
                     )) {
                         val epochDay = it.arguments?.getLong("epochDay") ?: 0
-                        ScreenTimeOverview(epochDay)
+                        ScreenTimeOverview(LocalDate.ofEpochDay(epochDay), dayOverviewViewModel)
                     }
                     composable("day/{epochDay}/transactions", arguments = listOf(
                         navArgument("epochDay") { type = NavType.LongType }
                     )) {
                         val epochDay = it.arguments?.getLong("epochDay") ?: 0
-                        TransactionList(epochDay)
+                        TransactionList(LocalDate.ofEpochDay(epochDay), transactionViewModel)
                     }
-                    composable("bank/transaction/{id}", arguments = listOf(
-                        navArgument("id") { type = NavType.StringType }
-                    )) {
-                        val transactionId = it.arguments?.getString("id") ?: return@composable
-                        TransactionOverview(transactionId, largeDataCache)
+                    composable("bank/transaction") {
+                        TransactionOverview(largeDataCache, transactionViewModel)
                     }
                     composable("bank/me") {
-                        MyCard(largeDataCache)
+                        MyCard(largeDataCache, transactionViewModel)
                     }
                     composable("information") {
-                        DebugScreen()
+                        DebugScreen(
+                            repositories.api.heyAPIAlmighlyGodEtcCanIPleaseOnlyForDebugHaveAllDaoAccessImReallyTheDebugOnlyPleasePleasePlease(),
+                            repositories.api
+                        )
                     }
                     composable("social_graph") {
                         SocialGraph(socialGraphViewModel)
@@ -327,17 +297,17 @@ class MainActivity : ComponentActivity() {
 
                     composable("commits/commit/{sha}") {
                         val sha = it.arguments?.getString("sha") ?: return@composable
-                        FullScreenCommit(sha)
+                        FullScreenCommit(sha, commitsViewModel)
                     }
                     composable("commits/repos") {
-                        FullScreenRepos()
+                        FullScreenRepos(commitsViewModel)
                     }
                     composable("commits/repo/{name}") {
                         val name = it.arguments?.getString("name") ?: return@composable
-                        FullScreenRepo(name)
+                        FullScreenRepo(name, commitsViewModel)
                     }
                     composable("life_wrapped") {
-                        LifeWrappedScreen()
+                        LifeWrappedScreen(repositories.api.getReadableDaosForWrapped(), profileInfoModel)
                     }
 
                 }
@@ -378,7 +348,7 @@ class MainActivity : ComponentActivity() {
         intent.getStringExtra("shared_travel_event")?.let { jsonString ->
             try {
                 val travelEvent = ProposedEvent.getProposedEventByJson(JSONObject(jsonString))
-                if(travelEvent == null || travelEvent !is TravelEvent) return
+                if(travelEvent !is TravelEvent) return
                 inspectedEventViewModel.setInspectedEventTo(
                     if(inspectedEventViewModel.isEditing.value) {
                         inspectedEventViewModel.event.value.copy(proposedEvent = travelEvent)

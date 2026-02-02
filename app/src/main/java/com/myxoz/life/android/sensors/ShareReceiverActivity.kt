@@ -4,6 +4,7 @@ import android.app.Activity
 import android.content.Intent
 import android.os.Bundle
 import com.myxoz.life.MainActivity
+import com.myxoz.life.repositories.MainApplication
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -16,7 +17,7 @@ class ShareReceiverActivity : Activity() {
             if (intent?.action == Intent.ACTION_SEND && intent.type == "text/plain") {
                 val sharedText = intent.getStringExtra(Intent.EXTRA_TEXT)
                 if (!sharedText.isNullOrEmpty()) {
-                    val travelEvent = SharedRouteParser.from(sharedText, applicationContext) ?: return@launch
+                    val travelEvent = SharedRouteParser.from(sharedText, applicationContext, (applicationContext as MainApplication).repositories.locationRepo) ?: return@launch
 
                     // Launch MainActivity with navigation intent
                     with(Dispatchers.Main){

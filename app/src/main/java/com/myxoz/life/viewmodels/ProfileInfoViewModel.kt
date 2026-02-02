@@ -1,175 +1,119 @@
 package com.myxoz.life.viewmodels
 
 import android.content.Context
-import android.graphics.Bitmap
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.navigation.NavController
-import com.myxoz.life.android.contacts.AndroidContacts
-import com.myxoz.life.api.syncables.Location
+import com.myxoz.life.api.syncables.LocationSyncable
 import com.myxoz.life.api.syncables.PersonSyncable
-import com.myxoz.life.api.syncables.ProfilePictureSyncable
-import com.myxoz.life.dbwrapper.EventEntity
-import com.myxoz.life.dbwrapper.StorageManager
-import com.myxoz.life.events.additionals.EventType
+import com.myxoz.life.api.syncables.SyncedEvent
+import com.myxoz.life.repositories.AppRepositories
+import com.myxoz.life.repositories.utils.FlowCache
+import com.myxoz.life.repositories.utils.VersionedCache
 import com.myxoz.life.utils.diagrams.PieChart
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 
-class ProfileInfoModel(val db: StorageManager): ViewModel(){
-    val savedInContacts = MutableStateFlow(true)
-    val id  = MutableStateFlow<Long?>(null)
-    val name = MutableStateFlow<String?>(null)
-    val fullName = MutableStateFlow<String?>(null)
-    val iban = MutableStateFlow<String?>(null)
-    val home = MutableStateFlow<Location?>(null)
-    val phone = MutableStateFlow<String?>(null)
-    val birthday = MutableStateFlow<Long?>(null)
-    private val _lastInteraction = MutableStateFlow<EventEntity?>(null)
-    val lastInteraction = _lastInteraction.asStateFlow()
-    private val _nextInteraction = MutableStateFlow<EventEntity?>(null)
-    val nextInteraction = _nextInteraction.asStateFlow()
-    val isEditing = MutableStateFlow(false)
+class ProfileInfoModel(val repos: AppRepositories): ViewModel(){
+    private val lastInteractionFlowCache = FlowCache<Long, SyncedEvent?> { repos.aggregators.peopleAggregator.getLastInteraction(it) }
+    fun lastInteractionFlow(personId: Long) = lastInteractionFlowCache.get(personId)
+
+    private val nextInteractionFlowCache = FlowCache<Long, SyncedEvent?> { repos.aggregators.peopleAggregator.getNextInteraction(it) }
+    fun nextInteractionFlow(personId: Long) = nextInteractionFlowCache.get(personId)
+
+    private val getPersonFlowCache = FlowCache<Long, PersonSyncable?>{ repos.peopleRepo.getPerson(it).map { it?.data } }
+    fun getPerson(personId: Long) = getPersonFlowCache.get(personId)
+
+    private val getPeopleFlowCache = FlowCache<List<Long>, List<PersonSyncable>>{ repos.peopleRepo.getPeople(it).map { l -> l.mapNotNull { it?.data } } }
+    fun getPeople(personIds: List<Long>) = getPeopleFlowCache.get(personIds)
+
+    val getAlPeopleFlow = repos.peopleRepo.getAllPeople()
+
+    private val getLocationByIdFLowCache = FlowCache<Long?, LocationSyncable?>{
+        if(it == null) return@FlowCache flowOf(null)
+        repos.locationRepo.getLocationById(it).map { it?.data }
+    }
+    fun getLocationById(locationId: Long?) = getLocationByIdFLowCache.get(locationId)
+
+    fun getCachedLocation(locationId: Long?) = (if(locationId != null) repos.locationRepo.getCachedLocation(locationId) else null)
+    private val _editingPerson = VersionedCache<Long, PersonSyncable>(
+        {
+            repos.peopleRepo.getCurrentPersonNotAsFlow(it).data
+        }
+    )
+    private val editingPersonFlowCache = FlowCache<Long, PersonSyncable?>{
+        _editingPerson.flowByKey(viewModelScope, it).map{ it?.data }
+    }
+    fun getEditingPerson(personId: Long) = editingPersonFlowCache.get(personId)
+    fun edit(personId: Long, editWith: (PersonSyncable)->PersonSyncable) {
+        _isEditing.value = true
+
+        viewModelScope.launch {
+            val cached = _editingPerson.get(personId).data
+            _editingPerson.overwrite(personId, editWith(cached))
+        }
+    }
+    suspend fun discardChanges(personId: Long){
+        _isEditing.value = false
+        _editingPerson.overwrite(personId, repos.peopleRepo.getCurrentPersonNotAsFlow(personId).data)
+    }
+    suspend fun saveAndStageChanges(personId: Long) {
+        val asEdited = _editingPerson.get(personId).data
+        val editedPerson = asEdited.copy(
+            iban = asEdited.iban?.takeIf { it.length > 4 }?.replace(" ", ""),
+            socials = PersonSyncable.getOrderedSocials(platformInputs.value.mapNotNull {
+                PersonSyncable.Companion.Socials.from(it)
+            }),
+            fullName = asEdited.fullName?.takeIf { it.isNotBlank() },
+            phoneNumber = asEdited.phoneNumber?.replace(" ", "")?.takeIf { it.isNotBlank() }
+        )
+        repos.peopleRepo.updateAndStageSync(editedPerson)
+        _isEditing.value = false
+    }
+    @OptIn(ExperimentalCoroutinesApi::class)
+    private val inspectedPersonCache = FlowCache<Long, PersonSyncable?>{
+        isEditing.flatMapLatest { editing ->
+            if(editing) getEditingPerson(it) else getPerson(it)
+        }
+    }
+    fun getInspectedPerson(personId: Long) = inspectedPersonCache.get(personId)
+    private val savedInContactsCache = FlowCache<String, Boolean?>{
+        repos.contactRepo.isSavedInContacts(it).map { it?.data }
+    }
+    fun getSavedInContacts(phoneNumber: String) = savedInContactsCache.get(phoneNumber)
+    suspend fun getSavedInContactsNOW(phoneNumber: String) = repos.contactRepo.isSavedInContactsNOW(phoneNumber)
+    suspend fun updateProfilePicture(personId: Long, base64: String?) = repos.peopleRepo.updatePP(personId, base64)
+    private val _isEditing = MutableStateFlow(false)
+    val isEditing: StateFlow<Boolean> = _isEditing
     val isExtended = MutableStateFlow(false)
-    val picture = MutableStateFlow<Bitmap?>(null)
-    val chart = PieChart()
     val chartScale = MutableStateFlow(2)
     val chartUnit = MutableStateFlow(1)
     val platforms = MutableStateFlow(listOf<PersonSyncable.Companion.Socials>())
     val platformInputs = MutableStateFlow(listOf<String>())
-    val isProfilePictureFullScreen = MutableStateFlow(false) /* This doesnt  belong here,  but this is my app so I dont care */
-    suspend fun saveAndSync(){
-        val id = id.value?:throw Error("Trying to sync person with id null (before id was set)")
-        val name = name.value?:throw Error("Trying to sync person without name (before name was set)")
-        iban.value = iban.value?.takeIf { it.length > 4 }?.replace(" ", "")
-        val newSocials = PersonSyncable.getOrderedSocials(platformInputs.value.mapNotNull {
-            PersonSyncable.Companion.Socials.from(it)
-        })
-        fullName.value = fullName.value?.takeIf { it.isNotBlank() }
-        phone.value = phone.value?.replace(" ", "")?.takeIf { it.isNotBlank() }
-        PersonSyncable(
-            id,
-            name,
-            fullName.value,
-            phone.value,
-            iban.value,
-            home.value?.id,
-            birthday.value,
-            newSocials,
-        ).saveAndSync(db)
-        platforms.value = newSocials
-    }
-    suspend fun renderPieChart(){
-        val totals = mutableMapOf<Int, Long>()
-        val id = id.value?:return
-        val timeframe = chartScale.value
-        val socialEvents = db.events.getEventsWithPerson(id).filter {
-            it.start > (if(timeframe==0) 0L else System.currentTimeMillis() - 24*3600L*1000*(when (timeframe) {
-                1 -> 356L
-                2 -> 30L
-                else -> 7L
-            }))
+    val isProfilePictureFullScreen = MutableStateFlow(false) /* This doesnt belong here, but this is my app so I dont care */
+    private val piechartFlowCache = FlowCache<Long, Map<String, PieChart.Companion.PieChartPart>?>{ person ->
+        combine(
+            repos.calendarRepo.interactedWithPerson(person),
+            chartScale
+        ) { _, scale ->
+            repos.aggregators.peopleAggregator.getPieChartFor(person, scale)
         }
-        for (social in socialEvents) {
-            if(social.start > System.currentTimeMillis()) continue
-            val sStart = social.start
-            val sEnd = social.end
-            val overlapping = db.events.getEventsOverlapping(sStart, sEnd)
-            val coverage = mutableListOf<Pair<Long, Long>>()
-            for (e in overlapping) {
-                if (e.id == social.id) continue
-                val oStart = maxOf(sStart, e.start)
-                val oEnd = minOf(sEnd, e.end)
-                if (oStart < oEnd) {
-                    val duration = oEnd - oStart
-                    totals[e.type] = (totals[e.type] ?: 0) + duration
-                    coverage += oStart to oEnd
-                }
-            }
-            val merged = mergeIntervals(coverage)
-            // Not already grabed parts
-            var cursor = sStart
-            for ((cStart, cEnd) in merged) {
-                if (cursor < cStart) {
-                    val pureSocial = cStart - cursor
-                    totals[social.type] = (totals[social.type] ?: 0) + pureSocial
-                }
-                cursor = maxOf(cursor, cEnd)
-            }
-            if (cursor < sEnd) {
-                val pureSocial = sEnd - cursor
-                totals[social.type] = (totals[social.type] ?: 0) + pureSocial
-            }
-        }
-        val oldChart = chart
-        val newChart = PieChart.build {
-            totals.forEach {
-                val type = EventType.getById(it.key) ?: EventType.Empty
-                add(type.color, it.value.toDouble(), type.id.toString())
-            }
-        }
-        oldChart.update(newChart)
     }
-
-    private fun mergeIntervals(intervals: List<Pair<Long, Long>>): List<Pair<Long, Long>> {
-        if (intervals.isEmpty()) return emptyList()
-        val sorted = intervals.sortedBy { it.first }
-        val out = mutableListOf<Pair<Long, Long>>()
-        var current = sorted[0]
-
-        for (i in 1 until sorted.size) {
-            val next = sorted[i]
-            if (next.first <= current.second) {
-                // overlap, extend
-                current = current.first to maxOf(current.second, next.second)
-            } else {
-                out += current
-                current = next
-            }
-        }
-        out += current
-        return out
-    }
-    suspend fun setStateToDb() {
-        val id = id.value ?: return
-        val dbEntry = db.people.getPersonById(id) ?: return
-        val location = dbEntry.home?.let { db.location.getLocationById(it) }?.let { Location.from(it) }
-        val socials = PersonSyncable.getOrderedSocials(db.socials.getSocialsFromPerson(id).mapNotNull { PersonSyncable.Companion.Socials.from(it) })
-        platforms.value = socials
-        platformInputs.value = socials.map { it.asString() }
-        name.value = dbEntry.name
-        fullName.value = dbEntry.fullname
-        phone.value = dbEntry.phoneNumber
-        birthday.value = dbEntry.birthday
-        home.value = location
-        iban.value = dbEntry.iban
-    }
-    fun updateStateIfOutdated(personId: Long, context: Context){
-        // Changed due to caching reasons
-        if(!isEditing.value || id.value != personId)
-            viewModelScope.launch {
-                id.value = personId
-                setStateToDb()
-                val entry = db.profilePictureDao.getPPById(personId)
-                if(entry!=null && entry.hasPP) picture.value = ProfilePictureSyncable.loadBitmapByPerson(context, personId) else picture.value = null
-                val now = System.currentTimeMillis()
-                _lastInteraction.value = db.people.getLastInteractionByPerson(personId, now)
-                _nextInteraction.value = db.people.getNextPlanedEvent(personId, now)
-                updateIsSavedInContacts(context)
-                renderPieChart()
-            }
-    }
-    fun updateIsSavedInContacts(context: Context){
-        savedInContacts.value = phone.value?.let { AndroidContacts.contactExists(context, it) } ?: false
-    }
+    fun getPieChartForPerson(personId: Long) = piechartFlowCache.get(personId)
     fun openPersonDetails(personId: Long, nav: NavController, context: Context){
-        isEditing.value = false
         isExtended.value = false
         isProfilePictureFullScreen.value = false
-        updateStateIfOutdated(personId, context)
         nav.navigate("display_person/${personId}")
     }
+
+    fun getProfilePicture(personId: Long) = repos.aggregators.peopleAggregator.getProfilePicture(personId)
+
     companion object {
         fun formatTime(duration: Long): String{
             val future = duration > 0

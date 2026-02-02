@@ -7,16 +7,21 @@ import androidx.lifecycle.viewModelScope
 import androidx.navigation.NavController
 import com.mapbox.geojson.Point
 import com.mapbox.maps.CameraOptions
-import com.myxoz.life.api.syncables.Location
+import com.myxoz.life.api.syncables.LocationSyncable
 import com.myxoz.life.api.syncables.SyncedEvent
+import com.myxoz.life.repositories.BankingRepo
+import com.myxoz.life.screens.feed.instantevents.InstantEvent
 import com.myxoz.life.screens.feed.search.SearchField
 import com.myxoz.life.screens.map.EARTH_R
 import com.myxoz.life.utils.def
 import com.myxoz.life.viewmodels.CalendarViewModel
 import com.myxoz.life.viewmodels.InspectedEventViewModel
+import com.myxoz.life.viewmodels.InstantEventsViewModel
+import com.myxoz.life.viewmodels.LocationEditingViewModel
 import com.myxoz.life.viewmodels.MapViewModel
 import com.myxoz.life.viewmodels.ProfileInfoModel
 import com.myxoz.life.viewmodels.SocialGraphViewModel
+import com.myxoz.life.viewmodels.TransactionViewModel
 import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.first
@@ -27,11 +32,14 @@ import kotlin.math.ln
 import kotlin.math.min
 
 class LocalScreensProvider(
-    private val profileInfoModel: ProfileInfoModel,
+    val profileInfoModel: ProfileInfoModel,
     private val calendarViewModel: CalendarViewModel,
     private val socialGraphViewModel: SocialGraphViewModel,
     private val inspectedEventViewModel: InspectedEventViewModel,
-    private val mapViewModel: MapViewModel,
+    val mapViewModel: MapViewModel,
+    private val transactionViewModel: TransactionViewModel,
+    private val instantEventsViewModel: InstantEventsViewModel,
+    private val locationEditingViewModel: LocationEditingViewModel,
     private val nav: NavController,
     private val context: Context
 ) {
@@ -72,7 +80,7 @@ class LocalScreensProvider(
         inspectedEventViewModel.popUpToHomeOnEdit.value = true
         nav.navigate("fullscreen_event")
     }
-    fun openLocation(location: Location, screenWidthPx: Float){
+    fun openLocation(location: LocationSyncable, screenWidthPx: Float){
         nav.navigate("map")
         mapViewModel.isEditing.value = false
         mapViewModel.setSheetLocation(location)
@@ -93,5 +101,22 @@ class LocalScreensProvider(
                     .build()
             )
         }
+    }
+    fun openTransaction(transaction: BankingRepo.BankingDisplayEntity) {
+        transactionViewModel.inspectedTransaction.value = transaction
+        nav.navigate("bank/transaction")
+    }
+
+    fun openCommit(commitSha: String) {
+        nav.navigate("commits/commit/$commitSha")
+    }
+    fun openInstantEventRange(instantEvents: List<InstantEvent>){
+        nav.navigate("instant_events_between")
+        instantEventsViewModel.lookedAtInstantEvents.value = instantEvents
+    }
+
+    fun editLocation(location: LocationSyncable) {
+        locationEditingViewModel.nowEditing = location
+        nav.navigate("modify_event/add_location")
     }
 }

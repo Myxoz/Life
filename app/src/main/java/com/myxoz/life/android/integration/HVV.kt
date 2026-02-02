@@ -2,7 +2,7 @@ package com.myxoz.life.android.integration
 
 import android.icu.util.Calendar
 import androidx.core.net.toUri
-import com.myxoz.life.api.syncables.Location
+import com.myxoz.life.api.syncables.LocationSyncable
 import com.myxoz.life.events.additionals.Vehicle
 import com.myxoz.life.android.sensors.ParsedRoute
 import com.myxoz.life.utils.roundToNearest15Min
@@ -113,7 +113,7 @@ object HVV {
         )
     }
 
-    fun constructLink(from: Location?, to: Location?, startAt: String? = null) =
+    fun constructLink(from: LocationSyncable?, to: LocationSyncable?, startAt: String? = null) =
         "https://geofox.hvv.de/websearch/en/connections-mobile?execute=true&" +
                 (if(from!=null) "start=${from.toAddress().substringBeforeLast(",")}&startCity=${from.city}&startType=COORDINATE&startX=${from.longitude}&startY=${from.lat}&" else "") +
                 (if(to!=null) "destination=${to.toAddress().substringBeforeLast(",")}&destinationCity=${to.city}&destinationType=COORDINATE&destinationX=${to.longitude}&destinationY=${to.lat}" else "") +

@@ -3,7 +3,7 @@ package com.myxoz.life.android.autodetect
 import android.content.Context
 import android.provider.CallLog
 import com.myxoz.life.api.syncables.PersonSyncable
-import com.myxoz.life.dbwrapper.StorageManager
+import com.myxoz.life.dbwrapper.people.ReadPeopleDao
 import com.myxoz.life.events.DigSocEvent
 import com.myxoz.life.events.ProposedEvent
 import com.myxoz.life.events.additionals.DigSocPlatform
@@ -13,7 +13,7 @@ import com.myxoz.life.utils.roundToNearest15Min
 object AutoDetectCall {
     const val SPK = "declined_calls"
     private data class Call(val start: Long, val duration: Long, val number: String)
-    suspend fun getSessions(context: Context, db: StorageManager): List<ProposedEvent>{
+    suspend fun getSessions(context: Context, readPeopleDao: ReadPeopleDao): List<ProposedEvent>{
         val resolver = context.contentResolver
         val cursor = resolver.query(
             // Can't throw, permission assured in AutoDetect.kt
@@ -23,7 +23,7 @@ object AutoDetectCall {
             null,
             "${CallLog.Calls.DATE} DESC"
         )
-        val allPeople = db.people.getAllPeople().map { PersonSyncable.from(db, it) }
+        val allPeople = readPeopleDao.getAllPeople().map { PersonSyncable.from(readPeopleDao, it) }
         val allSessions = mutableListOf<Call>()
         cursor?.use {
             while (cursor.moveToNext()){

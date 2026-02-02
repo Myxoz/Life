@@ -20,14 +20,14 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.remember
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
-import com.myxoz.life.LocalNavController
-import com.myxoz.life.LocalStorage
+import com.myxoz.life.LocalScreens
 import com.myxoz.life.Theme
 import com.myxoz.life.ui.setMaxTabletWidth
 import com.myxoz.life.ui.theme.FontFamily
@@ -37,12 +37,11 @@ import com.myxoz.life.utils.formatMinutes
 import com.myxoz.life.utils.rippleClick
 import com.myxoz.life.utils.toDp
 import com.myxoz.life.utils.windowPadding
-import com.myxoz.life.viewmodels.CalendarViewModel
-import kotlinx.coroutines.runBlocking
+import com.myxoz.life.viewmodels.InstantEventsViewModel
 
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
-fun InstantEventsScreen(start: Long, end: Long, calendarViewModel: CalendarViewModel){
+fun InstantEventsScreen(instantEventsViewModel: InstantEventsViewModel){
     Box(
         Modifier
             .background(Theme.background)
@@ -52,18 +51,8 @@ fun InstantEventsScreen(start: Long, end: Long, calendarViewModel: CalendarViewM
         Alignment.BottomCenter
     ) {
         val calendar = Calendar.getInstance()
-        val nav = LocalNavController.current
-        val db = LocalStorage.current
-        val instantEvents = remember {
-            runBlocking {
-                InstantEvent.getEntriesBetween(
-                    db,
-                    start - 1,
-                    end + 1,
-                    calendarViewModel
-                ).flatMap { it.instantEvents }
-            }
-        }
+        val screens = LocalScreens.current
+        val instantEvents by instantEventsViewModel.lookedAtInstantEvents.collectAsState()
         FlowRow(
             Modifier
                 .setMaxTabletWidth()
@@ -80,7 +69,7 @@ fun InstantEventsScreen(start: Long, end: Long, calendarViewModel: CalendarViewM
                     .background(Theme.surfaceContainer, RoundedCornerShape(20.dp))
                     .clip(RoundedCornerShape(20.dp))
                     .rippleClick{
-                        it.openDetails(nav)
+                        it.openDetails(screens)
                     }
                     .padding(vertical = 20.dp)
                 Column(

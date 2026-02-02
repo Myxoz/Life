@@ -35,6 +35,7 @@
         android:theme="@style/Theme.Life"
         android:enableOnBackInvokedCallback="true"
         android:configChanges="keyboardHidden|orientation|screenSize"
+        android:name=".repositories.MainApplication"
         tools:targetApi="33">
         <service
             android:name=".android.sensors.StepsService"

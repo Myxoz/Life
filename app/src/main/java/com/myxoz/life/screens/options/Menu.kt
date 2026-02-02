@@ -6,7 +6,6 @@ import android.content.pm.ShortcutInfo
 import android.content.pm.ShortcutManager
 import android.graphics.Canvas
 import android.graphics.drawable.AdaptiveIconDrawable
-import android.graphics.drawable.ColorDrawable
 import android.graphics.drawable.Drawable
 import android.graphics.drawable.Icon
 import android.graphics.drawable.InsetDrawable
@@ -47,6 +46,7 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.unit.dp
 import androidx.core.graphics.createBitmap
 import androidx.core.graphics.drawable.DrawableCompat
+import androidx.core.graphics.drawable.toDrawable
 import com.myxoz.life.LocalNavController
 import com.myxoz.life.MainActivity
 import com.myxoz.life.R
@@ -213,7 +213,7 @@ data class SubOption(val icon: Int, val text: String, val route: String) {
         val size = context.resources.getDimensionPixelSize(android.R.dimen.app_icon_size)
         val renderSize = size * 4
 
-        val bg = ColorDrawable(OldColors.APPICONBG.toArgb())
+        val bg = OldColors.APPICONBG.toArgb().toDrawable()
         val tintedFg = DrawableCompat.wrap(fg.mutate()).apply {
             setTint(OldColors.PRIMARYFONT.toArgb())
         }

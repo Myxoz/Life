@@ -28,10 +28,10 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -50,18 +50,14 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.zIndex
-import androidx.core.content.edit
 import com.myxoz.life.LocalNavController
 import com.myxoz.life.LocalScreens
-import com.myxoz.life.LocalStorage
 import com.myxoz.life.R
 import com.myxoz.life.Theme
-import com.myxoz.life.api.syncables.PersonSyncable
-import com.myxoz.life.dbwrapper.BankingEntity
-import com.myxoz.life.dbwrapper.BankingSidecarEntity
-import com.myxoz.life.dbwrapper.formatCents
+import com.myxoz.life.dbwrapper.banking.BankingEntity
+import com.myxoz.life.dbwrapper.banking.formatCents
+import com.myxoz.life.repositories.BankingRepo
 import com.myxoz.life.screens.feed.dayoverview.edgeToEdgeGradient
-import com.myxoz.life.screens.options.ME_ID
 import com.myxoz.life.ui.SCREENMAXWIDTH
 import com.myxoz.life.ui.rememberAsymmetricalVerticalCornerRadius
 import com.myxoz.life.ui.setMaxTabletWidth
@@ -71,41 +67,23 @@ import com.myxoz.life.ui.theme.FontSize
 import com.myxoz.life.ui.theme.OldColors
 import com.myxoz.life.ui.theme.TypoStyle
 import com.myxoz.life.ui.theme.TypoStyleOld
+import com.myxoz.life.utils.collectAsMutableState
 import com.myxoz.life.utils.formatMinutes
 import com.myxoz.life.utils.formatTimeStamp
 import com.myxoz.life.utils.rippleClick
 import com.myxoz.life.utils.toDp
 import com.myxoz.life.utils.windowPadding
 import com.myxoz.life.viewmodels.LargeDataCache
-import kotlinx.coroutines.runBlocking
-import org.json.JSONObject
+import com.myxoz.life.viewmodels.TransactionViewModel
 import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneId
 
 @Composable
-fun TransactionOverview(transactionId: String, bankViewModel: LargeDataCache){
-    val db = LocalStorage.current
+fun TransactionOverview(largeDataCache: LargeDataCache, transactionViewModel: TransactionViewModel){
     val nav = LocalNavController.current
-    val transactionAtHand = remember { runBlocking /* Review if not clean */ { db.banking.getTransactionById(transactionId)?: JSONObject(db.prefs.getString("transactionAtHand", null)?:"{}").let {
-        BankingEntity(
-            "",
-            true,
-            true,
-            it.getInt("amount"),
-            "EUR",
-            "",
-            it.getLong("timestamp"),
-            it.getString("to"),
-            "",
-            "",
-            "",
-            0,
-            it.getLong("timestamp"),
-            it.getLong("timestamp")
-        )
-    } } }
-    val transactionSidecar = remember { runBlocking { db.bankingSidecar.getSidecar(transactionId) } }
+    val transactionAtHand by transactionViewModel.inspectedTransaction.collectAsState()
+    val transaction = transactionAtHand ?: return
     val innerPadding = windowPadding
     Box(
         Modifier
@@ -134,17 +112,17 @@ fun TransactionOverview(transactionId: String, bankViewModel: LargeDataCache){
                     .padding(vertical = 20.dp)
             ) {
                 Text(
-                    transactionAtHand.amountCents.formatCents(false) + " " + transactionAtHand.currency,
+                    transaction.entity.amountCents.formatCents(false) + " " + transaction.entity.currency,
                     Modifier
                         .fillMaxWidth(),
-                    color = if (transactionAtHand.amountCents > 0) OldColors.Transactions.PLUS else OldColors.Transactions.MINUS,
+                    color = if (transaction.entity.amountCents > 0) OldColors.Transactions.PLUS else OldColors.Transactions.MINUS,
                     fontFamily = FontFamily.Display.family,
                     fontSize = FontSize.XXLARGE.size,
                     textAlign = TextAlign.Center
                 )
             }
             Text(
-                if (transactionAtHand.amountCents < 0) "An" else "Von",
+                if (transaction.entity.amountCents < 0) "An" else "Von",
                 Modifier
                     .fillMaxWidth(),
                 style = TypoStyle(Theme.secondary, FontSize.LARGE),
@@ -158,23 +136,24 @@ fun TransactionOverview(transactionId: String, bankViewModel: LargeDataCache){
                 verticalArrangement = Arrangement.spacedBy(10.dp)
             ) {
                 BankCard(
-                    transactionAtHand.fromName + if (transactionSidecar != null) " (${transactionSidecar.name})" else "",
-                    transactionAtHand.fromIban,
-                    bankViewModel
+                    transaction.entity.fromName + if (transaction.sidecar != null) " (${transaction.sidecar.name})" else "",
+                    transaction.entity.fromIban,
+                    largeDataCache,
+                    transactionViewModel
                 )
                 val calendar = remember { Calendar.getInstance() }
                 val screens = LocalScreens.current
                 Text(
                     run {
                         val transactionType = when {
-                            transactionAtHand.isWirelessPayment() -> "Bargeldlos"
-                            transactionAtHand.card -> "Kartenzahlung"
+                            transaction.entity.isWirelessPayment() -> "Bargeldlos"
+                            transaction.entity.card -> "Kartenzahlung"
                             else -> "Überweisung"
                         }
 
                         val timestamp =
-                            transactionAtHand.purposeDate?.formatTimeStamp(calendar)
-                                ?: transactionSidecar?.date?.formatTimeStamp(calendar)
+                            transaction.entity.purposeDate?.formatTimeStamp(calendar)
+                                ?: transaction.sidecar?.date?.formatTimeStamp(calendar)
                                 ?: ""
 
                         val separator = if (transactionType.isNotEmpty() && timestamp.isNotEmpty()) " · " else ""
@@ -182,15 +161,13 @@ fun TransactionOverview(transactionId: String, bankViewModel: LargeDataCache){
                         "$transactionType$separator$timestamp"
                     },
                     Modifier
-                        .rippleClick(transactionAtHand.purposeDate != null || transactionSidecar?.date != null){
-                            (transactionAtHand.purposeDate ?: transactionSidecar?.date)?.let {
-                                screens.openCalendarAt(
-                                    Instant
-                                        .ofEpochMilli(it)
-                                        .atZone(ZoneId.systemDefault())
-                                        .toLocalDate()
-                                )
-                            }
+                        .rippleClick(true){
+                            screens.openCalendarAt(
+                                Instant
+                                    .ofEpochMilli(transaction.resolveEffectiveDate())
+                                    .atZone(ZoneId.systemDefault())
+                                    .toLocalDate()
+                            )
                         }
                         .align(Alignment.End)
                     ,
@@ -198,13 +175,13 @@ fun TransactionOverview(transactionId: String, bankViewModel: LargeDataCache){
                     style = TypoStyle(Theme.secondary, FontSize.SMALL)
                 )
             }
-            if (transactionAtHand.bookingTime.isNotBlank()) {
+            if (transaction.entity.bookingTime.isNotBlank()) {
                 Spacer(Modifier.height(40.dp))
-                TransactionEntry("Buchungsdatum", transactionAtHand.bookingTime)
+                TransactionEntry("Buchungsdatum", transaction.entity.bookingTime)
             }
-            if (transactionAtHand.purpose.isNotBlank()) {
+            if (transaction.entity.purpose.isNotBlank()) {
                 Spacer(Modifier)
-                TransactionEntry("Verwendungszweck", transactionAtHand.purpose)
+                TransactionEntry("Verwendungszweck", transaction.entity.purpose)
             }
             Spacer(Modifier.height(innerPadding.calculateBottomPadding()))
         }
@@ -219,21 +196,12 @@ fun TransactionEntry(title: String, value: String) {
 }
 
 @Composable
-fun MyCard(largeDataCache: LargeDataCache){
-    val db = LocalStorage.current
-    var showBalance by remember {
-        mutableStateOf(
-            db.prefs.getBoolean("show_balance", false)
-        )
-    }
-    val self = remember {
-        runBlocking {
-            db.people.getPersonById(ME_ID)
-        }
-    }
-    val balance = if(showBalance) runBlocking {
-        db.banking.getLastTransactionDay()
-    } else listOf()
+fun MyCard(largeDataCache: LargeDataCache, transactionViewModel: TransactionViewModel){
+    var showBalance by transactionViewModel.showBalance.collectAsMutableState()
+    val self by transactionViewModel.getSelf.collectAsState(null)
+    val lastTransactions by transactionViewModel.getLastTransactionDay().collectAsState()
+    val balance = finalDailyBalance(lastTransactions?.map { it.entity })
+
     val innerPadding = windowPadding
     Box(
         Modifier
@@ -249,16 +217,13 @@ fun MyCard(largeDataCache: LargeDataCache){
                 .clip(CircleShape)
                 .rippleClick {
                     showBalance = !showBalance
-                    db.prefs.edit {
-                        putBoolean("show_balance", showBalance)
-                    }
                 }
                 .fillMaxWidth()
                 .padding(vertical = 20.dp)
                 .align(Alignment.TopCenter)
         ) {
             Text(
-                if (showBalance) finalDailyBalance(balance).toInt()
+                if (showBalance) balance.toInt()
                     .formatCents(true) else "· · · , · · €",
                 Modifier
                     .fillMaxWidth(),
@@ -268,24 +233,14 @@ fun MyCard(largeDataCache: LargeDataCache){
                 textAlign = TextAlign.Center
             )
         }
-        BankCard(self?.fullname?:"Ich", self?.iban?:"***", largeDataCache)
+        BankCard(self?.fullName?:"Ich", self?.iban?:"***", largeDataCache, transactionViewModel)
         Spacer(Modifier.height(innerPadding.calculateBottomPadding()))
     }
 }
 @Composable
-fun TransactionList(epochDay: Long) {
-    val db = LocalStorage.current
+fun TransactionList(date: LocalDate, transactitonFeedModel: TransactionViewModel) {
     val nav = LocalNavController.current
-    val bankingEntries = remember {
-        runBlocking {
-            val date = LocalDate.ofEpochDay(epochDay)
-            val zone = ZoneId.systemDefault()
-            db.banking.getFullDayTransactions(
-                date.atStartOfDay(zone).toEpochSecond() * 1000L,
-                date.plusDays(1).atStartOfDay(zone).toEpochSecond() * 1000L
-            ).map { it to db.bankingSidecar.getSidecar(it.id) }
-        }
-    }
+    val bankingEntries by transactitonFeedModel.getOnDay(date).collectAsState(listOf())
     val innerPadding = windowPadding
     Column(
         Modifier
@@ -302,8 +257,9 @@ fun TransactionList(epochDay: Long) {
                 Modifier
                     .setMaxTabletWidth()
             ) {
+                val screens = LocalScreens.current
                 BankingEntryComposable(it, i == 0, i == bankingEntries.size-1) {
-                    nav.navigate("bank/transaction/${it.first.id}")
+                    screens.openTransaction(it)
                 }
             }
         }
@@ -312,7 +268,7 @@ fun TransactionList(epochDay: Long) {
 }
 
 @Composable
-fun BankingEntryComposable(entry: Pair<BankingEntity, BankingSidecarEntity?>, isFirst: Boolean, isLast: Boolean, onClick:  ()->Unit){
+fun BankingEntryComposable(entry: BankingRepo.BankingDisplayEntity, isFirst: Boolean, isLast: Boolean, onClick:  ()->Unit){
     val calendar = remember { Calendar.getInstance() }
     Column(
         Modifier
@@ -334,13 +290,12 @@ fun BankingEntryComposable(entry: Pair<BankingEntity, BankingSidecarEntity?>, is
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(4.dp)
             ) {
-                val card = entry.first.card
-                val transfer = entry.first.transfer
+                val card = entry.entity.card
                 val height = FontSize.MEDIUMM.size.toDp()
                 Icon(
                     painterResource(
                         when {
-                            entry.first.isWirelessPayment() -> R.drawable.wireless_pay
+                            entry.entity.isWirelessPayment() -> R.drawable.wireless_pay
                             card -> R.drawable.pay_with_card
                             else -> R.drawable.bank_transfer
                         }
@@ -352,12 +307,12 @@ fun BankingEntryComposable(entry: Pair<BankingEntity, BankingSidecarEntity?>, is
                     Theme.secondary
                 )
                 Text(
-                    if(entry.first.isWirelessPayment()) "Bargeldlos" else if(card) "Kartenzahlung" else "Überweisung",
+                    if(entry.entity.isWirelessPayment()) "Bargeldlos" else if(card) "Kartenzahlung" else "Überweisung",
                     style = TypoStyle(Theme.secondary, FontSize.MEDIUMM)
                 )
             }
             Text(
-                (entry.second?.date ?: entry.first.purposeDate ?: entry.first.valueDate).formatMinutes(calendar),
+                entry.resolveEffectiveDate().formatMinutes(calendar),
                 style = TypoStyle(Theme.secondary, FontSize.MEDIUMM)
             )
         }
@@ -374,21 +329,21 @@ fun BankingEntryComposable(entry: Pair<BankingEntity, BankingSidecarEntity?>, is
                 verticalArrangement = Arrangement.spacedBy(2.dp)
             ) {
                 Text(
-                    entry.second?.name ?: entry.first.fromName,
+                    entry.sidecar?.name ?: entry.entity.fromName,
                     style = TypoStyle(Theme.primary, FontSize.LARGE),
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis
                 )
                 Text(
-                    if(entry.second == null) entry.first.fromIban.chunked(4).joinToString(" ") else entry.first.fromName,
+                    if(entry.sidecar == null) entry.entity.fromIban.chunked(4).joinToString(" ") else entry.entity.fromName,
                     style = TypoStyle(Theme.secondary, FontSize.SMALLM),
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis
                 )
             }
             Text(
-                entry.first.amountCents.formatCents(),
-                color = if(entry.first.amountCents > 0) OldColors.Transactions.PLUS else OldColors.Transactions.MINUS,
+                entry.entity.amountCents.formatCents(),
+                color = if(entry.entity.amountCents > 0) OldColors.Transactions.PLUS else OldColors.Transactions.MINUS,
                 fontFamily = FontFamily.Display.family,
                 fontSize = FontSize.XLARGE.size,
             )
@@ -398,14 +353,11 @@ fun BankingEntryComposable(entry: Pair<BankingEntity, BankingSidecarEntity?>, is
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
-fun BankCard(from: String, fromIBAN: String, largeDataCache: LargeDataCache?) {
+fun BankCard(from: String, fromIBAN: String, largeDataCache: LargeDataCache?, transactionViewModel: TransactionViewModel) {
     var offsetX by remember { mutableFloatStateOf(0f) }
     var offsetY by remember { mutableFloatStateOf(0f) }
     var displaysIban by remember { mutableStateOf(true) }
-    val db = LocalStorage.current
-    val decodedPerson by produceState<PersonSyncable?>(null) {
-        value = db.people.getPersonByIban(fromIBAN)?.let { PersonSyncable.from(db, it) }
-    }
+    val decodedPeople by transactionViewModel.getPeopleWithIbanLike(fromIBAN).collectAsState(listOf())
 
     val animatedOffsetX by animateFloatAsState(
         targetValue = offsetX,
@@ -485,10 +437,10 @@ fun BankCard(from: String, fromIBAN: String, largeDataCache: LargeDataCache?) {
         ) {
             val screens = LocalScreens.current
             Text(
-                from + if(decodedPerson != null) " (${decodedPerson?.name})" else "",
+                from + if(decodedPeople.isNotEmpty()) " (${decodedPeople.joinToString { it.name }})" else "",
                 Modifier
-                    .clickable(null, null) {
-                        screens.openPersonDetails(decodedPerson?.id ?: return@clickable)
+                    .clickable(null, null, decodedPeople.size == 1) {
+                        screens.openPersonDetails(decodedPeople.firstOrNull()?.id ?: return@clickable)
                     }
                 ,
                 style = TypoStyleOld(FontColor.PRIMARY, FontSize.MLARGE),
@@ -516,8 +468,8 @@ fun BankCard(from: String, fromIBAN: String, largeDataCache: LargeDataCache?) {
     }
 }
 
-fun finalDailyBalance(transactions: List<BankingEntity>): Long {
-    if (transactions.isEmpty()) error("No transactions")
+fun finalDailyBalance(transactions: List<BankingEntity>?): Long {
+    if (transactions?.isEmpty() != false) return 0L
 
     // Try to find the "last" transaction recursively
     fun findLast(current: BankingEntity, remaining: List<BankingEntity>): BankingEntity {

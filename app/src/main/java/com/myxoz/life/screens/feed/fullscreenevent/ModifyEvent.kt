@@ -45,9 +45,7 @@ import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableLongStateOf
-import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
@@ -76,15 +74,12 @@ import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.times
-import androidx.core.content.edit
 import com.myxoz.life.LocalNavController
 import com.myxoz.life.LocalScreens
-import com.myxoz.life.LocalStorage
 import com.myxoz.life.R
 import com.myxoz.life.Theme
 import com.myxoz.life.android.integration.HVV
-import com.myxoz.life.api.syncables.Location
-import com.myxoz.life.api.syncables.PersonSyncable
+import com.myxoz.life.api.syncables.LocationSyncable
 import com.myxoz.life.events.DigSocEvent
 import com.myxoz.life.events.EmptyEvent
 import com.myxoz.life.events.HobbyEvent
@@ -105,8 +100,7 @@ import com.myxoz.life.events.additionals.TagLike
 import com.myxoz.life.events.additionals.TimedTagLikeContainer
 import com.myxoz.life.events.additionals.TitleEvent
 import com.myxoz.life.events.additionals.Vehicle
-import com.myxoz.life.screens.feed.main.msToDisplay
-import com.myxoz.life.screens.options.ME_ID
+import com.myxoz.life.screens.feed.main.formatMsToDuration
 import com.myxoz.life.ui.ArrowDirection
 import com.myxoz.life.ui.Chip
 import com.myxoz.life.ui.RowChip
@@ -734,7 +728,8 @@ fun TagsBar(ev: List<EventTag>, updateEvent: (List<EventTag>)->Unit){
     }
 }
 data class ImeActionClicked(val unfocusField: Boolean, val clearField: Boolean)
-fun JSONObject.getEventId() = getString("id").toLong()
+/** Gets the "id"-key of an json object without redicolous rounding errors */
+fun JSONObject.getId() = getString("id").toLong()
 
 @Composable
 fun TimeBar(event: ProposedEvent, progress: Float = 0f, color: Color, setEventTo: (ProposedEvent) -> Unit){
@@ -832,7 +827,7 @@ fun TimeBar(event: ProposedEvent, progress: Float = 0f, color: Color, setEventTo
                 .background(Theme.outlineVariant, shape = RoundedCornerShape(0.dp, 0.dp, 10.dp, 10.dp))
         ) {
             Text(
-                (event.end - event.start).toInt().msToDisplay(true),
+                (event.end - event.start).formatMsToDuration(true),
                 Modifier
                     .padding(horizontal = 8.dp, vertical = 2.dp)
                 ,
@@ -850,20 +845,10 @@ fun PersonBar(
     openAddMenu: ()->Unit,
     updateEvent: (List<Long>, Boolean)->Unit
 ){
-    val db = LocalStorage.current
+    val profileViewModel = LocalScreens.current.profileInfoModel
+    val allPeople by profileViewModel.getAlPeopleFlow.collectAsState(listOf())
     val selectedPeople = remember { defaultSelectedPeople.toMutableStateList() }
-    val allPeople = remember { mutableStateListOf<PersonSyncable>() }
     var more by remember { mutableStateOf(if(isMoreEvent) defaultMore else false) }
-    LaunchedEffect(Unit) {
-        val people = db.people.getAllPeople()
-        allPeople.clear()
-        allPeople.addAll(
-            people.mapNotNull{
-                if(it.id == ME_ID) return@mapNotNull null
-                PersonSyncable.from(db, it)
-            }
-        )
-    }
     var search: String? by remember {
         mutableStateOf(null)
     }
@@ -964,12 +949,10 @@ fun PersonBar(
 fun LocationBar(defaultLocation: Long, setLocation: (Long)->Unit){
     var selectedLocation by remember { mutableLongStateOf(defaultLocation) }
     val navController = LocalNavController.current
-    val storage =  LocalStorage.current
-    val allLocations by produceState(initialValue = emptyList()) {
-        val locations = storage.location.getAllLocations()
-        value = locations.map { Location.from(it) }
-    }
-    val decodedLocation: Location? by remember {
+    val screens = LocalScreens.current
+    val mapViewModel = screens.mapViewModel
+    val allLocations by mapViewModel.getAllLocations.collectAsState(listOf())
+    val decodedLocation: LocationSyncable? by remember {
         derivedStateOf {
             allLocations.find { it.id == selectedLocation }
         }
@@ -994,13 +977,9 @@ fun LocationBar(defaultLocation: Long, setLocation: (Long)->Unit){
         selectedLocation = it
         setLocation(it)
     }
-    val editLocation = { it: Location ->
+    val editLocation = { it: LocationSyncable ->
         coroutineScope.launch {
-            val location = it.toJson(storage)?.toString()  ?: return@launch
-            storage.prefs.edit {
-                putString("editing_location", location)
-            }
-            navController.navigate("modify_event/add_location")
+            screens.editLocation(it)
         }
     }
     Column(
@@ -1105,9 +1084,9 @@ fun VehicleSelection(defSelected: List<TimedTagLikeContainer<Vehicle>>, inspectV
             }
             Spacer(Modifier.height(5.dp))
             val context = LocalContext.current
-            val db = LocalStorage.current
             val coroutineScope = rememberCoroutineScope()
             val calendar = remember { Calendar.getInstance() }
+            val screens = LocalScreens.current.profileInfoModel
             Row(
                 Modifier
                     .clip(CircleShape)
@@ -1115,8 +1094,8 @@ fun VehicleSelection(defSelected: List<TimedTagLikeContainer<Vehicle>>, inspectV
                         coroutineScope.launch {
                             val event = inspectViewModel?.event?.value ?: return@launch
                             if(event.proposed !is TravelEvent) return@launch
-                            val from = Location.fromDB(db, event.proposed.from)
-                            val to = Location.fromDB(db, event.proposed.to)
+                            val from = screens.getCachedLocation(event.proposed.from)
+                            val to = screens.getCachedLocation(event.proposed.to)
                             AndroidUtils.openLink(context, HVV.constructLink(from, to, (event.proposed.start-15*1000L*60L).formatTimeStamp(calendar)))
                         }
                     }

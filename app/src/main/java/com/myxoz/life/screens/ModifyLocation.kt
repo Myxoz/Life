@@ -22,40 +22,24 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.unit.dp
-import androidx.core.content.edit
 import com.myxoz.life.LocalNavController
-import com.myxoz.life.LocalStorage
 import com.myxoz.life.Theme
+import com.myxoz.life.api.syncables.LocationSyncable
 import com.myxoz.life.api.API
-import com.myxoz.life.api.syncables.Location
-import com.myxoz.life.api.syncables.PersonSyncable
 import com.myxoz.life.screens.feed.fullscreenevent.InputField
 import com.myxoz.life.ui.setMaxTabletWidth
 import com.myxoz.life.ui.theme.FontSize
 import com.myxoz.life.ui.theme.TypoStyle
 import com.myxoz.life.utils.rippleClick
 import com.myxoz.life.utils.windowPadding
+import com.myxoz.life.viewmodels.LocationEditingViewModel
 import kotlinx.coroutines.launch
-import org.json.JSONObject
 
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
-fun ModifyLocation(){
-    val db = LocalStorage.current
+fun ModifyLocation(locationEditingViewModel: LocationEditingViewModel){
     val nav = LocalNavController.current
-    val defaultLocation = remember {
-        db.prefs.getString("editing_location", null)?.let {
-            Location.fromJSON(JSONObject(it))
-        }?.apply {
-            db.prefs.edit {
-                remove("editing_location")
-            }.apply {
-                db.prefs.edit {
-                    remove("editing_location")
-                }
-            }
-        }
-    }
+    val defaultLocation = locationEditingViewModel.nowEditing
     Box(
         Modifier
             .background(Theme.background)
@@ -107,7 +91,6 @@ fun ModifyLocation(){
             InputField(country, "Country") {
                 country = it
             }
-            var selectedPerson: PersonSyncable? by remember { mutableStateOf(null) }
             val coroutineScope = rememberCoroutineScope()
             Box(
                 Modifier
@@ -116,18 +99,20 @@ fun ModifyLocation(){
                     .clip(CircleShape)
                     .rippleClick {
                         coroutineScope.launch {
-                            Location(
-                                name,
-                                long.toDoubleOrNull() ?: return@launch,
-                                lat.toDoubleOrNull() ?: return@launch,
-                                radiusM.toIntOrNull() ?: return@launch,
-                                ssid.ifEmpty { null },
-                                street.ifEmpty { null },
-                                number.ifEmpty { null },
-                                city.ifEmpty { null },
-                                country,
-                                defaultLocation?.id ?: API.generateId()
-                            ).saveAndSync(db)
+                            locationEditingViewModel.save(
+                                LocationSyncable(
+                                    name,
+                                    long.toDoubleOrNull() ?: return@launch,
+                                    lat.toDoubleOrNull() ?: return@launch,
+                                    radiusM.toIntOrNull() ?: return@launch,
+                                    ssid.ifEmpty { null },
+                                    street.ifEmpty { null },
+                                    number.ifEmpty { null },
+                                    city.ifEmpty { null },
+                                    country,
+                                    defaultLocation?.id ?: API.generateId()
+                                )
+                            )
                             nav.popBackStack()
                         }
                     }

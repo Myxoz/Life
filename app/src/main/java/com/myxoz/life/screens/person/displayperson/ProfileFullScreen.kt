@@ -43,7 +43,6 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
@@ -56,7 +55,6 @@ import androidx.compose.ui.graphics.TransformOrigin
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalConfiguration
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
@@ -65,18 +63,17 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.times
 import com.myxoz.life.LocalScreens
-import com.myxoz.life.LocalStorage
 import com.myxoz.life.R
 import com.myxoz.life.Theme
-import com.myxoz.life.api.syncables.SyncedEvent
 import com.myxoz.life.events.DigSocEvent
 import com.myxoz.life.events.additionals.EventType
-import com.myxoz.life.screens.feed.main.msToDisplay
+import com.myxoz.life.screens.feed.main.formatMsToDuration
 import com.myxoz.life.ui.ActionBar
 import com.myxoz.life.ui.SCREENMAXWIDTH
 import com.myxoz.life.ui.setMaxTabletWidth
 import com.myxoz.life.ui.theme.FontSize
 import com.myxoz.life.ui.theme.TypoStyle
+import com.myxoz.life.utils.diagrams.PieChart
 import com.myxoz.life.utils.rippleClick
 import com.myxoz.life.utils.toDp
 import com.myxoz.life.utils.windowPadding
@@ -98,14 +95,10 @@ fun ProfileFullScreen(
     profileInfoModel: ProfileInfoModel
 ){
     val screens = LocalScreens.current
-    val db = LocalStorage.current
     val coroutineScope = rememberCoroutineScope()
-    val context = LocalContext.current
     var isPickingBirthDay by remember { mutableStateOf(false) }
-    LaunchedEffect(Unit) {
-        profileInfoModel.updateStateIfOutdated(personId, context)
-    }
     val verticalScrollState = rememberScrollState()
+    val inspectedPerson by profileInfoModel.getInspectedPerson(personId).collectAsState(null)
     Box(
         Modifier
             .background(Theme.background)
@@ -134,34 +127,33 @@ fun ProfileFullScreen(
                 verticalArrangement = Arrangement.spacedBy(15.dp)
             ) {
                 Spacer(Modifier.height(topBarHeight+ windowPadding.calculateTopPadding()))
-                ProfileInfo(largeDataCache, profileInfoModel)
+                ProfileInfo(largeDataCache, profileInfoModel, personId)
                 Row(
                     horizontalArrangement = Arrangement.spacedBy(15.dp)
                 ) {
-                    val birthday by profileInfoModel.birthday.collectAsState()
-                    val dateString = remember(birthday) {
-                        val bd = birthday ?: return@remember "Hinzufügen"
-                        val date = LocalDate.ofEpochDay(bd)
-                        val now = LocalDate.now()
-                        val month = date.month.value
-                        val year = date.year
-                        val day = date.dayOfMonth
-                        val age = now.year - year - 1 + if((now.month.value > month) || (now.month.value == month && now.dayOfMonth >= day /* If equals, birthday is today, Happy Birthday */)) 1 else 0
-                        "$day.$month.$year · ${age}J"
-                    }
-                    val lastInteraction by profileInfoModel.lastInteraction.collectAsState()
-                    val nextInteraction by profileInfoModel.nextInteraction.collectAsState()
-                    val lastInteractionDisplay = remember(lastInteraction) {
-                        ProfileInfoModel.formatTime((lastInteraction?.end?:return@remember null) - System.currentTimeMillis())
-                    }
-                    val nextInteractionDisplay = remember(nextInteraction) {
-                        ProfileInfoModel.formatTime((nextInteraction?.start ?: return@remember null) - System.currentTimeMillis())
-                    }
                     FlowRow(
                         maxItemsInEachRow = 2,
                         horizontalArrangement = Arrangement.spacedBy(15.dp),
                         verticalArrangement = Arrangement.spacedBy(15.dp)
                     ) {
+                        val dateString = remember(inspectedPerson?.birthday) {
+                            val bd = inspectedPerson?.birthday ?: return@remember "Hinzufügen"
+                            val date = LocalDate.ofEpochDay(bd)
+                            val now = LocalDate.now()
+                            val month = date.month.value
+                            val year = date.year
+                            val day = date.dayOfMonth
+                            val age = now.year - year - 1 + if((now.month.value > month) || (now.month.value == month && now.dayOfMonth >= day /* If equals, birthday is today, Happy Birthday */)) 1 else 0
+                            "$day.$month.$year · ${age}J"
+                        }
+                        val lastInteraction by profileInfoModel.lastInteractionFlow(personId).collectAsState(null)
+                        val nextInteraction by profileInfoModel.nextInteractionFlow(personId).collectAsState(null)
+                        val lastInteractionDisplay = remember(lastInteraction) {
+                            ProfileInfoModel.formatTime((lastInteraction?.proposed?.end?:return@remember null) - System.currentTimeMillis())
+                        }
+                        val nextInteractionDisplay = remember(nextInteraction) {
+                            ProfileInfoModel.formatTime((nextInteraction?.proposed?.start ?: return@remember null) - System.currentTimeMillis())
+                        }
                         FlowRowItem(
                             "Geburtstag",
                             R.drawable.birthday,
@@ -170,31 +162,28 @@ fun ProfileFullScreen(
                             isPickingBirthDay = true
                         }
                         if(lastInteractionDisplay!=null){
-                            val type: SyncedEvent? by produceState(null) {
-                                value = SyncedEvent.from(db, lastInteraction?:return@produceState)
-                            }
                             FlowRowItem(
                                 "Zuletzt interagiert",
-                                type?.let { if(it.proposed is DigSocEvent) it.proposed.digSocEntries.maxByOrNull { c -> c.durationMs }?.type?.drawable else null } ?: R.drawable.met,
+                                lastInteraction?.let { if(it.proposed is DigSocEvent) it.proposed.digSocEntries.maxByOrNull { c -> c.durationMs }?.type?.drawable else null } ?: R.drawable.met,
                                 lastInteractionDisplay
                             ) {
                                 coroutineScope.launch {
-                                    screens.openFullScreenEvent(
-                                        SyncedEvent.from(db, lastInteraction?:return@launch)?:return@launch
-                                    )
+                                    lastInteraction?.let {
+                                        screens.openFullScreenEvent(it)
+                                    }
                                 }
                             }
                         }
                         if(nextInteractionDisplay!=null){
                             FlowRowItem(
                                 "Nächste Interaktion",
-                                R.drawable.met,
+                                nextInteraction?.let { if(it.proposed is DigSocEvent) it.proposed.digSocEntries.maxByOrNull { c -> c.durationMs }?.type?.drawable else null } ?: R.drawable.met,
                                 nextInteractionDisplay
                             ) {
                                 coroutineScope.launch {
-                                    screens.openFullScreenEvent(
-                                        SyncedEvent.from(db, nextInteraction?:return@launch)?:return@launch
-                                    )
+                                    nextInteraction?.let {
+                                        screens.openFullScreenEvent(it)
+                                    }
                                 }
                             }
                         }
@@ -212,7 +201,15 @@ fun ProfileFullScreen(
                 ) {
                     val width = smallerScreenDimension*.95f-10.dp*2
                     Text("Aufteilung", style = TypoStyle(Theme.secondary, FontSize.MEDIUM), modifier = Modifier.fillMaxWidth())
+                    val chart = remember {
+                        PieChart()
+                    }
                     val boxWidth = width
+                    LaunchedEffect(Unit) {
+                        profileInfoModel.getPieChartForPerson(personId).collect {
+                            chart.update(it?:return@collect)
+                        }
+                    }
                     ButtonGroup(
                         arrayOf("All-Time", "1 Jahr", "1 Monat", "1 Woche"),
                         boxWidth,
@@ -220,11 +217,10 @@ fun ProfileFullScreen(
                     ) {
                         profileInfoModel.chartScale.value = it
                         coroutineScope.launch {
-                            profileInfoModel.renderPieChart()
                         }
                     }
                     Box(Modifier.size(width*.8f)){
-                        profileInfoModel.chart.Render()
+                        chart.Render()
                     }
                     ButtonGroup(
                         arrayOf("Prozent", "Zeit"),
@@ -237,7 +233,7 @@ fun ProfileFullScreen(
                             .width(width),
                         Arrangement.spacedBy(10.dp)
                     ) {
-                        val components by profileInfoModel.chart.components.collectAsState()
+                        val components by chart.components.collectAsState()
                         val chartUnit by profileInfoModel.chartUnit.collectAsState()
                         val acc = components.values.sumOf { it.value }
                         components.forEach {
@@ -275,7 +271,7 @@ fun ProfileFullScreen(
                                     )
                                 }
                                 Text(
-                                    if(chartUnit==0) (it.value.value / acc).formatPercent(2) else it.value.value.toInt().msToDisplay(true),
+                                    if(chartUnit==0) (it.value.value / acc).formatPercent(2) else it.value.value.toLong().formatMsToDuration(true),
                                     style = TypoStyle(Theme.primary, FontSize.LARGE)
                                 )
                             }
@@ -313,7 +309,7 @@ fun ProfileFullScreen(
                                 )
                             }
                             Text(
-                                if(chartUnit==0) 1.0.formatPercent(2) else acc.toInt().msToDisplay(true),
+                                if(chartUnit==0) 1.0.formatPercent(2) else acc.toLong().formatMsToDuration(true),
                                 style = TypoStyle(Theme.primary, FontSize.LARGE)
                             )
                         }
@@ -335,15 +331,11 @@ fun ProfileFullScreen(
                 scrollLength,
                 fontSize,
                 topBarHeight
-            ){
-                profileInfoModel.isEditing.value = true
-                profileInfoModel.isExtended.value = true
-                profileInfoModel.name.value = it
-            }
+            )
         }
     }
     UnmodalBottomSheet(isPickingBirthDay, {isPickingBirthDay=false}) {
-        val birthday by profileInfoModel.birthday.collectAsState()
+        val birthday = inspectedPerson?.birthday
         val datePickerState = rememberDatePickerState(
             initialSelectedDateMillis = birthday?.let {
                 LocalDate.ofEpochDay(it).atStartOfDay(ZoneId.of("UTC")).toEpochSecond()*1000L
@@ -355,13 +347,15 @@ fun ProfileFullScreen(
         }, {
             Icon(painterResource(R.drawable.close), "Close", Modifier.fillMaxSize(), Theme.onSecondaryContainer)
         }, Theme.primaryContainer, {
-            profileInfoModel.isEditing.value = true
-            profileInfoModel.isExtended.value = true
-            profileInfoModel.birthday.value = datePickerState.selectedDateMillis?.let { millis ->
-                Instant.ofEpochMilli(millis)
-                    .atZone(ZoneId.of("UTC"))
-                    .toLocalDate()
-                    .toEpochDay()
+            profileInfoModel.edit(personId) {
+                it.copy(
+                    birthday = datePickerState.selectedDateMillis?.let { millis ->
+                        Instant.ofEpochMilli(millis)
+                            .atZone(ZoneId.of("UTC"))
+                            .toLocalDate()
+                            .toEpochDay()
+                    }
+                )
             }
             isPickingBirthDay = false
         }) {

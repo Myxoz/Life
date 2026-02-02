@@ -6,55 +6,28 @@ import android.app.NotificationManager
 import android.app.PendingIntent
 import android.app.Service
 import android.content.Intent
-import android.content.SharedPreferences
 import android.hardware.Sensor
 import android.hardware.SensorEvent
 import android.hardware.SensorEventListener
 import android.hardware.SensorManager
 import android.os.IBinder
-import android.os.SystemClock
 import androidx.core.app.NotificationCompat
-import androidx.core.content.edit
 import com.myxoz.life.MainActivity
 import com.myxoz.life.R
-import com.myxoz.life.dbwrapper.DatabaseProvider
-import com.myxoz.life.dbwrapper.ProposedStepsDao
-import com.myxoz.life.dbwrapper.ProposedStepsEntity
-import kotlinx.coroutines.runBlocking
-import java.time.LocalDate
+import com.myxoz.life.repositories.MainApplication
+import com.myxoz.life.repositories.StepRepo
 
 class StepsService : Service(), SensorEventListener {
     private lateinit var sensorManager: SensorManager
-    private lateinit var prefs: SharedPreferences
-    private var dao: ProposedStepsDao? = null
-
-    private var lastSavedSteps = 0L
-    private var stepsAtMidnight = 0L
-    private var lastDateSaved = 0L
-    private var totalStepsSinceReboot = 0L
-    private var lastRebootTs = 0L
+    private lateinit var stepSensor: Sensor
+    private lateinit var repository: StepRepo
 
     override fun onCreate() {
         super.onCreate()
-        prefs = getSharedPreferences("steps", MODE_PRIVATE)
+        repository = (applicationContext as MainApplication).repositories.stepRepo
         sensorManager = getSystemService(SENSOR_SERVICE) as SensorManager
-        lastSavedSteps = prefs.getLong("saved_steps", 0L)
-        stepsAtMidnight = prefs.getLong("steps_at_midnight", 0L)
-        lastDateSaved = prefs.getLong("last_steps_date", 0L)
-        val currentRebootTs = System.currentTimeMillis() - SystemClock.elapsedRealtime()
-        lastRebootTs = prefs.getLong("last_reboot_ts", 0L)
-        val stepSensor = sensorManager.getDefaultSensor(Sensor.TYPE_STEP_COUNTER)
-        if(currentRebootTs - lastRebootTs > 30000) { // Has rebooted
-            if(lastDateSaved < LocalDate.now().toEpochDay()){ // We bridged midnight and this is now a new day
-                enterCurrentDay()
-            } else {
-                setAndSaveFields(
-                    0L,
-                    -lastSavedSteps+stepsAtMidnight,
-                    System.currentTimeMillis() - SystemClock.elapsedRealtime()
-                )
-            }
-        }
+        stepSensor = sensorManager.getDefaultSensor(Sensor.TYPE_STEP_COUNTER)!!
+
         sensorManager.registerListener(this, stepSensor, SensorManager.SENSOR_DELAY_NORMAL)
         startForeground(1, createNotification())
     }
@@ -63,37 +36,8 @@ class StepsService : Service(), SensorEventListener {
 
     override fun onSensorChanged(event: SensorEvent?) {
         if (event?.sensor?.type == Sensor.TYPE_STEP_COUNTER) {
-            totalStepsSinceReboot = event.values[0].toLong()
-            if(LocalDate.now().toEpochDay() > lastDateSaved) {
-                enterCurrentDay()
-            }
-            if (totalStepsSinceReboot - lastSavedSteps > 10) {
-                setAndSaveFields(totalStepsSinceReboot, null)
-            }
-        }
-    }
-
-    fun setAndSaveFields(totalStepsSinceReboot: Long?, stepsAtMidnight: Long?, lastRebootTs: Long?=null){
-        totalStepsSinceReboot?.let {
-            this.totalStepsSinceReboot = it
-            lastSavedSteps = it
-            lastDateSaved = LocalDate.now().toEpochDay()
-            prefs.edit{
-                putLong("last_steps_date", LocalDate.now().toEpochDay())
-                putLong("saved_steps", it)
-            }
-        }
-        stepsAtMidnight?.let {
-            this.stepsAtMidnight = it
-            prefs.edit{
-                putLong("steps_at_midnight", it)
-            }
-        }
-        lastRebootTs?.let {
-            this.lastRebootTs = it
-            prefs.edit{
-                putLong("last_reboot_ts", it)
-            }
+            val totalStepsSinceReboot = event.values[0].toLong()
+            repository.updateSteps(totalStepsSinceReboot)
         }
     }
 
@@ -130,22 +74,7 @@ class StepsService : Service(), SensorEventListener {
         super.onDestroy()
         sensorManager.unregisterListener(this)
     }
-
     override fun onBind(intent: Intent?): IBinder? = null
-
-    fun enterCurrentDay(){
-        val db = DatabaseProvider.getDatabase(applicationContext)
-        dao = db.proposedStepsDao()
-        runBlocking {
-            (dao ?: db.proposedStepsDao()).insertSteps(
-                ProposedStepsEntity(
-                    lastDateSaved,
-                    (lastSavedSteps-stepsAtMidnight).toInt()
-                )
-            )
-            setAndSaveFields(totalStepsSinceReboot, totalStepsSinceReboot, System.currentTimeMillis() - SystemClock.elapsedRealtime())
-        }
-    }
 }
 fun Intent.navigateTo(route: String){
     putExtra("targetRoute", route) // Today
