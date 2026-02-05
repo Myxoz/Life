@@ -58,11 +58,11 @@ class CommitsRepo(
                     commit.commitSha == old.commitSha
                 }
             }
-        }
-        if (new.commitDate != null) {
-            val commitDate = new.commitDate.toLocalDate(zone)
-            _commitsDayed.updateWith(commitDate){ list ->
-                list + new
+            if (new.commitDate != null) {
+                val commitDate = new.commitDate.toLocalDate(zone)
+                _commitsDayed.updateWith(commitDate){ list ->
+                    list + new
+                }
             }
         }
     }

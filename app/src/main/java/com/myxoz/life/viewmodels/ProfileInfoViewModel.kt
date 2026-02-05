@@ -36,7 +36,7 @@ class ProfileInfoModel(val repos: AppRepositories): ViewModel(){
     val getAlPeopleFlow = repos.peopleRepo.getAllPeople()
 
     private val getLocationByIdFLowCache = FlowCache<Long?, LocationSyncable?>{
-        if(it == null) return@FlowCache flowOf(null)
+        if(it == null || it == 0L) return@FlowCache flowOf(null)
         repos.locationRepo.getLocationById(it).map { it?.data }
     }
     fun getLocationById(locationId: Long?) = getLocationByIdFLowCache.get(locationId)

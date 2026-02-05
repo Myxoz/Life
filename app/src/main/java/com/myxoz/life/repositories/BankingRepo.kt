@@ -145,7 +145,7 @@ class BankingRepo(
         val allTransactions =
             JSONArray(mainPrefs.getString("payments", null) ?: "[]").jsonObjArray.map {
                 getFutureTransactionBy(
-                    -it.getInt("amount"),
+                    it.getInt("amount"),
                     it.getLong("timestamp"),
                     it.getStringOrNull("from")
                 )

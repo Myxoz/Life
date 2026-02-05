@@ -59,8 +59,8 @@ class API(
     private var lastUpdate = prefs.getLong("last_update", 0)
     fun resetLastUpdateDebug() { lastUpdate = 0 }
     private var isSyncing = false
-    private val logSyncableContent = false
     private val security = Security()
+    private val logSyncableContent = true
     private fun optionallySkip(text: String?) = if(logSyncableContent) text else "[Skipped]"
     /** Returns the amount of entries that are updated, null on fail */
     suspend fun resync(): Int? {
@@ -208,7 +208,7 @@ class API(
             }
 
             Syncable.SpecialSyncablesIds.DAYS -> {
-                val new = FullDaySyncable.Companion.overwriteDBByJson(writeSyncableDaos, json)
+                val new = FullDaySyncable.overwriteDBByJson(writeSyncableDaos, json)
                 daySummaryRepo.setDaySummary(new)
             }
 

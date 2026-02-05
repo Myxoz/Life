@@ -1,6 +1,7 @@
 package com.myxoz.life.repositories
 
 import android.content.SharedPreferences
+import androidx.core.content.edit
 import com.myxoz.life.dbwrapper.ProposedStepsDao
 import com.myxoz.life.dbwrapper.ProposedStepsEntity
 import com.myxoz.life.repositories.utils.subscribeToColdFlow
@@ -27,14 +28,26 @@ class StepRepo(
         .subscribeToColdFlow(appScope, _steps.value - stepsAtMidnight.value)
     init {
         val currentRebootTs = System.currentTimeMillis() - android.os.SystemClock.elapsedRealtime()
-        if (currentRebootTs - lastRebootTs > 30_000) { // Has rebooted
-            appScope.launch {
-                resetIfNewDay()
+        if (currentRebootTs - lastRebootTs > 5_000) { // Has rebooted
+            if(lastDateSaved < LocalDate.now().toEpochDay()) { // We have rebooted before 0 am to a new day
+                appScope.launch {
+                    resetStepsAsOldDay()
+                }
+            } else { // We rebooted durring the day
+                val atMid = -(lastSavedSteps - stepsAtMidnight.value)
+                stepsPrefs.edit{
+                    putLong("last_reboot_ts", currentRebootTs)
+                    putLong("saved_steps", 0)
+                    putLong("steps_at_midnight", atMid)
+                }
+                stepsAtMidnight.value = atMid
+                lastSavedSteps = 0
+                _steps.value = 0
             }
         }
     }
     /** Inserts steps as the last date where steps were saved */
-    private suspend fun resetIfNewDay(totalSteps: Long? = null) {
+    private suspend fun resetStepsAsOldDay(totalSteps: Long? = null) {
         val nowDay = LocalDate.now().toEpochDay()
         val stepsToInsert = (lastSavedSteps - stepsAtMidnight.value).coerceAtLeast(0).toInt()
         dao.insertSteps(ProposedStepsEntity(lastDateSaved, stepsToInsert))
@@ -55,7 +68,7 @@ class StepRepo(
         appScope.launch {
             val nowDay = LocalDate.now().toEpochDay()
             if (nowDay > lastDateSaved) {
-                resetIfNewDay(totalStepsSinceReboot)
+                resetStepsAsOldDay(totalStepsSinceReboot)
             }
 
             val delta = totalStepsSinceReboot - lastSavedSteps
