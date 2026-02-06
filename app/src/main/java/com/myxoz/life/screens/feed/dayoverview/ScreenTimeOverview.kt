@@ -21,8 +21,6 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.rounded.KeyboardArrowUp
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -44,10 +42,12 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.core.graphics.drawable.toBitmap
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.myxoz.life.R
 import com.myxoz.life.Theme
 import com.myxoz.life.dbwrapper.DayScreenTimeEntity
 import com.myxoz.life.screens.feed.main.formatMsToDuration
@@ -131,7 +131,7 @@ fun ScreenTimeOverview(date: LocalDate, dayOverviewViewModel: DayOverviewViewMod
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Icon(
-                        Icons.Rounded.KeyboardArrowUp,
+                        painterResource(R.drawable.drop_down),
                         "Open",
                         Modifier.size(FontSize.LARGE.size.toDp()  + 10.dp),
                         Theme.primary

@@ -8,6 +8,7 @@ import com.myxoz.life.api.syncables.PersonSyncable
 import com.myxoz.life.repositories.AppRepositories
 import com.myxoz.life.repositories.BankingRepo
 import com.myxoz.life.repositories.utils.FlowCache
+import com.myxoz.life.repositories.utils.StateFlowCache
 import com.myxoz.life.repositories.utils.subscribeToColdFlow
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -44,8 +45,8 @@ class TransactionViewModel(private val repos: AppRepositories): ViewModel() {
             _visibleDates.value = currentDates + newDates
         }
     }
-    val onDayCachedFlows = FlowCache<LocalDate, List<BankingRepo.BankingDisplayEntity>>{
-        repos.bankingRepo.getTransactionsAt(it).map { it ?: listOf() }
+    val onDayCachedFlows = StateFlowCache<LocalDate, List<BankingRepo.BankingDisplayEntity>>{
+        repos.bankingRepo.getTransactionsAt(it).map { it ?: listOf() }.subscribeToColdFlow(viewModelScope, listOf())
     }
     fun getOnDay(date: LocalDate) = onDayCachedFlows.get(date)
     val showBalance = MutableStateFlow(repos.prefs.getBoolean("show_balance", false))

@@ -25,7 +25,6 @@ class PeopleRepo(
 ) {
     private var requestedAllPeople = false
     private val readPeopleDao = readSyncableDaos.peopleDao
-    private val writePeopleDao = writeSyncableDaos.peopleDao
     private val _meFlow = MutableStateFlow<PersonSyncable?>(null)
     val meFlow: StateFlow<PersonSyncable?> = _meFlow
     private val _cachedPeople = VersionedCache<Long, PersonSyncable>(

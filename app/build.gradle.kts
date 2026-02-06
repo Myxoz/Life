@@ -5,7 +5,8 @@ plugins {
     id("com.google.devtools.ksp")
 }
 
-android { namespace = "com.myxoz.life"
+android {
+    namespace = "com.myxoz.life"
     compileSdk = 36
 
     defaultConfig {
@@ -14,7 +15,6 @@ android { namespace = "com.myxoz.life"
         targetSdk = 35
         versionCode = 1
         versionName = "1.0"
-
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
@@ -27,15 +27,27 @@ android { namespace = "com.myxoz.life"
             )
         }
     }
+
     compileOptions {
-        sourceCompatibility = JavaVersion.VERSION_11
-        targetCompatibility = JavaVersion.VERSION_11
+        sourceCompatibility = JavaVersion.VERSION_21
+        targetCompatibility = JavaVersion.VERSION_21
     }
-    kotlinOptions {
-        jvmTarget = "11"
-    }
+
     buildFeatures {
         compose = true
+    }
+
+    composeOptions {
+        kotlinCompilerExtensionVersion = "1.6.0" // match your Compose version
+    }
+}
+
+// Kotlin compiler DSL
+kotlin {
+    jvmToolchain(21)
+    compilerOptions {
+        jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_21)
+        freeCompilerArgs.addAll(listOf("-Xopt-in=kotlin.RequiresOptIn"))
     }
 }
 
@@ -56,6 +68,7 @@ dependencies {
     implementation(libs.androidx.work.runtime.ktx)
     implementation(libs.androidx.lifecycle.viewmodel.compose)
     implementation(libs.androidx.graphics.shapes)
+//    implementation(libs.genai.prompt)
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)

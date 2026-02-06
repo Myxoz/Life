@@ -24,7 +24,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.unit.dp
-import com.myxoz.life.LocalNavController
 import com.myxoz.life.LocalScreens
 import com.myxoz.life.Theme
 import com.myxoz.life.dbwrapper.banking.formatCents
@@ -44,7 +43,6 @@ import java.time.LocalDate
 fun TransactionFeed(
     transactionViewModel: TransactionViewModel
 ) {
-    val nav = LocalNavController.current
     val visibleDates by transactionViewModel.visibleDates.collectAsState()
     val listState = transactionViewModel.lazyListState
 
@@ -74,7 +72,7 @@ fun TransactionFeed(
             key = { it.toEpochDay() },
             contentType = { "date_group" }
         ) { date ->
-            val transactions by transactionViewModel.getOnDay(date).collectAsState(listOf())
+            val transactions by transactionViewModel.getOnDay(date).collectAsState()
             if(transactions.isEmpty()) Spacer(Modifier.height(1.dp))
             val screens = LocalScreens.current
             if (transactions.isNotEmpty()) {

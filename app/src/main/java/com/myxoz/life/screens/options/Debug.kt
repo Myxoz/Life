@@ -86,6 +86,25 @@ fun DebugScreen(
                 style = TypoStyleOld(FontColor.PRIMARY, FontSize.MEDIUM)
             )
             Spacer(Modifier.height(5.dp))
+//            Column(
+//                Modifier.fillMaxWidth()
+//            ) {
+//                var text by remember { mutableStateOf("") }
+//                var aiResp by remember { mutableStateOf("") }
+//                val coroutineScope = rememberCoroutineScope()
+//                InputField("", "Ask AI") {
+//                    text = it
+//                }
+//                Text(aiResp?:"")
+//                Button({
+//                    coroutineScope.launch {
+//                        val generativeModel = com.google.mlkit.genai.prompt.Generation.getClient()
+//                        aiResp = generativeModel.generateContent(text).candidates.firstOrNull()?.text ?: ""
+//                    }
+//                }) {
+//                    Text("Send to AI")
+//                }
+//            }
             Button({
                 lastSavedSteps = prefs.getLong("saved_steps", 0L)
                 stepsAtMidnight = prefs.getLong("steps_at_midnight", 0L)

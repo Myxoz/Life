@@ -39,9 +39,6 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.rounded.KeyboardArrowRight
-import androidx.compose.material.icons.rounded.KeyboardArrowDown
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -438,9 +435,9 @@ fun ProfileInfo(largeDataCache: LargeDataCache, profileInfoModel: ProfileInfoMod
                             ) {
                                 Text(if(displayLocation!=null) "Ändern" else "Hinzufügen", style = TypoStyle(Theme.onSecondaryContainer, FontSize.MEDIUM))
                                 Icon(
-                                    Icons.AutoMirrored.Rounded.KeyboardArrowRight,
+                                    painterResource(R.drawable.drop_down),
                                     "Continue",
-                                    Modifier.size(FontSize.MEDIUM.size.toDp()),
+                                    Modifier.size(FontSize.MEDIUM.size.toDp()).rotate(-90f),
                                     tint = Theme.onSecondaryContainer
                                 )
                             }
@@ -624,7 +621,7 @@ fun ProfileInfo(largeDataCache: LargeDataCache, profileInfoModel: ProfileInfoMod
                             style = TypoStyle(Theme.onSecondaryContainer, FontSize.MEDIUM)
                         )
                         Icon(
-                            Icons.Rounded.KeyboardArrowDown,
+                            painterResource(R.drawable.drop_down),
                             "Menu",
                             Modifier
                                 .size(height)

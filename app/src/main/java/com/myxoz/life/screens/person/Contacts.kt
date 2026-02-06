@@ -27,9 +27,6 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.rounded.Add
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -44,7 +41,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.vector.rememberVectorPainter
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
@@ -57,8 +53,8 @@ import com.myxoz.life.LocalScreens
 import com.myxoz.life.LocalSettings
 import com.myxoz.life.R
 import com.myxoz.life.Theme
-import com.myxoz.life.api.syncables.PersonSyncable
 import com.myxoz.life.api.API
+import com.myxoz.life.api.syncables.PersonSyncable
 import com.myxoz.life.screens.feed.dayoverview.edgeToEdgeGradient
 import com.myxoz.life.ui.BOTTOMSEARCHBARHEIGHT
 import com.myxoz.life.ui.BottomSearchBar
@@ -340,7 +336,7 @@ fun Contacts(contactsViewModel: ContactsViewModel){
                                                 }
                                             }
                                         ) {
-                                            Icon(Icons.Default.Add, "New", Modifier.fillMaxSize(), Theme.primary)
+                                            Icon(painterResource(R.drawable.add), "New", Modifier.fillMaxSize(), Theme.primary)
                                         }
                                     }
                                 }
@@ -368,7 +364,7 @@ fun Contacts(contactsViewModel: ContactsViewModel){
                 Theme.background,
                 innerPadding.calculateBottomPadding(),
                 {search = it},
-                rememberVectorPainter(Icons.Rounded.Add),
+                painterResource(R.drawable.add),
                 {
                     if (search.isNotBlank()) {
                         coroutineScope.launch {

@@ -116,3 +116,15 @@ class FlowCache<K, V>(
         return new
     }
 }
+class StateFlowCache<K, V>(
+    private val generator: (K) -> StateFlow<V>
+){
+    private val map = mutableMapOf<K, StateFlow<V>>()
+    fun get(key: K): StateFlow<V> {
+        val item = map[key]
+        if(item!=null) return item
+        val new = generator(key)
+        map[key] = new
+        return new
+    }
+}

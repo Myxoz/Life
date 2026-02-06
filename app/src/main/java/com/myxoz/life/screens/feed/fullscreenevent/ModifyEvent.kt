@@ -31,8 +31,6 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.rounded.KeyboardArrowRight
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
@@ -54,6 +52,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.geometry.Offset
@@ -788,7 +787,7 @@ fun TimeBar(event: ProposedEvent, progress: Float = 0f, color: Color, setEventTo
                 Text(startDate, style = TypoStyle(Theme.secondary, FontSize.MEDIUMM), modifier = Modifier.clip(CircleShape).rippleClick{
                     screens.openCalendarAt(Instant.ofEpochMilli(event.start).atZone(ZoneId.systemDefault()).toLocalDate())
                 }.padding(2.dp))
-                Icon(Icons.AutoMirrored.Rounded.KeyboardArrowRight, "Till", tint = Theme.tertiary)
+                Icon(painterResource(R.drawable.drop_down), "Till", Modifier.rotate(-90f), tint = Theme.tertiary)
                 Text(endDate, style = TypoStyle(Theme.secondary, FontSize.MEDIUMM), modifier = Modifier.clip(CircleShape).rippleClick{
                     screens.openCalendarAt(Instant.ofEpochMilli(event.end).atZone(ZoneId.systemDefault()).toLocalDate())
                 }.padding(2.dp))

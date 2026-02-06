@@ -1,19 +1,20 @@
 [versions]
-agp = "8.13.1"
+agp = "9.0.0"
 androidNdk27 = "11.17.1"
-kotlin = "2.0.21"
-coreKtx = "1.16.0"
+genaiPrompt = "1.0.0-beta1"
+kotlin = "2.2.10"
+coreKtx = "1.17.0"
 junit = "4.13.2"
-junitVersion = "1.2.1"
-espressoCore = "3.6.1"
-lifecycleRuntimeKtx = "2.9.0"
-activityCompose = "1.10.1"
-composeBom = "2024.09.00"
-lifecycleViewmodelCompose = "2.7.0"
+junitVersion = "1.3.0"
+espressoCore = "3.7.0"
+lifecycleRuntimeKtx = "2.10.0"
+activityCompose = "1.12.3"
+composeBom = "2026.01.01"
+lifecycleViewmodelCompose = "2.10.0"
 mapsComposeNdk27 = "11.17.1"
-room = "2.6.0"
-navigationCompose = "2.9.5"
-workRuntimeKtx = "2.10.5"
+room = "2.8.4"
+navigationCompose = "2.9.7"
+workRuntimeKtx = "2.11.1"
 graphicsShapes = "1.1.0"
 uiGraphics = "1.10.0"
 paletteKtx = "1.0.0"
@@ -25,6 +26,7 @@ androidx-lifecycle-viewmodel-compose = { module = "androidx.lifecycle:lifecycle-
 androidx-room-ktx = { module = "androidx.room:room-ktx" }
 androidx-room-runtime = { module = "androidx.room:room-runtime", version.ref = "room" }
 androidx-room-compiler = { module = "androidx.room:room-compiler", version.ref = "room" }
+genai-prompt = { module = "com.google.mlkit:genai-prompt", version.ref = "genaiPrompt" }
 junit = { group = "junit", name = "junit", version.ref = "junit" }
 androidx-junit = { group = "androidx.test.ext", name = "junit", version.ref = "junitVersion" }
 androidx-espresso-core = { group = "androidx.test.espresso", name = "espresso-core", version.ref = "espressoCore" }

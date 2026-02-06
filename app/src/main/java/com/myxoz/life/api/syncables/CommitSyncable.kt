@@ -1,11 +1,11 @@
 package com.myxoz.life.api.syncables
 
+import com.myxoz.life.api.API
 import com.myxoz.life.api.ServerSyncable
 import com.myxoz.life.api.ServerSyncableCompanion
 import com.myxoz.life.api.Syncable
 import com.myxoz.life.dbwrapper.commits.CommitEntity
 import com.myxoz.life.dbwrapper.commits.ReadCommitsDao
-import com.myxoz.life.api.API
 import com.myxoz.life.utils.getIntOrNull
 import com.myxoz.life.utils.getLongOrNull
 import com.myxoz.life.utils.getStringOrNull
@@ -27,7 +27,7 @@ class CommitSyncable(
     val modifications: List<CommitModification>,
     val commitUrl: String?,
     val updated: Long
-) : ServerSyncable(Syncable.SpecialSyncablesIds.BANKING) {
+) : ServerSyncable(Syncable.SpecialSyncablesIds.COMMITS) {
     override suspend fun saveToDB(db: API.WriteSyncableDaos) {
         db.commitsDao.insert(
             CommitEntity(

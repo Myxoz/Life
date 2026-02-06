@@ -28,8 +28,6 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.rounded.Add
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -270,7 +268,7 @@ fun MapSheet(mapViewModel: MapViewModel, innerPadding: PaddingValues){
                                 enter = scaleIn() + fadeIn(),
                                 exit = scaleOut() + fadeOut(),
                             ) {
-                                Icon(Icons.Rounded.Add, "Add", Modifier.fillMaxSize(), Theme.onSecondaryContainer)
+                                Icon(painterResource(R.drawable.add), "Add", Modifier.fillMaxSize(), Theme.onSecondaryContainer)
                             }
                             androidx.compose.animation.AnimatedVisibility(
                                 loc != null && !isEditing,
