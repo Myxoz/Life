@@ -43,6 +43,17 @@ interface ReadBankingDao{
     @Query("SELECT * FROM banking WHERE value_date = (SELECT MAX(value_date) FROM banking)")
     suspend fun getLastTransactionDay(): List<BankingEntity>
 
+    @Query("""
+        SELECT MIN(first_date) FROM (
+            SELECT MIN(date) AS first_date FROM bankingsidecar
+            UNION ALL
+            SELECT MIN(purpose_date) AS first_date FROM banking WHERE purpose_date IS NOT NULL
+            UNION ALL
+            SELECT MIN(value_date) AS first_date FROM banking
+        )
+    """)
+    suspend fun getEarliestTransactionDate(): Long?
+
     @Query("SELECT * FROM banking WHERE purpose_date IS NOT NULL AND purpose_date >= :start AND purpose_date < :end")
     suspend fun getTransactionsOnDay(start: Long, end: Long): List<BankingEntity>
 

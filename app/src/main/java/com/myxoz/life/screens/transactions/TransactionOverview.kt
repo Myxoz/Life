@@ -199,7 +199,7 @@ fun TransactionEntry(title: String, value: String) {
 fun MyCard(largeDataCache: LargeDataCache, transactionViewModel: TransactionViewModel){
     var showBalance by transactionViewModel.showBalance.collectAsMutableState()
     val self by transactionViewModel.getSelf.collectAsState(null)
-    val lastTransactions by transactionViewModel.getLastTransactionDay().collectAsState()
+    val lastTransactions by transactionViewModel.lastTransaction.collectAsState()
     val balance = finalDailyBalance(lastTransactions?.map { it.entity })
 
     val innerPadding = windowPadding
@@ -239,7 +239,6 @@ fun MyCard(largeDataCache: LargeDataCache, transactionViewModel: TransactionView
 }
 @Composable
 fun TransactionList(date: LocalDate, transactitonFeedModel: TransactionViewModel) {
-    val nav = LocalNavController.current
     val bankingEntries by transactitonFeedModel.getOnDay(date).collectAsState(listOf())
     val innerPadding = windowPadding
     Column(
@@ -257,10 +256,7 @@ fun TransactionList(date: LocalDate, transactitonFeedModel: TransactionViewModel
                 Modifier
                     .setMaxTabletWidth()
             ) {
-                val screens = LocalScreens.current
-                BankingEntryComposable(it, i == 0, i == bankingEntries.size-1) {
-                    screens.openTransaction(it)
-                }
+                BankingEntryComposable(it, i == 0, i == bankingEntries.size-1)
             }
         }
         Spacer(Modifier.height(innerPadding.calculateBottomPadding()))
@@ -268,13 +264,15 @@ fun TransactionList(date: LocalDate, transactitonFeedModel: TransactionViewModel
 }
 
 @Composable
-fun BankingEntryComposable(entry: BankingRepo.BankingDisplayEntity, isFirst: Boolean, isLast: Boolean, onClick:  ()->Unit){
+fun BankingEntryComposable(entry: BankingRepo.BankingDisplayEntity, isFirst: Boolean, isLast: Boolean){
     val calendar = remember { Calendar.getInstance() }
+    val screens = LocalScreens.current
     Column(
         Modifier
+            .padding(vertical = 2.5.dp)
             .clip(rememberAsymmetricalVerticalCornerRadius(isFirst, isLast))
             .background(Theme.surfaceContainerHigh)
-            .rippleClick{onClick()}
+            .rippleClick{screens.openTransaction(entry)}
             .padding(horizontal = 20.dp, vertical = 15.dp)
         ,
         verticalArrangement = Arrangement.spacedBy(10.dp)

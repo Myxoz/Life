@@ -102,6 +102,7 @@ class VersionedCache<K, T>(private val nativeFetchKey: suspend (K) -> T, private
     }
 
     fun allValuesFlow() = _flow.map { it.values.toList() }
+    fun allMapedFlows() = _flow.map { allMapped -> allMapped.mapValues { it.value.data } }
     fun getCached(it: K) = _flow.value[it]
 }
 class FlowCache<K, V>(
