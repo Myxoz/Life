@@ -73,7 +73,7 @@ fun TransactionFeed(
         override fun onPostScroll(consumed: Offset, available: Offset, source: NestedScrollSource): Offset { return Offset.Zero }
     } }
 
-    LaunchedEffect(listState) {
+    LaunchedEffect(Unit) {
         transactionViewModel.onLastVisibleIndexChanged(0)
         launch {
             snapshotFlow { listState.layoutInfo.visibleItemsInfo.lastOrNull()?.index }

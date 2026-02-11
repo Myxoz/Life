@@ -40,6 +40,7 @@ class BankingRepo(
         return _dayCache.flowByKey(appScope, date).map { it?.data?.sortedByDescending { it.resolveEffectiveDate() } }
     }
     suspend fun getCachedOrCache(date: LocalDate): List<BankingDisplayEntity> {
+        loadTransactionForDayIfNeeded(date)
         return _dayCache.get(date).data.sortedByDescending { it.resolveEffectiveDate() }
     }
     val allTransactionsFlow = _dayCache.allMapedFlows()
@@ -57,9 +58,12 @@ class BankingRepo(
             _earliestTransaction.value = newTransactionDate
         }
         if(old != null) {
-            _dayCache.updateWith(old.resolveEffectiveDate().toLocalDate(zone)){ list ->
+            _dayCache.updateWith(old.resolveEffectiveDate().toLocalDate(zone)) { list ->
                 list.filterNot { it.entity.id == key }
             }
+        }
+        _dayCache.updateWith(new.resolveEffectiveDate().toLocalDate(zone)){ list ->
+            list + new
         }
         checkForFutureTransaction(new)
     }

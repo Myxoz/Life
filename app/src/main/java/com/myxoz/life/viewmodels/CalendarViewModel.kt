@@ -114,16 +114,6 @@ class CalendarViewModel(
     fun setDay(selectedDay: LocalDate) {
         days.value = listOf(selectedDay)
     }
-    fun preloadDay(date: LocalDate){
-        viewModelScope.launch {
-            val flow = segmentedEventsCache.get(date)
-            if (flow.value.isEmpty()) {
-                flow.first() // We collect the first value to warm up the flow and allow instant
-                // collecttion as soon as we scroll to it, precaching
-            }
-            repos.daySummaryRepo.prefetchDay(date)
-        }
-    }
 
     private val daySummaryFlowCache = StateFlowCache<LocalDate, FullDaySyncable?> {
         repos.daySummaryRepo.getDaySummary(it).map { it?.data }.subscribeToColdFlow(viewModelScope, null)
@@ -144,6 +134,16 @@ class CalendarViewModel(
     fun requireAllPeople() = repos.peopleRepo.requireAllPeople()
     val segmentedEventsCache = StateFlowCache<LocalDate, List<SegmentedEvent>>{ date ->
         repos.aggregators.calendarAggregator.getSegmentedEvents(date).subscribeToColdFlow(viewModelScope, listOf())
+    }
+    fun preloadDay(date: LocalDate){
+        viewModelScope.launch {
+            val flow = segmentedEventsCache.get(date)
+            if (flow.value.isEmpty()) {
+                flow.first() // We collect the first value to warm up the flow and allow instant
+                // collecttion as soon as we scroll to it, precaching
+            }
+            repos.daySummaryRepo.prefetchDay(date)
+        }
     }
     fun getSegmentedEvents(date: LocalDate) = segmentedEventsCache.get(date)
     val instantEventsForDayCache = StateFlowCache<LocalDate, List<InstantEvent.InstantEventGroup>>{ date ->

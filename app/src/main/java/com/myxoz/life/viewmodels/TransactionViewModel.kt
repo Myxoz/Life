@@ -41,9 +41,10 @@ class TransactionViewModel(private val repos: AppRepositories): ViewModel() {
     fun onLastVisibleIndexChanged(lastVisibleIndex: Int) {
         val zone = ZoneId.systemDefault()
         val flat = orderedAllTransactionFlow.value.flatMap { it.second.map { it.resolveEffectiveDate().toLocalDate(zone) } + listOf(it.first) }
+        val currentMostRecentDay = flat.firstOrNull() ?: LocalDate.now()
         var difference = flat.size - lastVisibleIndex
         viewModelScope.launch {
-            while (difference < 20) { // At least 20 transaction
+            while (difference < 20 || currentMostRecentDay < lastFetchedDay.value) { // At least 20 transaction
                 val next = lastFetchedDay.value.minusDays(1)
                 if (next < repos.bankingRepo.earliestTransaction.value) return@launch
                 val forDay = repos.bankingRepo.getCachedOrCache(next)
