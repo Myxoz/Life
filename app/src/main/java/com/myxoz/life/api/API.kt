@@ -144,6 +144,7 @@ class API(
         prefs.edit {
             putLong("last_update", lastUpdate)
         }
+        Log.i(LOGTAG, "Done with resyncing")
         isSyncing = false
         return updateAmount
     }
@@ -201,7 +202,7 @@ class API(
             }
 
             Syncable.SpecialSyncablesIds.BANKING -> {
-                val new = BankingSyncable.Companion.overwriteDBByJson(writeSyncableDaos, json)
+                val new = BankingSyncable.overwriteDBByJson(writeSyncableDaos, json)
                 bankingRepo.updateTransaction(
                     BankingRepo.BankingDisplayEntity.from(new.entity, readSyncableDaos.bankingDao)
                 )
@@ -213,31 +214,33 @@ class API(
             }
 
             Syncable.SpecialSyncablesIds.PEOPLE -> {
-                val new = PersonSyncable.Companion.overwriteDBByJson(writeSyncableDaos, json)
+                val new = PersonSyncable.overwriteDBByJson(writeSyncableDaos, json)
                 peopleRepo.updateCacheOnly(new)
             }
 
             Syncable.SpecialSyncablesIds.LOCATIONS -> {
-                val new = LocationSyncable.Companion.overwriteDBByJson(writeSyncableDaos, json)
+                val new = LocationSyncable.overwriteDBByJson(writeSyncableDaos, json)
                 locationRepo.update(new)
             }
 
             Syncable.SpecialSyncablesIds.BANKINGSIDECAR -> {
-                val new = BankingSidecarSyncable.Companion.overwriteDBByJson(writeSyncableDaos, json)
+                println("he hates sidecars")
+                val new = BankingSidecarSyncable.overwriteDBByJson(writeSyncableDaos, json)
                 val displayEntity = BankingRepo.BankingDisplayEntity.from(
                     new.transactionId, readSyncableDaos.bankingDao
                 )
                 if(displayEntity!=null){ // Else Transactiton isnt yet synced
                     bankingRepo.updateTransaction(displayEntity)
                 }
+                println("He doesnt")
             }
 
             Syncable.SpecialSyncablesIds.PROFILEPICTURE -> {
-                val pp = ProfilePictureSyncable.Companion.overwriteDBByJson(writeSyncableDaos, json)
+                val pp = ProfilePictureSyncable.overwriteDBByJson(writeSyncableDaos, json)
                 peopleRepo.updatePP(pp)
             }
             Syncable.SpecialSyncablesIds.COMMITS -> {
-                val commit = CommitSyncable.Companion.overwriteDBByJson(writeSyncableDaos, json)
+                val commit = CommitSyncable.overwriteDBByJson(writeSyncableDaos, json)
                 commitsRepo.updateCommit(commit)
             }
 

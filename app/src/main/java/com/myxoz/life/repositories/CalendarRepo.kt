@@ -50,9 +50,6 @@ class CalendarRepo(
     private val _cachedEventsDayed = VersionedCache<LocalDate, List<SyncedEvent>>(
         { listOf() }
     )
-    suspend fun precacheEventsOnDay(date: LocalDate){
-        prefetchAllEventsIfNeeded(date)
-    }
     fun eventsForDay(date: LocalDate): Flow<Versioned<List<SyncedEvent>>?> {
         appScope.launch { prefetchAllEventsIfNeeded(date) }
         return _cachedEventsDayed.flowByKey(appScope, date)
@@ -146,15 +143,13 @@ class CalendarRepo(
     }
     fun saveProposedNotYetSyncedEvent(event: ProposedEvent) {
         appScope.launch {
-            val id = API.generateId()
             val syncedEvent = SyncedEvent(
-                id,
+                0,
                 System.currentTimeMillis(),
                 null,
                 event
             )
-            syncedEvent.saveToDB(writeSyncableDaos)
-            _cachedEvents.overwrite(id, syncedEvent)
+            updateOrCreateSyncedEvent(syncedEvent)
             event.ignoreProposed(autoDetectPrefs)
         }
     }

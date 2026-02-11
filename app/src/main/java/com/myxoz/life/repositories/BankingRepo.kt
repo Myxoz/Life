@@ -31,13 +31,12 @@ class BankingRepo(
     private val _earliestTransaction = MutableStateFlow(LocalDate.now())
     val earliestTransaction: StateFlow<LocalDate> = _earliestTransaction
     private val zone: ZoneId = ZoneId.systemDefault()
+    private val prefetchedDays = mutableSetOf<LocalDate>()
     private val _dayCache = VersionedCache<LocalDate, List<BankingDisplayEntity>>(
-        { date ->
-            loadTransactionsForDay(date)
-        }
+        { listOf() }
     )
     fun getTransactionsAt(date: LocalDate): Flow<List<BankingDisplayEntity>?> {
-        appScope.launch { _dayCache.prepare(appScope, date) }
+        appScope.launch { loadTransactionForDayIfNeeded(date) }
         return _dayCache.flowByKey(appScope, date).map { it?.data?.sortedByDescending { it.resolveEffectiveDate() } }
     }
     suspend fun getCachedOrCache(date: LocalDate): List<BankingDisplayEntity> {
@@ -68,9 +67,9 @@ class BankingRepo(
         _cache.overwrite(new.entity.id, new)
     }
 
-    private suspend fun loadTransactionsForDay(
-        date: LocalDate
-    ): List<BankingDisplayEntity> {
+    private suspend fun loadTransactionForDayIfNeeded(date: LocalDate) {
+        if(date in prefetchedDays) return
+        prefetchedDays.add(date)
         val start = date.atStartOfDay(zone).toEpochSecond() * 1000L
         val end = date.plusDays(1).atStartOfDay(zone).toEpochSecond() * 1000L
         val sidecars = readBankingDao.getSidecarsBetween(start, end)
@@ -82,7 +81,6 @@ class BankingRepo(
             )
         }
         _cache.overwriteAll(trans.map { it.entity.id to it })
-        return trans
     }
     private val _futureTransactions: VersionedCache<LocalDate, List<BankingDisplayEntity>> = VersionedCache(
         {
@@ -114,6 +112,7 @@ class BankingRepo(
     }
     private suspend fun checkForExistingTransaction(future: BankingDisplayEntity) {
         val day = future.resolveEffectiveDate().toLocalDate(zone)
+        loadTransactionForDayIfNeeded(day)
         val transactions = _dayCache.getCached(day)?.data ?: return
         if(transactions.any { real -> matches(real, future) })
             removeFutureTransaction(future)
