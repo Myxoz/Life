@@ -98,7 +98,7 @@ fun ProfileFullScreen(
     val coroutineScope = rememberCoroutineScope()
     var isPickingBirthDay by remember { mutableStateOf(false) }
     val verticalScrollState = rememberScrollState()
-    val inspectedPerson by profileInfoModel.getInspectedPerson(personId).collectAsState(null)
+    val inspectedPerson by profileInfoModel.getInspectedPerson(personId).collectAsState()
     Box(
         Modifier
             .background(Theme.background)
@@ -146,8 +146,8 @@ fun ProfileFullScreen(
                             val age = now.year - year - 1 + if((now.month.value > month) || (now.month.value == month && now.dayOfMonth >= day /* If equals, birthday is today, Happy Birthday */)) 1 else 0
                             "$day.$month.$year · ${age}J"
                         }
-                        val lastInteraction by profileInfoModel.lastInteractionFlow(personId).collectAsState(null)
-                        val nextInteraction by profileInfoModel.nextInteractionFlow(personId).collectAsState(null)
+                        val lastInteraction by profileInfoModel.lastInteractionFlow(personId).collectAsState()
+                        val nextInteraction by profileInfoModel.nextInteractionFlow(personId).collectAsState()
                         val lastInteractionDisplay = remember(lastInteraction) {
                             ProfileInfoModel.formatTime((lastInteraction?.proposed?.end?:return@remember null) - System.currentTimeMillis())
                         }

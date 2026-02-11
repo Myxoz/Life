@@ -25,24 +25,22 @@ class DaySummaryAggregator(
     private val repos: AppRepositories
 ) {
     private val zone = ZoneId.systemDefault()
-    val pieChartCache = FlowCache<LocalDate, Map<String, PieChart.Companion.PieChartPart>>{ date ->
-        repos.calendarRepo.eventsForDay(date).map { rawEvents ->
-            val total = mutableMapOf<EventType, Long>()
-            val startOfDay = date.atStartAsMillis(zone)
-            val endOfDay = date.atEndAsMillis(zone)
-            val events = rawEvents?.data ?: return@map mapOf()
-            events.forEach {
-                val duration = it.proposed.end.coerceAtMost(endOfDay) - it.proposed.start.coerceAtLeast(startOfDay)
-                total[it.proposed.type] = total[it.proposed.type]?.plus(duration) ?: duration
-            }
-            total.mapValues {
-                PieChart.Companion.PieChartPart(it.key.color, it.value.toDouble())
-            }.mapKeys {
-                it.key.calendarName
-            }
+    fun getDayPieChart(date: LocalDate) = repos.calendarRepo.eventsForDay(date).map { rawEvents ->
+        val total = mutableMapOf<EventType, Long>()
+        val startOfDay = date.atStartAsMillis(zone)
+        val endOfDay = date.atEndAsMillis(zone)
+        val events = rawEvents?.data ?: return@map mapOf()
+        events.forEach {
+            val duration = it.proposed.end.coerceAtMost(endOfDay) - it.proposed.start.coerceAtLeast(startOfDay)
+            total[it.proposed.type] = total[it.proposed.type]?.plus(duration) ?: duration
+        }
+        total.mapValues {
+            PieChart.Companion.PieChartPart(it.key.color, it.value.toDouble())
+        }.mapKeys {
+            it.key.calendarName
         }
     }
-    fun getDayPieChart(day: LocalDate) = pieChartCache.get(day)
+
     @OptIn(ExperimentalCoroutinesApi::class)
     private val getLifeScreenTime = FlowCache<LocalDate, List<DayScreenTimeEntity>> { date ->
         repos.calendarRepo.todayFlow.flatMapLatest { today ->

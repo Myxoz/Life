@@ -70,13 +70,13 @@ fun LifeBottomBar(calendarViewModel: CalendarViewModel){
         val width by animateFloatAsState(setWidth.toFloat())
         val rowHeight = FontSize.LARGE.size.toDp() + 20.dp
         val profileViewModel = LocalScreens.current.profileInfoModel
-        val allPeople by profileViewModel.getAlPeopleFlow.collectAsState(listOf())
+        val allPeople by profileViewModel.getAlPeopleFlow.collectAsState()
         val allPeopleMap = remember(allPeople) {
             // I'm still impressed this works
             allPeople.groupBy { it.id }.mapValues { it.value.first() }
         }
         val mapViewModel = LocalScreens.current.mapViewModel
-        val allLocations by mapViewModel.getAllLocations.collectAsState(listOf())
+        val allLocations by mapViewModel.getAllLocations.collectAsState()
         val allLocationsMap = remember(allLocations) {
             allPeople.groupBy { it.id }.mapValues { it.value.first() }
         }

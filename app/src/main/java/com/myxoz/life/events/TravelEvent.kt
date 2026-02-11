@@ -85,8 +85,8 @@ class TravelEvent(
     ) {
         val profileInfoModel = LocalScreens.current.profileInfoModel
         val blockHeight =  getBlockHeight(startOfDay, endOfDay)
-        val from by profileInfoModel.getLocationById(from).collectAsState(null)
-        val to by profileInfoModel.getLocationById(to).collectAsState(null)
+        val from by profileInfoModel.getLocationById(from).collectAsState()
+        val to by profileInfoModel.getLocationById(to).collectAsState()
         val fromDisplay = from?.name ?: "Von"
         val toDisplay = to?.name ?: "Nach"
         val density = LocalDensity.current

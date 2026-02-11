@@ -48,7 +48,7 @@ import kotlinx.coroutines.launch
 fun PickExistingLocation(mapViewModel: MapViewModel){
     val nav = LocalNavController.current
     var search by remember { mutableStateOf(nav.previousBackStackEntry?.savedStateHandle?.get("pequery")?:"") }
-    val allLocations by mapViewModel.getAllLocations.collectAsState(listOf())
+    val allLocations by mapViewModel.getAllLocations.collectAsState()
     val filtered = remember(search, allLocations) {
         allLocations.filteredWith(search, {it.toAddress(true)}) { it.name }
     }

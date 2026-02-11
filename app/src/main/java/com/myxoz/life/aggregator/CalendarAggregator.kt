@@ -5,7 +5,6 @@ import com.myxoz.life.api.syncables.CommitSyncable
 import com.myxoz.life.dbwrapper.banking.formatCents
 import com.myxoz.life.repositories.AppRepositories
 import com.myxoz.life.repositories.BankingRepo
-import com.myxoz.life.repositories.utils.FlowCache
 import com.myxoz.life.screens.feed.instantevents.InstantEvent
 import com.myxoz.life.screens.feed.instantevents.InstantEvent.Companion.INSTANTEVENTSIZE
 import com.myxoz.life.screens.feed.main.SegmentedEvent
@@ -16,26 +15,22 @@ import java.time.LocalDate
 class CalendarAggregator(
     private val repos: AppRepositories
 ) {
-    private val _getInstantEventsForDayCache = FlowCache<LocalDate, List<InstantEvent.InstantEventGroup>> { date ->
-        combine(
-            repos.commitsRepo.getCommitsForDay(date),
-            repos.bankingRepo.getTransactionsAt(date),
-            repos.bankingRepo.getFutureTransactions(date)
-        ) { commits, transactions, futureTransactions ->
-            val commits = commits?.data.def(listOf()).mapNotNull {
-                commitToInstantEvent(it)
-            }
-            val transactions = transactions.def(listOf()).mapNotNull {
-                bankEntryAsInstantEvent(it)
-            }
-            val futureTransactions = futureTransactions?.data.def(listOf()).mapNotNull {
-                bankEntryAsInstantEvent(it)
-            }
-            createGroupedInstantEvents(commits + transactions + futureTransactions)
+    fun getInstantEventsForDay(date: LocalDate) = combine(
+        repos.commitsRepo.getCommitsForDay(date),
+        repos.bankingRepo.getTransactionsAt(date),
+        repos.bankingRepo.getFutureTransactions(date)
+    ) { commits, transactions, futureTransactions ->
+        val commits = commits?.data.def(listOf()).mapNotNull {
+            commitToInstantEvent(it)
         }
+        val transactions = transactions.def(listOf()).mapNotNull {
+            bankEntryAsInstantEvent(it)
+        }
+        val futureTransactions = futureTransactions?.data.def(listOf()).mapNotNull {
+            bankEntryAsInstantEvent(it)
+        }
+        createGroupedInstantEvents(commits + transactions + futureTransactions)
     }
-
-    fun getInstantEventsForDay(date: LocalDate) = _getInstantEventsForDayCache.get(date)
     private fun commitToInstantEvent(commitSyncable: CommitSyncable): InstantEvent? {
         return InstantEvent(
             R.drawable.commit,
@@ -69,17 +64,14 @@ class CalendarAggregator(
         }
         return groups.map { InstantEvent.InstantEventGroup(it) }
     }
-    private val segmentedEventsFlow = FlowCache<LocalDate, List<SegmentedEvent>>{
-        combine(
-            repos.calendarRepo.eventsForDay(it),
-            getInstantEventsForDay(it),
-        ) { events, instantEvents ->
-            SegmentedEvent.getSegmentedEvents(
-                events?.data.def(listOf()),
-                instantEvents,
-                (INSTANTEVENTSIZE * 3600L).toLong() * 1000L
-            )
-        }
+    fun getSegmentedEvents(it: LocalDate) = combine(
+        repos.calendarRepo.eventsForDay(it),
+        getInstantEventsForDay(it),
+    ) { events, instantEvents ->
+        SegmentedEvent.getSegmentedEvents(
+            events?.data.def(listOf()),
+            instantEvents,
+            (INSTANTEVENTSIZE * 3600L).toLong() * 1000L
+        )
     }
-    fun getSegmentedEvents(it: LocalDate) = segmentedEventsFlow.get(it)
 }

@@ -28,6 +28,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -157,7 +158,7 @@ fun SettingsPermissionComposable(calendarViewModel: CalendarViewModel) {
 @Composable
 fun PermissionComposable(permission: Settings.Permissions.Permission, toggle: (new: Boolean)->Unit) {
     val state by permission.has.collectAsState()
-    val isUseless by permission.useless.collectAsState(false)
+    val isUseless by permission.useless.collectAsState()
     Row(
         Modifier
             .clip(CircleShape)
@@ -178,9 +179,9 @@ fun PermissionComposable(permission: Settings.Permissions.Permission, toggle: (n
 @Composable
 fun FeatureItem(feature: Settings.Features.Feature, setTo: (Boolean)->Unit) {
     val state by feature.has.collectAsState()
-    val isEnablable by combine(flows = feature.reliesOn.map { it.has }){ flowResults ->
-        flowResults.all { it }
-    }.collectAsState(false)
+    val isEnablable by remember{combine(flows = feature.reliesOn.map { it.has }){ flowResults ->
+        flowResults.all { it } //  This is scuffed, I admit it
+    }}.collectAsState(false)
     LaunchedEffect(Unit) {
         if(!feature.hasAssured()) feature.set(false)
         // Disables the feature if it's relied permissions aren't granted, could else lead to undisablable features

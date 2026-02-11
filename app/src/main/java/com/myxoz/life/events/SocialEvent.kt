@@ -65,7 +65,7 @@ class SocialEvent(
         blockHeight: Int
     ) {
         val profileViewModel = LocalScreens.current.profileInfoModel
-        val people by profileViewModel.getPeople(people).collectAsState(listOf())
+        val people by profileViewModel.getPeople(people).collectAsState()
         val displayText = people.joinToString(" · ") { it.name }
         if(isSmall){
             Text(

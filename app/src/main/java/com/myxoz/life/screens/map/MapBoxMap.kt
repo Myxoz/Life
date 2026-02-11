@@ -66,7 +66,7 @@ fun MapBoxMap(mapViewModel: MapViewModel, innerPadding: PaddingValues){
     val selectedCoordinates by mapViewModel.selectedCoordinates.collectAsState()
     val selectCoordsOnMap by mapViewModel.selectCoordsOnMap.collectAsState()
     val isEditing by mapViewModel.isEditing.collectAsState()
-    val allLocations by mapViewModel.getAllLocations.collectAsState(listOf())
+    val allLocations by mapViewModel.getAllLocations.collectAsState()
     val viewPortState = mapViewModel.cameraOptions
     var mapBoxInitialRender by remember { mutableStateOf(false) }
     val coroutineScope = rememberCoroutineScope()

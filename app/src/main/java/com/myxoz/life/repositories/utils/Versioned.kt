@@ -59,8 +59,7 @@ class VersionedCache<K, T>(private val nativeFetchKey: suspend (K) -> T, private
         return fetched
     }
     suspend fun get(key: K): Versioned<T>{
-        val cached = _flow.value[key]
-        return cached ?: fetchForKey(key)
+        return _flow.value[key] ?: fetchForKey(key)
     }
     /** Checks if this key already exists */
     fun hasKey(key: K) = key in _flow.value

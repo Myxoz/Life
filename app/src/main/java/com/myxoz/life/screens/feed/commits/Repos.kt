@@ -59,7 +59,7 @@ import com.myxoz.life.viewmodels.CommitsViewModel
 fun FullScreenRepos(commitsViewModel: CommitsViewModel){
     val nav = LocalNavController.current
     val context = LocalContext.current
-    val repos by commitsViewModel.getAllRepos.collectAsState(listOf())
+    val repos by commitsViewModel.getAllRepos.collectAsState()
     var displayedRepos by remember(repos) { mutableStateOf(repos) }
     val innerPadding = windowPadding
     Box(
@@ -117,7 +117,7 @@ fun FullScreenRepos(commitsViewModel: CommitsViewModel){
 fun FullScreenRepo(name: String, commitsViewModel: CommitsViewModel){
     val nav = LocalNavController.current
     val context = LocalContext.current
-    val allCommits by commitsViewModel.getAllCommitsFor(name).collectAsState(listOf())
+    val allCommits by commitsViewModel.getAllCommitsFor(name).collectAsState()
     var displayedCommits by remember(allCommits) {
         mutableStateOf(allCommits)
     }

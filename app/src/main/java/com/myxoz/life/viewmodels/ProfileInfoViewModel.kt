@@ -1,6 +1,7 @@
 package com.myxoz.life.viewmodels
 
 import android.content.Context
+import android.graphics.Bitmap
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.navigation.NavController
@@ -8,36 +9,44 @@ import com.myxoz.life.api.syncables.LocationSyncable
 import com.myxoz.life.api.syncables.PersonSyncable
 import com.myxoz.life.api.syncables.SyncedEvent
 import com.myxoz.life.repositories.AppRepositories
-import com.myxoz.life.repositories.utils.FlowCache
+import com.myxoz.life.repositories.utils.StateFlowCache
 import com.myxoz.life.repositories.utils.VersionedCache
+import com.myxoz.life.repositories.utils.subscribeToColdFlow
 import com.myxoz.life.utils.diagrams.PieChart
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flatMapLatest
-import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 
 class ProfileInfoModel(val repos: AppRepositories): ViewModel(){
-    private val lastInteractionFlowCache = FlowCache<Long, SyncedEvent?> { repos.aggregators.peopleAggregator.getLastInteraction(it) }
+    private val lastInteractionFlowCache = StateFlowCache<Long, SyncedEvent?> {
+        repos.aggregators.peopleAggregator.getLastInteraction(it).subscribeToColdFlow(viewModelScope, null)
+    }
     fun lastInteractionFlow(personId: Long) = lastInteractionFlowCache.get(personId)
 
-    private val nextInteractionFlowCache = FlowCache<Long, SyncedEvent?> { repos.aggregators.peopleAggregator.getNextInteraction(it) }
+    private val nextInteractionFlowCache = StateFlowCache<Long, SyncedEvent?> {
+        repos.aggregators.peopleAggregator.getNextInteraction(it).subscribeToColdFlow(viewModelScope, null)
+    }
     fun nextInteractionFlow(personId: Long) = nextInteractionFlowCache.get(personId)
 
-    private val getPersonFlowCache = FlowCache<Long, PersonSyncable?>{ repos.peopleRepo.getPerson(it).map { it?.data } }
+    private val getPersonFlowCache = StateFlowCache<Long, PersonSyncable?>{
+        repos.peopleRepo.getPerson(it).map { it?.data }.subscribeToColdFlow(viewModelScope, null)
+    }
     fun getPerson(personId: Long) = getPersonFlowCache.get(personId)
 
-    private val getPeopleFlowCache = FlowCache<List<Long>, List<PersonSyncable>>{ repos.peopleRepo.getPeople(it).map { l -> l.mapNotNull { it?.data } } }
+    private val getPeopleFlowCache = StateFlowCache<List<Long>, List<PersonSyncable>>{
+        repos.peopleRepo.getPeople(it).map { l -> l.mapNotNull { it?.data } }.subscribeToColdFlow(viewModelScope, listOf())
+    }
     fun getPeople(personIds: List<Long>) = getPeopleFlowCache.get(personIds)
 
-    val getAlPeopleFlow = repos.peopleRepo.getAllPeople()
+    val getAlPeopleFlow = repos.peopleRepo.getAllPeople().subscribeToColdFlow(viewModelScope, listOf())
 
-    private val getLocationByIdFLowCache = FlowCache<Long?, LocationSyncable?>{
-        if(it == null || it == 0L) return@FlowCache flowOf(null)
-        repos.locationRepo.getLocationById(it).map { it?.data }
+    private val getLocationByIdFLowCache = StateFlowCache<Long?, LocationSyncable?>{
+        if(it == null || it == 0L) return@StateFlowCache MutableStateFlow(null)
+        repos.locationRepo.getLocationById(it).map { it?.data }.subscribeToColdFlow(viewModelScope, null)
     }
     fun getLocationById(locationId: Long?) = getLocationByIdFLowCache.get(locationId)
 
@@ -47,8 +56,8 @@ class ProfileInfoModel(val repos: AppRepositories): ViewModel(){
             repos.peopleRepo.getCurrentPersonNotAsFlow(it).data
         }
     )
-    private val editingPersonFlowCache = FlowCache<Long, PersonSyncable?>{
-        _editingPerson.flowByKey(viewModelScope, it).map{ it?.data }
+    private val editingPersonFlowCache = StateFlowCache<Long, PersonSyncable?>{
+        _editingPerson.flowByKey(viewModelScope, it).map{ it?.data }.subscribeToColdFlow(viewModelScope, null)
     }
     fun getEditingPerson(personId: Long) = editingPersonFlowCache.get(personId)
     fun edit(personId: Long, editWith: (PersonSyncable)->PersonSyncable) {
@@ -77,14 +86,14 @@ class ProfileInfoModel(val repos: AppRepositories): ViewModel(){
         _isEditing.value = false
     }
     @OptIn(ExperimentalCoroutinesApi::class)
-    private val inspectedPersonCache = FlowCache<Long, PersonSyncable?>{
+    private val inspectedPersonCache = StateFlowCache<Long, PersonSyncable?>{
         isEditing.flatMapLatest { editing ->
             if(editing) getEditingPerson(it) else getPerson(it)
-        }
+        }.subscribeToColdFlow(viewModelScope, null)
     }
     fun getInspectedPerson(personId: Long) = inspectedPersonCache.get(personId)
-    private val savedInContactsCache = FlowCache<String, Boolean?>{
-        repos.contactRepo.isSavedInContacts(it).map { it?.data }
+    private val savedInContactsCache = StateFlowCache<String, Boolean?>{
+        repos.contactRepo.isSavedInContacts(it).map { it?.data }.subscribeToColdFlow(viewModelScope, null)
     }
     fun getSavedInContacts(phoneNumber: String) = savedInContactsCache.get(phoneNumber)
     suspend fun getSavedInContactsNOW(phoneNumber: String) = repos.contactRepo.isSavedInContactsNOW(phoneNumber)
@@ -97,13 +106,13 @@ class ProfileInfoModel(val repos: AppRepositories): ViewModel(){
     val platforms = MutableStateFlow(listOf<PersonSyncable.Companion.Socials>())
     val platformInputs = MutableStateFlow(listOf<String>())
     val isProfilePictureFullScreen = MutableStateFlow(false) /* This doesnt belong here, but this is my app so I dont care */
-    private val piechartFlowCache = FlowCache<Long, Map<String, PieChart.Companion.PieChartPart>?>{ person ->
+    private val piechartFlowCache = StateFlowCache<Long, Map<String, PieChart.Companion.PieChartPart>?>{ person ->
         combine(
             repos.calendarRepo.interactedWithPerson(person),
             chartScale
         ) { _, scale ->
             repos.aggregators.peopleAggregator.getPieChartFor(person, scale)
-        }
+        }.subscribeToColdFlow(viewModelScope, null)
     }
     fun getPieChartForPerson(personId: Long) = piechartFlowCache.get(personId)
     fun openPersonDetails(personId: Long, nav: NavController, context: Context){
@@ -112,7 +121,10 @@ class ProfileInfoModel(val repos: AppRepositories): ViewModel(){
         nav.navigate("display_person/${personId}")
     }
 
-    fun getProfilePicture(personId: Long) = repos.aggregators.peopleAggregator.getProfilePicture(personId)
+    private val profilePictureCache = StateFlowCache<Long, Bitmap?>{ personId ->
+        repos.aggregators.peopleAggregator.getProfilePicture(personId).subscribeToColdFlow(viewModelScope, null)
+    }
+    fun getProfilePicture(personId: Long) = profilePictureCache.get(personId)
 
     companion object {
         fun formatTime(duration: Long): String{

@@ -49,7 +49,7 @@ fun MultipleLoctionBar(
 ){
     val selectedLocations = remember { defaultSelectedLocations.toMutableStateList() }
     val mapViewModel = LocalScreens.current.mapViewModel
-    val allLocations by mapViewModel.getAllLocations.collectAsState(listOf())
+    val allLocations by mapViewModel.getAllLocations.collectAsState()
     var search: String? by remember {
         mutableStateOf(null)
     }

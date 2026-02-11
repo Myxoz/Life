@@ -80,7 +80,7 @@ fun ProfilePictureWithText(photoPicker: PhotoPicker, profileInfoViewModel: Profi
     val progress = 1-min(maxHeight, scrollLength)/maxHeight
     val fontPadding = 20.dp
     val style = TypoStyle(Theme.primary, FontSize.XLARGE, FontFamily.Display)
-    val inspectedPerson by profileInfoViewModel.getInspectedPerson(personId).collectAsState(null)
+    val inspectedPerson by profileInfoViewModel.getInspectedPerson(personId).collectAsState()
     val textMessurer = rememberTextMeasurer()
     val textWidth = with(LocalDensity.current){
         textMessurer.measure(
@@ -117,7 +117,7 @@ fun ProfilePictureWithText(photoPicker: PhotoPicker, profileInfoViewModel: Profi
         val radius = progress*(maxPbSize+fontPadding-smallPbPadding)+smallPbPadding
         val degree = PI/2*(progress.pow(.75f))
         val textOffsetY = sin(degree)*radius + topLeftPbY
-        val bitmap by profileInfoViewModel.getProfilePicture(personId).collectAsState(null)
+        val bitmap by profileInfoViewModel.getProfilePicture(personId).collectAsState()
         val textOffsetX = cos(degree)*radius + topLeftPbX + (if(bitmap!=null) (1-progress)*pbSize else 0.dp) + progress*(pbSize - textWidth)/2
         Box(
             Modifier

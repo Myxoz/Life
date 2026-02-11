@@ -146,7 +146,7 @@ fun DisplayEvent(fullEvent: SyncedEvent){
         }
         if (fullEvent.proposed is PeopleEvent) {
             val profileViewModel = LocalScreens.current.profileInfoModel
-            val displayedPeople by profileViewModel.getPeople(fullEvent.proposed.people).collectAsState(listOf())
+            val displayedPeople by profileViewModel.getPeople(fullEvent.proposed.people).collectAsState()
             Spacer(Modifier.height(10.dp))
             Text("Mit:", style = TypoStyle(Theme.onSecondaryContainer, FontSize.LARGE))
             FlowRow(
@@ -185,8 +185,8 @@ fun DisplayEvent(fullEvent: SyncedEvent){
         }
         if (fullEvent.proposed is TravelEvent) {
             val profileViewModel = LocalScreens.current.profileInfoModel
-            val from by profileViewModel.getLocationById(fullEvent.proposed.from).collectAsState(null)
-            val to by profileViewModel.getLocationById(fullEvent.proposed.to).collectAsState(null)
+            val from by profileViewModel.getLocationById(fullEvent.proposed.from).collectAsState()
+            val to by profileViewModel.getLocationById(fullEvent.proposed.to).collectAsState()
             val size = FontSize.MEDIUM.size.toDp()
             @Composable
             fun RenderLocation(location: LocationSyncable?, isFrom: Boolean) {

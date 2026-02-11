@@ -70,11 +70,11 @@ import kotlin.math.min
 fun DayOverviewComposable(date: LocalDate, dayOverviewViewModel: DayOverviewViewModel){
     val settings = LocalSettings.current
     val isToday = remember(LocalDate.now()) { LocalDate.now() == date }
-    val birthdays by dayOverviewViewModel.getAllBirthdaysAt(date).collectAsState(listOf())
-    val summary by dayOverviewViewModel.getDaySummary(date).collectAsState(null)
-    val bankingDisplayEntitys by dayOverviewViewModel.getAllTransactions(date).collectAsState(listOf())
+    val birthdays by dayOverviewViewModel.getAllBirthdaysAt(date).collectAsState()
+    val summary by dayOverviewViewModel.getDaySummary(date).collectAsState()
+    val bankingDisplayEntitys by dayOverviewViewModel.getAllTransactions(date).collectAsState()
     val chart = remember { PieChart() }
-    val chartData by dayOverviewViewModel.getPieChart(date).collectAsState(mapOf())
+    val chartData by dayOverviewViewModel.getPieChart(date).collectAsState()
     LaunchedEffect(chartData) {
         chart.update(chartData)
         println("We definitly launched the chart?! $chartData")
@@ -161,7 +161,7 @@ fun BirthdayBlock(birthdays: List<PersonSyncable>, selectedDate: LocalDate, dayO
                 .horizontalScroll(rememberScrollState())
         ) {
             birthdays.forEach { person ->
-                val profilePicture by dayOverviewViewModel.getProfilePicture(person.id).collectAsState(null)
+                val profilePicture by dayOverviewViewModel.getProfilePicture(person.id).collectAsState()
                 Box {
                     Column(
                         Modifier

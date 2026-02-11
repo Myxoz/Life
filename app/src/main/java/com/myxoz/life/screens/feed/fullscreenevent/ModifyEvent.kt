@@ -845,7 +845,7 @@ fun PersonBar(
     updateEvent: (List<Long>, Boolean)->Unit
 ){
     val profileViewModel = LocalScreens.current.profileInfoModel
-    val allPeople by profileViewModel.getAlPeopleFlow.collectAsState(listOf())
+    val allPeople by profileViewModel.getAlPeopleFlow.collectAsState()
     val selectedPeople = remember { defaultSelectedPeople.toMutableStateList() }
     var more by remember { mutableStateOf(if(isMoreEvent) defaultMore else false) }
     var search: String? by remember {
@@ -950,7 +950,7 @@ fun LocationBar(defaultLocation: Long, setLocation: (Long)->Unit){
     val navController = LocalNavController.current
     val screens = LocalScreens.current
     val mapViewModel = screens.mapViewModel
-    val allLocations by mapViewModel.getAllLocations.collectAsState(listOf())
+    val allLocations by mapViewModel.getAllLocations.collectAsState()
     val decodedLocation: LocationSyncable? by remember {
         derivedStateOf {
             allLocations.find { it.id == selectedLocation }

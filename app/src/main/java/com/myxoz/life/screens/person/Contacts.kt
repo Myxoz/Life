@@ -99,7 +99,7 @@ fun Contacts(contactsViewModel: ContactsViewModel){
             val screens = LocalScreens.current
             val settings = LocalSettings.current
             val screenWidthPx = LocalConfiguration.current.screenWidthDp.dp.toPx(LocalDensity.current)
-            val lifeContacts by contactsViewModel.getAllLifeContacts.collectAsState(listOf())
+            val lifeContacts by contactsViewModel.getAllLifeContacts.collectAsState()
             val deviceContacts by contactsViewModel.getAllDeviceContacts().collectAsState()
             val showIcons by contactsViewModel.showIcons.collectAsState()
             val ordering = remember {

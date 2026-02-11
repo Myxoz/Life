@@ -10,10 +10,12 @@ import com.myxoz.life.dbwrapper.WaitingSyncDao
 import com.myxoz.life.dbwrapper.WaitingSyncEntity
 import com.myxoz.life.events.ProposedEvent
 import com.myxoz.life.events.additionals.PeopleEvent
+import com.myxoz.life.repositories.utils.Versioned
 import com.myxoz.life.repositories.utils.VersionedCache
 import com.myxoz.life.viewmodels.Settings
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.first
@@ -35,20 +37,26 @@ class CalendarRepo(
     private val zone: ZoneId = ZoneId.systemDefault()
     private val _today = MutableStateFlow(LocalDate.now())
     val todayFlow: StateFlow<LocalDate> = _today
-    private suspend fun fetchEventsForDay(date: LocalDate) =
-        readSyncableDaos.eventDetailsDao.getEventsBetween(
+    private val prefetchedDays = mutableSetOf<LocalDate>()
+    private suspend fun prefetchAllEventsIfNeeded(date: LocalDate) {
+        if(date in prefetchedDays) return
+        prefetchedDays.add(date)
+        val events = readSyncableDaos.eventDetailsDao.getEventsBetween(
             date.atStartOfDay(zone).toInstant().toEpochMilli(),
             date.plusDays(1).atStartOfDay(zone).toInstant().toEpochMilli()
         ).mapNotNull { SyncedEvent.from(readSyncableDaos.eventDetailsDao, it)}
-    private val _cachedEventsDayed = VersionedCache<LocalDate, List<SyncedEvent>>(
-        { date ->
-            fetchEventsForDay(date)
-        }
-    )
-    suspend fun precacheEventOnDay(day: LocalDate){
-        _cachedEventsDayed.cacheDataForKey(day)
+        _cachedEvents.overwriteAll(events.map { it.id to it })
     }
-    fun eventsForDay(date: LocalDate) = _cachedEventsDayed.flowByKey(appScope, date)
+    private val _cachedEventsDayed = VersionedCache<LocalDate, List<SyncedEvent>>(
+        { listOf() }
+    )
+    suspend fun precacheEventsOnDay(date: LocalDate){
+        prefetchAllEventsIfNeeded(date)
+    }
+    fun eventsForDay(date: LocalDate): Flow<Versioned<List<SyncedEvent>>?> {
+        appScope.launch { prefetchAllEventsIfNeeded(date) }
+        return _cachedEventsDayed.flowByKey(appScope, date)
+    }
 
     private val interactedWithPersonCache = VersionedCache<Long, Int>({ 0 })
     fun interactedWithPerson(person: Long) = interactedWithPersonCache.flowByKey(appScope, person)

@@ -1,6 +1,5 @@
 package com.myxoz.life.aggregator
 
-import android.graphics.Bitmap
 import android.util.Log
 import androidx.compose.ui.geometry.Offset
 import com.myxoz.life.api.syncables.ProfilePictureSyncable
@@ -9,7 +8,6 @@ import com.myxoz.life.dbwrapper.events.EventEntity
 import com.myxoz.life.dbwrapper.people.PersonEntity
 import com.myxoz.life.events.additionals.EventType
 import com.myxoz.life.repositories.AppRepositories
-import com.myxoz.life.repositories.utils.FlowCache
 import com.myxoz.life.screens.options.ME_ID
 import com.myxoz.life.screens.person.GraphEdge
 import com.myxoz.life.screens.person.SocialGraphNode
@@ -175,12 +173,9 @@ class PeopleAggregator(
             }
             return@withContext nodes to totalWeightAcc
         }
-    private val profilePictureCache = FlowCache<Long, Bitmap?> { person ->
-        repos.peopleRepo.getProfilePicture(person).map { person ->
-            ProfilePictureSyncable.base64ToBitmap(
-                person?.data?.bitmapBase64 ?: return@map null
-            )
-        }
+    fun getProfilePicture(person: Long) = repos.peopleRepo.getProfilePicture(person).map { person ->
+        ProfilePictureSyncable.base64ToBitmap(
+            person?.data?.bitmapBase64 ?: return@map null
+        )
     }
-    fun getProfilePicture(personId: Long) = profilePictureCache.get(personId)
 }

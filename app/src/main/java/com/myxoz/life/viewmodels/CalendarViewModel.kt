@@ -16,13 +16,16 @@ import com.myxoz.life.api.syncables.FullDaySyncable
 import com.myxoz.life.api.syncables.PersonSyncable
 import com.myxoz.life.events.ProposedEvent
 import com.myxoz.life.repositories.AppRepositories
-import com.myxoz.life.repositories.utils.FlowCache
+import com.myxoz.life.repositories.utils.StateFlowCache
 import com.myxoz.life.repositories.utils.subscribeToColdFlow
 import com.myxoz.life.screens.feed.dayoverview.getMonthByCalendarMonth
+import com.myxoz.life.screens.feed.instantevents.InstantEvent
+import com.myxoz.life.screens.feed.main.SegmentedEvent
 import com.myxoz.life.screens.feed.search.SearchField
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.map
@@ -113,21 +116,25 @@ class CalendarViewModel(
     }
     fun preloadDay(date: LocalDate){
         viewModelScope.launch {
-            repos.calendarRepo.precacheEventOnDay(date)
+            val flow = segmentedEventsCache.get(date)
+            if (flow.value.isEmpty()) {
+                flow.first() // We collect the first value to warm up the flow and allow instant
+                // collecttion as soon as we scroll to it, precaching
+            }
             repos.daySummaryRepo.prefetchDay(date)
         }
     }
 
-    private val daySummaryFlowCache = FlowCache<LocalDate, FullDaySyncable?>{
-        repos.daySummaryRepo.getDaySummary(it).map { it?.data }
+    private val daySummaryFlowCache = StateFlowCache<LocalDate, FullDaySyncable?> {
+        repos.daySummaryRepo.getDaySummary(it).map { it?.data }.subscribeToColdFlow(viewModelScope, null)
     }
     fun getDaySummary(date: LocalDate) = daySummaryFlowCache.get(date)
-    private val birthDayAtCached = FlowCache<LocalDate, List<PersonSyncable>>{
-        repos.peopleRepo.getPeopleWithBirthdayAt(it).map { it?:listOf() }
+    private val birthDayAtCached = StateFlowCache<LocalDate, List<PersonSyncable>>{
+        repos.peopleRepo.getPeopleWithBirthdayAt(it).map { it?:listOf() }.subscribeToColdFlow(viewModelScope, listOf())
     }
     fun getPeopleWithBirthdayAt(date: LocalDate) = birthDayAtCached.get(date)
-    private val getProposedEventsAtCache = FlowCache<LocalDate, List<ProposedEvent>>{
-        repos.calendarRepo.getProposedEventsAt(it).map { it?.data ?: listOf() }
+    private val getProposedEventsAtCache = StateFlowCache<LocalDate, List<ProposedEvent>>{
+        repos.calendarRepo.getProposedEventsAt(it).map { it?.data ?: listOf() }.subscribeToColdFlow(viewModelScope, listOf())
     }
     fun getProposedEventsAt(date: LocalDate) = getProposedEventsAtCache.get(date)
     fun saveProposedEvent(event: ProposedEvent) = repos.calendarRepo.saveProposedNotYetSyncedEvent(event)
@@ -135,8 +142,14 @@ class CalendarViewModel(
     suspend fun testSign() = repos.api.testSign()
     fun getBase64Public() = repos.api.getBase64Public()
     fun requireAllPeople() = repos.peopleRepo.requireAllPeople()
-    fun getSegmentedEvents(date: LocalDate) = repos.aggregators.calendarAggregator.getSegmentedEvents(date)
-    fun getInstantEventsForDay(date: LocalDate) = repos.aggregators.calendarAggregator.getInstantEventsForDay(date)
+    val segmentedEventsCache = StateFlowCache<LocalDate, List<SegmentedEvent>>{ date ->
+        repos.aggregators.calendarAggregator.getSegmentedEvents(date).subscribeToColdFlow(viewModelScope, listOf())
+    }
+    fun getSegmentedEvents(date: LocalDate) = segmentedEventsCache.get(date)
+    val instantEventsForDayCache = StateFlowCache<LocalDate, List<InstantEvent.InstantEventGroup>>{ date ->
+        repos.aggregators.calendarAggregator.getInstantEventsForDay(date).subscribeToColdFlow(viewModelScope, listOf())
+    }
+    fun getInstantEventsForDay(date: LocalDate) = instantEventsForDayCache.get(date)
     fun getCachedLocation(id: Long) = repos.locationRepo.getCachedLocation(id)
     fun getCachedPeopleById(id: List<Long>) = repos.peopleRepo.getCachedPeopleById(id)
     fun getScreentime(date: LocalDate) = repos.aggregators.daySummaryAggregator.getScreenTimeForDay(date)

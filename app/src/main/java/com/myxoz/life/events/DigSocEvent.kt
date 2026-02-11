@@ -60,7 +60,7 @@ class DigSocEvent(
         blockHeight: Int
     ) {
         val profileViewModel = LocalScreens.current.profileInfoModel
-        val people by profileViewModel.getPeople(people).collectAsState(listOf())
+        val people by profileViewModel.getPeople(people).collectAsState()
         val displayText = people.joinToString(" · ") { it.name }
         RenderBasicEventContent(
             title.ifBlank { if(blockHeight <= 3) displayText else title },

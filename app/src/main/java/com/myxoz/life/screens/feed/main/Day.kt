@@ -177,8 +177,8 @@ fun DayComposable(
                     },
                 horizontalArrangement = Arrangement.spacedBy(10.dp)
             ) {
-                val daysSummaries by calendarViewModel.getDaySummary(date).collectAsState(null)
-                val birthdayPeople by calendarViewModel.getPeopleWithBirthdayAt(date).collectAsState(listOf())
+                val daysSummaries by calendarViewModel.getDaySummary(date).collectAsState()
+                val birthdayPeople by calendarViewModel.getPeopleWithBirthdayAt(date).collectAsState()
                 repeat(birthdayPeople.size) {
                     Icon(
                         painterResource(R.drawable.birthday),
@@ -262,11 +262,11 @@ fun DayComposable(
             ) {
                 val isEditing by inspectedEventViewModel.isEditing.collectAsState()
                 val newEvent by inspectedEventViewModel.event.collectAsState()
-                val collectedProposedEvents by calendarViewModel.getProposedEventsAt(date).collectAsState(listOf())
+                val collectedProposedEvents by calendarViewModel.getProposedEventsAt(date).collectAsState()
                 val coroutineScope = rememberCoroutineScope()
 
                 val instantEventSize = InstantEvent.INSTANTEVENTSIZE*oneHourDp
-                val segments by calendarViewModel.getSegmentedEvents(date).collectAsState(listOf())
+                val segments by calendarViewModel.getSegmentedEvents(date).collectAsState()
                 for(segmentedEvent in segments) {
                     if(isEditing && segmentedEvent.event.id == newEvent.id) continue
                     val haptic = LocalHapticFeedback.current
@@ -281,7 +281,7 @@ fun DayComposable(
                         navController.navigate("fullscreen_event")
                     }
                 }
-                val collectedInstantEvents by calendarViewModel.getInstantEventsForDay(date).collectAsState(listOf())
+                val collectedInstantEvents by calendarViewModel.getInstantEventsForDay(date).collectAsState()
                 for (group in collectedInstantEvents) {
                     group.Render(startOfDay, endOfDay, oneHourDp)
                 }

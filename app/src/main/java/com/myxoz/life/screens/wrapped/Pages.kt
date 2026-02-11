@@ -282,7 +282,7 @@ class TopThreeSocialContacts(val people: List<Pair<PersonSyncable, Long>>, conte
                                 y = (pbSize / 2 + cos(progress + index * Math.PI * 2 / 3) * 0.325 * pbSize - 0.175 * pbSize * sizeMod).dp,
                             )
                     ) {
-                        val rawBitmap by profileInfoModel.getProfilePicture(person.first.id).collectAsState(null)
+                        val rawBitmap by profileInfoModel.getProfilePicture(person.first.id).collectAsState()
                         rawBitmap?.let { bitmap ->
                             val revealPogress by animateFloatAsState(if(step > 10 + 10*index) 1f else 0f,  tween(ANIDURATION*5, easing = LinearEasing))
                             Image(
@@ -366,7 +366,7 @@ class SpecialNewcommer(val person: PersonSyncable, val ranking: Int, val time: L
                     Modifier
                         .size(pbSize.dp)
                 ) {
-                    val pp by profileInfoModel.getProfilePicture(person.id).collectAsState(null)
+                    val pp by profileInfoModel.getProfilePicture(person.id).collectAsState()
                     pp?.let { bitmap ->
                         Image(
                             remember(bitmap) { bitmap.asImageBitmap() },

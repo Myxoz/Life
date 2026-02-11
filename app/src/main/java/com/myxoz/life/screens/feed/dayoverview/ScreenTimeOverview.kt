@@ -69,7 +69,7 @@ import java.time.LocalDate
 @Composable
 fun ScreenTimeOverview(date: LocalDate, dayOverviewViewModel: DayOverviewViewModel){
     val isToday = remember { LocalDate.now() == date }
-    val daySummary by dayOverviewViewModel.getDaySummary(date).collectAsState(null)
+    val daySummary by dayOverviewViewModel.getDaySummary(date).collectAsState()
     var showsMore by remember { mutableStateOf(isToday) }
     val displayedEntries by if(showsMore) {
         dayOverviewViewModel.getScreentimeLive(date)

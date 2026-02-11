@@ -125,7 +125,7 @@ fun ProfileInfo(largeDataCache: LargeDataCache, profileInfoModel: ProfileInfoMod
                 .background(Theme.surfaceContainerHigh, RoundedCornerShape(20.dp))
                 .padding(10.dp),
         ) {
-            val inspectedPerson by profileInfoModel.getInspectedPerson(personId).collectAsState(null)
+            val inspectedPerson by profileInfoModel.getInspectedPerson(personId).collectAsState()
             val extendProgress by animateFloatAsState(if (isExtended) 1f else 0f, animationSpec = tween(animationDuration))
             val profileEntrySize =
                 FontSize.MEDIUM.size.toDp() + 4.dp + 5.dp + FontSize.LARGE.size.toDp() + 5.dp + FontSize.SMALL.size.toDp() * 2 + 4.dp // Two line small  height
@@ -206,7 +206,7 @@ fun ProfileInfo(largeDataCache: LargeDataCache, profileInfoModel: ProfileInfoMod
                     val fullyFormatedNumber = formatedPhone?.censorLast(censoredPlaces, " •")
                     val savedInContacts by (inspectedPerson?.phoneNumber?.let { phone ->
                         profileInfoModel.getSavedInContacts(phone)
-                    } ?: MutableStateFlow(null)).collectAsState(null)
+                    } ?: MutableStateFlow(null)).collectAsState()
                     val subtext = if (!isExtended) null else inspectedPerson?.phoneNumber?.let { phoneParser?.getPhoneInfo(it) }
                     Row(
                         horizontalArrangement = Arrangement.SpaceBetween,
@@ -397,7 +397,7 @@ fun ProfileInfo(largeDataCache: LargeDataCache, profileInfoModel: ProfileInfoMod
                         }
                     }
                 }
-                val displayLocation by profileInfoModel.getLocationById(inspectedPerson?.home).collectAsState(null)
+                val displayLocation by profileInfoModel.getLocationById(inspectedPerson?.home).collectAsState()
                 Spacer(Modifier.height(20.dp))
                 ListEntry(
                     "Adresse",
@@ -575,7 +575,7 @@ fun ProfileInfo(largeDataCache: LargeDataCache, profileInfoModel: ProfileInfoMod
                         }
                     }
                 }
-                val lastInteraction by profileInfoModel.lastInteractionFlow(personId).collectAsState(null)
+                val lastInteraction by profileInfoModel.lastInteractionFlow(personId).collectAsState()
                 AnimatedVisibility(
                     !isEditing,
                     enter = fadeIn(tween(animationDuration)) + expandHorizontally(tween(animationDuration)),

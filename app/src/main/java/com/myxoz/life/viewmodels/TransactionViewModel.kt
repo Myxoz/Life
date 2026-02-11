@@ -8,7 +8,6 @@ import com.myxoz.life.api.syncables.PersonSyncable
 import com.myxoz.life.dbwrapper.banking.ReadBankingDao
 import com.myxoz.life.repositories.AppRepositories
 import com.myxoz.life.repositories.BankingRepo
-import com.myxoz.life.repositories.utils.FlowCache
 import com.myxoz.life.repositories.utils.StateFlowCache
 import com.myxoz.life.repositories.utils.subscribeToColdFlow
 import com.myxoz.life.utils.toLocalDate
@@ -67,8 +66,8 @@ class TransactionViewModel(private val repos: AppRepositories): ViewModel() {
             }
         }
     }
-    private val peopleWithIbanLikeCached = FlowCache<String, List<PersonSyncable>>{
-        repos.peopleRepo.getPeopleWithIbanLike(it)
+    private val peopleWithIbanLikeCached = StateFlowCache<String, List<PersonSyncable>>{
+        repos.peopleRepo.getPeopleWithIbanLike(it).subscribeToColdFlow(viewModelScope, listOf())
     }
     fun getPeopleWithIbanLike(iban: String) = peopleWithIbanLikeCached.get(iban)
     val getSelf = repos.peopleRepo.meFlow

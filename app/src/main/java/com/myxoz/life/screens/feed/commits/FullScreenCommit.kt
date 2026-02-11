@@ -57,7 +57,7 @@ import java.time.ZoneId
 @Composable
 fun FullScreenCommit(sha: String, commitsViewModel: CommitsViewModel){
     val context = LocalContext.current
-    val commit by commitsViewModel.getCommit(sha).collectAsState(null)
+    val commit by commitsViewModel.getCommit(sha).collectAsState()
     val displayCommit = commit ?: return
     val innerPadding = windowPadding
     Box(

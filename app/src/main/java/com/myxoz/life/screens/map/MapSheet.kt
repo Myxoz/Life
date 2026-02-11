@@ -442,7 +442,7 @@ fun MapSheet(mapViewModel: MapViewModel, innerPadding: PaddingValues){
                         )
                     )
                 }
-                val allLocations by mapViewModel.getAllLocations.collectAsState(listOf())
+                val allLocations by mapViewModel.getAllLocations.collectAsState()
                 Box(
                     Modifier
                         .fillMaxWidth()

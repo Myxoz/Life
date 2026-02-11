@@ -233,7 +233,7 @@ fun TransactionEntry(title: String, value: String) {
 @Composable
 fun MyCard(largeDataCache: LargeDataCache, transactionViewModel: TransactionViewModel){
     var showBalance by transactionViewModel.showBalance.collectAsMutableState()
-    val self by transactionViewModel.getSelf.collectAsState(null)
+    val self by transactionViewModel.getSelf.collectAsState()
     val lastTransactions by transactionViewModel.lastTransaction.collectAsState()
     val balance = finalDailyBalance(lastTransactions?.map { it.entity })
 
@@ -274,7 +274,7 @@ fun MyCard(largeDataCache: LargeDataCache, transactionViewModel: TransactionView
 }
 @Composable
 fun TransactionList(date: LocalDate, transactitonFeedModel: TransactionViewModel) {
-    val bankingEntries by transactitonFeedModel.getOnDay(date).collectAsState(listOf())
+    val bankingEntries by transactitonFeedModel.getOnDay(date).collectAsState()
     val innerPadding = windowPadding
     Column(
         Modifier
@@ -396,7 +396,7 @@ fun BankCard(
     var offsetX by remember { mutableFloatStateOf(0f) }
     var offsetY by remember { mutableFloatStateOf(0f) }
     var displaysIban by remember { mutableStateOf(true) }
-    val decodedPeople by transactionViewModel.getPeopleWithIbanLike(fromIBAN).collectAsState(listOf())
+    val decodedPeople by transactionViewModel.getPeopleWithIbanLike(fromIBAN).collectAsState()
 
     val animatedOffsetX by animateFloatAsState(
         targetValue = offsetX,
