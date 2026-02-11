@@ -58,12 +58,11 @@ import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.node.Ref
-import androidx.compose.ui.platform.LocalClipboardManager
+import androidx.compose.ui.platform.LocalClipboard
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.text.input.KeyboardType
@@ -88,6 +87,7 @@ import com.myxoz.life.ui.theme.FontSize
 import com.myxoz.life.ui.theme.TypoStyle
 import com.myxoz.life.utils.AndroidUtils
 import com.myxoz.life.utils.PhoneNumberParser
+import com.myxoz.life.utils.copy
 import com.myxoz.life.utils.rippleClick
 import com.myxoz.life.utils.toDp
 import com.myxoz.life.utils.toPx
@@ -767,11 +767,14 @@ fun ListEditingField(isEditing: Boolean, displayText: String, subtext: String?, 
             }
         )
     } else {
-        val clipboard = LocalClipboardManager.current
+        val clipboard = LocalClipboard.current
+        val coroutineScope = rememberCoroutineScope()
         Text(
             displayText,
             modifier = Modifier.combinedClickable(null, null, onLongClick = {
-                if(displayText.isNotBlank() && displayText!="???") clipboard.setText(AnnotatedString(displayText))
+                if(displayText.isNotBlank() && displayText!="???") coroutineScope.launch {
+                    clipboard.copy(displayText)
+                }
             }){},
             style = TypoStyle(Theme.primary, FontSize.LARGE),
             maxLines = 1,

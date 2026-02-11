@@ -52,6 +52,7 @@ import com.myxoz.life.screens.feed.main.HomeComposable
 import com.myxoz.life.screens.feed.search.AdvancedSearch
 import com.myxoz.life.screens.feed.summarizeday.SummarizeDay
 import com.myxoz.life.screens.map.MapBoxMap
+import com.myxoz.life.screens.options.AISettings
 import com.myxoz.life.screens.options.DebugScreen
 import com.myxoz.life.screens.options.MenuComposable
 import com.myxoz.life.screens.options.SettingsComposable
@@ -68,6 +69,7 @@ import com.myxoz.life.screens.transactions.TransactionOverview
 import com.myxoz.life.screens.wrapped.LifeWrappedScreen
 import com.myxoz.life.utils.rememberTextSelectionColors
 import com.myxoz.life.utils.systemColorScheme
+import com.myxoz.life.viewmodels.AISettingsViewModel
 import com.myxoz.life.viewmodels.CalendarViewModel
 import com.myxoz.life.viewmodels.CommitsViewModel
 import com.myxoz.life.viewmodels.ContactsViewModel
@@ -113,6 +115,7 @@ class MainActivity : ComponentActivity() {
     private val socialGraphViewModel: SocialGraphViewModel by viewModels{ factory }
     private val commitsViewModel: CommitsViewModel by viewModels{ factory }
     private val mapViewModel: MapViewModel by viewModels{ factory }
+    private val aiSettingsViewModel: AISettingsViewModel by viewModels { factory }
     private val photoPicker = PhotoPicker()
     private val imagePickerLauncher = registerForActivityResult(
         ActivityResultContracts.StartActivityForResult()
@@ -230,6 +233,9 @@ class MainActivity : ComponentActivity() {
                     }
                     composable("settings/permissions") {
                         SettingsPermissionComposable(calendarViewModel)
+                    }
+                    composable("settings/ai") {
+                        AISettings(aiSettingsViewModel)
                     }
                     composable("summarize_day") {
                         SummarizeDay(dayOverviewViewModel)

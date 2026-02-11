@@ -87,7 +87,7 @@ fun HomeComposable(calendarViewModel: CalendarViewModel, inspectedEventViewModel
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
             Box(Modifier.weight(1f)) {
-                CalendarComposable(calendarViewModel, inspectedEventViewModel) {showDayPopup = true}
+                CalendarComposable(calendarViewModel, inspectedEventViewModel) {isSelectDayVisible = true}
             }
             LifeBottomBar(calendarViewModel)
         }

@@ -46,6 +46,9 @@ class MainViewModelFactory(
             modelClass.isAssignableFrom(MapViewModel::class.java) ->
                 MapViewModel(repositories) as T
 
+            modelClass.isAssignableFrom(AISettingsViewModel::class.java) ->
+                AISettingsViewModel(repositories) as T
+
             else -> error("Unknown ViewModel: $modelClass")
         }
     }

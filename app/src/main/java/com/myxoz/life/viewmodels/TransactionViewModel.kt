@@ -5,6 +5,7 @@ import androidx.core.content.edit
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.myxoz.life.api.syncables.PersonSyncable
+import com.myxoz.life.dbwrapper.banking.ReadBankingDao
 import com.myxoz.life.repositories.AppRepositories
 import com.myxoz.life.repositories.BankingRepo
 import com.myxoz.life.repositories.utils.FlowCache
@@ -20,6 +21,18 @@ import java.time.LocalDate
 import java.time.ZoneId
 
 class TransactionViewModel(private val repos: AppRepositories): ViewModel() {
+    suspend fun predictTransaction(transaction: BankingRepo.BankingDisplayEntity): String? {
+        val entity = transaction.entity
+        val ts = transaction.resolveEffectiveDate()
+        return repos.aiPredictionRepo.predictPaymentName(
+            ReadBankingDao.BankingTrainingRow(
+                entity.amountCents,
+                ts,
+                "(What we want to find out)",
+                repos.readSyncableDaos.bankingDao.getLastTravelEventEndBefore(ts)
+            )
+        )
+    }
     val lazyListState = LazyListState()
     val orderedAllTransactionFlow = repos.bankingRepo.allTransactionsFlow.map { map ->
         map.entries.filter { it.value.isNotEmpty() }.sortedByDescending { it.key }.map { it.key to it.value.sortedBy { transaction -> transaction.resolveEffectiveDate() } }
@@ -74,5 +87,4 @@ class TransactionViewModel(private val repos: AppRepositories): ViewModel() {
             }
         }
     }
-
 }

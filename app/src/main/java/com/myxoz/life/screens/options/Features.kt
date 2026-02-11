@@ -32,10 +32,9 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.platform.LocalClipboardManager
+import androidx.compose.ui.platform.LocalClipboard
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.unit.dp
 import com.myxoz.life.LocalSettings
 import com.myxoz.life.R
@@ -47,6 +46,7 @@ import com.myxoz.life.ui.setMaxTabletWidth
 import com.myxoz.life.ui.theme.FontSize
 import com.myxoz.life.ui.theme.OldColors
 import com.myxoz.life.ui.theme.TypoStyle
+import com.myxoz.life.utils.copy
 import com.myxoz.life.utils.rippleClick
 import com.myxoz.life.utils.windowPadding
 import com.myxoz.life.viewmodels.CalendarViewModel
@@ -105,7 +105,7 @@ fun SettingsPermissionComposable(calendarViewModel: CalendarViewModel) {
                 HorizontalDivider(Modifier.padding(horizontal = 15.dp), color = Theme.outlineVariant)
                 val coroutineScope = rememberCoroutineScope()
                 val context = LocalContext.current
-                val clipboard = LocalClipboardManager.current
+                val clipboard = LocalClipboard.current
                 FeatureItem(settings.features.syncWithServer) {
                     coroutineScope.launch {
                         if(it){
@@ -115,7 +115,9 @@ fun SettingsPermissionComposable(calendarViewModel: CalendarViewModel) {
                                 settings.features.syncWithServer.set(true)
                             } else {
                                 Toast.makeText(context, check, Toast.LENGTH_LONG).show()
-                                clipboard.setText(AnnotatedString(calendarViewModel.getBase64Public()))
+                                coroutineScope.launch {
+                                    clipboard.copy(calendarViewModel.getBase64Public())
+                                }
                             }
                         } else {
                             settings.features.syncWithServer.set(false)
@@ -150,6 +152,7 @@ fun SettingsPermissionComposable(calendarViewModel: CalendarViewModel) {
 //            Spacer(Modifier.height(innerPadding.calculateBottomPadding()))
     }
 }
+
 
 @Composable
 fun PermissionComposable(permission: Settings.Permissions.Permission, toggle: (new: Boolean)->Unit) {

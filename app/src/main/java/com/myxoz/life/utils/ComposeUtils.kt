@@ -1,5 +1,6 @@
 package com.myxoz.life.utils
 
+import android.content.ClipData
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
@@ -14,6 +15,8 @@ import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.ClipEntry
+import androidx.compose.ui.platform.Clipboard
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.Dp
@@ -83,3 +86,7 @@ fun <T> MutableStateFlow<T?>.collectAsMutableNonNullState(defValue: T): MutableS
 
 val windowPadding: PaddingValues
     @Composable get() = WindowInsets.systemBars.asPaddingValues(LocalDensity.current)
+
+suspend fun Clipboard.copy(text: String) {
+    setClipEntry(ClipEntry(ClipData.newPlainText(text, text)))
+}

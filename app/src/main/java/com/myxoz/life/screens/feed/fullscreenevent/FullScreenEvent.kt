@@ -21,6 +21,8 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.selection.LocalTextSelectionColors
+import androidx.compose.foundation.text.selection.TextSelectionColors
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.HorizontalDivider
@@ -71,7 +73,9 @@ fun FullScreenEvent(inspectedEventViewModel: InspectedEventViewModel){
     val colorScheme = rememberColorScemeFromColor(event.proposed.type.color, event)
     val animatedColorScheme = animateColorSchemeAsState(colorScheme)
     CompositionLocalProvider(
-        LocalColors provides animatedColorScheme
+        LocalColors provides animatedColorScheme,
+        LocalTextSelectionColors provides TextSelectionColors(animatedColorScheme.primary,animatedColorScheme.primary.copy(alpha = 0.4f))
+
     ) {
         Box(
             Modifier
@@ -209,19 +213,22 @@ fun FullScreenEvent(inspectedEventViewModel: InspectedEventViewModel){
                                 }
                             } else {
                                 val valid = event.proposed.getInvalidReason()
-                                if (valid != null) Toast.makeText(
-                                    context,
-                                    valid,
-                                    Toast.LENGTH_SHORT
-                                ).show()
-                                if (valid == null) coroutineScope.launch {
-                                    isSending = true
-                                    inspectedEventViewModel.updateOrCreateSyncedEvent(event)
-                                    inspectedEventViewModel.resync()
-                                    inspectedEventViewModel.setEditing(false)
-                                    isSending = false
-                                    wasSuccessful = true
-                                    nav.popBackStack()
+                                if (valid != null) {
+                                    Toast.makeText(
+                                        context,
+                                        valid,
+                                        Toast.LENGTH_SHORT
+                                    ).show()
+                                } else {
+                                    coroutineScope.launch {
+                                        isSending = true
+                                        inspectedEventViewModel.updateOrCreateSyncedEvent(event)
+                                        inspectedEventViewModel.resync()
+                                        inspectedEventViewModel.setEditing(false)
+                                        isSending = false
+                                        wasSuccessful = true
+                                        nav.popBackStack()
+                                    }
                                 }
                             }
                         }

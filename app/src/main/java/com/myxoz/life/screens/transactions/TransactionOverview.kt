@@ -12,9 +12,11 @@ import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.aspectRatio
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -32,7 +34,9 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -43,9 +47,8 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
-import androidx.compose.ui.platform.LocalClipboardManager
+import androidx.compose.ui.platform.LocalClipboard
 import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -68,6 +71,7 @@ import com.myxoz.life.ui.theme.OldColors
 import com.myxoz.life.ui.theme.TypoStyle
 import com.myxoz.life.ui.theme.TypoStyleOld
 import com.myxoz.life.utils.collectAsMutableState
+import com.myxoz.life.utils.copy
 import com.myxoz.life.utils.formatMinutes
 import com.myxoz.life.utils.formatTimeStamp
 import com.myxoz.life.utils.rippleClick
@@ -75,6 +79,8 @@ import com.myxoz.life.utils.toDp
 import com.myxoz.life.utils.windowPadding
 import com.myxoz.life.viewmodels.LargeDataCache
 import com.myxoz.life.viewmodels.TransactionViewModel
+import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.launch
 import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneId
@@ -85,6 +91,13 @@ fun TransactionOverview(largeDataCache: LargeDataCache, transactionViewModel: Tr
     val transactionAtHand by transactionViewModel.inspectedTransaction.collectAsState()
     val transaction = transactionAtHand ?: return
     val innerPadding = windowPadding
+    val predictedTransactionName by if(transaction.entity.fromName.isNotEmpty()) {
+        flowOf(null).collectAsState(null)
+    } else {
+        produceState<String?>(null) {
+            value = transactionViewModel.predictTransaction(transaction)
+        }
+    }
     Box(
         Modifier
             .fillMaxSize()
@@ -128,16 +141,24 @@ fun TransactionOverview(largeDataCache: LargeDataCache, transactionViewModel: Tr
                 style = TypoStyle(Theme.secondary, FontSize.LARGE),
                 textAlign = TextAlign.Center
             )
+            val isAiPredicted = predictedTransactionName != null
+            val displayName = when{
+                isAiPredicted -> predictedTransactionName!!
+                transaction.entity.fromName.isNotEmpty() -> "${transaction.entity.fromName} ${if (transaction.sidecar != null) " (${transaction.sidecar.name})" else ""}"
+                else -> "Unbekannt"
+            }
+
             Column (
                 Modifier
                     .align(Alignment.CenterHorizontally)
                 ,
                 horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.spacedBy(10.dp)
+                verticalArrangement = Arrangement.spacedBy(5.dp)
             ) {
                 BankCard(
-                    transaction.entity.fromName + if (transaction.sidecar != null) " (${transaction.sidecar.name})" else "",
+                    displayName,
                     transaction.entity.fromIban,
+                    isAiPredicted,
                     largeDataCache,
                     transactionViewModel
                 )
@@ -183,6 +204,20 @@ fun TransactionOverview(largeDataCache: LargeDataCache, transactionViewModel: Tr
                 Spacer(Modifier)
                 TransactionEntry("Verwendungszweck", transaction.entity.purpose)
             }
+             // Uncomment when you need the weights
+//            val props by produceState<DoubleArray?>(null) {
+//                    val entity = transaction.entity
+//                    val ts = transaction.resolveEffectiveDate()
+//                    value = transactionViewModel.predictPaymentProbs(
+//                        ReadBankingDao.BankingTrainingRow(
+//                            entity.amountCents,
+//                            ts,
+//                            "(What we want to find out)",
+//                            transactionViewModel.getLastTransactionIdBefore(ts)
+//                        )
+//                    )
+//                }
+//            Text(props?.withIndex()?.sortedByDescending { it.value }?.joinToString("\n") { "${transactionViewModel.paymentPredictor?.buckets[it.index]}: ${it.value}" }?:"", color = Theme.primary)
             Spacer(Modifier.height(innerPadding.calculateBottomPadding()))
         }
     }
@@ -233,7 +268,7 @@ fun MyCard(largeDataCache: LargeDataCache, transactionViewModel: TransactionView
                 textAlign = TextAlign.Center
             )
         }
-        BankCard(self?.fullName?:"Ich", self?.iban?:"***", largeDataCache, transactionViewModel)
+        BankCard(self?.fullName?:"Ich", self?.iban?:"***", false, largeDataCache, transactionViewModel)
         Spacer(Modifier.height(innerPadding.calculateBottomPadding()))
     }
 }
@@ -351,7 +386,13 @@ fun BankingEntryComposable(entry: BankingRepo.BankingDisplayEntity, isFirst: Boo
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
-fun BankCard(from: String, fromIBAN: String, largeDataCache: LargeDataCache?, transactionViewModel: TransactionViewModel) {
+fun BankCard(
+    from: String,
+    fromIBAN: String,
+    isAIGenerated: Boolean,
+    largeDataCache: LargeDataCache?,
+    transactionViewModel: TransactionViewModel
+) {
     var offsetX by remember { mutableFloatStateOf(0f) }
     var offsetY by remember { mutableFloatStateOf(0f) }
     var displaysIban by remember { mutableStateOf(true) }
@@ -434,23 +475,43 @@ fun BankCard(from: String, fromIBAN: String, largeDataCache: LargeDataCache?, tr
             Modifier.align(Alignment.BottomStart)
         ) {
             val screens = LocalScreens.current
-            Text(
-                from + if(decodedPeople.isNotEmpty()) " (${decodedPeople.joinToString { it.name }})" else "",
+            Row(
                 Modifier
-                    .clickable(null, null, decodedPeople.size == 1) {
-                        screens.openPersonDetails(decodedPeople.firstOrNull()?.id ?: return@clickable)
-                    }
+                    .height(IntrinsicSize.Min)
                 ,
-                style = TypoStyleOld(FontColor.PRIMARY, FontSize.MLARGE),
-                textAlign = TextAlign.Start
-            )
+                horizontalArrangement = Arrangement.spacedBy(5.dp)
+            ) {
+                if(isAIGenerated) {
+                    Icon(
+                        painterResource(R.drawable.sparkles),
+                        "AI predicted name",
+                        Modifier.fillMaxHeight(),
+                        Theme.primary
+                    )
+                }
+                Text(
+                    from + if(decodedPeople.isNotEmpty()) " (${decodedPeople.joinToString { it.name }})" else "",
+                    Modifier
+                        .clickable(null, null, decodedPeople.size == 1) {
+                            screens.openPersonDetails(decodedPeople.firstOrNull()?.id ?: return@clickable)
+                        }
+                    ,
+                    style = TypoStyle(Theme.primary, FontSize.MLARGE),
+                    textAlign = TextAlign.Start
+                )
+            }
             if(displaysIban){
-                val clipboard = LocalClipboardManager.current
+                val clipboard = LocalClipboard.current
+                val coroutineScope = rememberCoroutineScope()
                 if(fromIBAN.isNotBlank())
                     Text(
                         fromIBAN.uppercase().chunked(4).joinToString(" "),
-                        style = TypoStyleOld(FontColor.SECONDARY, FontSize.MEDIUM),
-                        modifier = Modifier.combinedClickable(null, null, onLongClick = { clipboard.setText(AnnotatedString(fromIBAN))}){
+                        style = TypoStyle(Theme.secondary, FontSize.MEDIUM),
+                        modifier = Modifier.combinedClickable(null, null, onLongClick = {
+                            coroutineScope.launch {
+                                clipboard.copy(fromIBAN)
+                            }
+                        }){
                             if(largeDataCache!=null && fromIBAN.startsWith("DE")) displaysIban=!displaysIban
                         }
                     )

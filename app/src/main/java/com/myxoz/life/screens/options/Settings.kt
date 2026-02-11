@@ -43,6 +43,7 @@ fun SettingsComposable(){
     val all = arrayOf(
         SubOption(R.drawable.settings, "Berechtigungen", "settings/permissions"),
         SubOption(R.drawable.contacts, "Ich", "display_person/$ME_ID"),
+        SubOption(R.drawable.sparkles, "KI", "settings/ai"),
     )
     val context = LocalContext.current
     val nav = LocalNavController.current

@@ -205,7 +205,7 @@ class BankingRepo(
                 "EUR",
                 "",
                 timestamp,
-                from?:"Unbekannt",
+                from?:"",
                 "",
                 "",
                 "",

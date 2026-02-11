@@ -75,6 +75,11 @@ class MainApplication: Application() {
             readSyncableDaos,
             appScope
         )
+        val aiPredictionRepo = AIPredictionRepo(
+            applicationContext,
+            readSyncableDaos,
+            appScope
+        )
         val stepRepo = StepRepo(db.proposedSteps, applicationContext.getSharedPreferences("steps", MODE_PRIVATE), appScope)
         repositories = AppRepositories(
             calendarRepo,
@@ -85,6 +90,7 @@ class MainApplication: Application() {
             contactRepo,
             bankingRepo,
             locationRepo,
+            aiPredictionRepo,
             API(
                 calendarRepo,
                 daySummaryRepo,
