@@ -22,7 +22,7 @@ class CommitsRepo(
             throw Error("Why tf was this called? If this errors you really did a lot wrong. Fetching a repo by key eventhough we dont even know the Repo, props")
         }
     )
-    val getAllRepos = _repos.allValuesFlow().map{ it.map { repo -> repo.data }.sortedByDescending { repo -> repo.commitDate ?: 0L } }
+    val getAllRepos = _repos.allValuesFlow.map{ it.map { repo -> repo.data }.sortedByDescending { repo -> repo.commitDate ?: 0L } }
 
     private val _commitsDayed = VersionedCache<LocalDate, List<CommitSyncable>>(
         { date ->
@@ -66,7 +66,7 @@ class CommitsRepo(
             }
         }
     }
-    fun getAllCommitsFor(repoName: String) = _commits.allValuesFlow().map { commit -> commit.filter { it.data.repoName == repoName }.map { it.data } }
+    fun getAllCommitsFor(repoName: String) = _commits.allValuesFlow.map { commit -> commit.filter { it.data.repoName == repoName }.map { it.data } }
     suspend fun updateCommit(commitSyncable: CommitSyncable) {
         _commits.overwrite(commitSyncable.commitSha, commitSyncable)
     }

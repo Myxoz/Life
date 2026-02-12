@@ -40,6 +40,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.geometry.Offset
@@ -306,6 +307,7 @@ fun BankingEntryComposable(entry: BankingRepo.BankingDisplayEntity, isFirst: Boo
         Modifier
             .padding(vertical = 2.5.dp)
             .clip(rememberAsymmetricalVerticalCornerRadius(isFirst, isLast))
+            .alpha(if(entry.entity.isWirelessPayment()) .5f else 1f)
             .background(Theme.surfaceContainerHigh)
             .rippleClick{screens.openTransaction(entry)}
             .padding(horizontal = 20.dp, vertical = 15.dp)
@@ -362,7 +364,7 @@ fun BankingEntryComposable(entry: BankingRepo.BankingDisplayEntity, isFirst: Boo
                 verticalArrangement = Arrangement.spacedBy(2.dp)
             ) {
                 Text(
-                    entry.sidecar?.name ?: entry.entity.fromName,
+                    if(entry.entity.isWirelessPayment()) "Unbekannt" else entry.sidecar?.name ?: entry.entity.fromName,
                     style = TypoStyle(Theme.primary, FontSize.LARGE),
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis

@@ -36,7 +36,7 @@ class SocialGraphViewModel(
             combine(
                 addMyself,
                 chartScale,
-                repos.calendarRepo.interactedWithAnyPerson()
+                repos.calendarRepo.interactedWithAnyPerson
             ) { addMyselfValue, chartScaleValue, eventUpdate ->
                 Triple(addMyselfValue, chartScaleValue, eventUpdate)
             }

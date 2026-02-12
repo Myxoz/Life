@@ -48,10 +48,10 @@ class LocationRepo(
             readSyncableDaos.locationsDao.getAllLocations().map { it.id to LocationSyncable.from(it) }
         )
     }
-    fun getAllLocations() = _cache.allValuesFlow()
+    val getAllLocations = _cache.allValuesFlow
     suspend fun queryByCoordinate(targetLat: Double, targetLon: Double): LocationSyncable? {
         requestFetchAllLocations()
-        val allLocations = _cache.allValuesFlow().first().map { it.data }
+        val allLocations = _cache.allValuesFlow.first().map { it.data }
 
         return allLocations
             .mapNotNull { entity ->

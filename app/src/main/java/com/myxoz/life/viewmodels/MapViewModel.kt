@@ -90,7 +90,7 @@ class MapViewModel(private val repos: AppRepositories): ViewModel() {
         coordsInput.value = newLocation?.let { "%.6f, %.6f".format(it.lat, it.longitude) }
         selectedCoordinates.value = newLocation?.let { Point.fromLngLat(it.longitude, it.lat) }
     }
-    val getAllLocations = repos.locationRepo.getAllLocations().map {
+    val getAllLocations = repos.locationRepo.getAllLocations.map {
         locations -> locations.map { it.data }
     }.subscribeToColdFlow(viewModelScope, listOf())
     suspend fun queryByCoordinate(lat: Double, long: Double) = repos.locationRepo.queryByCoordinate(lat, long)

@@ -13,6 +13,7 @@ import com.myxoz.life.repositories.utils.subscribeToColdFlow
 import com.myxoz.life.utils.toLocalDate
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
@@ -33,9 +34,18 @@ class TransactionViewModel(private val repos: AppRepositories): ViewModel() {
         )
     }
     val lazyListState = LazyListState()
-    val orderedAllTransactionFlow = repos.bankingRepo.allTransactionsFlow.map { map ->
-        map.entries.filter { it.value.isNotEmpty() }.sortedByDescending { it.key }.map { it.key to it.value.sortedBy { transaction -> transaction.resolveEffectiveDate() } }
+    val orderedAllTransactionFlow = combine(
+        repos.bankingRepo.allTransactionsFlow,
+        repos.bankingRepo.allFutureTransactions
+    ) { transactions, futures ->
+        val mutMap = transactions.toMutableMap()
+        futures.forEach { (key, value) ->
+            mutMap.merge(key, value) { old, new -> old + new }
+        }
+         mutMap.entries.filter { it.value.isNotEmpty() }.sortedByDescending { it.key }.map { it.key to it.value.sortedBy { transaction -> transaction.resolveEffectiveDate() } }
     }.subscribeToColdFlow(viewModelScope, listOf())
+
+
     val lastFetchedDay = MutableStateFlow<LocalDate>(LocalDate.now().plusDays(1))
 
     fun onLastVisibleIndexChanged(lastVisibleIndex: Int) {

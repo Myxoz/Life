@@ -86,13 +86,13 @@ class PeopleRepo(
     }
     fun getPeopleWithIbanLike(iban: String): Flow<List<PersonSyncable>> {
         requireAllPeople()
-        return _cachedPeople.allValuesFlow().map { people ->
+        return _cachedPeople.allValuesFlow.map { people ->
             people.filter { it.data.iban == iban }.map { it.data }
         }
     }
     fun getAllPeople(): Flow<List<PersonSyncable>> {
         requireAllPeople()
-        return _cachedPeople.allValuesFlow().map { it.map { it.data } }
+        return _cachedPeople.allMapedFlows.map { it.values.toList() }
     }
     fun getPeopleWithBirthdayAt(date: LocalDate) = _birthday.flowByKey(appScope, date).map { it?.data }
     fun LocalDate.allFutureBirthdays(maxAge: Int = 130): List<LocalDate> {

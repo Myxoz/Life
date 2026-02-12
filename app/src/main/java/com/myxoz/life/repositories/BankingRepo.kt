@@ -43,7 +43,7 @@ class BankingRepo(
         loadTransactionForDayIfNeeded(date)
         return _dayCache.get(date).data.sortedByDescending { it.resolveEffectiveDate() }
     }
-    val allTransactionsFlow = _dayCache.allMapedFlows()
+    val allTransactionsFlow = _dayCache.allMapedFlows
 
     private val _cache = VersionedCache<String, BankingDisplayEntity>(
         {
@@ -93,6 +93,7 @@ class BankingRepo(
         }
     )
     fun getFutureTransactions(date: LocalDate) = _futureTransactions.flowByKey(appScope, date)
+    val allFutureTransactions = _futureTransactions.allMapedFlows
     suspend fun putFutureTransaction(amount: Int, timestamp: Long, from: String?) {
         val future = BankingDisplayEntity(getFutureTransactionBy(amount, timestamp, from), null)
         _futureTransactions.updateWith(future.resolveEffectiveDate().toLocalDate(zone)) { list ->

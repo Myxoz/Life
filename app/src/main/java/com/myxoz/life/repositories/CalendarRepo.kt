@@ -57,7 +57,7 @@ class CalendarRepo(
 
     private val interactedWithPersonCache = VersionedCache<Long, Int>({ 0 })
     fun interactedWithPerson(person: Long) = interactedWithPersonCache.flowByKey(appScope, person)
-    fun interactedWithAnyPerson() = interactedWithPersonCache.allValuesFlow()
+    val interactedWithAnyPerson = interactedWithPersonCache.allValuesFlow
     private val _cachedEvents = VersionedCache<Long, SyncedEvent?>(
         { id ->
             SyncedEvent.from(
