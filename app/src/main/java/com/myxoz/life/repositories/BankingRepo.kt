@@ -6,6 +6,7 @@ import com.myxoz.life.dbwrapper.banking.BankingEntity
 import com.myxoz.life.dbwrapper.banking.BankingSidecarEntity
 import com.myxoz.life.dbwrapper.banking.ReadBankingDao
 import com.myxoz.life.repositories.utils.VersionedCache
+import com.myxoz.life.repositories.utils.VersionedDayedCache
 import com.myxoz.life.utils.getStringOrNull
 import com.myxoz.life.utils.jsonObjArray
 import com.myxoz.life.utils.toLocalDate
@@ -31,25 +32,25 @@ class BankingRepo(
     private val _earliestTransaction = MutableStateFlow(LocalDate.now())
     val earliestTransaction: StateFlow<LocalDate> = _earliestTransaction
     private val zone: ZoneId = ZoneId.systemDefault()
-    private val prefetchedDays = mutableSetOf<LocalDate>()
-    private val _dayCache = VersionedCache<LocalDate, List<BankingDisplayEntity>>(
-        { listOf() }
-    )
-    fun getTransactionsAt(date: LocalDate): Flow<List<BankingDisplayEntity>?> {
-        appScope.launch { loadTransactionForDayIfNeeded(date) }
-        return _dayCache.flowByKey(appScope, date).map { it?.data?.sortedByDescending { it.resolveEffectiveDate() } }
-    }
-    suspend fun getCachedOrCache(date: LocalDate): List<BankingDisplayEntity> {
-        loadTransactionForDayIfNeeded(date)
-        return _dayCache.get(date).data.sortedByDescending { it.resolveEffectiveDate() }
-    }
-    val allTransactionsFlow = _dayCache.allMapedFlows
 
-    private val _cache = VersionedCache<String, BankingDisplayEntity>(
-        {
-            BankingDisplayEntity.from(it, readBankingDao) ?:throw Error("This transaction doesnt exist. Check where you get the id from! $it")
+    private val _cache = VersionedDayedCache<String, BankingDisplayEntity, BankingDisplayEntity>(
+        { key ->
+            BankingDisplayEntity.from(key, readBankingDao) ?:throw Error("This transaction doesnt exist. Check where you get the id from! $key")
+        },
+        { date, cache ->
+            val start = date.atStartOfDay(zone).toEpochSecond() * 1000L
+            val end = date.plusDays(1).atStartOfDay(zone).toEpochSecond() * 1000L
+            val sidecars = readBankingDao.getSidecarsBetween(start, end)
+            val transactions = readBankingDao.getCombinedTransactions(start, end)
+            val trans = transactions.map {
+                BankingDisplayEntity(
+                    it,
+                    sidecars.find { c -> c.transactionId == it.id }
+                )
+            }
+            cache.overwriteAll(trans.map { it.entity.id to it })
         }
-    ) { key, old, new ->
+    ) { cache, key, old, new ->
         val newTransactionDate = new.resolveEffectiveDate().toLocalDate(zone)
         if(newTransactionDate > _lastTransactionDay.value){
             _lastTransactionDay.value = newTransactionDate
@@ -58,34 +59,27 @@ class BankingRepo(
             _earliestTransaction.value = newTransactionDate
         }
         if(old != null) {
-            _dayCache.updateWith(old.resolveEffectiveDate().toLocalDate(zone)) { list ->
+            cache.updateWith(old.resolveEffectiveDate().toLocalDate(zone)) { list ->
                 list.filterNot { it.entity.id == key }
             }
         }
-        _dayCache.updateWith(new.resolveEffectiveDate().toLocalDate(zone)){ list ->
+        cache.updateWith(new.resolveEffectiveDate().toLocalDate(zone)){ list ->
             list + new
         }
         checkForFutureTransaction(new)
     }
-    suspend fun updateTransaction(new: BankingDisplayEntity){
-        _cache.overwrite(new.entity.id, new)
+    val allTransactionsFlow = _cache.allDaysFlow
+    fun getTransactionsAt(date: LocalDate): Flow<List<BankingDisplayEntity>?> {
+        return _cache.getDayFlowFor(appScope, date).map { it?.data?.sortedByDescending { it.resolveEffectiveDate() } }
+    }
+    suspend fun getCachedOrCache(date: LocalDate): List<BankingDisplayEntity> {
+        return _cache.getCachedDayOrCache(date).data.sortedByDescending { it.resolveEffectiveDate() }
     }
 
-    private suspend fun loadTransactionForDayIfNeeded(date: LocalDate) {
-        if(date in prefetchedDays) return
-        prefetchedDays.add(date)
-        val start = date.atStartOfDay(zone).toEpochSecond() * 1000L
-        val end = date.plusDays(1).atStartOfDay(zone).toEpochSecond() * 1000L
-        val sidecars = readBankingDao.getSidecarsBetween(start, end)
-        val transactions = readBankingDao.getCombinedTransactions(start, end)
-        val trans = transactions.map {
-            BankingDisplayEntity(
-                it,
-                sidecars.find { c -> c.transactionId == it.id }
-            )
-        }
-        _cache.overwriteAll(trans.map { it.entity.id to it })
+    suspend fun updateTransaction(new: BankingDisplayEntity){
+        _cache.cache.overwrite(new.entity.id, new)
     }
+
     private val _futureTransactions: VersionedCache<LocalDate, List<BankingDisplayEntity>> = VersionedCache(
         {
             listOf()
@@ -117,8 +111,7 @@ class BankingRepo(
     }
     private suspend fun checkForExistingTransaction(future: BankingDisplayEntity) {
         val day = future.resolveEffectiveDate().toLocalDate(zone)
-        loadTransactionForDayIfNeeded(day)
-        val transactions = _dayCache.getCached(day)?.data ?: return
+        val transactions = _cache.getCachedDayOrCache(day).data
         if(transactions.any { real -> matches(real, future) })
             removeFutureTransaction(future)
     }

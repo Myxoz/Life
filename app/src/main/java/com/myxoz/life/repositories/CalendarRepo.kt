@@ -12,6 +12,7 @@ import com.myxoz.life.events.ProposedEvent
 import com.myxoz.life.events.additionals.PeopleEvent
 import com.myxoz.life.repositories.utils.Versioned
 import com.myxoz.life.repositories.utils.VersionedCache
+import com.myxoz.life.repositories.utils.VersionedDayedCache
 import com.myxoz.life.viewmodels.Settings
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.delay
@@ -37,66 +38,58 @@ class CalendarRepo(
     private val zone: ZoneId = ZoneId.systemDefault()
     private val _today = MutableStateFlow(LocalDate.now())
     val todayFlow: StateFlow<LocalDate> = _today
-    private val prefetchedDays = mutableSetOf<LocalDate>()
-    private suspend fun prefetchAllEventsIfNeeded(date: LocalDate) {
-        if(date in prefetchedDays) return
-        prefetchedDays.add(date)
-        val events = readSyncableDaos.eventDetailsDao.getEventsBetween(
-            date.atStartOfDay(zone).toInstant().toEpochMilli(),
-            date.plusDays(1).atStartOfDay(zone).toInstant().toEpochMilli()
-        ).mapNotNull { SyncedEvent.from(readSyncableDaos.eventDetailsDao, it)}
-        _cachedEvents.overwriteAll(events.map { it.id to it })
-    }
-    private val _cachedEventsDayed = VersionedCache<LocalDate, List<SyncedEvent>>(
-        { listOf() }
-    )
-    fun eventsForDay(date: LocalDate): Flow<Versioned<List<SyncedEvent>>?> {
-        appScope.launch { prefetchAllEventsIfNeeded(date) }
-        return _cachedEventsDayed.flowByKey(appScope, date)
-    }
-
-    private val interactedWithPersonCache = VersionedCache<Long, Int>({ 0 })
+    private val interactedWithPersonCache = VersionedCache<Long, Int>({0})
     fun interactedWithPerson(person: Long) = interactedWithPersonCache.flowByKey(appScope, person)
     val interactedWithAnyPerson = interactedWithPersonCache.allValuesFlow
-    private val _cachedEvents = VersionedCache<Long, SyncedEvent?>(
+    private val _cachedEvents = VersionedDayedCache<Long, SyncedEvent?, SyncedEvent>(
         { id ->
             SyncedEvent.from(
                 readSyncableDaos.eventDetailsDao,
-                readSyncableDaos.eventDetailsDao.getEvent(id)?:return@VersionedCache null
+                readSyncableDaos.eventDetailsDao.getEvent(id) ?: return@VersionedDayedCache null
             )
+        },
+        { date, cache ->
+            val events = readSyncableDaos.eventDetailsDao.getEventsBetween(
+                date.atStartOfDay(zone).toInstant().toEpochMilli(),
+                date.plusDays(1).atStartOfDay(zone).toInstant().toEpochMilli()
+            ).mapNotNull { SyncedEvent.from(readSyncableDaos.eventDetailsDao, it)}
+            cache.overwriteAll(events.map { it.id to it })
         }
-    ) { _, old, new ->
-        if(old != null && new != null && old.proposed.start == new.proposed.start && old.proposed.end == new.proposed.end) {
-            _cachedEventsDayed.updateKeysWith(new.proposed.getAllStrechedDays(zone)) { list ->
+    ) { cache, _, old, new ->
+        if (old != null && new != null && old.proposed.start == new.proposed.start && old.proposed.end == new.proposed.end) {
+            cache.updateKeysWith(new.proposed.getAllStrechedDays(zone)) { list ->
                 list.toMutableList().apply {
                     val index = indexOf(old)
-                    if(index != -1){
+                    if (index != -1) {
                         set(index, new)
                     }
                 }
             }
-            return@VersionedCache // This is a shortcut route, if we have no changes in times, daycache only needs to update once
+            return@VersionedDayedCache // This is a shortcut route, if we have no changes in times, daycache only needs to update once
         }
-        if(old!=null) { // Move or remove happend. Delete from dayed cache
-            _cachedEventsDayed.updateKeysWith(old.proposed.getAllStrechedDays(zone)) { list ->
+        if (old != null) { // Move or remove happend. Delete from dayed cache
+            cache.updateKeysWith(old.proposed.getAllStrechedDays(zone)) { list ->
                 list.filterNot { it.id == old.id }
             }
         }
-        if(new!=null) { // Move or new created
-            _cachedEventsDayed.updateKeysWith(new.proposed.getAllStrechedDays(zone)) { list ->
+        if (new != null) { // Move or new created
+            cache.updateKeysWith(new.proposed.getAllStrechedDays(zone)) { list ->
                 list + new
             }
         }
-        if(new?.proposed is PeopleEvent){
+        if (new?.proposed is PeopleEvent) {
             interactedWithPersonCache.updateKeysWith(
                 new.proposed.people
-            ){
-                it+1
+            ) {
+                it + 1
             }
         }
     }
+    fun eventsForDay(date: LocalDate): Flow<Versioned<List<SyncedEvent>>?> {
+        return _cachedEvents.getDayFlowFor(appScope, date)
+    }
     suspend fun deleteSyncedEventFromCache(id: Long) {
-        _cachedEvents.overwrite(id, null)
+        _cachedEvents.cache.overwrite(id, null)
     }
     suspend fun removeSyncedEvent(event: SyncedEvent) {
         waitingSyncDao.deleteWaitingSync( // If the event is jet to be synced, discard the sync request
@@ -111,11 +104,11 @@ class CalendarRepo(
             )
         )
         event.proposed.eraseFromDB(writeSyncableDaos.eventDetailsDao, event.id)
-        _cachedEvents.overwrite(event.id, null)
+        _cachedEvents.cache.overwrite(event.id, null)
     }
     suspend fun updateOrCreateSyncedEvent(event: SyncedEvent) {
         val ev = if (event.isSynced()) { // Edited
-            val old = _cachedEvents.get(event.id).data // This should be cached
+            val old = _cachedEvents.cache.get(event.id).data // This should be cached
             old?.proposed?.eraseFromDB(writeSyncableDaos.eventDetailsDao, event.id)
             event.copy(edited = System.currentTimeMillis())
         } else {
@@ -123,10 +116,10 @@ class CalendarRepo(
         }
         ev.saveToDB(writeSyncableDaos)
         waitingSyncDao.insertWaitingSync(WaitingSyncEntity(ev.id, ev.calendarId, System.currentTimeMillis()))
-        _cachedEvents.overwrite(ev.id, ev)
+        _cachedEvents.cache.overwrite(ev.id, ev)
     }
     suspend fun updateSyncedEventCached(event: SyncedEvent) {
-        _cachedEvents.overwrite(event.id, event)
+        _cachedEvents.cache.overwrite(event.id, event)
     }
     private val initalProposedEvents = MutableStateFlow<List<ProposedEvent>>(listOf())
     private val _proposedEventsDayed = VersionedCache<LocalDate, List<ProposedEvent>>(

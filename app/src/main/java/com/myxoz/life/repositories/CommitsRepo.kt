@@ -3,6 +3,7 @@ package com.myxoz.life.repositories
 import com.myxoz.life.api.API
 import com.myxoz.life.api.syncables.CommitSyncable
 import com.myxoz.life.repositories.utils.VersionedCache
+import com.myxoz.life.repositories.utils.VersionedDayedCache
 import com.myxoz.life.utils.atEndAsMillis
 import com.myxoz.life.utils.atStartAsMillis
 import com.myxoz.life.utils.toLocalDate
@@ -24,23 +25,20 @@ class CommitsRepo(
     )
     val getAllRepos = _repos.allValuesFlow.map{ it.map { repo -> repo.data }.sortedByDescending { repo -> repo.commitDate ?: 0L } }
 
-    private val _commitsDayed = VersionedCache<LocalDate, List<CommitSyncable>>(
-        { date ->
-            readSyncableDaos.commitsDao.getCommitsForDay(
+    private val _commits = VersionedDayedCache<String, CommitSyncable, CommitSyncable>(
+        { sha ->
+            CommitSyncable.fromDB(readSyncableDaos.commitsDao, sha)
+        },
+        { date, cache ->
+            val allCommits = readSyncableDaos.commitsDao.getCommitsForDay(
                 date.atStartAsMillis(zone),
                 date.atEndAsMillis(zone),
             ).map { entity ->
                 CommitSyncable.from(entity)
             }
+            cache.overwriteAll(allCommits.map { it.commitSha to it })
         }
-    )
-    fun getCommitsForDay(date: LocalDate) = _commitsDayed.flowByKey(appScope, date)
-
-    private val _commits = VersionedCache<String, CommitSyncable>(
-        { sha ->
-            CommitSyncable.fromDB(readSyncableDaos.commitsDao, sha)
-        }
-    ) { _, old, new ->
+    ) { cache, _, old, new ->
         // We do not expect a Github sha to double, else they would have
         // a big problem and the app would just need to be restarted
         if (!_repos.hasKey(new.toRepoKey())) { // We got a commit for a brand new repo
@@ -53,27 +51,29 @@ class CommitsRepo(
         }
         if (old?.commitDate != null) {
             val commitDate = old.commitDate.toLocalDate(zone)
-            _commitsDayed.updateWith(commitDate) {
+            cache.updateWith(commitDate) {
                 it.filterNot { commit ->
                     commit.commitSha == old.commitSha
                 }
             }
             if (new.commitDate != null) {
                 val commitDate = new.commitDate.toLocalDate(zone)
-                _commitsDayed.updateWith(commitDate){ list ->
+                cache.updateWith(commitDate){ list ->
                     list + new
                 }
             }
         }
     }
-    fun getAllCommitsFor(repoName: String) = _commits.allValuesFlow.map { commit -> commit.filter { it.data.repoName == repoName }.map { it.data } }
+    fun getCommitsForDay(date: LocalDate) = _commits.getDayFlowFor(appScope, date)
+
+    fun getAllCommitsFor(repoName: String) = _commits.cache.allValuesFlow.map { commit -> commit.filter { it.data.repoName == repoName }.map { it.data } }
     suspend fun updateCommit(commitSyncable: CommitSyncable) {
-        _commits.overwrite(commitSyncable.commitSha, commitSyncable)
+        _commits.cache.overwrite(commitSyncable.commitSha, commitSyncable)
     }
-    fun getCommit(sha: String) = _commits.flowByKey(appScope, sha)
+    fun getCommit(sha: String) = _commits.cache.flowByKey(appScope, sha)
     init {
         appScope.launch {
-            _commits.overwriteAll(
+            _commits.cache.overwriteAll(
                 readSyncableDaos.commitsDao.getAllCommitsEver().map {
                     it.commitSha to CommitSyncable.from(it)
                 }

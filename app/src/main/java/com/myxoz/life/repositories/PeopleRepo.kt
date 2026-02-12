@@ -6,12 +6,14 @@ import com.myxoz.life.api.syncables.PersonSyncable
 import com.myxoz.life.api.syncables.ProfilePictureSyncable
 import com.myxoz.life.dbwrapper.WaitingSyncDao
 import com.myxoz.life.repositories.utils.VersionedCache
+import com.myxoz.life.repositories.utils.VersionedDayedCache
 import com.myxoz.life.screens.options.ME_ID
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import java.time.LocalDate
 import java.time.MonthDay
@@ -27,7 +29,7 @@ class PeopleRepo(
     private val readPeopleDao = readSyncableDaos.peopleDao
     private val _meFlow = MutableStateFlow<PersonSyncable?>(null)
     val meFlow: StateFlow<PersonSyncable?> = _meFlow
-    private val _cachedPeople = VersionedCache<Long, PersonSyncable>(
+    private val _cachedPeople = VersionedDayedCache(
         { id ->
             PersonSyncable.from(
                 readPeopleDao, readPeopleDao.getPersonById(id).let { entity ->
@@ -36,34 +38,32 @@ class PeopleRepo(
                     entity
                 }
             )
+        },
+        { date, cache ->
+            val allBirthdayed = readSyncableDaos.peopleDao.getPeopleWithBirthdayAt(date).map { entry ->
+                PersonSyncable.from(readPeopleDao, entry)
+            }
+            cache.overwriteAll(allBirthdayed.map { it.id to it })
         }
-    ) { _, old, new ->
+    ) { cache, _, old, new ->
         suspend fun updateBirthday(epochDay: Long, add: Boolean) {
-            _birthday.updateKeysWith(LocalDate.ofEpochDay(epochDay).allFutureBirthdays()) {
-                if(add) it + new else it.filterNot { person -> person.id != new.id }
+            cache.updateKeysWith(LocalDate.ofEpochDay(epochDay).allFutureBirthdays()) {
+                if(add) it + new else it.filterNot { person -> person.id == new.id }
             }
         }
-        if(new.id == ME_ID) _meFlow.value = new
-        // old == null && new != null
-        // Do not add birthdays. We do this in the getNative calculation
-        if(old?.birthday != null && new.birthday != null && old.birthday != new.birthday) { // We updated birthday
+        if(new.id == ME_ID) _meFlow.update { new }
+        if(old?.birthday == null && new.birthday != null) { // We added birthday
+            updateBirthday(new.birthday, true)
+        } else if(old?.birthday != null && new.birthday != null && old.birthday != new.birthday) { // We updated birthday
             updateBirthday(old.birthday, false)
             updateBirthday(new.birthday, true)
-        }
-        if(old?.birthday != null && new.birthday == null) { // We removed birthday
+        } else if(old?.birthday != null && new.birthday == null) { // We removed birthday
             updateBirthday(old.birthday, false)
         }
     }
-    fun getPerson(personId: Long) = _cachedPeople.flowByKey(appScope, personId)
-    fun getPeople(personIds: List<Long>) = _cachedPeople.flowByKeys(appScope, personIds)
-    suspend fun getCurrentPersonNotAsFlow(personId: Long) = _cachedPeople.get(personId)
-    private val _birthday = VersionedCache<LocalDate, List<PersonSyncable>>(
-        {
-            readSyncableDaos.peopleDao.getPeopleWithBirthdayAt(it).map { entry ->
-                PersonSyncable.from(readPeopleDao, entry)
-            }
-        }
-    )
+    fun getPerson(personId: Long) = _cachedPeople.cache.flowByKey(appScope, personId)
+    fun getPeople(personIds: List<Long>) = _cachedPeople.cache.flowByKeys(appScope, personIds)
+    suspend fun getCurrentPersonNotAsFlow(personId: Long) = _cachedPeople.cache.get(personId)
     private val _pps = VersionedCache<Long, ProfilePictureSyncable>(
         {
             ProfilePictureSyncable.getSyncable(it, context, readPeopleDao)
@@ -78,7 +78,7 @@ class PeopleRepo(
     }
     fun getProfilePicture(id: Long) = _pps.flowByKey(appScope, id)
     suspend fun updateCacheOnly(person: PersonSyncable) {
-        _cachedPeople.overwrite(person.id, person)
+        _cachedPeople.cache.overwrite(person.id, person)
     }
     suspend fun updateAndStageSync(person: PersonSyncable) {
         person.updateAndStageSync(writeSyncableDaos, waitingSyncDao)
@@ -86,15 +86,15 @@ class PeopleRepo(
     }
     fun getPeopleWithIbanLike(iban: String): Flow<List<PersonSyncable>> {
         requireAllPeople()
-        return _cachedPeople.allValuesFlow.map { people ->
+        return _cachedPeople.cache.allValuesFlow.map { people ->
             people.filter { it.data.iban == iban }.map { it.data }
         }
     }
     fun getAllPeople(): Flow<List<PersonSyncable>> {
         requireAllPeople()
-        return _cachedPeople.allMapedFlows.map { it.values.toList() }
+        return _cachedPeople.cache.allMapedFlows.map { it.values.toList() }
     }
-    fun getPeopleWithBirthdayAt(date: LocalDate) = _birthday.flowByKey(appScope, date).map { it?.data }
+    fun getPeopleWithBirthdayAt(date: LocalDate) = _cachedPeople.getDayFlowFor(appScope, date).map { it?.data }
     fun LocalDate.allFutureBirthdays(maxAge: Int = 130): List<LocalDate> {
         // Lets hope the life expectancy doesnt raise more than this /halfjoke
         val monthDay = MonthDay.from(this)
@@ -108,12 +108,13 @@ class PeopleRepo(
         if(requestedAllPeople) return
         requestedAllPeople = true
         appScope.launch {
-            _cachedPeople.overwriteAll(
+            _cachedPeople.cache.overwriteAll(
                 readPeopleDao.getAllPeople().map {
                     it.id to PersonSyncable.from(readPeopleDao,it)
                 }
             )
+            _cachedPeople.markAllDaysAsLoaded()
         }
     }
-    fun getCachedPeopleById(ids: List<Long>) = ids.mapNotNull { _cachedPeople.getCached(it)?.data }
+    fun getCachedPeopleById(ids: List<Long>) = ids.mapNotNull { _cachedPeople.cache.getCached(it)?.data }
 }

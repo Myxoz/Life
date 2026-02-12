@@ -8,6 +8,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import java.time.LocalDate
 
 data class Versioned<T>(val version: Long, val data: T) {
     val nextVersion: Long get () = version+1
@@ -30,12 +31,6 @@ class VersionedCache<K, T>(private val nativeFetchKey: suspend (K) -> T, private
     // Privated until .flowByKey is not enough
     private val flow: StateFlow<Map<K, Versioned<T>>> = _flow
 
-    /** Caches key to prepare for future cache hits */
-    suspend fun cacheDataForKey(key: K){
-        if(key !in _flow.value) {
-            fetchForKey(key)
-        }
-    }
     fun prepare(scope: CoroutineScope, key: K) {
         if(key !in _flow.value) {
             scope.launch {
@@ -126,5 +121,39 @@ class StateFlowCache<K, V>(
         val new = generator(key)
         map[key] = new
         return new
+    }
+}
+class VersionedDayedCache<K, V, L>(
+    private val nativeFetchKey: suspend (key: K) -> V,
+    private val cacheDayIfNeeded: suspend (date: LocalDate, cache: VersionedCache<K, V>) -> Unit,
+    private val onValueUpdate: (suspend (cache: VersionedCache<LocalDate, List<L>>, key: K, old:V?, new: V) -> Unit)
+){
+    private var allDaysLoaded = false
+    private val cachedDays = mutableSetOf<LocalDate>()
+    private val dayedCache = VersionedCache<LocalDate, List<L>>({listOf()})
+    val cache = VersionedCache(nativeFetchKey){key, old, new ->
+        onValueUpdate(dayedCache, key, old, new)
+    }
+    fun getDayFlowFor(scope: CoroutineScope, date: LocalDate): Flow<Versioned<List<L>>?> {
+        if(!allDaysLoaded && date !in cachedDays) {
+            cachedDays.add(date)
+            scope.launch {
+                cacheDayIfNeeded(date, cache)
+            }
+        }
+        return dayedCache.flowByKey(scope, date)
+    }
+    suspend fun getCachedDayOrCache(date: LocalDate): Versioned<List<L>> {
+        if(!allDaysLoaded && date in cachedDays) {
+            cachedDays.add(date)
+            cacheDayIfNeeded(date, cache)
+        }
+        return dayedCache.get(date)
+    }
+    val allDaysFlow = dayedCache.allMapedFlows
+    /** Marks all days as loaded and will never call the cacheDayIfNeeded again.
+     * This is an advanced call, make sure that it really loaded all days. */
+    fun markAllDaysAsLoaded(){
+        allDaysLoaded = true
     }
 }
