@@ -8,15 +8,15 @@ import com.myxoz.life.repositories.MainApplication
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 import kotlin.coroutines.EmptyCoroutineContext
+import kotlin.math.abs
 
 class NotificationReaderService : NotificationListenerService() {
     override fun onNotificationPosted(sbn: StatusBarNotification?) {
         if (sbn == null) return
-        val repo = (applicationContext as MainApplication).repositories
-
-        // Only handle Google Wallet
+        // Only handle Digitales Bezahlen
         if (sbn.packageName != "de.fiduciagad.android.wlwallet") return
 
+        val repo = (applicationContext as MainApplication).repositories
         val extras = sbn.notification.extras
         val title = extras.getCharSequence("android.title")?.toString() ?: return
         val text = extras.getCharSequence("android.text")?.toString() ?: return
@@ -38,6 +38,19 @@ class NotificationReaderService : NotificationListenerService() {
         calendar.set(Calendar.HOUR_OF_DAY, time[0].toIntOrNull()?:return)
         calendar.set(Calendar.MINUTE, time[1].toIntOrNull()?:return)
         calendar.set(Calendar.SECOND, 0)
+        if(abs(sbn.postTime - calendar.timeInMillis) > 1000*20*3600){
+            // If the notification is 20h appart from beeing sent and the timestamp in the
+            // notification and if the day would be pretty exactly one more. Correct it
+            // I don't know why they can't code but 2 Notifications next to eachother look like this:
+            // 23:48 at 5.2.2026 followed by 00:17 at 5.2.2026. This is wrong so we need to correct
+            // it like this.
+            calendar.add(Calendar.DAY_OF_MONTH, -1)
+            if(abs(sbn.postTime - calendar.timeInMillis) > 5*1000*60) {
+                // I cant help you either...
+                // Revert
+                calendar.add(Calendar.DAY_OF_MONTH, 1)
+            }
+        }
 
         CoroutineScope(EmptyCoroutineContext).launch {
             repo.bankingRepo.putFutureTransaction(-cents, calendar.timeInMillis, null)
