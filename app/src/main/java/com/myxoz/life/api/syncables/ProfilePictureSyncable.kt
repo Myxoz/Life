@@ -130,5 +130,8 @@ class ProfilePictureSyncable(
             val bytes = outputStream.toByteArray()
             return Base64.encode(bytes)
         }
+        fun fromDB(id: Long, context: Context): ProfilePictureSyncable{
+            return ProfilePictureSyncable(id, loadBase64ByPerson(context, id))
+        }
     }
 }

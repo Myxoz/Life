@@ -7,6 +7,7 @@ import com.myxoz.life.api.syncables.ProfilePictureSyncable
 import com.myxoz.life.dbwrapper.WaitingSyncDao
 import com.myxoz.life.repositories.utils.VersionedCache
 import com.myxoz.life.repositories.utils.VersionedDayedCache
+import com.myxoz.life.repositories.utils.VersionedDayedCache.Companion.updateDayedCacheFromTo
 import com.myxoz.life.screens.options.ME_ID
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.Flow
@@ -46,20 +47,10 @@ class PeopleRepo(
             cache.overwriteAll(allBirthdayed.map { it.id to it })
         }
     ) { cache, _, old, new ->
-        suspend fun updateBirthday(epochDay: Long, add: Boolean) {
-            cache.updateKeysWith(LocalDate.ofEpochDay(epochDay).allFutureBirthdays()) {
-                if(add) it + new else it.filterNot { person -> person.id == new.id }
-            }
-        }
         if(new.id == ME_ID) _meFlow.update { new }
-        if(old?.birthday == null && new.birthday != null) { // We added birthday
-            updateBirthday(new.birthday, true)
-        } else if(old?.birthday != null && new.birthday != null && old.birthday != new.birthday) { // We updated birthday
-            updateBirthday(old.birthday, false)
-            updateBirthday(new.birthday, true)
-        } else if(old?.birthday != null && new.birthday == null) { // We removed birthday
-            updateBirthday(old.birthday, false)
-        }
+        val from = old?.birthday?.let { LocalDate.ofEpochDay(it).allFutureBirthdays() }
+        val to = new.birthday?.let { LocalDate.ofEpochDay(it).allFutureBirthdays() }
+        cache.updateDayedCacheFromTo(from, to, new){ person -> person.id == new.id }
     }
     fun getPerson(personId: Long) = _cachedPeople.cache.flowByKey(appScope, personId)
     fun getPeople(personIds: List<Long>) = _cachedPeople.cache.flowByKeys(appScope, personIds)
@@ -92,7 +83,7 @@ class PeopleRepo(
     }
     fun getAllPeople(): Flow<List<PersonSyncable>> {
         requireAllPeople()
-        return _cachedPeople.cache.allMapedFlows.map { it.values.toList() }
+        return _cachedPeople.cache.allMergedFlow
     }
     fun getPeopleWithBirthdayAt(date: LocalDate) = _cachedPeople.getDayFlowFor(appScope, date).map { it?.data }
     fun LocalDate.allFutureBirthdays(maxAge: Int = 130): List<LocalDate> {

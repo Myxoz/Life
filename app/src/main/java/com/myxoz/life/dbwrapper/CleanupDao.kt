@@ -66,6 +66,9 @@ interface DatabaseCleanupDao {
     @Query("DELETE FROM work")
     suspend fun clearWork()
 
+    @Query("DELETE FROM manual_transactions")
+    suspend fun clearManualTransaction()
+
     @Transaction
     suspend fun clearAllExceptPersistent() {
         clearWork()
@@ -88,5 +91,6 @@ interface DatabaseCleanupDao {
         clearDigSoc()
         clearDigSocMapping()
         clearCommits()
+        clearManualTransaction()
     }
 }

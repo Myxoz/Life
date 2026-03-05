@@ -96,7 +96,8 @@ class VersionedCache<K, T>(private val nativeFetchKey: suspend (K) -> T, private
     }
 
     val allValuesFlow = _flow.map { it.values.toList() }
-    val allMapedFlows = _flow.map { allMapped -> allMapped.mapValues { it.value.data } }
+    val allMergedFlow = _flow.map { allMapped -> allMapped.values.map { it.data } }
+    val allMappedFlow = _flow.map { allMapped -> allMapped.mapValues { it.value.data } }
     fun getCached(it: K) = _flow.value[it]
 }
 class FlowCache<K, V>(
@@ -144,16 +145,38 @@ class VersionedDayedCache<K, V, L>(
         return dayedCache.flowByKey(scope, date)
     }
     suspend fun getCachedDayOrCache(date: LocalDate): Versioned<List<L>> {
-        if(!allDaysLoaded && date in cachedDays) {
+        if(!allDaysLoaded && date !in cachedDays) {
             cachedDays.add(date)
             cacheDayIfNeeded(date, cache)
         }
         return dayedCache.get(date)
     }
-    val allDaysFlow = dayedCache.allMapedFlows
+    val allDaysFlow = dayedCache.allMappedFlow
     /** Marks all days as loaded and will never call the cacheDayIfNeeded again.
      * This is an advanced call, make sure that it really loaded all days. */
     fun markAllDaysAsLoaded(){
         allDaysLoaded = true
+    }
+    companion object {
+        suspend fun <T> VersionedCache<LocalDate, List<T>>.updateDayedCacheFromTo(from: List<LocalDate>?, to: List<LocalDate>?, new: T?, isElem: (T)-> Boolean){
+            if(from != null){
+                updateKeysWith(from) {
+                    it.filterNot(isElem)
+                }
+            }
+            if(to != null && new != null){
+                updateKeysWith(to) { it + new }
+            }
+        }
+        suspend fun <T> VersionedCache<LocalDate, List<T>>.updateDayedCacheFromTo(from: LocalDate?, to: LocalDate?, new: T?, isElem: (T)-> Boolean){
+            if(from != null){
+                updateWith(from) {
+                    it.filterNot(isElem)
+                }
+            }
+            if(to != null && new != null){
+                updateWith(to) { it + new }
+            }
+        }
     }
 }

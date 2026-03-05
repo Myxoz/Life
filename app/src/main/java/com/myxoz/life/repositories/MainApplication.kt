@@ -37,8 +37,10 @@ class MainApplication: Application() {
         val appScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
         val bankingRepo = BankingRepo(
             readSyncableDaos.bankingDao,
+            writeSyncableDaos,
             mainPrefs,
-            appScope
+            appScope,
+            db.waitingSync,
         )
         val peopleRepo = PeopleRepo(
             readSyncableDaos,
@@ -102,7 +104,8 @@ class MainApplication: Application() {
                 readSyncableDaos,
                 writeSyncableDaos,
                 mainPrefs,
-                db
+                db,
+                applicationContext
             ),
             readSyncableDaos,
             mainPrefs,

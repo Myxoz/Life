@@ -30,7 +30,7 @@ class DayOverviewViewModel(
     fun getDaySummary(date: LocalDate) = getDaySummaryCached.get(date)
 
     private val getAllTransactionsCached = StateFlowCache<LocalDate, List<BankingRepo.BankingDisplayEntity>>{ date ->
-        repos.bankingRepo.getTransactionsAt(date).map { it ?: listOf() }.subscribeToColdFlow(viewModelScope, listOf())
+        repos.bankingRepo.getSortedTransactionsAt(date).map { it ?: listOf() }.subscribeToColdFlow(viewModelScope, listOf())
     }
     fun getAllTransactions(date: LocalDate) = getAllTransactionsCached.get(date)
     val pieChartCache = StateFlowCache<LocalDate, Map<String, PieChart.Companion.PieChartPart>>{ date ->

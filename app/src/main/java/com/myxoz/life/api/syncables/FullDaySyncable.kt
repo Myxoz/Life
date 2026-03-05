@@ -1,10 +1,10 @@
 package com.myxoz.life.api.syncables
 
+import com.myxoz.life.api.API
 import com.myxoz.life.api.ServerSyncableCompanion
 import com.myxoz.life.api.Syncable
 import com.myxoz.life.dbwrapper.DayScreenTimeEntity
 import com.myxoz.life.dbwrapper.days.DaysEntity
-import com.myxoz.life.api.API
 import com.myxoz.life.utils.jsonObjArray
 import org.json.JSONArray
 import org.json.JSONObject
@@ -81,7 +81,7 @@ class FullDaySyncable(
             )
         }
 
-        override suspend fun fromDB(db: API.ReadSyncableDaos, id: Long): FullDaySyncable? {
+        suspend fun fromDB(db: API.ReadSyncableDaos, id: Long): FullDaySyncable? {
             val day = db.daysDao.getDay(id)?:return null
             val topApps = db.daysDao.getScreenTimesByDay(id)
             return FullDaySyncable(

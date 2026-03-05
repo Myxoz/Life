@@ -107,6 +107,14 @@ class LocalScreensProvider(
         nav.navigate("bank/transaction")
     }
 
+    fun editTransaction(transaction: BankingRepo.BankingDisplayEntity) {
+        val sync = transaction.getStoredManualTransactionSyncable() ?: return
+        inspectedEventViewModel.setEditedSyncableTo(sync)
+        nav.navigate("fullscreen_event") {
+            popUpTo("home")
+        }
+    }
+
     fun openCommit(commitSha: String) {
         nav.navigate("commits/commit/$commitSha")
     }

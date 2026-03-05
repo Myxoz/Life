@@ -8,6 +8,7 @@ import androidx.room.migration.Migration
 import androidx.sqlite.db.SupportSQLiteDatabase
 import com.myxoz.life.dbwrapper.banking.BankingEntity
 import com.myxoz.life.dbwrapper.banking.BankingSidecarEntity
+import com.myxoz.life.dbwrapper.banking.ManualTransactionEntity
 import com.myxoz.life.dbwrapper.banking.ReadBankingDao
 import com.myxoz.life.dbwrapper.banking.WriteBankingDao
 import com.myxoz.life.dbwrapper.commits.CommitEntity
@@ -38,17 +39,21 @@ import com.myxoz.life.dbwrapper.people.ReadPeopleDao
 import com.myxoz.life.dbwrapper.people.SocialsEntity
 import com.myxoz.life.dbwrapper.people.WritePeopleDao
 
-const val currVer = 34
+const val currVer = 35
 val migration = object : Migration(currVer-1, currVer) {
     override fun migrate(db: SupportSQLiteDatabase) {
         // Create the new dayscreentime table
         //db.execSQL("ALTER TABLE people ADD COLUMN birthday INTEGER")
         db.execSQL(
             """
-            CREATE TABLE IF NOT EXISTS work (
+            CREATE TABLE IF NOT EXISTS manual_transactions (
                 id INTEGER NOT NULL PRIMARY KEY,
-                title TEXT NOT NULL,
-                details TEXT
+                digital INTEGER NOT NULL,
+                cashless INTEGER NOT NULL,
+                amount_cents INTEGER NOT NULL,
+                name TEXT NOT NULL,
+                timestamp INTEGER NOT NULL,
+                purpose TEXT
             )
             """.trimIndent()
         )
@@ -81,6 +86,7 @@ val migration = object : Migration(currVer-1, currVer) {
         DigSocMappingEntity::class,
         CommitEntity::class,
         WorkEntity::class,
+        ManualTransactionEntity::class,
     ],
     version = currVer,
     exportSchema = true
@@ -148,7 +154,7 @@ object DatabaseProvider {
  *
  * Guide to create new Syncable:
  * 7. Create a new Syncable: Syncable in [com.myxoz.life.api]
- * 8. Add to [com.myxoz.life.api.Syncable.SpecialSyncablesIds] and then [com.myxoz.life.api.ServerSyncable.overwriteDBByJsonAfterRepoUpdates]
+ * 8. Add to [com.myxoz.life.api.Syncable.SpecialSyncablesIds] and then [com.myxoz.life.api.API] overwrite and get
  * 9. Add to [com.myxoz.life.api.Syncable.from] (only when also syncable)
  * 10. Go to serverside ( sshvim myxoz:~/myxoz.de/life/_api.php )
  * 11. Add to delete from db (only when also syncable) (SRMDB)

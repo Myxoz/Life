@@ -34,7 +34,6 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
@@ -50,6 +49,7 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalClipboard
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -58,10 +58,11 @@ import com.myxoz.life.LocalNavController
 import com.myxoz.life.LocalScreens
 import com.myxoz.life.R
 import com.myxoz.life.Theme
-import com.myxoz.life.dbwrapper.banking.BankingEntity
 import com.myxoz.life.dbwrapper.banking.formatCents
 import com.myxoz.life.repositories.BankingRepo
+import com.myxoz.life.repositories.BankingRepo.BankingDisplayEntity.Companion.finalDailyBalance
 import com.myxoz.life.screens.feed.dayoverview.edgeToEdgeGradient
+import com.myxoz.life.ui.ActionBar
 import com.myxoz.life.ui.SCREENMAXWIDTH
 import com.myxoz.life.ui.rememberAsymmetricalVerticalCornerRadius
 import com.myxoz.life.ui.setMaxTabletWidth
@@ -80,7 +81,6 @@ import com.myxoz.life.utils.toDp
 import com.myxoz.life.utils.windowPadding
 import com.myxoz.life.viewmodels.LargeDataCache
 import com.myxoz.life.viewmodels.TransactionViewModel
-import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.launch
 import java.time.Instant
 import java.time.LocalDate
@@ -92,120 +92,102 @@ fun TransactionOverview(largeDataCache: LargeDataCache, transactionViewModel: Tr
     val transactionAtHand by transactionViewModel.inspectedTransaction.collectAsState()
     val transaction = transactionAtHand ?: return
     val innerPadding = windowPadding
-    val predictedTransactionName by if(transaction.entity.fromName.isNotEmpty()) {
-        flowOf(null).collectAsState(null)
-    } else {
-        produceState<String?>(null) {
-            value = transactionViewModel.predictTransaction(transaction)
-        }
-    }
-    Box(
+    val predictedTransactionName by BankingRepo.BankingDisplayEntity.getResolvedName(transaction, transactionViewModel)
+    Column(
         Modifier
-            .fillMaxSize()
-            .verticalScroll(rememberScrollState())
-        ,
-        Alignment.TopCenter
+            .fillMaxSize(),
+        horizontalAlignment = Alignment.CenterHorizontally
     ) {
         Column(
             Modifier
-                .widthIn(max = SCREENMAXWIDTH)
-                .fillMaxWidth(.9f)
+                .verticalScroll(rememberScrollState())
+                .weight(1f)
+                .fillMaxWidth()
             ,
-            verticalArrangement = Arrangement.spacedBy(10.dp, Alignment.Top)
+            horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Spacer(Modifier.height(innerPadding.calculateTopPadding()))
-            Box(
+            Column(
                 Modifier
-                    .padding(vertical = 50.dp)
-                    .background(Theme.surfaceContainer, CircleShape)
-                    .clip(CircleShape)
-                    .rippleClick {
-                        nav.navigate("bank/me")
-                    }
-                    .fillMaxWidth()
-                    .padding(vertical = 20.dp)
+                    .widthIn(max = SCREENMAXWIDTH)
+                    .fillMaxWidth(.9f)
+                ,
+                verticalArrangement = Arrangement.spacedBy(10.dp, Alignment.Top)
             ) {
+                Spacer(Modifier.height(innerPadding.calculateTopPadding()))
+                Box(
+                    Modifier
+                        .padding(vertical = 50.dp)
+                        .background(Theme.surfaceContainer, CircleShape)
+                        .clip(CircleShape)
+                        .rippleClick {
+                            nav.navigate("bank/me")
+                        }
+                        .fillMaxWidth()
+                        .padding(vertical = 20.dp)
+                ) {
+                    Text(
+                        transaction.amount.formatCents(false) + " " + transaction.currency,
+                        Modifier
+                            .fillMaxWidth(),
+                        color = if (transaction.amount > 0) OldColors.Transactions.PLUS else OldColors.Transactions.MINUS,
+                        fontFamily = FontFamily.Display.family,
+                        fontSize = FontSize.XXLARGE.size,
+                        textAlign = TextAlign.Center
+                    )
+                }
                 Text(
-                    transaction.entity.amountCents.formatCents(false) + " " + transaction.entity.currency,
+                    if (transaction.amount < 0) "An" else "Von",
                     Modifier
                         .fillMaxWidth(),
-                    color = if (transaction.entity.amountCents > 0) OldColors.Transactions.PLUS else OldColors.Transactions.MINUS,
-                    fontFamily = FontFamily.Display.family,
-                    fontSize = FontSize.XXLARGE.size,
+                    style = TypoStyle(Theme.secondary, FontSize.LARGE),
                     textAlign = TextAlign.Center
                 )
-            }
-            Text(
-                if (transaction.entity.amountCents < 0) "An" else "Von",
-                Modifier
-                    .fillMaxWidth(),
-                style = TypoStyle(Theme.secondary, FontSize.LARGE),
-                textAlign = TextAlign.Center
-            )
-            val isAiPredicted = predictedTransactionName != null
-            val displayName = when{
-                isAiPredicted -> predictedTransactionName!!
-                transaction.entity.fromName.isNotEmpty() -> "${transaction.entity.fromName} ${if (transaction.sidecar != null) " (${transaction.sidecar.name})" else ""}"
-                else -> "Unbekannt"
-            }
-
-            Column (
-                Modifier
-                    .align(Alignment.CenterHorizontally)
-                ,
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.spacedBy(5.dp)
-            ) {
-                BankCard(
-                    displayName,
-                    transaction.entity.fromIban,
-                    isAiPredicted,
-                    largeDataCache,
-                    transactionViewModel
-                )
-                val calendar = remember { Calendar.getInstance() }
-                val screens = LocalScreens.current
-                Text(
-                    run {
-                        val transactionType = when {
-                            transaction.entity.isWirelessPayment() -> "Bargeldlos"
-                            transaction.entity.card -> "Kartenzahlung"
-                            else -> "Überweisung"
-                        }
-
-                        val timestamp =
-                            transaction.entity.purposeDate?.formatTimeStamp(calendar)
-                                ?: transaction.sidecar?.date?.formatTimeStamp(calendar)
-                                ?: ""
-
-                        val separator = if (transactionType.isNotEmpty() && timestamp.isNotEmpty()) " · " else ""
-
-                        "$transactionType$separator$timestamp"
-                    },
+                val isAiPredicted = predictedTransactionName != null
+                Column(
                     Modifier
-                        .rippleClick(true){
-                            screens.openCalendarAt(
-                                Instant
-                                    .ofEpochMilli(transaction.resolveEffectiveDate())
-                                    .atZone(ZoneId.systemDefault())
-                                    .toLocalDate()
-                            )
-                        }
-                        .align(Alignment.End)
-                    ,
-                    textAlign = TextAlign.End,
-                    style = TypoStyle(Theme.secondary, FontSize.SMALL)
-                )
-            }
-            if (transaction.entity.bookingTime.isNotBlank()) {
-                Spacer(Modifier.height(40.dp))
-                TransactionEntry("Buchungsdatum", transaction.entity.bookingTime)
-            }
-            if (transaction.entity.purpose.isNotBlank()) {
-                Spacer(Modifier)
-                TransactionEntry("Verwendungszweck", transaction.entity.purpose)
-            }
-             // Uncomment when you need the weights
+                        .align(Alignment.CenterHorizontally),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.spacedBy(5.dp)
+                ) {
+                    BankCard(
+                        transaction.displayName(predictedTransactionName),
+                        transaction.iban,
+                        isAiPredicted,
+                        largeDataCache,
+                        transactionViewModel
+                    )
+                    val calendar = remember { Calendar.getInstance() }
+                    val screens = LocalScreens.current
+                    Text(
+                        run {
+                            val timestamp =
+                                transaction.displayTimestamp?.formatTimeStamp(calendar) ?: ""
+                            val separator = if (timestamp.isNotEmpty()) " · " else ""
+                            "${transaction.categorization}$separator$timestamp"
+                        },
+                        Modifier
+                            .rippleClick(true) {
+                                screens.openCalendarAt(
+                                    Instant
+                                        .ofEpochMilli(transaction.timestamp)
+                                        .atZone(ZoneId.systemDefault())
+                                        .toLocalDate()
+                                )
+                            }
+                            .align(Alignment.End),
+                        textAlign = TextAlign.End,
+                        style = TypoStyle(Theme.secondary, FontSize.SMALL)
+                    )
+                }
+                if (!transaction.bookingTime.isNullOrBlank()) {
+                    Spacer(Modifier.height(40.dp))
+                    TransactionEntry("Buchungsdatum", transaction.bookingTime)
+                }
+                if (!transaction.purpose.isNullOrBlank()) {
+                    Spacer(Modifier)
+                    TransactionEntry("Verwendungszweck", transaction.purpose)
+                }
+                // Uncomment when you need the weights
 //            val props by produceState<DoubleArray?>(null) {
 //                    val entity = transaction.entity
 //                    val ts = transaction.resolveEffectiveDate()
@@ -219,7 +201,38 @@ fun TransactionOverview(largeDataCache: LargeDataCache, transactionViewModel: Tr
 //                    )
 //                }
 //            Text(props?.withIndex()?.sortedByDescending { it.value }?.joinToString("\n") { "${transactionViewModel.paymentPredictor?.buckets[it.index]}: ${it.value}" }?:"", color = Theme.primary)
-            Spacer(Modifier.height(innerPadding.calculateBottomPadding()))
+                Spacer(Modifier.height(innerPadding.calculateBottomPadding()))
+            }
+        }
+        if(transaction.getStoredManualTransactionSyncable() != null) {
+            Box(
+                Modifier
+                    .padding(vertical = 10.dp)
+                    .setMaxTabletWidth()
+            ) {
+                val screens = LocalScreens.current
+                ActionBar(
+                    null,
+                    null,
+                    OldColors.Myxoz.MAIN,
+                    {
+                        screens.editTransaction(transaction)
+                    }
+                )  {
+                    Text(
+                        "Bearbeiten",
+                        style = TypoStyle(Theme.primary, FontSize.LARGE)
+                            .copy(fontWeight = FontWeight.W900)
+                    )
+                    Spacer(Modifier.width(8.dp))
+                    Icon(
+                        painterResource(R.drawable.arrow_right),
+                        "Continue",
+                        tint = Theme.primary,
+                        modifier = Modifier.height(20.dp)
+                    )
+                }
+            }
         }
     }
 }
@@ -235,8 +248,8 @@ fun TransactionEntry(title: String, value: String) {
 fun MyCard(largeDataCache: LargeDataCache, transactionViewModel: TransactionViewModel){
     var showBalance by transactionViewModel.showBalance.collectAsMutableState()
     val self by transactionViewModel.getSelf.collectAsState()
-    val lastTransactions by transactionViewModel.lastTransaction.collectAsState()
-    val balance = finalDailyBalance(lastTransactions?.map { it.entity })
+    val lastTransactions by transactionViewModel.lastTransactions.collectAsState()
+    val balance = remember(lastTransactions) { finalDailyBalance(lastTransactions) }
 
     val innerPadding = windowPadding
     Box(
@@ -307,7 +320,7 @@ fun BankingEntryComposable(entry: BankingRepo.BankingDisplayEntity, isFirst: Boo
         Modifier
             .padding(vertical = 2.5.dp)
             .clip(rememberAsymmetricalVerticalCornerRadius(isFirst, isLast))
-            .alpha(if(entry.entity.isWirelessPayment()) .5f else 1f)
+            .alpha(if(entry.isCashlessPayment) .5f else 1f)
             .background(Theme.surfaceContainerHigh)
             .rippleClick{screens.openTransaction(entry)}
             .padding(horizontal = 20.dp, vertical = 15.dp)
@@ -325,16 +338,9 @@ fun BankingEntryComposable(entry: BankingRepo.BankingDisplayEntity, isFirst: Boo
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(4.dp)
             ) {
-                val card = entry.entity.card
                 val height = FontSize.MEDIUMM.size.toDp()
                 Icon(
-                    painterResource(
-                        when {
-                            entry.entity.isWirelessPayment() -> R.drawable.wireless_pay
-                            card -> R.drawable.pay_with_card
-                            else -> R.drawable.bank_transfer
-                        }
-                    ),
+                    painterResource(entry.icon),
                     "Payment Type",
                     Modifier
                         .height(height)
@@ -342,12 +348,12 @@ fun BankingEntryComposable(entry: BankingRepo.BankingDisplayEntity, isFirst: Boo
                     Theme.secondary
                 )
                 Text(
-                    if(entry.entity.isWirelessPayment()) "Bargeldlos" else if(card) "Kartenzahlung" else "Überweisung",
+                    entry.categorization,
                     style = TypoStyle(Theme.secondary, FontSize.MEDIUMM)
                 )
             }
             Text(
-                entry.resolveEffectiveDate().formatMinutes(calendar),
+                entry.timestamp.formatMinutes(calendar),
                 style = TypoStyle(Theme.secondary, FontSize.MEDIUMM)
             )
         }
@@ -364,21 +370,21 @@ fun BankingEntryComposable(entry: BankingRepo.BankingDisplayEntity, isFirst: Boo
                 verticalArrangement = Arrangement.spacedBy(2.dp)
             ) {
                 Text(
-                    if(entry.entity.isWirelessPayment()) "Unbekannt" else entry.sidecar?.name ?: entry.entity.fromName,
+                    entry.title,
                     style = TypoStyle(Theme.primary, FontSize.LARGE),
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis
                 )
                 Text(
-                    if(entry.sidecar == null) entry.entity.fromIban.chunked(4).joinToString(" ") else entry.entity.fromName,
+                    entry.subTitle,
                     style = TypoStyle(Theme.secondary, FontSize.SMALLM),
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis
                 )
             }
             Text(
-                entry.entity.amountCents.formatCents(),
-                color = if(entry.entity.amountCents > 0) OldColors.Transactions.PLUS else OldColors.Transactions.MINUS,
+                entry.amount.formatCents(),
+                color = if(entry.amount > 0) OldColors.Transactions.PLUS else OldColors.Transactions.MINUS,
                 fontFamily = FontFamily.Display.family,
                 fontSize = FontSize.XLARGE.size,
             )
@@ -527,27 +533,4 @@ fun BankCard(
             }
         }
     }
-}
-
-fun finalDailyBalance(transactions: List<BankingEntity>?): Long {
-    if (transactions?.isEmpty() != false) return 0L
-
-    // Try to find the "last" transaction recursively
-    fun findLast(current: BankingEntity, remaining: List<BankingEntity>): BankingEntity {
-        // Look for a transaction that could come AFTER the current one
-        val next = remaining.find { it.saldoAfterCents - it.amountCents == current.saldoAfterCents }
-        return if (next == null) current else findLast(next, remaining - next)
-    }
-
-    // Try every transaction as a possible starting point
-    for (candidate in transactions) {
-        val previous =
-            transactions.find { candidate.saldoAfterCents - candidate.amountCents == it.saldoAfterCents }
-        if (previous == null) {
-            // This is the earliest transaction (no one leads into it)
-            return findLast(candidate, transactions - candidate).saldoAfterCents
-        }
-    }
-
-    error("Could not determine transaction order")
 }

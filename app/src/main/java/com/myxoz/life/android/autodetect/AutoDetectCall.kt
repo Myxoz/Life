@@ -69,7 +69,7 @@ object AutoDetectCall {
                         TimedTagLikeContainer(DigSocPlatform.Anruf, it.duration*1000L)
                     ),
                     "Anruf",
-                    listOf(allPeople.find { person -> person.phoneNumber == it.number }?.id ?: -1)
+                    allPeople.mapNotNull { person -> if(person.phoneNumber == it.number) person.id else null } // TODO NORMALIZE PHONE
                 )
             }
     }

@@ -4,10 +4,10 @@ import android.content.Context
 import android.content.Intent
 import android.net.Uri
 import androidx.core.net.toUri
+import com.myxoz.life.api.API
 import com.myxoz.life.api.ServerSyncableCompanion
 import com.myxoz.life.api.Syncable
 import com.myxoz.life.dbwrapper.LocationEntity
-import com.myxoz.life.api.API
 import com.myxoz.life.screens.feed.fullscreenevent.getId
 import com.myxoz.life.utils.getStringOrNull
 import org.json.JSONObject
@@ -76,10 +76,6 @@ class LocationSyncable(
             val latDMS = toDMS(lat, true)
             val lonDMS = toDMS(longitude, false)
             return "$latDMS, $lonDMS"
-        }
-
-        override suspend fun fromDB(db: API.ReadSyncableDaos, id: Long): LocationSyncable? {
-            return from(db.locationsDao.getLocationById(id) ?: return null)
         }
 
         override fun fromJSON(json: JSONObject): LocationSyncable = LocationSyncable(

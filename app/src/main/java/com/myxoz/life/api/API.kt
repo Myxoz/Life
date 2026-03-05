@@ -1,5 +1,6 @@
 package com.myxoz.life.api
 
+import android.content.Context
 import android.content.SharedPreferences
 import android.util.Log
 import androidx.compose.runtime.Stable
@@ -9,6 +10,7 @@ import com.myxoz.life.api.syncables.BankingSyncable
 import com.myxoz.life.api.syncables.CommitSyncable
 import com.myxoz.life.api.syncables.FullDaySyncable
 import com.myxoz.life.api.syncables.LocationSyncable
+import com.myxoz.life.api.syncables.ManualTransactionSyncable
 import com.myxoz.life.api.syncables.PersonSyncable
 import com.myxoz.life.api.syncables.ProfilePictureSyncable
 import com.myxoz.life.api.syncables.SyncedEvent
@@ -53,6 +55,7 @@ class API(
     private val writeSyncableDaos: WriteSyncableDaos,
     private val prefs: SharedPreferences,
     private val ONLYFORDEBUGFULLDB: Daos,
+    private val context: Context
 ) {
     fun heyAPIAlmighlyGodEtcCanIPleaseOnlyForDebugHaveAllDaoAccessImReallyTheDebugOnlyPleasePleasePlease() = ONLYFORDEBUGFULLDB
     fun getReadableDaosForWrapped() = readSyncableDaos
@@ -75,8 +78,8 @@ class API(
                     offset
                 )) {
                     try {
-                        val x = Syncable.from(entry, readSyncableDaos)
-                        x?.let { add(it) }
+                        val x = Syncable.from(entry, readSyncableDaos, context)
+                        x?.let { add(it) } ?: Log.w(LOGTAG, "Failed to create Syncable from $entry")
                     } catch (e: Exception) {
                         Log.e(LOGTAG, "Failed to create Syncable from $entry", e)
                     }
@@ -203,7 +206,8 @@ class API(
 
             Syncable.SpecialSyncablesIds.BANKING -> {
                 val new = BankingSyncable.overwriteDBByJson(writeSyncableDaos, json)
-                bankingRepo.updateTransaction(
+                bankingRepo.updateCachedTransaction(
+                    new.entity.id,
                     BankingRepo.BankingDisplayEntity.from(new.entity, readSyncableDaos.bankingDao)
                 )
             }
@@ -224,15 +228,13 @@ class API(
             }
 
             Syncable.SpecialSyncablesIds.BANKINGSIDECAR -> {
-                println("he hates sidecars")
                 val new = BankingSidecarSyncable.overwriteDBByJson(writeSyncableDaos, json)
                 val displayEntity = BankingRepo.BankingDisplayEntity.from(
                     new.transactionId, readSyncableDaos.bankingDao
                 )
                 if(displayEntity!=null){ // Else Transactiton isnt yet synced
-                    bankingRepo.updateTransaction(displayEntity)
+                    bankingRepo.updateCachedTransaction(new.transactionId, displayEntity)
                 }
-                println("He doesnt")
             }
 
             Syncable.SpecialSyncablesIds.PROFILEPICTURE -> {
@@ -242,6 +244,10 @@ class API(
             Syncable.SpecialSyncablesIds.COMMITS -> {
                 val commit = CommitSyncable.overwriteDBByJson(writeSyncableDaos, json)
                 commitsRepo.updateCommit(commit)
+            }
+            Syncable.SpecialSyncablesIds.MANUALTRANSACTION -> {
+                val manual = ManualTransactionSyncable.overwriteDBByJson(writeSyncableDaos, json)
+                bankingRepo.updateCachedManualTransaction(manual)
             }
 
             else -> {

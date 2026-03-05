@@ -8,10 +8,17 @@ import androidx.compose.foundation.gestures.snapping.SnapLayoutInfoProvider
 import androidx.compose.foundation.gestures.snapping.SnapPosition
 import androidx.compose.foundation.gestures.snapping.snapFlingBehavior
 import androidx.compose.foundation.lazy.LazyListState
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.State
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.derivedStateOf
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.snapshotFlow
 import androidx.core.content.edit
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.myxoz.life.api.Syncable
 import com.myxoz.life.api.syncables.FullDaySyncable
 import com.myxoz.life.api.syncables.PersonSyncable
 import com.myxoz.life.events.ProposedEvent
@@ -22,6 +29,7 @@ import com.myxoz.life.screens.feed.dayoverview.getMonthByCalendarMonth
 import com.myxoz.life.screens.feed.instantevents.InstantEvent
 import com.myxoz.life.screens.feed.main.SegmentedEvent
 import com.myxoz.life.screens.feed.search.SearchField
+import com.myxoz.life.utils.toLocalDate
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -31,6 +39,7 @@ import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import java.time.LocalDate
+import java.time.ZoneId
 
 class CalendarViewModel(
     private val repos: AppRepositories
@@ -149,7 +158,27 @@ class CalendarViewModel(
     val instantEventsForDayCache = StateFlowCache<LocalDate, List<InstantEvent.InstantEventGroup>>{ date ->
         repos.aggregators.calendarAggregator.getInstantEventsForDay(date).subscribeToColdFlow(viewModelScope, listOf())
     }
-    fun getInstantEventsForDay(date: LocalDate) = instantEventsForDayCache.get(date)
+    @Composable
+    fun getInstantEventsForDay(syncable: Syncable.DatedSyncable?, date: LocalDate): State<List<InstantEvent.InstantEventGroup>> {
+        val baseEvents by instantEventsForDayCache.get(date).collectAsState()
+
+        val zone = remember { ZoneId.systemDefault() }
+
+        return remember(syncable) {
+            derivedStateOf {
+                if (syncable != null && syncable.timestamp.toLocalDate(zone) == date) {
+                    baseEvents.mapNotNull { group ->
+                        val filteredList = group.instantEvents.filter { !it.isEqualTo(syncable) }
+                        if (filteredList.isEmpty()) null else InstantEvent.InstantEventGroup(
+                            filteredList
+                        )
+                    }
+                } else {
+                    baseEvents
+                }
+            }
+        }
+    }
     fun getCachedLocation(id: Long) = repos.locationRepo.getCachedLocation(id)
     fun getCachedPeopleById(id: List<Long>) = repos.peopleRepo.getCachedPeopleById(id)
     fun getScreentime(date: LocalDate) = repos.aggregators.daySummaryAggregator.getScreenTimeForDay(date)

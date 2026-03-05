@@ -1,26 +1,22 @@
 package com.myxoz.life.api.syncables
 
+import com.myxoz.life.api.API
 import com.myxoz.life.api.ServerSyncableCompanion
 import com.myxoz.life.api.Syncable
 import com.myxoz.life.dbwrapper.events.EventEntity
 import com.myxoz.life.dbwrapper.events.ReadEventDetailsDao
+import com.myxoz.life.events.EmptyEvent
 import com.myxoz.life.events.ProposedEvent
-import com.myxoz.life.api.API
 import com.myxoz.life.screens.feed.fullscreenevent.getId
 import com.myxoz.life.utils.getLongOrNull
 import org.json.JSONObject
 
 class SyncedEvent(
-    id: Long,
+    override val id: Long,
     val created: Long,
     val edited: Long?,
     val proposed: ProposedEvent,
 ) : Syncable(proposed.type.id, id) {
-    fun onlyToJson(): JSONObject = JSONObject()
-        .put("id", id.toString())
-        .put("created", created)
-        .put("edited", edited ?: JSONObject.NULL)
-
     override suspend fun specificsToJson(): JSONObject? =
         proposed.toJson()
             .put("id", id.toString())
@@ -50,6 +46,8 @@ class SyncedEvent(
     fun copyWithTimes(start: Long = proposed.start, end: Long = proposed.end) =
         SyncedEvent(id, created, edited, proposed.copyWithTimes(start, end))
 
+    override fun getInvalidReason(): String? = proposed.getInvalidReason()
+
     companion object : ServerSyncableCompanion<SyncedEvent> {
         suspend fun from(db: ReadEventDetailsDao, event: EventEntity): SyncedEvent? {
             return SyncedEvent(
@@ -67,5 +65,6 @@ class SyncedEvent(
                 json.getLongOrNull("created"),
                ProposedEvent.getProposedEventByJson(json)
             )
+        fun getSemanticNullValueEvent() = SyncedEvent(-1L, 0L, null, EmptyEvent(0L, 0L, false, usl = false))
     }
 }

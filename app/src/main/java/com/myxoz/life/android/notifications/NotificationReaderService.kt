@@ -44,16 +44,23 @@ class NotificationReaderService : NotificationListenerService() {
             // I don't know why they can't code but 2 Notifications next to eachother look like this:
             // 23:48 at 5.2.2026 followed by 00:17 at 5.2.2026. This is wrong so we need to correct
             // it like this.
-            calendar.add(Calendar.DAY_OF_MONTH, -1)
+            calendar.add(Calendar.DAY_OF_MONTH, 1)
             if(abs(sbn.postTime - calendar.timeInMillis) > 5*1000*60) {
                 // I cant help you either...
                 // Revert
-                calendar.add(Calendar.DAY_OF_MONTH, 1)
+                calendar.add(Calendar.DAY_OF_MONTH, -1)
             }
         }
 
         CoroutineScope(EmptyCoroutineContext).launch {
-            repo.bankingRepo.putFutureTransaction(-cents, calendar.timeInMillis, null)
+            repo.bankingRepo.putFutureTransaction(
+                -cents,
+                calendar.timeInMillis,
+                false,
+                true,
+                "Unbekannt",
+                null
+            )
         }
     }
     override fun onListenerConnected() {

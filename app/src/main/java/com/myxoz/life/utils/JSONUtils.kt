@@ -3,6 +3,12 @@ package com.myxoz.life.utils
 import org.json.JSONArray
 import org.json.JSONObject
 
+fun JSONObject.getServerBoolean(name: String): Boolean {
+    val value = getStringOrNull(name) ?: return false
+    if(value == "1") return true;
+    if(value.lowercase() == "true") return true;
+    return false
+}
 fun JSONObject.getStringOrNull(name: String): String? = if(isNull(name)) null else getString(name)
 fun JSONObject.getJSONObjectOrNull(name: String): JSONObject? = if(isNull(name)) null else getJSONObject(name)
 fun JSONObject.getLongOrNull(name: String): Long? = if(isNull(name)) null else getString(name).toLong()

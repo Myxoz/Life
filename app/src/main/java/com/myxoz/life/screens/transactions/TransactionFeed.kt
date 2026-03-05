@@ -121,7 +121,7 @@ fun TransactionFeed(
                         ,
                         contentAlignment = Alignment.Center
                     ) {
-                        BankingDaySummary(value.sumOf { it.entity.amountCents }, key)
+                        BankingDaySummary(value.sumOf { it.amount }, key)
                     }
                 }
                 value.forEachIndexed { i, transaction ->

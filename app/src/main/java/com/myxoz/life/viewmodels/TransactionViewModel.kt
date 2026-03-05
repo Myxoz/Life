@@ -13,7 +13,6 @@ import com.myxoz.life.repositories.utils.subscribeToColdFlow
 import com.myxoz.life.utils.toLocalDate
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
@@ -22,11 +21,10 @@ import java.time.ZoneId
 
 class TransactionViewModel(private val repos: AppRepositories): ViewModel() {
     suspend fun predictTransaction(transaction: BankingRepo.BankingDisplayEntity): String? {
-        val entity = transaction.entity
-        val ts = transaction.resolveEffectiveDate()
+        val ts = transaction.timestamp
         return repos.aiPredictionRepo.predictPaymentName(
             ReadBankingDao.BankingTrainingRow(
-                entity.amountCents,
+                transaction.amount,
                 ts,
                 "(What we want to find out)",
                 repos.readSyncableDaos.bankingDao.getLastTravelEventEndBefore(ts)
@@ -34,23 +32,13 @@ class TransactionViewModel(private val repos: AppRepositories): ViewModel() {
         )
     }
     val lazyListState = LazyListState()
-    val orderedAllTransactionFlow = combine(
-        repos.bankingRepo.allTransactionsFlow,
-        repos.bankingRepo.allFutureTransactions
-    ) { transactions, futures ->
-        val mutMap = transactions.toMutableMap()
-        futures.forEach { (key, value) ->
-            mutMap.merge(key, value) { old, new -> old + new }
-        }
-         mutMap.entries.filter { it.value.isNotEmpty() }.sortedByDescending { it.key }.map { it.key to it.value.sortedBy { transaction -> transaction.resolveEffectiveDate() } }
-    }.subscribeToColdFlow(viewModelScope, listOf())
-
+    val orderedAllTransactionFlow = repos.bankingRepo.sortedAllFlow.subscribeToColdFlow(viewModelScope, mapOf())
 
     val lastFetchedDay = MutableStateFlow<LocalDate>(LocalDate.now().plusDays(1))
 
     fun onLastVisibleIndexChanged(lastVisibleIndex: Int) {
         val zone = ZoneId.systemDefault()
-        val flat = orderedAllTransactionFlow.value.flatMap { it.second.map { it.resolveEffectiveDate().toLocalDate(zone) } + listOf(it.first) }
+        val flat = orderedAllTransactionFlow.value.flatMap { it.value.map { it.timestamp.toLocalDate(zone) } + listOf(it.key) }
         val currentMostRecentDay = flat.firstOrNull() ?: LocalDate.now()
         var difference = flat.size - lastVisibleIndex
         viewModelScope.launch {
@@ -58,13 +46,13 @@ class TransactionViewModel(private val repos: AppRepositories): ViewModel() {
                 val next = lastFetchedDay.value.minusDays(1)
                 if (next < repos.bankingRepo.earliestTransaction.value) return@launch
                 val forDay = repos.bankingRepo.getCachedOrCache(next)
-                difference += forDay.size
+                difference += forDay
                 lastFetchedDay.value = next
             }
         }
     }
-    private val onDayCachedFlows = StateFlowCache<LocalDate, List<BankingRepo.BankingDisplayEntity>>{
-        repos.bankingRepo.getTransactionsAt(it).map { it ?: listOf() }.subscribeToColdFlow(viewModelScope, listOf())
+    private val onDayCachedFlows = StateFlowCache<LocalDate, List<BankingRepo.BankingDisplayEntity>>{ date ->
+        repos.bankingRepo.getSortedTransactionsAt(date).map { it }.subscribeToColdFlow(viewModelScope, listOf())
     }
     fun getOnDay(date: LocalDate) = onDayCachedFlows.get(date)
     val showBalance = MutableStateFlow(repos.prefs.getBoolean("show_balance", false))
@@ -83,8 +71,8 @@ class TransactionViewModel(private val repos: AppRepositories): ViewModel() {
     fun getPeopleWithIbanLike(iban: String) = peopleWithIbanLikeCached.get(iban)
     val getSelf = repos.peopleRepo.meFlow
     @OptIn(ExperimentalCoroutinesApi::class)
-    val lastTransaction = repos.bankingRepo.lastTransaction.flatMapLatest { date ->
-        repos.bankingRepo.getTransactionsAt(date)
+    val lastTransactions = repos.bankingRepo.lastTransactionDay.flatMapLatest { date ->
+        repos.bankingRepo.getSortedTransactionsAt(date)
     }.subscribeToColdFlow(viewModelScope, listOf())
     val inspectedTransaction = MutableStateFlow<BankingRepo.BankingDisplayEntity?>(null)
     init {

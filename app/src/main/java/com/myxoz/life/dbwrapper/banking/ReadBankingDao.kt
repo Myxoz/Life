@@ -112,4 +112,10 @@ WHERE b.purpose_date IS NOT NULL
     LIMIT 1
 """)
     suspend fun getLastTravelEventEndBefore(ts: Long): Long?
+
+    @Query("SELECT * FROM manual_transactions WHERE timestamp > :start AND timestamp < :end")
+    suspend fun getManualTransactionsBetween(start: Long, end: Long): List<ManualTransactionEntity>
+
+    @Query("SELECT * FROM manual_transactions WHERE id = :id")
+    suspend fun getManualTransaction(id: Long): ManualTransactionEntity?
 }

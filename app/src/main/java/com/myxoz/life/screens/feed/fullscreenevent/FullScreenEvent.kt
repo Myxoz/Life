@@ -66,6 +66,7 @@ import kotlinx.coroutines.launch
 @Composable
 fun FullScreenEvent(inspectedEventViewModel: InspectedEventViewModel){
     val event by inspectedEventViewModel.event.collectAsState()
+    val syncable by inspectedEventViewModel.editedSyncable.collectAsState()
     val calendar = remember { Calendar.getInstance() }
     val nav = LocalNavController.current
     val screens = LocalScreens.current
@@ -75,7 +76,6 @@ fun FullScreenEvent(inspectedEventViewModel: InspectedEventViewModel){
     CompositionLocalProvider(
         LocalColors provides animatedColorScheme,
         LocalTextSelectionColors provides TextSelectionColors(animatedColorScheme.primary,animatedColorScheme.primary.copy(alpha = 0.4f))
-
     ) {
         Box(
             Modifier
@@ -92,12 +92,15 @@ fun FullScreenEvent(inspectedEventViewModel: InspectedEventViewModel){
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
                 val now by inspectedEventViewModel.timeFlow.collectAsState()
-                TimeBar(
-                    event.proposed,
-                    if(now >= event.proposed.start) if(now <= event.proposed.end) (now-event.proposed.start) / (event.proposed.end-event.proposed.start).toFloat() else 1f else 0f,
-                    Theme.surfaceContainer
-                ) {
-                    if(isEditing) inspectedEventViewModel.setInspectedEventTo(event.copy(proposedEvent = it))
+                val syncable by inspectedEventViewModel.editedSyncable.collectAsState()
+                if(syncable == null) {
+                    TimeBar(
+                        event.proposed,
+                        if(now >= event.proposed.start) if(now <= event.proposed.end) (now-event.proposed.start) / (event.proposed.end-event.proposed.start).toFloat() else 1f else 0f,
+                        Theme.surfaceContainer
+                    ) {
+                        if(isEditing) inspectedEventViewModel.setInspectedEventTo(event.copy(proposedEvent = it))
+                    }
                 }
                 Box(
                     Modifier.weight(1f),
@@ -175,15 +178,23 @@ fun FullScreenEvent(inspectedEventViewModel: InspectedEventViewModel){
                     var affectsDelete by remember { mutableStateOf(false) }
                     val coroutineScope = rememberCoroutineScope()
                     val context = LocalContext.current
+                    val syn = syncable
                     ActionBar(
                         {
                             if(isSending) return@ActionBar
                             coroutineScope.launch {
                                 isSending = true
                                 affectsDelete = true
-                                if(event.id != -1L) { // If the event is a new one, ignore everything, just close
-                                    inspectedEventViewModel.removeSyncedEvent(event)
-                                    inspectedEventViewModel.resync()
+                                if(syn != null) {
+                                    if(syn.id != -1L) {
+                                        inspectedEventViewModel.updateOrCreateSynced(syn, true)
+                                        inspectedEventViewModel.resync()
+                                    }
+                                } else {
+                                    if(event.id != -1L) { // If the event is a new one, ignore everything, just close
+                                        inspectedEventViewModel.removeSyncedEvent(event)
+                                        inspectedEventViewModel.resync()
+                                    }
                                 }
                                 inspectedEventViewModel.setEditing(false)
                                 isSending = false
@@ -200,7 +211,8 @@ fun FullScreenEvent(inspectedEventViewModel: InspectedEventViewModel){
                                 else if(wasSuccessful)
                                     Icon(painterResource(R.drawable.tick), "Done", Modifier.fillMaxSize(), Theme.onSecondaryContainer)
                         },
-                        if(event.proposed.getInvalidReason()!=null) OldColors.SECONDARY else event.proposed.type.color,
+                        if(syn != null && syn.getInvalidReason() == null) Theme.primaryContainer
+                        else if(event.proposed.getInvalidReason()!=null) OldColors.SECONDARY else event.proposed.type.color,
                         {
                             if(isSending) return@ActionBar
                             if(!isEditing) {
@@ -212,7 +224,7 @@ fun FullScreenEvent(inspectedEventViewModel: InspectedEventViewModel){
                                     inspectedEventViewModel.popUpToHomeOnEdit.value = false
                                 }
                             } else {
-                                val valid = event.proposed.getInvalidReason()
+                                val valid = if(syn != null) syn.getInvalidReason() else event.getInvalidReason()
                                 if (valid != null) {
                                     Toast.makeText(
                                         context,
@@ -222,7 +234,11 @@ fun FullScreenEvent(inspectedEventViewModel: InspectedEventViewModel){
                                 } else {
                                     coroutineScope.launch {
                                         isSending = true
-                                        inspectedEventViewModel.updateOrCreateSyncedEvent(event)
+                                        if(syn != null) {
+                                            inspectedEventViewModel.updateOrCreateSynced(syn)
+                                        } else {
+                                            inspectedEventViewModel.updateOrCreateSyncedEvent(event)
+                                        }
                                         inspectedEventViewModel.resync()
                                         inspectedEventViewModel.setEditing(false)
                                         isSending = false
@@ -252,7 +268,7 @@ fun FullScreenEvent(inspectedEventViewModel: InspectedEventViewModel){
                                     if (!affectsDelete && isSending) CircularProgressIndicator(color = OldColors.PRIMARYFONT) else
                                         if (affectsDelete || !wasSuccessful) {
                                             Text(
-                                                if (event.id != -1L) "Ändern" else "Hinzufügen",
+                                                if (event.id != -1L || syncable?.id != -1L) "Ändern" else "Hinzufügen",
                                                 style = TypoStyleOld(
                                                     FontColor.PRIMARY,
                                                     FontSize.LARGE

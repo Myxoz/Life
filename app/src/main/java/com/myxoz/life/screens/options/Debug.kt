@@ -8,6 +8,7 @@ import android.hardware.SensorEventListener
 import android.hardware.SensorManager
 import android.icu.util.Calendar
 import android.provider.CallLog
+import androidx.activity.compose.LocalActivity
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -34,9 +35,11 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.core.content.edit
 import com.myxoz.life.LocalSettings
+import com.myxoz.life.MainActivity
 import com.myxoz.life.api.API
 import com.myxoz.life.api.Syncable
 import com.myxoz.life.dbwrapper.Daos
+import com.myxoz.life.repositories.MainApplication
 import com.myxoz.life.ui.theme.FontColor
 import com.myxoz.life.ui.theme.FontSize
 import com.myxoz.life.ui.theme.OldColors
@@ -111,6 +114,22 @@ fun DebugScreen(
                 lastDateSaved = prefs.getLong("last_steps_date", 0L)
             }) {
                 Text("Update steps")
+            }
+            val activity = LocalActivity.current
+            Button({
+                val repos = ((activity as? MainActivity)?.application as? MainApplication)?.repositories ?: return@Button
+                coroutineScope.launch {
+                    repos.bankingRepo.putFutureTransaction(
+                        100,
+                        System.currentTimeMillis(),
+                        false,
+                        false,
+                        "Debug",
+                        "To test if the script is working"
+                    )
+                }
+            }) {
+                Text("Add manual transaction now")
             }
             var shouldWipeDp by remember { mutableIntStateOf(0) }
             Button({

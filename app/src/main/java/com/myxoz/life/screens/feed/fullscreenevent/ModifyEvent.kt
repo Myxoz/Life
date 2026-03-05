@@ -6,6 +6,8 @@ import androidx.compose.animation.core.EaseIn
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
+import androidx.compose.animation.scaleIn
+import androidx.compose.animation.scaleOut
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -18,7 +20,9 @@ import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
@@ -71,6 +75,7 @@ import androidx.compose.ui.text.input.OffsetMapping
 import androidx.compose.ui.text.input.TransformedText
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.text.rememberTextMeasurer
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.times
 import com.myxoz.life.LocalNavController
@@ -78,7 +83,9 @@ import com.myxoz.life.LocalScreens
 import com.myxoz.life.R
 import com.myxoz.life.Theme
 import com.myxoz.life.android.integration.HVV
+import com.myxoz.life.api.Syncable
 import com.myxoz.life.api.syncables.LocationSyncable
+import com.myxoz.life.api.syncables.ManualTransactionSyncable
 import com.myxoz.life.events.DigSocEvent
 import com.myxoz.life.events.EmptyEvent
 import com.myxoz.life.events.HobbyEvent
@@ -111,6 +118,7 @@ import com.myxoz.life.ui.theme.OldColors
 import com.myxoz.life.ui.theme.TypoStyle
 import com.myxoz.life.ui.theme.TypoStyleOld
 import com.myxoz.life.utils.AndroidUtils
+import com.myxoz.life.utils.def
 import com.myxoz.life.utils.filteredWith
 import com.myxoz.life.utils.formatMinutesToVisual
 import com.myxoz.life.utils.formatTimeStamp
@@ -122,6 +130,7 @@ import kotlinx.coroutines.launch
 import org.json.JSONObject
 import java.time.Instant
 import java.time.ZoneId
+import kotlin.math.abs
 
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
@@ -129,302 +138,402 @@ fun ModifyEvent(viewModel: InspectedEventViewModel){
     val nav = LocalNavController.current
     val syncedEvent by viewModel.event.collectAsState()
     val event = syncedEvent.proposed
+    val syncableRaw by viewModel.editedSyncable.collectAsState()
+    val syncable = syncableRaw
     val setEventTo: (ProposedEvent)->Unit = {
         viewModel.setInspectedEventTo(syncedEvent.copy(proposedEvent = it))
     }
-    when (event) {
-        is EmptyEvent -> {}
-        is SleepEvent -> {}
-        is SpontEvent -> {
-            TagsBar(event.eventTags) {
-                setEventTo(
-                    SpontEvent(
-                        event.start,
-                        event.end,
-                        event.uss,
-                        event.usl,
-                        it,
-                        event.title
+    val setSyncableTo: (Syncable.DatedSyncable)->Unit = {
+        viewModel.setEditedSyncableTo(it)
+    }
+    if(syncable!=null){
+        when(syncable) {
+            is ManualTransactionSyncable -> {
+                Row(
+                    Modifier
+                        .fillMaxWidth()
+                        .height(IntrinsicSize.Min)
+                    ,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    var enteredCents by remember { mutableStateOf(abs(syncable.amountCents).takeIf { it != 0 }?.toString().def("")) }
+                    var isNegative by remember { mutableStateOf(syncable.amountCents <= 0) }
+                    fun updateCents(){
+                        setSyncableTo(syncable.copy(amountCents = enteredCents.toIntOrNull().def(0) * (if(isNegative) -1 else 1)))
+                    }
+                    val color by animateColorAsState(if(isNegative) OldColors.Transactions.MINUS else OldColors.Transactions.PLUS)
+                    Box(
+                        Modifier
+                            .clip(CircleShape)
+                            .background(color)
+                            .rippleClick{
+                                isNegative = !isNegative
+                                updateCents()
+                            }
+                            .aspectRatio(1f)
+                            .fillMaxHeight(.5f)
+                            .height(0.dp)
+                    ) {
+                        androidx.compose.animation.AnimatedVisibility(!isNegative, enter = scaleIn(), exit = scaleOut()) {
+                            Icon(painterResource(R.drawable.add), "Positive", Modifier.fillMaxSize(), Theme.onPrimaryContainer)
+                        }
+                        androidx.compose.animation.AnimatedVisibility(isNegative, enter = scaleIn(), exit = scaleOut()) {
+                            Icon(painterResource(R.drawable.minus), "Negative", Modifier.fillMaxSize(), Theme.onPrimaryContainer)
+                        }
+                    }
+                    BasicTextField(
+                        enteredCents,
+                        {
+                            enteredCents = it
+                            updateCents()
+                        },
+                        Modifier
+                            .weight(1f)
+                        ,
+                        singleLine = true,
+                        textStyle = TypoStyle(color, FontSize.XLARGE, FontFamily.Display).copy(textAlign = TextAlign.End),
+                        visualTransformation = ManualTransactionSyncable.MoneyBasedVisualTransformation(),
+                        cursorBrush = SolidColor(color)
                     )
-                )
-            }
-            InputField(event.title.ifEmpty { null }, "Titel") {
-                setEventTo(
-                    SpontEvent(
-                        event.start,
-                        event.end,
-                        event.uss,
-                        event.usl,
-                        event.eventTags,
-                        it
-                    )
-                )
-            }
-        }
-
-        is HobbyEvent -> {
-            TagsBar(event.eventTags) {
-                setEventTo(
-                    HobbyEvent(
-                        event.start,
-                        event.end,
-                        event.uss,
-                        event.usl,
-                        it,
-                        event.title,
-                        event.details
-                    )
-                )
-            }
-            InputField(event.details?.ifEmpty { null }, "Details", multiline = true) {
-                setEventTo(
-                    HobbyEvent(
-                        event.start,
-                        event.end,
-                        event.uss,
-                        event.usl,
-                        event.eventTags,
-                        event.title,
-                        it
-                    )
-                )
-            }
-            InputField(event.title.ifEmpty { null }, "Titel") {
-                setEventTo(
-                    HobbyEvent(
-                        event.start,
-                        event.end,
-                        event.uss,
-                        event.usl,
-                        event.eventTags,
-                        it,
-                        event.details
-                    )
-                )
+                }
+                InputField(syncable.name.ifEmpty { null }, "Empfänger") {
+                    setSyncableTo(syncable.copy(name = it))
+                }
+                InputField(syncable.purpose?.ifEmpty { null }, "Verwendungszweck") {
+                    setSyncableTo(syncable.copy(purpose = it))
+                }
             }
         }
+    } else {
+        when (event) {
+            is EmptyEvent -> {}
+            is SleepEvent -> {}
+            is SpontEvent -> {
+                TagsBar(event.eventTags) {
+                    setEventTo(
+                        SpontEvent(
+                            event.start,
+                            event.end,
+                            event.uss,
+                            event.usl,
+                            it,
+                            event.title
+                        )
+                    )
+                }
+                InputField(event.title.ifEmpty { null }, "Titel") {
+                    setEventTo(
+                        SpontEvent(
+                            event.start,
+                            event.end,
+                            event.uss,
+                            event.usl,
+                            event.eventTags,
+                            it
+                        )
+                    )
+                }
+            }
 
-        is WorkEvent -> {
-            TagsBar(event.eventTags) {
-                setEventTo(
-                    WorkEvent(
-                        event.start,
-                        event.end,
-                        event.uss,
-                        event.usl,
-                        it,
-                        event.title,
-                        event.details
+            is HobbyEvent -> {
+                TagsBar(event.eventTags) {
+                    setEventTo(
+                        HobbyEvent(
+                            event.start,
+                            event.end,
+                            event.uss,
+                            event.usl,
+                            it,
+                            event.title,
+                            event.details
+                        )
                     )
-                )
-            }
-            InputField(event.details?.ifEmpty { null }, "Details", multiline = true) {
-                setEventTo(
-                    WorkEvent(
-                        event.start,
-                        event.end,
-                        event.uss,
-                        event.usl,
-                        event.eventTags,
-                        event.title,
-                        it
+                }
+                InputField(event.details?.ifEmpty { null }, "Details", multiline = true) {
+                    setEventTo(
+                        HobbyEvent(
+                            event.start,
+                            event.end,
+                            event.uss,
+                            event.usl,
+                            event.eventTags,
+                            event.title,
+                            it
+                        )
                     )
-                )
-            }
-            InputField(event.title.ifEmpty { null }, "Titel") {
-                setEventTo(
-                    WorkEvent(
-                        event.start,
-                        event.end,
-                        event.uss,
-                        event.usl,
-                        event.eventTags,
-                        it,
-                        event.details
+                }
+                InputField(event.title.ifEmpty { null }, "Titel") {
+                    setEventTo(
+                        HobbyEvent(
+                            event.start,
+                            event.end,
+                            event.uss,
+                            event.usl,
+                            event.eventTags,
+                            it,
+                            event.details
+                        )
                     )
-                )
+                }
             }
-        }
 
-        is LearnEvent -> {
-            TagsBar(event.eventTags) {
-                setEventTo(
-                    LearnEvent(
-                        event.start,
-                        event.end,
-                        event.uss,
-                        event.usl,
-                        it,
-                        event.title,
-                        event.details
+            is WorkEvent -> {
+                TagsBar(event.eventTags) {
+                    setEventTo(
+                        WorkEvent(
+                            event.start,
+                            event.end,
+                            event.uss,
+                            event.usl,
+                            it,
+                            event.title,
+                            event.details
+                        )
                     )
-                )
-            }
-            InputField(event.details?.ifEmpty { null }, "Details", multiline = true) {
-                setEventTo(
-                    LearnEvent(
-                        event.start,
-                        event.end,
-                        event.uss,
-                        event.usl,
-                        event.eventTags,
-                        event.title,
-                        it
+                }
+                InputField(event.details?.ifEmpty { null }, "Details", multiline = true) {
+                    setEventTo(
+                        WorkEvent(
+                            event.start,
+                            event.end,
+                            event.uss,
+                            event.usl,
+                            event.eventTags,
+                            event.title,
+                            it
+                        )
                     )
-                )
-            }
-            InputField(event.title.ifEmpty { null }, "Titel") {
-                setEventTo(
-                    LearnEvent(
-                        event.start,
-                        event.end,
-                        event.uss,
-                        event.usl,
-                        event.eventTags,
-                        it,
-                        event.details
+                }
+                InputField(event.title.ifEmpty { null }, "Titel") {
+                    setEventTo(
+                        WorkEvent(
+                            event.start,
+                            event.end,
+                            event.uss,
+                            event.usl,
+                            event.eventTags,
+                            it,
+                            event.details
+                        )
                     )
-                )
+                }
             }
-        }
 
-        is SocialEvent -> {
-            TagsBar(event.eventTags) {
-                setEventTo(
-                    SocialEvent(
-                        event.start,
-                        event.end,
-                        event.uss,
-                        event.usl,
-                        it,
-                        event.title,
-                        event.people,
-                        event.more
+            is LearnEvent -> {
+                TagsBar(event.eventTags) {
+                    setEventTo(
+                        LearnEvent(
+                            event.start,
+                            event.end,
+                            event.uss,
+                            event.usl,
+                            it,
+                            event.title,
+                            event.details
+                        )
                     )
-                )
-            }
-            PersonBar(event.people, event.more, true, {
-                nav.navigate("contacts")
-            }) { people, more ->
-                setEventTo(
-                    SocialEvent(
-                        event.start,
-                        event.end,
-                        event.uss,
-                        event.usl,
-                        event.eventTags,
-                        event.title,
-                        people,
-                        more
+                }
+                InputField(event.details?.ifEmpty { null }, "Details", multiline = true) {
+                    setEventTo(
+                        LearnEvent(
+                            event.start,
+                            event.end,
+                            event.uss,
+                            event.usl,
+                            event.eventTags,
+                            event.title,
+                            it
+                        )
                     )
-                )
-            }
-            InputField(event.title.ifEmpty { null }, "Titel") {
-                setEventTo(
-                    SocialEvent(
-                        event.start,
-                        event.end,
-                        event.uss,
-                        event.usl,
-                        event.eventTags,
-                        it,
-                        event.people,
-                        event.more
+                }
+                InputField(event.title.ifEmpty { null }, "Titel") {
+                    setEventTo(
+                        LearnEvent(
+                            event.start,
+                            event.end,
+                            event.uss,
+                            event.usl,
+                            event.eventTags,
+                            it,
+                            event.details
+                        )
                     )
-                )
+                }
             }
-        }
 
-        is DigSocEvent -> {
-            PersonBar(event.people, false, false, {
-                nav.navigate("contacts")
-            }) { people, _ ->
-                setEventTo(
-                    DigSocEvent(
-                        event.start,
-                        event.end,
-                        event.uss,
-                        event.usl,
-                        event.digSocEntries,
-                        event.title,
-                        people
+            is SocialEvent -> {
+                TagsBar(event.eventTags) {
+                    setEventTo(
+                        SocialEvent(
+                            event.start,
+                            event.end,
+                            event.uss,
+                            event.usl,
+                            it,
+                            event.title,
+                            event.people,
+                            event.more
+                        )
                     )
-                )
-            }
-            TimeBasedTagLikeSelection(DigSocPlatform.entries.toList(), event.digSocEntries) {
-                setEventTo(
-                    DigSocEvent(
-                        event.start,
-                        event.end,
-                        event.uss,
-                        event.usl,
-                        it,
-                        event.title,
-                        event.people
+                }
+                PersonBar(event.people, event.more, true, {
+                    nav.navigate("contacts")
+                }) { people, more ->
+                    setEventTo(
+                        SocialEvent(
+                            event.start,
+                            event.end,
+                            event.uss,
+                            event.usl,
+                            event.eventTags,
+                            event.title,
+                            people,
+                            more
+                        )
                     )
-                )
-            }
-            InputField(event.title.ifEmpty { null }, "Titel") {
-                setEventTo(
-                    DigSocEvent(
-                        event.start,
-                        event.end,
-                        event.uss,
-                        event.usl,
-                        event.digSocEntries,
-                        it,
-                        event.people
+                }
+                InputField(event.title.ifEmpty { null }, "Titel") {
+                    setEventTo(
+                        SocialEvent(
+                            event.start,
+                            event.end,
+                            event.uss,
+                            event.usl,
+                            event.eventTags,
+                            it,
+                            event.people,
+                            event.more
+                        )
                     )
-                )
+                }
             }
-        }
 
-        is TravelEvent -> {
-            LocationBar(event.from) {
-                setEventTo(
-                    TravelEvent(
-                        event.start,
-                        event.end,
-                        event.uss,
-                        event.usl,
-                        it,
-                        event.to,
-                        event.vehicles
+            is DigSocEvent -> {
+                PersonBar(event.people, false, false, {
+                    nav.navigate("contacts")
+                }) { people, _ ->
+                    setEventTo(
+                        DigSocEvent(
+                            event.start,
+                            event.end,
+                            event.uss,
+                            event.usl,
+                            event.digSocEntries,
+                            event.title,
+                            people
+                        )
                     )
-                )
+                }
+                TimeBasedTagLikeSelection(DigSocPlatform.entries.toList(), event.digSocEntries) {
+                    setEventTo(
+                        DigSocEvent(
+                            event.start,
+                            event.end,
+                            event.uss,
+                            event.usl,
+                            it,
+                            event.title,
+                            event.people
+                        )
+                    )
+                }
+                InputField(event.title.ifEmpty { null }, "Titel") {
+                    setEventTo(
+                        DigSocEvent(
+                            event.start,
+                            event.end,
+                            event.uss,
+                            event.usl,
+                            event.digSocEntries,
+                            it,
+                            event.people
+                        )
+                    )
+                }
             }
-            VehicleSelection(event.vehicles, viewModel) {
-                setEventTo(
-                    TravelEvent(
-                        event.start,
-                        event.end,
-                        event.uss,
-                        event.usl,
-                        event.from,
-                        event.to,
-                        it
+
+            is TravelEvent -> {
+                LocationBar(event.from) {
+                    setEventTo(
+                        TravelEvent(
+                            event.start,
+                            event.end,
+                            event.uss,
+                            event.usl,
+                            it,
+                            event.to,
+                            event.vehicles
+                        )
                     )
-                )
-            }
-            LocationBar(event.to) {
-                setEventTo(
-                    TravelEvent(
-                        event.start,
-                        event.end,
-                        event.uss,
-                        event.usl,
-                        event.from,
-                        it,
-                        event.vehicles
+                }
+                VehicleSelection(event.vehicles, viewModel) {
+                    setEventTo(
+                        TravelEvent(
+                            event.start,
+                            event.end,
+                            event.uss,
+                            event.usl,
+                            event.from,
+                            event.to,
+                            it
+                        )
                     )
-                )
+                }
+                LocationBar(event.to) {
+                    setEventTo(
+                        TravelEvent(
+                            event.start,
+                            event.end,
+                            event.uss,
+                            event.usl,
+                            event.from,
+                            it,
+                            event.vehicles
+                        )
+                    )
+                }
             }
         }
     }
-    if (event.type != EventType.Sleep && event.type != EventType.Empty) HorizontalDivider(
+    if (event.type != EventType.Sleep && event.type != EventType.Empty || syncable != null) HorizontalDivider(
         color = OldColors.SECONDARY,
         thickness = 3.dp
     )
+    if(event.type == EventType.Empty) {
+        Row(
+            Modifier
+                .clip(CircleShape)
+                .background(Theme.tertiaryContainer)
+                .then(if(syncable is ManualTransactionSyncable) Modifier.border(1.dp, Theme.outline, CircleShape) else Modifier)
+                .padding(15.dp, 5.dp)
+                .height(IntrinsicSize.Min)
+                .rippleClick{
+                    viewModel.setEditedSyncableTo(ManualTransactionSyncable(
+                        -1L,
+                        false,
+                        false,
+                        0,
+                        "",
+                        viewModel.event.value.proposed.start,
+                        null
+                    ))
+                }
+            ,
+            horizontalArrangement = Arrangement.spacedBy(5.dp)
+        ) {
+            Icon(
+                painterResource(R.drawable.cash),
+                "Cash",
+                Modifier
+                    .fillMaxHeight()
+                    .height(0.dp)
+                // Overwrite default height to 0.dp so while messuring this appears as 0.dp and gets streched later. Remember this trick.
+                ,
+                Theme.onTertiaryContainer
+            )
+            Text("Echtgeld", style = TypoStyle(Theme.onTertiaryContainer, FontSize.SMALL))
+        }
+    }
     FlowRow(
         horizontalArrangement = Arrangement.spacedBy(10.dp),
     ) {
@@ -536,7 +645,7 @@ fun CalendarChip(
 ) {
     val animationDuration = 500
     val dotSize = 10.dp
-    val fontColor by animateColorAsState(if(isSelected) type.selectedColor else OldColors.SECONDARYFONT, tween(animationDuration, easing = LinearEasing))
+    val fontColor by animateColorAsState(if(isSelected) type.selectedColor else Theme.onTertiaryContainer, tween(animationDuration, easing = LinearEasing))
     val progress by animateFloatAsState(if(isSelected) 1f else 0f, tween(animationDuration, easing = EaseIn))
     val fontSize = FontSize.LARGE.size.toDp()
     val offsetX = (10.dp+dotSize).toPx()

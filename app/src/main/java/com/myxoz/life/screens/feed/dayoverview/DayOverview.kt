@@ -23,7 +23,6 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
@@ -75,10 +74,7 @@ fun DayOverviewComposable(date: LocalDate, dayOverviewViewModel: DayOverviewView
     val bankingDisplayEntitys by dayOverviewViewModel.getAllTransactions(date).collectAsState()
     val chart = remember { PieChart() }
     val chartData by dayOverviewViewModel.getPieChart(date).collectAsState()
-    LaunchedEffect(chartData) {
-        chart.update(chartData)
-        println("We definitly launched the chart?! $chartData")
-    }
+    chart.update(chartData)
     val dateString = remember {
         "${getWeekDayByInt(date.dayOfWeek.value - 1)} ${date.dayOfMonth}.${date.month.value}.${date.year}"
     }
@@ -365,7 +361,7 @@ fun BankingBlock(bankingEntries: List<BankingRepo.BankingDisplayEntity>, openBan
     ) {
         Text("Überweisungen", style = TypoStyle(Theme.primary, FontSize.MEDIUM))
         Spacer(Modifier.height(10.dp))
-        val sum = bankingEntries.sumOf { it.entity.amountCents }
+        val sum = bankingEntries.sumOf { it.amount }
         Text(
             sum.formatCents(),
             style = TypoStyle(if(sum >= 0) OldColors.Transactions.PLUS else OldColors.Transactions.MINUS, FontSize.XLARGE, FontFamily.Display),

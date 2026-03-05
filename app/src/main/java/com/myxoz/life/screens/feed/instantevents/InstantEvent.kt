@@ -41,57 +41,46 @@ class InstantEvent(
     val icon: Int,
     val subText: String,
     val timestamp: Long,
+    val isEqualTo: (other: Any?)-> Boolean,
     val openDetails: (LocalScreensProvider)->Unit
 ) {
     @Composable
-    fun Render(startOfDay: Long, endOfDay: Long, oneHourDp: Dp){
+    fun RenderContent(oneHourDp: Dp, isEditing: Boolean = false, onClick: ()->Unit){
         val instantEventDisplaySize = INSTANTEVENTSIZE * oneHourDp
-        Box(
-            Modifier.Companion
-                .offset(y = ((timestamp - startOfDay) / 3_600_000f) * oneHourDp - instantEventDisplaySize / 2)
-                .height(instantEventDisplaySize)
-                .fillMaxWidth(),
-            contentAlignment = Alignment.Companion.CenterEnd
+        Column(
+            Modifier
+                .size(instantEventDisplaySize)
+                .background((if(isEditing) OldColors.SELECTED else OldColors.SECONDARY).copy(.8f), CircleShape)
+                .clip(CircleShape)
+                .rippleClick {
+                    onClick()
+                },
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center
         ) {
-            val navController = LocalNavController.current
-            val screens = LocalScreens.current
-            Column(
-                Modifier
-                    .size(instantEventDisplaySize)
-                    .background(OldColors.SECONDARY.copy(.8f), CircleShape)
-                    .clip(CircleShape)
-                    .rippleClick {
-                        openDetails(
-                            screens
-                        )
-                    },
-                horizontalAlignment = Alignment.Companion.CenterHorizontally,
-                verticalArrangement = Arrangement.Center
-            ) {
-                Icon(
-                    painterResource(icon),
-                    "Card",
-                    Modifier.Companion.height(oneHourDp / 2f),
-                    tint = OldColors.PRIMARYFONT
-                )
-                Spacer(Modifier.Companion.height((if (icon == R.drawable.pay_with_card) 2.dp else 4.dp)))
-                Text(subText, style = TypoStyleOld(FontColor.PRIMARY, FontSize.XSMALL))
-            }
-            Box(
-                Modifier.Companion
-                    .padding(end = instantEventDisplaySize * .9f)
-                    .background(
-                        Brush.Companion.horizontalGradient(
-                            listOf(
-                                Color.Companion.Transparent,
-                                OldColors.PRIMARYFONT
-                            )
-                        ), CircleShape
-                    )
-                    .width(oneHourDp)
-                    .padding(vertical = 1.dp),
+            Icon(
+                painterResource(icon),
+                "Card",
+                Modifier.height(oneHourDp / 2f),
+                tint = OldColors.PRIMARYFONT
             )
+            Spacer(Modifier.height((if (icon == R.drawable.pay_with_card) 2.dp else 4.dp)))
+            Text(subText, style = TypoStyleOld(FontColor.PRIMARY, FontSize.XSMALL))
         }
+        Box(
+            Modifier
+                .padding(end = instantEventDisplaySize * .9f)
+                .background(
+                    Brush.horizontalGradient(
+                        listOf(
+                            Color.Transparent,
+                            OldColors.PRIMARYFONT
+                        )
+                    ), CircleShape
+                )
+                .width(oneHourDp)
+                .padding(vertical = 1.dp),
+        )
     }
     class InstantEventGroup(
         val instantEvents: List<InstantEvent>,
@@ -102,15 +91,27 @@ class InstantEvent(
         fun Render(startOfDay: Long, endOfDay: Long, oneHourDp: Dp){
             val instantEventDisplaySize = INSTANTEVENTSIZE * oneHourDp
             if(instantEvents.size == 1) {
-                instantEvents[0].Render(startOfDay, endOfDay, oneHourDp)
+                val ie = instantEvents[0]
+                Box(
+                    Modifier
+                        .offset(y = ((ie.timestamp - startOfDay) / 3_600_000f) * oneHourDp - instantEventDisplaySize / 2)
+                        .height(instantEventDisplaySize)
+                        .fillMaxWidth(),
+                    contentAlignment = Alignment.CenterEnd
+                ) {
+                    val screens = LocalScreens.current
+                    ie.RenderContent(oneHourDp) {
+                        ie.openDetails(screens)
+                    }
+                }
             } else {
                 val nav = LocalNavController.current
                 Box(
-                    Modifier.Companion
+                    Modifier
                         .offset(y = ((start - startOfDay) / 3_600_000f) * oneHourDp - instantEventDisplaySize / 2)
                         .height(instantEventDisplaySize + ((end - start) / 3_600_000f) * oneHourDp)
                         .fillMaxWidth(),
-                    contentAlignment = Alignment.Companion.TopEnd
+                    contentAlignment = Alignment.TopEnd
                 ) {
                     val screens = LocalScreens.current
                     Box(
@@ -125,39 +126,39 @@ class InstantEvent(
                     )
                     instantEvents.forEach { ev ->
                         Box(
-                            Modifier.Companion
+                            Modifier
                                 .offset(y = ((ev.timestamp - start) / 3_600_000f) * oneHourDp)
                                 .height(instantEventDisplaySize),
-                            contentAlignment = Alignment.Companion.CenterEnd
+                            contentAlignment = Alignment.CenterEnd
                         ) {
                             Row(
-                                Modifier.Companion
+                                Modifier
                                     .size(instantEventDisplaySize),
-                                verticalAlignment = Alignment.Companion.CenterVertically,
+                                verticalAlignment = Alignment.CenterVertically,
                             ) {
                                 Icon(
                                     painterResource(ev.icon),
                                     "Card",
-                                    Modifier.Companion
+                                    Modifier
                                         .padding(start = .15f * instantEventDisplaySize)
                                         .height(oneHourDp / 4f),
                                     tint = OldColors.PRIMARYFONT
                                 )
-                                Spacer(Modifier.Companion.width((if (ev.icon == R.drawable.pay_with_card) 2.dp else 4.dp)))
+                                Spacer(Modifier.width((if (ev.icon == R.drawable.pay_with_card) 2.dp else 4.dp)))
                                 Text(
                                     ev.subText,
                                     style = TypoStyleOld(FontColor.PRIMARY, FontSize.XSMALL),
                                     maxLines = 1,
-                                    overflow = TextOverflow.Companion.Ellipsis
+                                    overflow = TextOverflow.Ellipsis
                                 )
                             }
                             Box(
-                                Modifier.Companion
+                                Modifier
                                     .padding(end = instantEventDisplaySize * .9f)
                                     .background(
-                                        Brush.Companion.horizontalGradient(
+                                        Brush.horizontalGradient(
                                             listOf(
-                                                Color.Companion.Transparent,
+                                                Color.Transparent,
                                                 OldColors.PRIMARYFONT
                                             )
                                         ), CircleShape

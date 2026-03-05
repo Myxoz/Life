@@ -5,6 +5,7 @@ import android.content.Context.MODE_PRIVATE
 import android.content.SharedPreferences
 import com.myxoz.life.android.autodetect.AutoDetect
 import com.myxoz.life.api.API
+import com.myxoz.life.api.syncables.DeleteEntry
 import com.myxoz.life.api.syncables.SyncedEvent
 import com.myxoz.life.dbwrapper.WaitingSyncDao
 import com.myxoz.life.dbwrapper.WaitingSyncEntity
@@ -13,13 +14,15 @@ import com.myxoz.life.events.additionals.PeopleEvent
 import com.myxoz.life.repositories.utils.Versioned
 import com.myxoz.life.repositories.utils.VersionedCache
 import com.myxoz.life.repositories.utils.VersionedDayedCache
+import com.myxoz.life.repositories.utils.VersionedDayedCache.Companion.updateDayedCacheFromTo
 import com.myxoz.life.viewmodels.Settings
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import java.time.Duration
@@ -36,8 +39,13 @@ class CalendarRepo(
 ) {
     private val autoDetectPrefs: SharedPreferences = context.getSharedPreferences(AutoDetect.AUTODETECT_PREFS, MODE_PRIVATE)
     private val zone: ZoneId = ZoneId.systemDefault()
-    private val _today = MutableStateFlow(LocalDate.now())
-    val todayFlow: StateFlow<LocalDate> = _today
+    val todayFlow: Flow<LocalDate> = flow {
+        emit(LocalDate.now())
+        while (currentCoroutineContext().isActive) {
+            delay(timeUntilNextMidnight())
+            emit(LocalDate.now())
+        }
+    }
     private val interactedWithPersonCache = VersionedCache<Long, Int>({0})
     fun interactedWithPerson(person: Long) = interactedWithPersonCache.flowByKey(appScope, person)
     val interactedWithAnyPerson = interactedWithPersonCache.allValuesFlow
@@ -53,7 +61,7 @@ class CalendarRepo(
                 date.atStartOfDay(zone).toInstant().toEpochMilli(),
                 date.plusDays(1).atStartOfDay(zone).toInstant().toEpochMilli()
             ).mapNotNull { SyncedEvent.from(readSyncableDaos.eventDetailsDao, it)}
-            cache.overwriteAll(events.map { it.id to it })
+            cache.overwriteAll(events.map { it.id to it });
         }
     ) { cache, _, old, new ->
         if (old != null && new != null && old.proposed.start == new.proposed.start && old.proposed.end == new.proposed.end) {
@@ -67,16 +75,11 @@ class CalendarRepo(
             }
             return@VersionedDayedCache // This is a shortcut route, if we have no changes in times, daycache only needs to update once
         }
-        if (old != null) { // Move or remove happend. Delete from dayed cache
-            cache.updateKeysWith(old.proposed.getAllStrechedDays(zone)) { list ->
-                list.filterNot { it.id == old.id }
-            }
-        }
-        if (new != null) { // Move or new created
-            cache.updateKeysWith(new.proposed.getAllStrechedDays(zone)) { list ->
-                list + new
-            }
-        }
+        cache.updateDayedCacheFromTo(
+            old?.proposed?.getAllStrechedDays(zone),
+            new?.proposed?.getAllStrechedDays(zone),
+            new,
+        ) { old?.id == it.id }
         if (new?.proposed is PeopleEvent) {
             interactedWithPersonCache.updateKeysWith(
                 new.proposed.people
@@ -92,17 +95,7 @@ class CalendarRepo(
         _cachedEvents.cache.overwrite(id, null)
     }
     suspend fun removeSyncedEvent(event: SyncedEvent) {
-        waitingSyncDao.deleteWaitingSync( // If the event is jet to be synced, discard the sync request
-            event.id,
-            event.proposed.type.id
-        )
-        waitingSyncDao.insertWaitingSync(
-            WaitingSyncEntity(
-                event.id,
-                -event.proposed.type.id,
-                System.currentTimeMillis()
-            )
-        )
+        DeleteEntry.requestSyncDelete(waitingSyncDao, event)
         event.proposed.eraseFromDB(writeSyncableDaos.eventDetailsDao, event.id)
         _cachedEvents.cache.overwrite(event.id, null)
     }
@@ -161,14 +154,6 @@ class CalendarRepo(
         updateProposedEvents(
             AutoDetect.autoDetectEvents(context, settings, readSyncableDaos.peopleDao)
         )
-    }
-    init {
-        appScope.launch {
-            while (isActive) {
-                _today.value = LocalDate.now()
-                delay(timeUntilNextMidnight())
-            }
-        }
     }
     private fun timeUntilNextMidnight(): Long {
         val now = LocalDateTime.now()
