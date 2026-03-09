@@ -40,13 +40,14 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
-import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.platform.LocalWindowInfo
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.min
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.unit.times
 import com.myxoz.life.api.syncables.PersonSyncable
@@ -69,7 +70,6 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlin.math.PI
 import kotlin.math.cos
-import kotlin.math.min
 import kotlin.math.roundToInt
 import kotlin.math.roundToLong
 import kotlin.math.sin
@@ -261,12 +261,12 @@ class TopThreeSocialContacts(val people: List<Pair<PersonSyncable, Long>>, conte
             Spacer(Modifier.height(20.dp))
             Reveal(step >= 4) { SubtleLine("These hold a special place in your heart") }
             Spacer(Modifier.height(20.dp))
-            val conf = LocalConfiguration.current
-            val screenDim = min(conf.screenWidthDp, conf.screenHeightDp)
+            val conf = LocalWindowInfo.current.containerDpSize
+            val screenDim = androidx.compose.ui.unit.min(conf.width, conf.height)
             val pbSize = screenDim * .9f
             Box(
                 Modifier
-                    .size(pbSize.dp)
+                    .size(pbSize)
             ) {
                 val rotationAnimation = rememberInfiniteTransition()
                 val progress by rotationAnimation.animateFloat(0f, (PI*2).toFloat(), infiniteRepeatable(tween(ANIDURATION*30, easing = LinearEasing)))
@@ -276,10 +276,10 @@ class TopThreeSocialContacts(val people: List<Pair<PersonSyncable, Long>>, conte
                     val revealed = step > 5 + 10*index
                     Box(
                         Modifier
-                            .size((pbSize*.35 * sizeMod).dp)
+                            .size(pbSize * sizeMod * .35f)
                             .offset(
-                                x = (pbSize / 2 + -sin(progress + index * Math.PI * 2 / 3) * 0.325 * pbSize - 0.175 * pbSize * sizeMod).dp,
-                                y = (pbSize / 2 + cos(progress + index * Math.PI * 2 / 3) * 0.325 * pbSize - 0.175 * pbSize * sizeMod).dp,
+                                x = (pbSize / 2 + -sin(progress + index * Math.PI * 2 / 3) * 0.325 * pbSize - 0.175 * pbSize * sizeMod),
+                                y = (pbSize / 2 + cos(progress + index * Math.PI * 2 / 3) * 0.325 * pbSize - 0.175 * pbSize * sizeMod),
                             )
                     ) {
                         val rawBitmap by profileInfoModel.getProfilePicture(person.first.id).collectAsState()
@@ -356,15 +356,15 @@ class SpecialNewcommer(val person: PersonSyncable, val ranking: Int, val time: L
             Spacer(Modifier.height(20.dp))
             Reveal(step >= 3) { SubtleLine((if (ranking <= 3) "And already made it into your Top 3" else "But your Top 3 is not disrupted")) }
             Spacer(Modifier.height(20.dp))
-            val conf = LocalConfiguration.current
-            val screenDim = min(conf.screenWidthDp, conf.screenHeightDp)
+            val conf = LocalWindowInfo.current.containerDpSize
+            val screenDim = min(conf.width, conf.height)
             val pbSize = screenDim * .5f
             Reveal(
                 step >= 8
             ) {
                 Box(
                     Modifier
-                        .size(pbSize.dp)
+                        .size(pbSize)
                 ) {
                     val pp by profileInfoModel.getProfilePicture(person.id).collectAsState()
                     pp?.let { bitmap ->

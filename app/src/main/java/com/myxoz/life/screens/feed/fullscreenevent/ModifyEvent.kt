@@ -842,7 +842,11 @@ fun JSONObject.getId() = getString("id").toLong()
 @Composable
 fun TimeBar(event: ProposedEvent, progress: Float = 0f, color: Color, setEventTo: (ProposedEvent) -> Unit){
     val screens = LocalScreens.current
-    Box {
+    val verticalOffset = FontSize.SMALLM.size.toDp()
+    Box(
+        Modifier
+            .padding(bottom = verticalOffset - 4.dp /* 2*2 */ - 2.dp + 4.dp /* Visual padding */)
+    ) {
         Column(
             Modifier
                 .fillMaxWidth()
@@ -927,7 +931,6 @@ fun TimeBar(event: ProposedEvent, progress: Float = 0f, color: Color, setEventTo
                 )
             }
         }
-        val verticalOffset = FontSize.SMALLM.size.toDp()
         Box(
             Modifier
                 .align(Alignment.BottomEnd)
@@ -944,6 +947,7 @@ fun TimeBar(event: ProposedEvent, progress: Float = 0f, color: Color, setEventTo
         }
     }
 }
+
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun PersonBar(

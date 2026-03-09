@@ -44,9 +44,9 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.input.pointer.pointerInput
-import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalWindowInfo
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -419,7 +419,7 @@ fun SummarizeDay(dayOverviewViewModel: DayOverviewViewModel) {
                         horizontalAlignment = Alignment.CenterHorizontally,
                         verticalArrangement = Arrangement.SpaceBetween,
                     ) {
-                        val screenWidth = LocalConfiguration.current.screenWidthDp.dp
+                        val screenWidth = LocalWindowInfo.current.containerDpSize.width
                         Box(Modifier.size(screenWidth*.7f)){
                             pieChart.Render()
                         }

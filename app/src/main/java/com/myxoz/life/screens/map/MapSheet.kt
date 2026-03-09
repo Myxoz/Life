@@ -54,6 +54,7 @@ import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.platform.LocalWindowInfo
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.font.FontStyle
@@ -515,7 +516,7 @@ fun MapSheet(mapViewModel: MapViewModel, innerPadding: PaddingValues){
                         }
                     }
                 }
-                val screenWidthPx = with(LocalDensity.current) { LocalConfiguration.current.screenWidthDp.dp.toPx() }
+                val screenWidthPx = with(LocalDensity.current) { LocalWindowInfo.current.containerDpSize.width.toPx() }
                 fun selectLocation(location: LocationSyncable, newComposition: Boolean){
                     if(location.id == -1L) {
                         mapViewModel.setSheetLocation(null)

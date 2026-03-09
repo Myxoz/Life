@@ -62,10 +62,11 @@ class ProfileInfoModel(val repos: AppRepositories): ViewModel(){
     fun getEditingPerson(personId: Long) = editingPersonFlowCache.get(personId)
     fun edit(personId: Long, editWith: (PersonSyncable)->PersonSyncable) {
         _isEditing.value = true
-
         viewModelScope.launch {
             val cached = _editingPerson.get(personId).data
-            _editingPerson.overwrite(personId, editWith(cached))
+            val new = editWith(cached)
+            platformInputs.value = new.socials.map { it.asString() }
+            _editingPerson.overwrite(personId, new)
         }
     }
     suspend fun discardChanges(personId: Long){
@@ -83,6 +84,7 @@ class ProfileInfoModel(val repos: AppRepositories): ViewModel(){
             phoneNumber = asEdited.phoneNumber?.replace(" ", "")?.takeIf { it.isNotBlank() }
         )
         repos.peopleRepo.updateAndStageSync(editedPerson)
+        _editingPerson.overwrite(personId, editedPerson)
         _isEditing.value = false
     }
     @OptIn(ExperimentalCoroutinesApi::class)
@@ -103,7 +105,6 @@ class ProfileInfoModel(val repos: AppRepositories): ViewModel(){
     val isExtended = MutableStateFlow(false)
     val chartScale = MutableStateFlow(2)
     val chartUnit = MutableStateFlow(1)
-    val platforms = MutableStateFlow(listOf<PersonSyncable.Companion.Socials>())
     val platformInputs = MutableStateFlow(listOf<String>())
     val isProfilePictureFullScreen = MutableStateFlow(false) /* This doesnt belong here, but this is my app so I dont care */
     private val piechartFlowCache = StateFlowCache<Long, Map<String, PieChart.Companion.PieChartPart>?>{ person ->

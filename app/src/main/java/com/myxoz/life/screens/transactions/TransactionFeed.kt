@@ -30,7 +30,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
 import androidx.compose.ui.input.nestedscroll.NestedScrollSource
@@ -46,6 +45,7 @@ import com.myxoz.life.ui.setMaxTabletWidth
 import com.myxoz.life.ui.theme.FontSize
 import com.myxoz.life.ui.theme.OldColors
 import com.myxoz.life.ui.theme.TypoStyle
+import com.myxoz.life.utils.boxShadow
 import com.myxoz.life.utils.rippleClick
 import com.myxoz.life.utils.windowPadding
 import com.myxoz.life.viewmodels.TransactionViewModel
@@ -145,15 +145,14 @@ fun TransactionFeed(
                 Spacer(Modifier.height(innerPadding.calculateTopPadding()))
             }
         }
-        fun poly(x: Float) = -x*x*2+x+1
+        fun poly(x: Float) = (-2)*x*x + x + 1
         // Yes this is the polynomial -2x^2 + x + 1
         Box(
             Modifier
+                .alpha(poly(1-scrollProgress))
                 .padding(20.dp)
                 .size(60.dp)
                 .align(Alignment.BottomEnd)
-                .alpha(poly(1-scrollProgress))
-                .shadow(10.dp)
             ,
             contentAlignment = Alignment.Center
         ) {
@@ -161,12 +160,18 @@ fun TransactionFeed(
             Box(
                 Modifier
                     .size(50.dp*(poly(1-scrollProgress)))
+                    .boxShadow(
+                        alpha = .5f,
+                        blur = 10.dp,
+                        shape = RoundedCornerShape(20)
+                    )
                     .background(Theme.primaryContainer, RoundedCornerShape(20))
                     .rippleClick{
                         coroutineScope.launch {
                             listState.animateScrollToItem(0)
                         }
-                    },
+                    }
+                ,
                 contentAlignment = Alignment.Center
             ) {
                 Icon(

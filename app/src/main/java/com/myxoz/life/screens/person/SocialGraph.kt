@@ -37,7 +37,7 @@ import androidx.compose.ui.graphics.drawscope.withTransform
 import androidx.compose.ui.graphics.nativeCanvas
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.input.pointer.pointerInput
-import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.platform.LocalWindowInfo
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import com.myxoz.life.LocalScreens
@@ -171,9 +171,9 @@ fun SocialGraph(socialGraphViewModel: SocialGraphViewModel){
 
     // 3. Rendering
     Box(Modifier.fillMaxSize()) {
-        val config = LocalConfiguration.current
-        val initWidth = config.screenWidthDp.dp.toPx()
-        val initHeight = config.screenHeightDp.dp.toPx()
+        val config = LocalWindowInfo.current.containerDpSize
+        val initWidth = config.width.toPx()
+        val initHeight = config.height.toPx()
         var scale by socialGraphViewModel.scale.collectAsMutableState()
         var offset by socialGraphViewModel.offset.collectAsMutableNonNullState(-Offset(initWidth / scale / 2f, initHeight / scale / 2f))
 

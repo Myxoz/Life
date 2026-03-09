@@ -30,12 +30,14 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Shadow
 import androidx.compose.ui.graphics.asImageBitmap
-import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.platform.LocalWindowInfo
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.min
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.myxoz.life.LocalNavController
 import com.myxoz.life.LocalScreens
@@ -63,7 +65,6 @@ import com.myxoz.life.utils.windowPadding
 import com.myxoz.life.viewmodels.DayOverviewViewModel
 import java.time.LocalDate
 import java.time.temporal.ChronoUnit
-import kotlin.math.min
 
 @Composable
 fun DayOverviewComposable(date: LocalDate, dayOverviewViewModel: DayOverviewViewModel){
@@ -84,8 +85,8 @@ fun DayOverviewComposable(date: LocalDate, dayOverviewViewModel: DayOverviewView
     Box(
         Modifier
             .fillMaxSize()
-            .verticalScroll(rememberScrollState())
             .edgeToEdgeGradient(Theme.background, innerPadding)
+            .verticalScroll(rememberScrollState())
         ,
         Alignment.BottomCenter
     ) {
@@ -127,7 +128,7 @@ fun DayOverviewComposable(date: LocalDate, dayOverviewViewModel: DayOverviewView
             ) {
                 Text("Aufteilung", style = TypoStyle(Theme.primary, FontSize.MEDIUM), modifier = Modifier.fillMaxWidth())
                 Spacer(Modifier.height(10.dp))
-                val screenWidth = min(LocalConfiguration.current.screenWidthDp, SCREENMAXWIDTH.value.toInt()).dp
+                val screenWidth = min(LocalWindowInfo.current.containerDpSize.width, SCREENMAXWIDTH)
                 Box(Modifier.size(screenWidth*.7f)){
                     chart.Render()
                 }
@@ -197,7 +198,7 @@ fun BirthdayBlock(birthdays: List<PersonSyncable>, selectedDate: LocalDate, dayO
                     }
                     Text(
                         "${ChronoUnit.YEARS.between(LocalDate.ofEpochDay(person.birthday?:0L), selectedDate)}." ,
-                        style = TypoStyle(Theme.secondary, FontSize.MLARGE, FontFamily.Display),
+                        style = TypoStyle(Theme.secondary, FontSize.MLARGE, FontFamily.Display).copy(shadow = Shadow(blurRadius = 10f)),
                         textAlign = TextAlign.Center
                     )
                 }

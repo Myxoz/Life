@@ -54,13 +54,14 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.TransformOrigin
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
-import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalWindowInfo
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.min
 import androidx.compose.ui.unit.times
 import com.myxoz.life.LocalScreens
 import com.myxoz.life.R
@@ -84,7 +85,6 @@ import kotlinx.coroutines.launch
 import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneId
-import kotlin.math.min
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
@@ -106,9 +106,9 @@ fun ProfileFullScreen(
         contentAlignment = Alignment.TopCenter
     ){
         val fontSize = FontSize.XLARGE.size.toDp() + 20.dp
-        val conf = LocalConfiguration.current
-        val screenWidth = min(conf.screenWidthDp, SCREENMAXWIDTH.value.toInt())
-        val smallerScreenDimension = min(screenWidth, conf.screenHeightDp).dp
+        val conf = LocalWindowInfo.current.containerDpSize
+        val screenWidth = min(conf.width, SCREENMAXWIDTH)
+        val smallerScreenDimension = min(screenWidth, conf.height)
         val isProfilePictureFullScreen by profileInfoModel.isProfilePictureFullScreen.collectAsState()
         val maxPbSize by animateDpAsState(smallerScreenDimension * if(isProfilePictureFullScreen) 1f else 0.5f)
         val topBarHeight = 100.dp + maxPbSize + fontSize

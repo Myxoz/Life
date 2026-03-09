@@ -44,7 +44,7 @@ class InspectedEventViewModel(val repos: AppRepositories): ViewModel() {
         if (isEditing.value) {
             val syn = editedSyncable.value
             if(syn == null) {
-                event.value.copyWithTimes(
+                _event.value = event.value.copyWithTimes(
                     start = ts,
                     end = ts + event.value.proposed.length()
                 )

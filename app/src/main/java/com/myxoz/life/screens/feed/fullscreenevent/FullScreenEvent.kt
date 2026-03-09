@@ -66,7 +66,6 @@ import kotlinx.coroutines.launch
 @Composable
 fun FullScreenEvent(inspectedEventViewModel: InspectedEventViewModel){
     val event by inspectedEventViewModel.event.collectAsState()
-    val syncable by inspectedEventViewModel.editedSyncable.collectAsState()
     val calendar = remember { Calendar.getInstance() }
     val nav = LocalNavController.current
     val screens = LocalScreens.current
@@ -158,7 +157,7 @@ fun FullScreenEvent(inspectedEventViewModel: InspectedEventViewModel){
                         Column(
                             Modifier
                                 .fillMaxSize()
-                                .verticalScroll(rememberScrollState())
+                                .verticalScroll(rememberScrollState(), reverseScrolling = true)
                             ,
                             verticalArrangement = Arrangement.spacedBy(10.dp, Alignment.Bottom)
                         ) {

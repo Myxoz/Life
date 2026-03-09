@@ -19,6 +19,7 @@ import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardActions
@@ -38,10 +39,9 @@ import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.asComposePath
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.platform.LocalConfiguration
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.platform.LocalWindowInfo
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.text.rememberTextMeasurer
@@ -55,7 +55,6 @@ import androidx.graphics.shapes.toPath
 import com.myxoz.life.Theme
 import com.myxoz.life.api.syncables.ProfilePictureSyncable
 import com.myxoz.life.ui.SCREENMAXWIDTH
-import com.myxoz.life.ui.setMaxTabletWidth
 import com.myxoz.life.ui.theme.FontFamily
 import com.myxoz.life.ui.theme.FontSize
 import com.myxoz.life.ui.theme.TypoStyle
@@ -65,14 +64,12 @@ import com.myxoz.life.viewmodels.ProfileInfoModel
 import kotlinx.coroutines.flow.drop
 import kotlin.math.PI
 import kotlin.math.cos
-import kotlin.math.min
 import kotlin.math.pow
 import kotlin.math.sin
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun ProfilePictureWithText(photoPicker: PhotoPicker, profileInfoViewModel: ProfileInfoModel, personId: Long, scrollLength: Dp, fontSize: Dp, topBarHeight: Dp){
-    val context = LocalContext.current
     val smallPbPadding = 10.dp
     @Suppress("UnnecessaryVariable", "RedundantSuppression") // LOL
     val smallPbSize = fontSize
@@ -100,18 +97,18 @@ fun ProfilePictureWithText(photoPicker: PhotoPicker, profileInfoViewModel: Profi
     }
     Box(
         Modifier
-            .setMaxTabletWidth()
+            .widthIn(max = SCREENMAXWIDTH)
             .background(Theme.background)
             .height(progress*(maxHeight)+smallPbSize+smallPbPadding*2)
     ){
-        val conf = LocalConfiguration.current
-        val screenWidth = min(conf.screenWidthDp, SCREENMAXWIDTH.value.toInt())
-        val smallerScreenDimension = min(screenWidth, conf.screenHeightDp).dp
+        val conf = LocalWindowInfo.current.containerDpSize
+        val screenWidth = min(conf.width, SCREENMAXWIDTH)
+        val smallerScreenDimension = min(screenWidth, conf.height)
         val isProfilePictureFullScreen by profileInfoViewModel.isProfilePictureFullScreen.collectAsState()
         val fullScreenProgress by animateFloatAsState(if(isProfilePictureFullScreen) 1f else 0f)
-        val maxPbSize = smallerScreenDimension * (fullScreenProgress *.45f + 0.5f)
         val largePbPadding = 50.dp
-        val topLeftPbX = progress*((screenWidth.dp-maxPbSize)/2 - smallPbPadding)+smallPbPadding
+        val maxPbSize = smallerScreenDimension * (fullScreenProgress *.45f + 0.5f)
+        val topLeftPbX = progress*((screenWidth-maxPbSize)/2 - smallPbPadding)+smallPbPadding
         val topLeftPbY = progress*(largePbPadding-smallPbPadding)+smallPbPadding
         val pbSize = progress*(maxPbSize-smallPbSize)+smallPbSize
         val radius = progress*(maxPbSize+fontPadding-smallPbPadding)+smallPbPadding

@@ -14,10 +14,10 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
@@ -59,12 +59,12 @@ fun FullScreenCommit(sha: String, commitsViewModel: CommitsViewModel){
     val context = LocalContext.current
     val commit by commitsViewModel.getCommit(sha).collectAsState()
     val displayCommit = commit ?: return
+    val ordered = remember(displayCommit) { displayCommit.modifications.sortedByDescending { it.changes } }
     val innerPadding = windowPadding
     Box(
         Modifier
             .edgeToEdgeGradient(Theme.background, innerPadding)
             .fillMaxHeight()
-            .verticalScroll(rememberScrollState())
         ,
         contentAlignment = Alignment.TopCenter
     ) {
@@ -72,91 +72,109 @@ fun FullScreenCommit(sha: String, commitsViewModel: CommitsViewModel){
             Modifier
                 .setMaxTabletWidth()
         ) {
-            Spacer(Modifier.height(innerPadding.calculateTopPadding()))
-            Spacer(Modifier.height(10.dp))
-            Row(
-                Modifier
-                    .fillMaxWidth()
-                ,
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.SpaceBetween
-            ) {
-                val calendar = remember { Calendar.getInstance() }
-                val nav = LocalNavController.current
-                Text(
-                    "${displayCommit.repoOwner}/${displayCommit.repoName}",
-                    Modifier
-                        .weight(1f)
-                        .rippleClick{
-                            nav.navigate("commits/repo/${displayCommit.repoName}")
-                        }
-                    ,
-                    style = TypoStyle(Theme.secondary, FontSize.MEDIUM),
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
-                )
-                val screens = LocalScreens.current
-                Text(
-                    displayCommit.commitDate?.formatTimeStamp(calendar) ?: "",
-                    Modifier
-                        .rippleClick{
-                            displayCommit.commitDate?.let {
-                                screens.openCalendarAt(
-                                    Instant
-                                        .ofEpochMilli(it)
-                                        .atZone(ZoneId.systemDefault())
-                                        .toLocalDate()
-                                )
-                            }
-                        }
-                    ,
-                    style = TypoStyle(Theme.secondary, FontSize.MEDIUM),
-                    maxLines = 1
-                )
-            }
-            Spacer(Modifier.height(30.dp))
-            Text(
-                displayCommit.commitMessage?:"Keine",
-                style = TypoStyle(Theme.primary, FontSize.XLARGE, FontFamily.Display)
-                    .copy(fontStyle = if(displayCommit.commitMessage == null) FontStyle.Italic else FontStyle.Normal)
-            )
-            Spacer(Modifier.height(10.dp))
-            Text(displayCommit.commitSha, style = TypoStyle(Theme.tertiary, FontSize.MEDIUM))
-            Spacer(Modifier.height(20.dp))
-            Row(
-                Modifier
-                    .fillMaxWidth()
-                    .height(IntrinsicSize.Min)
-                    .background(Theme.surfaceContainer, RoundedCornerShape(25.dp))
-                    .clip(RoundedCornerShape(25.dp))
-                    .rippleClick{
-                        AndroidUtils.openLink(context, displayCommit.commitUrl?:return@rippleClick)
-                    }
-                    .padding(vertical = 10.dp)
-            ) {
-                @Composable
-                fun RowScope.AddDelItem(text: String, value: Int, color: Color){
-                    Column(
-                        Modifier
-                            .weight(1f)
-                        ,
-                        horizontalAlignment = Alignment.CenterHorizontally
-                    ) {
-                        Text(text, style = TypoStyle(Theme.secondary, FontSize.MEDIUM))
-                        Text(value.toString(), color = color, fontSize = FontSize.XXLARGE.size, fontFamily = FontFamily.Display.family)
-                    }
-                }
-                AddDelItem("Additions", displayCommit.additions?:0, OldColors.Commits.ADDITION)
-                VerticalDivider(color = Theme.outlineVariant)
-                AddDelItem("Deletion", displayCommit.deletions?:0, OldColors.Commits.DELETION)
-            }
-            Spacer(Modifier.height(20.dp))
-            HorizontalDivider(color = Theme.outline)
-            Spacer(Modifier.height(20.dp))
-            Column(
+            LazyColumn(
                 verticalArrangement = Arrangement.spacedBy(10.dp)
             ) {
-                for (modification in displayCommit.modifications.sortedByDescending { it.changes }) {
+                item {
+                    Spacer(Modifier.height(innerPadding.calculateTopPadding()))
+                }
+                item {
+                    Row(
+                        Modifier
+                            .fillMaxWidth()
+                        ,
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        val calendar = remember { Calendar.getInstance() }
+                        val nav = LocalNavController.current
+                        Text(
+                            "${displayCommit.repoOwner}/${displayCommit.repoName}",
+                            Modifier
+                                .weight(1f)
+                                .rippleClick{
+                                    nav.navigate("commits/repo/${displayCommit.repoName}")
+                                }
+                            ,
+                            style = TypoStyle(Theme.secondary, FontSize.MEDIUM),
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
+                        )
+                        val screens = LocalScreens.current
+                        Text(
+                            displayCommit.commitDate?.formatTimeStamp(calendar) ?: "",
+                            Modifier
+                                .rippleClick{
+                                    displayCommit.commitDate?.let {
+                                        screens.openCalendarAt(
+                                            Instant
+                                                .ofEpochMilli(it)
+                                                .atZone(ZoneId.systemDefault())
+                                                .toLocalDate()
+                                        )
+                                    }
+                                }
+                            ,
+                            style = TypoStyle(Theme.secondary, FontSize.MEDIUM),
+                            maxLines = 1
+                        )
+                    }
+                }
+                item {
+                    Spacer(Modifier.height(10.dp))
+                }
+                item {
+                    Text(
+                        displayCommit.commitMessage?:"Keine",
+                        style = TypoStyle(Theme.primary, FontSize.XLARGE, FontFamily.Display)
+                            .copy(fontStyle = if(displayCommit.commitMessage == null) FontStyle.Italic else FontStyle.Normal)
+                    )
+                }
+                item {
+                    Text(displayCommit.commitSha, style = TypoStyle(Theme.tertiary, FontSize.MEDIUM))
+                }
+                item {
+                    Spacer(Modifier.height(1.dp))
+                }
+                item {
+                    Row(
+                        Modifier
+                            .fillMaxWidth()
+                            .height(IntrinsicSize.Min)
+                            .background(Theme.surfaceContainer, RoundedCornerShape(25.dp))
+                            .clip(RoundedCornerShape(25.dp))
+                            .rippleClick{
+                                AndroidUtils.openLink(context, displayCommit.commitUrl?:return@rippleClick)
+                            }
+                            .padding(vertical = 10.dp)
+                    ) {
+                        @Composable
+                        fun RowScope.AddDelItem(text: String, value: Int, color: Color){
+                            Column(
+                                Modifier
+                                    .weight(1f)
+                                ,
+                                horizontalAlignment = Alignment.CenterHorizontally
+                            ) {
+                                Text(text, style = TypoStyle(Theme.secondary, FontSize.MEDIUM))
+                                Text(value.toString(), color = color, fontSize = FontSize.XXLARGE.size, fontFamily = FontFamily.Display.family)
+                            }
+                        }
+                        AddDelItem("Additions", displayCommit.additions?:0, OldColors.Commits.ADDITION)
+                        VerticalDivider(color = Theme.outlineVariant)
+                        AddDelItem("Deletion", displayCommit.deletions?:0, OldColors.Commits.DELETION)
+                    }
+                }
+                item {
+                    Spacer(Modifier.height(1.dp))
+                }
+                item {
+                    HorizontalDivider(color = Theme.outline)
+                }
+                item {
+                    Spacer(Modifier.height(1.dp))
+                }
+                items(ordered,{it.filename}) { modification ->
                     Row(
                         Modifier
                             .fillMaxWidth()
@@ -221,8 +239,10 @@ fun FullScreenCommit(sha: String, commitsViewModel: CommitsViewModel){
                         )
                     }
                 }
+                item {
+                    Spacer(Modifier.height(innerPadding.calculateBottomPadding()))
+                }
             }
-            Spacer(Modifier.height(innerPadding.calculateBottomPadding()))
         }
     }
 }

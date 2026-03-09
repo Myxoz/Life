@@ -82,8 +82,8 @@ fun ScreenTimeOverview(date: LocalDate, dayOverviewViewModel: DayOverviewViewMod
     val innerPadding = windowPadding
     Box(
         Modifier
-            .edgeToEdgeGradient(Theme.background, innerPadding)
             .fillMaxSize()
+            .edgeToEdgeGradient(Theme.background, innerPadding)
             .verticalScroll(rememberScrollState())
         ,
         contentAlignment = Alignment.TopCenter
@@ -203,6 +203,7 @@ private fun AppItemComposable(item: DayScreenTimeEntity, pm: PackageManager, isF
         Text(item.duration.formatMsToDuration(), style = TypoStyle(Theme.secondary, FontSize.MEDIUM))
     }
 }
+/** Appies a gradient to the container with the specified height of innerPadding. Always apply *before* the [Modifier.verticalScroll] */
 fun Modifier.edgeToEdgeGradient(color: Color, innerPadding: PaddingValues): Modifier {
     val topPadding = innerPadding.calculateTopPadding()
     val bottomPadding = innerPadding.calculateBottomPadding()

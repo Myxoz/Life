@@ -250,7 +250,7 @@ class MainActivity : ComponentActivity() {
                         navArgument("epochDay") { type = NavType.LongType }
                     )) {
                         val epochDay = (it.arguments?.getLong("epochDay") ?: 0).run { if(this == 0L) LocalDate.now().toEpochDay() else this}
-                        // Semantic value: 0 == today, due to pending intent targetRoute, which isnt computable
+                        // Semantic value: 0 == today, due to pending intent targetRoute, which isn't computable
                         DayOverviewComposable(LocalDate.ofEpochDay(epochDay), dayOverviewViewModel)
                     }
                     composable("instant_events_between") {

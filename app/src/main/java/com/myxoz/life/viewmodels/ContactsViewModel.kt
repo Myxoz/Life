@@ -1,5 +1,6 @@
 package com.myxoz.life.viewmodels
 
+import androidx.compose.foundation.ScrollState
 import androidx.core.content.edit
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -20,7 +21,6 @@ class ContactsViewModel(private val repos: AppRepositories): ViewModel() {
     fun requestRefetchDeviceContacts() = repos.contactRepo.refetchDeviceContacts()
     val getAllLifeContacts = repos.peopleRepo.getAllPeople().subscribeToColdFlow(viewModelScope, listOf())
     var showIcons = MutableStateFlow(false)
-    var scrollDistance = 0
     suspend fun createNewContact(syncable: PersonSyncable) = repos.peopleRepo.updateAndStageSync(syncable)
     init {
         viewModelScope.launch {

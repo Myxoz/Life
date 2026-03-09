@@ -38,9 +38,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.layout.onGloballyPositioned
-import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.platform.LocalWindowInfo
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -65,7 +65,7 @@ val daySummaryHeight = 15.dp
 val sidebarWidth = 40.dp
 @Composable
 fun CalendarComposable(calendarViewModel: CalendarViewModel, inspectedEventViewModel: InspectedEventViewModel, showDaySelector: ()->Unit) {
-    val conf = LocalConfiguration.current
+    val conf = LocalWindowInfo.current.containerDpSize
     val density = LocalDensity.current
     val today = LocalDate.now()
     val currentYear by calendarViewModel.currentYear.collectAsState()
@@ -76,7 +76,7 @@ fun CalendarComposable(calendarViewModel: CalendarViewModel, inspectedEventViewM
     val displayedDays by calendarViewModel.dayAmount.collectAsState()
     val eachDayWidthGoal by remember(displayedDays) {
         mutableFloatStateOf(
-            (conf.screenWidthDp-sidebarWidth.value+1)/displayedDays.toFloat()
+            (conf.width.value-sidebarWidth.value+1)/displayedDays.toFloat()
         )
     }
     val eachDayWidth by animateFloatAsState(eachDayWidthGoal)

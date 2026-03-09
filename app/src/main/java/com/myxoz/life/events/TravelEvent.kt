@@ -16,6 +16,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -26,6 +27,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.times
@@ -84,7 +86,7 @@ class TravelEvent(
         blockHeight: Int
     ) {
         val profileInfoModel = LocalScreens.current.profileInfoModel
-        val blockHeight =  getBlockHeight(startOfDay, endOfDay)
+        val blockHeight = getBlockHeight(startOfDay, endOfDay)
         val from by profileInfoModel.getLocationById(from).collectAsState()
         val to by profileInfoModel.getLocationById(to).collectAsState()
         val fromDisplay = from?.name ?: "Von"
@@ -169,24 +171,21 @@ class TravelEvent(
                     Modifier.fillMaxSize().padding(horizontal = 5.dp),
                     verticalArrangement = Arrangement.SpaceBetween
                 ) {
-                    Row(
-                        Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Text(fromDisplay, color = OldColors.Calendar.Travel.TEXT, fontSize = fontSize, fontWeight = FontWeight.Bold)
-                    }
-                    Row(
+                    Text(fromDisplay, color = OldColors.Calendar.Travel.TEXT, fontSize = fontSize, fontWeight = FontWeight.Bold, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                    Box(
                         Modifier
                             .weight(1f)
                             .fillMaxWidth(),
-                        verticalAlignment = Alignment.CenterVertically
                     ) {
                         Box(Modifier.width(2*size).fillMaxHeight().drawArrowBehind(ArrowDirection.Down, size.toPx()/(12/blockHeight.coerceAtMost(6)), OldColors.Calendar.Travel.TEXT))
                         Row(
                             Modifier
+                                .align(Alignment.CenterStart)
                                 .run{
-                                    if(blockHeight > 6) offset(x = -2*size).background(OldColors.Calendar.Travel.BG, CircleShape) else this
+                                    if(blockHeight < 7)
+                                        offset(x = 1.5 * size).background(OldColors.Calendar.Travel.BG, CircleShape).padding(horizontal = 2.dp)
+                                    else
+                                        padding(start = size/2).background(OldColors.Calendar.Travel.BG, RoundedCornerShape(size/5))
                                 }
                             ,
                             verticalAlignment = Alignment.CenterVertically,
@@ -197,13 +196,7 @@ class TravelEvent(
                             }
                         }
                     }
-                    Row(
-                        Modifier.fillMaxWidth(),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Spacer(Modifier.width(3.dp))
-                        Text(toDisplay, color = OldColors.Calendar.Travel.TEXT, fontSize = fontSize, fontWeight = FontWeight.Bold)
-                    }
+                    Text(toDisplay, color = OldColors.Calendar.Travel.TEXT, fontSize = fontSize, fontWeight = FontWeight.Bold, maxLines = 1, overflow = TextOverflow.Ellipsis)
                 }
             }
         }

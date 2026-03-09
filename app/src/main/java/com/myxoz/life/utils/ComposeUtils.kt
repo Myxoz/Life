@@ -15,12 +15,22 @@ import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Outline
+import androidx.compose.ui.graphics.Paint
+import androidx.compose.ui.graphics.Shape
+import androidx.compose.ui.graphics.drawscope.drawIntoCanvas
+import androidx.compose.ui.graphics.drawscope.translate
+import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.ClipEntry
 import androidx.compose.ui.platform.Clipboard
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.TextUnit
+import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import kotlinx.coroutines.flow.MutableStateFlow
 
@@ -89,4 +99,72 @@ val windowPadding: PaddingValues
 
 suspend fun Clipboard.copy(text: String) {
     setClipEntry(ClipEntry(ClipData.newPlainText(text, text)))
+}
+
+fun Modifier.boxShadow(
+    color: Color = Color.Black,
+    alpha: Float = 1f,
+    blur: Dp = 0.dp,
+    spread: Dp = 0.dp,
+    offsetX: Dp = 0.dp,
+    offsetY: Dp = 0.dp,
+    shape: Shape
+) = this.drawBehind {
+
+    val blurPx = blur.toPx()
+    val spreadPx = spread.toPx()
+    val offsetXPx = offsetX.toPx()
+    val offsetYPx = offsetY.toPx()
+
+    val outline = shape.createOutline(size, layoutDirection, this)
+
+    drawIntoCanvas { canvas ->
+
+        val paint = Paint()
+        val frameworkPaint = paint.asFrameworkPaint()
+
+        frameworkPaint.color = color.copy(alpha = alpha).toArgb()
+        frameworkPaint.setShadowLayer(
+            blurPx,
+            offsetXPx,
+            offsetYPx,
+            frameworkPaint.color
+        )
+
+        val spreadSize = Size(
+            size.width + spreadPx * 2,
+            size.height + spreadPx * 2
+        )
+
+        translate(-spreadPx, -spreadPx) {
+
+            when (outline) {
+                is Outline.Rectangle -> {
+                    canvas.drawRect(
+                        0f,
+                        0f,
+                        spreadSize.width,
+                        spreadSize.height,
+                        paint
+                    )
+                }
+
+                is Outline.Rounded -> {
+                    canvas.drawRoundRect(
+                        left = 0f,
+                        top = 0f,
+                        right = spreadSize.width,
+                        bottom = spreadSize.height,
+                        radiusX = outline.roundRect.topLeftCornerRadius.x,
+                        radiusY = outline.roundRect.topLeftCornerRadius.y,
+                        paint = paint
+                    )
+                }
+
+                is Outline.Generic -> {
+                    canvas.drawPath(outline.path, paint)
+                }
+            }
+        }
+    }
 }

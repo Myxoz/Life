@@ -59,9 +59,9 @@ import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.node.Ref
 import androidx.compose.ui.platform.LocalClipboard
-import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.platform.LocalWindowInfo
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardCapitalization
@@ -130,7 +130,7 @@ fun ProfileInfo(largeDataCache: LargeDataCache, profileInfoModel: ProfileInfoMod
             val profileEntrySize =
                 FontSize.MEDIUM.size.toDp() + 4.dp + 5.dp + FontSize.LARGE.size.toDp() + 5.dp + FontSize.SMALL.size.toDp() * 2 + 4.dp // Two line small  height
             val navigationIconSize = FontSize.MEDIUM.size.toDp()
-            val platforms by profileInfoModel.platforms.collectAsState()
+            val platforms = inspectedPerson?.socials ?: listOf()
             val platformBarHeight = FontSize.MEDIUM.size.toDp() + 10.dp + 4.dp + FontSize.MEDIUM.size.toDp() + 10.dp
             val containerHight by animateDpAsState(
                 (
@@ -204,8 +204,9 @@ fun ProfileInfo(largeDataCache: LargeDataCache, profileInfoModel: ProfileInfoMod
                     val censoredPlaces =
                         if (formatedPhone != null) (formatedPhone.substringAfter(" ").length * (1 - extendProgress)).roundToInt() else 3
                     val fullyFormatedNumber = formatedPhone?.censorLast(censoredPlaces, " •")
+                    val settings = LocalSettings.current
                     val savedInContacts by (inspectedPerson?.phoneNumber?.let { phone ->
-                        profileInfoModel.getSavedInContacts(phone)
+                        if(settings.features.addNewPerson.hasAssured()) profileInfoModel.getSavedInContacts(phone) else null
                     } ?: MutableStateFlow(null)).collectAsState()
                     val subtext = if (!isExtended) null else inspectedPerson?.phoneNumber?.let { phoneParser?.getPhoneInfo(it) }
                     Row(
@@ -228,7 +229,7 @@ fun ProfileInfo(largeDataCache: LargeDataCache, profileInfoModel: ProfileInfoMod
                                 }
                             }
                         }
-                        if(inspectedPerson?.phoneNumber!=null && savedInContacts != true) {
+                        if(inspectedPerson?.phoneNumber!=null && savedInContacts == false) {
                             Spacer(Modifier.width(10.dp))
                             Icon(
                                 painterResource(R.drawable.save_contact),
@@ -490,7 +491,7 @@ fun ProfileInfo(largeDataCache: LargeDataCache, profileInfoModel: ProfileInfoMod
                             Text(title, style = TypoStyle(Theme.primary, FontSize.MEDIUM))
                         }
                     }
-                    val screenWidthPx = LocalConfiguration.current.screenWidthDp.dp.toPx()
+                    val screenWidthPx = LocalWindowInfo.current.containerDpSize.width.toPx()
                     NavigationOption("Life Maps", R.drawable.gmaps) {
                         displayLocation?.also {
                             screens.openLocation(

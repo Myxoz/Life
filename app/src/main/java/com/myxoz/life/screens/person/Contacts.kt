@@ -25,7 +25,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
@@ -41,13 +40,16 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalHapticFeedback
+import androidx.compose.ui.platform.LocalWindowInfo
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.min
 import androidx.core.net.toUri
 import com.myxoz.life.LocalScreens
 import com.myxoz.life.LocalSettings
@@ -58,6 +60,7 @@ import com.myxoz.life.api.syncables.PersonSyncable
 import com.myxoz.life.screens.feed.dayoverview.edgeToEdgeGradient
 import com.myxoz.life.ui.BOTTOMSEARCHBARHEIGHT
 import com.myxoz.life.ui.BottomSearchBar
+import com.myxoz.life.ui.SCREENMAXWIDTH
 import com.myxoz.life.ui.rememberAsymmetricalVerticalCornerRadius
 import com.myxoz.life.ui.setMaxTabletWidth
 import com.myxoz.life.ui.theme.FontFamily
@@ -98,7 +101,7 @@ fun Contacts(contactsViewModel: ContactsViewModel){
         ) {
             val screens = LocalScreens.current
             val settings = LocalSettings.current
-            val screenWidthPx = LocalConfiguration.current.screenWidthDp.dp.toPx(LocalDensity.current)
+            val screenWidthPx = LocalWindowInfo.current.containerDpSize.width.toPx(LocalDensity.current)
             val lifeContacts by contactsViewModel.getAllLifeContacts.collectAsState()
             val deviceContacts by contactsViewModel.getAllDeviceContacts().collectAsState()
             val showIcons by contactsViewModel.showIcons.collectAsState()
@@ -116,8 +119,6 @@ fun Contacts(contactsViewModel: ContactsViewModel){
                 deviceContacts
                     .filteredWith(search, {it.fullName?:""}) {it.name}
             }
-            val scrollState = rememberScrollState(contactsViewModel.scrollDistance)
-            contactsViewModel.scrollDistance = scrollState.value
             LazyColumn(
                 Modifier
                     .fillMaxWidth()
@@ -150,21 +151,37 @@ fun Contacts(contactsViewModel: ContactsViewModel){
                         val coroutineScope = rememberCoroutineScope()
                         val swipedRight = offsetX.value > 0
                         val platform = if(!swipedRight) PersonSyncable.getOrderedSocials(contact.socials).getOrNull(0)?.platform else null
+                        var snapTo by remember { mutableStateOf(true) }
+                        val screenWidth = LocalWindowInfo.current.containerDpSize.width
+                        val dragThreshold = .8 /* Personal preference */ * with(LocalDensity.current) {
+                            min(screenWidth * .95f, SCREENMAXWIDTH).toPx()
+                        } / 2
+                        val haptics = LocalHapticFeedback.current
                         Box(
                             Modifier
                                 .setMaxTabletWidth()
                                 .padding(vertical = 1.dp)
                                 .draggable(
                                     rememberDraggableState {
+                                        if(
+                                            (offsetX.value > -dragThreshold && offsetX.value + it < -dragThreshold) ||
+                                            (offsetX.value < dragThreshold && offsetX.value + it > dragThreshold)
+                                        ) {
+                                            haptics.performHapticFeedback(HapticFeedbackType.GestureThresholdActivate)
+                                        }
                                         coroutineScope.launch {
-                                            offsetX.snapTo(offsetX.value + it)
+                                            if(snapTo) offsetX.snapTo(offsetX.value + it)
                                         }
                                     },
                                     Orientation.Horizontal,
+                                    onDragStarted = {
+                                        snapTo = true
+                                    },
                                     onDragStopped = {
+                                        snapTo = false
                                         if (swipedRight) {
                                             /* Empirically set this */
-                                            if (it > 1000f && contact.phoneNumber != null) {
+                                            if ((offsetX.value > dragThreshold || it > 1000f) && contact.phoneNumber != null) {
                                                 val number = ("tel:" + contact.phoneNumber).toUri()
                                                 val intent =
                                                     Intent(if (settings.features.callFromLife.hasAssured()) Intent.ACTION_CALL else Intent.ACTION_DIAL)
@@ -174,7 +191,7 @@ fun Contacts(contactsViewModel: ContactsViewModel){
                                                 delay(1000)
                                             }
                                         } else {
-                                            if (it < -1000f && platform != null) {
+                                            if ((offsetX.value < -dragThreshold || it < -1000f) && platform != null) {
                                                 platform.openPlatform(
                                                     context,
                                                     contact.socials[0].handle,
