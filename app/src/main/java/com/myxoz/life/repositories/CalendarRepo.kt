@@ -1,5 +1,6 @@
 package com.myxoz.life.repositories
 
+import android.app.AlarmManager
 import android.content.Context
 import android.content.Context.MODE_PRIVATE
 import android.content.SharedPreferences
@@ -37,6 +38,11 @@ class CalendarRepo(
     private val context: Context,
     private val appScope: CoroutineScope,
 ) {
+    val nextAlarmClockTs = MutableStateFlow<AlarmManager.AlarmClockInfo?>(null)
+    fun refetchAlarmClockTs(){
+        val service: AlarmManager = context.getSystemService(Context.ALARM_SERVICE) as? AlarmManager ?: return
+        nextAlarmClockTs.value = service.nextAlarmClock
+    }
     private val autoDetectPrefs: SharedPreferences = context.getSharedPreferences(AutoDetect.AUTODETECT_PREFS, MODE_PRIVATE)
     private val zone: ZoneId = ZoneId.systemDefault()
     val todayFlow: Flow<LocalDate> = flow {

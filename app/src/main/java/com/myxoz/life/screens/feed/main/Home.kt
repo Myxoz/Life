@@ -21,6 +21,7 @@ import com.myxoz.life.viewmodels.InspectedEventViewModel
 fun HomeComposable(calendarViewModel: CalendarViewModel, inspectedEventViewModel: InspectedEventViewModel){
     LaunchedEffect(Unit) {
         calendarViewModel.resync()
+        calendarViewModel.refetchAlarmClockTs()
     }
     Box(
         Modifier

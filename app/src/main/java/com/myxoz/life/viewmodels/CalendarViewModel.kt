@@ -184,4 +184,5 @@ class CalendarViewModel(
     fun getCachedLocation(id: Long) = repos.locationRepo.getCachedLocation(id)
     fun getCachedPeopleById(id: List<Long>) = repos.peopleRepo.getCachedPeopleById(id)
     fun getScreentime(date: LocalDate) = repos.aggregators.daySummaryAggregator.getScreenTimeForDay(date)
+    fun refetchAlarmClockTs() = repos.calendarRepo.refetchAlarmClockTs()
 }

@@ -108,6 +108,7 @@ fun DayComposable(
                     endOfDay,
                     width
                 )
+
                 RenderInstantEvents(
                     calendarViewModel,
                     inspectedEventViewModel,

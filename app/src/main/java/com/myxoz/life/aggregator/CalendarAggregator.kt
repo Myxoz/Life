@@ -9,6 +9,7 @@ import com.myxoz.life.repositories.BankingRepo
 import com.myxoz.life.screens.feed.instantevents.InstantEvent
 import com.myxoz.life.screens.feed.instantevents.InstantEvent.Companion.INSTANTEVENTSIZE
 import com.myxoz.life.screens.feed.main.SegmentedEvent
+import com.myxoz.life.utils.AndroidUtils.sendWithBal
 import com.myxoz.life.utils.def
 import kotlinx.coroutines.flow.combine
 import java.time.LocalDate
@@ -17,16 +18,29 @@ class CalendarAggregator(
     private val repos: AppRepositories
 ) {
     fun getInstantEventsForDay(date: LocalDate) = combine(
+        repos.calendarRepo.nextAlarmClockTs,
         repos.commitsRepo.getCommitsForDay(date),
         repos.bankingRepo.getSortedTransactionsAt(date)
-    ) { commits, transactions ->
+    ) { nextAlarm, commits, transactions ->
+        val nextAlarmEvent = listOfNotNull(
+            nextAlarm?.let {
+                InstantEvent(
+                    R.drawable.alarm_clock,
+                    "Wecker",
+                    it.triggerTime,
+                    {false},
+                ) {
+                    nextAlarm.showIntent?.sendWithBal()
+                }
+            }
+        )
         val commits = commits?.data.def(listOf()).mapNotNull {
             commitToInstantEvent(it)
         }
         val transactions = transactions.def(listOf()).mapNotNull {
             bankEntryAsInstantEvent(it)
         }
-        createGroupedInstantEvents(commits + transactions)
+        createGroupedInstantEvents(commits + transactions + nextAlarmEvent)
     }
     private fun commitToInstantEvent(commitSyncable: CommitSyncable): InstantEvent? {
         return InstantEvent(

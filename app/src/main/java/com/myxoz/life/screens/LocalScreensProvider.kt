@@ -41,7 +41,7 @@ class LocalScreensProvider(
     private val instantEventsViewModel: InstantEventsViewModel,
     private val locationEditingViewModel: LocationEditingViewModel,
     private val nav: NavController,
-    private val context: Context
+    private val context: Context,
 ) {
     private var calendarCooldown = System.currentTimeMillis()
     fun openPersonDetails(personId: Long){
