@@ -43,12 +43,12 @@ import androidx.compose.ui.unit.dp
 import com.myxoz.life.LocalScreens
 import com.myxoz.life.R
 import com.myxoz.life.Theme
-import com.myxoz.life.screens.feed.main.formatMsToDuration
 import com.myxoz.life.ui.ToggleIconButton
 import com.myxoz.life.ui.theme.FontSize
 import com.myxoz.life.ui.theme.TypoStyle
 import com.myxoz.life.utils.collectAsMutableNonNullState
 import com.myxoz.life.utils.collectAsMutableState
+import com.myxoz.life.utils.formatMsToDuration
 import com.myxoz.life.utils.rippleClick
 import com.myxoz.life.utils.toDp
 import com.myxoz.life.utils.toPx

@@ -1,20 +1,14 @@
 package com.myxoz.life.screens.feed.main
 
 import android.icu.util.Calendar
-import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.gestures.detectVerticalDragGestures
-import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -23,20 +17,14 @@ import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.layout.widthIn
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableLongStateOf
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
@@ -44,46 +32,30 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.input.pointer.PointerInputScope
 import androidx.compose.ui.input.pointer.pointerInput
-import androidx.compose.ui.layout.onGloballyPositioned
-import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalHapticFeedback
-import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.times
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.myxoz.life.LocalNavController
-import com.myxoz.life.LocalSettings
-import com.myxoz.life.R
+import com.myxoz.life.LocalScreens
 import com.myxoz.life.Theme
+import com.myxoz.life.api.Syncable
 import com.myxoz.life.api.syncables.ManualTransactionSyncable
-import com.myxoz.life.events.ProposedEvent
-import com.myxoz.life.screens.feed.dayoverview.getWeekDayByInt
 import com.myxoz.life.screens.feed.instantevents.InstantEvent
-import com.myxoz.life.ui.theme.FontColor
-import com.myxoz.life.ui.theme.FontFamily
 import com.myxoz.life.ui.theme.FontSize
-import com.myxoz.life.ui.theme.OldColors
-import com.myxoz.life.ui.theme.TypoStyle
-import com.myxoz.life.ui.theme.TypoStyleOld
-import com.myxoz.life.utils.MaterialShapes
+import com.myxoz.life.utils.atStartAsMillis
 import com.myxoz.life.utils.boxShadow
-import com.myxoz.life.utils.def
-import com.myxoz.life.utils.rippleClick
 import com.myxoz.life.utils.toDp
-import com.myxoz.life.utils.toShape
 import com.myxoz.life.viewmodels.CalendarViewModel
 import com.myxoz.life.viewmodels.InspectedEventViewModel
 import kotlinx.coroutines.launch
 import java.time.LocalDate
 import java.time.ZoneId
-import kotlin.math.min
+import kotlin.math.abs
 
 const val screenTimeGoal = 1000f*3600*4f
 const val stepsGoal = 6000f
@@ -91,553 +63,525 @@ const val stepsGoal = 6000f
 fun DayComposable(
     calendarViewModel: CalendarViewModel,
     inspectedEventViewModel: InspectedEventViewModel,
-    isToday: Boolean,
     date: LocalDate,
     fullWidth: Dp,
-){
-    val navController = LocalNavController.current
-    val density = LocalDensity.current
-    val settings = LocalSettings.current
-    var lastDayDragEnd by remember { mutableLongStateOf(0L) }
+    fullHeight: Dp,
+    fullHeightPx: Float
+) {
     val zone = remember { ZoneId.systemDefault() }
-    val startOfDay = remember { date.atStartOfDay(zone).toEpochSecond()*1000L }
-    val endOfDay = remember { date.plusDays(1).atStartOfDay(zone).toEpochSecond()*1000L }
-    val hoursToday = remember { ((endOfDay - startOfDay) / (3600*1000)).toInt() }
-    var oneHourDp by remember { mutableStateOf(0.dp) }
-    val hourInPx = with(density) { oneHourDp.toPx() }
+    val startOfDay = remember { date.atStartOfDay(zone).toEpochSecond() * 1000L }
+    val endOfDay = remember { date.plusDays(1).atStartOfDay(zone).toEpochSecond() * 1000L }
+
+    // Fuck daylight saving time. This is mostly 24 but can be 23 oder 25, I hate calendars
+    val hoursToday = remember { ((endOfDay - startOfDay) / (3600 * 1000)).toInt() }
     val calendar = remember { Calendar.getInstance() }
-    val width = fullWidth*.97f
+    val oneHourDp = fullHeight / hoursToday
+    val oneHourPx = fullHeightPx / hoursToday
+    val width = fullWidth * .97f
     Column(
         Modifier
             .width(fullWidth)
     ) {
-        Column(
-            Modifier
-                .fillMaxWidth()
-                .clip(RoundedCornerShape(10.dp))
-                .rippleClick {
-                    navController.navigate("day/${date.toEpochDay()}/overview")
-                }
-        ) {
-            Box(
-                Modifier
-                    .height(dateBarHeight)
-                    .fillMaxWidth()
-                ,
-                contentAlignment = Alignment.Center
-            ) {
-                Column(
-                    Modifier
-                        .then(
-                            if (isToday)
-                                Modifier
-                                    .aspectRatio(1f)
-                                    .background(
-                                        Theme.primary,
-                                        MaterialShapes.Slanted.toShape()
-                                    )
-                            else
-                                Modifier
-                        ),
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.Center
-                ) {
-                    Text(
-                        date.dayOfMonth.toString(),
-                        style = TypoStyle(
-                            if (isToday) Theme.onPrimary else Theme.secondary,
-                            FontSize.MLARGE,
-                            FontFamily.Display
-                        )
-                            .run { this.copy(fontWeight = if (isToday) FontWeight.Bold else FontWeight.Normal) }
-                    )
-                    Text(
-                        getWeekDayByInt(date.dayOfWeek.value - 1),
-                        style = TypoStyle(
-                            if (isToday) Theme.onPrimary else Theme.secondary,
-                            FontSize.SMALLM
-                        )
-                            .run { this.copy(fontWeight = if (isToday) FontWeight.Bold else FontWeight.Normal) }
-                    )
-                }
-            }
-            Box(
-                Modifier
-                    .height(fullDayBarHeight)
-            )
-            Row(
-                Modifier
-                    .height(daySummaryHeight)
-                    .fillMaxWidth()
-                    .horizontalScroll(rememberScrollState())
-                    .clip(CircleShape)
-                    .rippleClick {
-                        navController.navigate("day/${date.toEpochDay()}/overview")
-                    },
-                horizontalArrangement = Arrangement.spacedBy(10.dp)
-            ) {
-                val daysSummaries by calendarViewModel.getDaySummary(date).collectAsState()
-                val birthdayPeople by calendarViewModel.getPeopleWithBirthdayAt(date).collectAsState()
-                repeat(birthdayPeople.size) {
-                    Icon(
-                        painterResource(R.drawable.birthday),
-                        "Birthday",
-                        Modifier.fillMaxHeight(),
-                        Theme.secondary
-                    )
-                }
-                val screentimePermission by settings.features.screentime.has.collectAsState()
-                val stepsPermission by settings.features.stepCounting.has.collectAsState()
-                val listenedScreentime by calendarViewModel.getScreentime(date).collectAsStateWithLifecycle(0L)
-
-                if (screentimePermission &&  (isToday || daysSummaries!=null)) {
-                    DayPill(
-                        painterResource(R.drawable.screentime),
-                        listenedScreentime.formatMsToDuration(true),
-                        (listenedScreentime / screenTimeGoal).coerceIn(0f, 1f),
-                        OldColors.SCREENTIME
-                    )
-                }
-                val steps by calendarViewModel.steps.collectAsState()
-                val displayedSteps = (if(isToday) steps else daysSummaries?.steps?.toLong()).def(0L)
-                if (stepsPermission && (daysSummaries != null || isToday)) {
-                    DayPill(
-                        painterResource(R.drawable.shoe),
-                        displayedSteps.toString(),
-                        (displayedSteps / stepsGoal).coerceIn(0f, 1f),
-                        OldColors.STEPS
-                    )
-                }
-            }
-        }
+        DayTopBar(calendarViewModel, date)
         Box(
             Modifier
                 .weight(1f)
                 .width(width)
         ) {
-            Column(
-                Modifier
-                    .onGloballyPositioned { coordinates ->
-                        with(density) {
-                            oneHourDp = (coordinates.size.height.toDp() / hoursToday)
-                        }
-                    }
-                ,
-                verticalArrangement = Arrangement.SpaceEvenly
-            ) {
-                repeat(hoursToday){
-                    Box(
-                        Modifier
-                            .padding(vertical = 2.dp)
-                            .background(Theme.background, RoundedCornerShape(25))
-                            .fillMaxWidth()
-                            .weight(1f)
-                            .clickable(null, null) {
-                                inspectedEventViewModel.updateStartTs(startOfDay + it * 3600 * 1000L)
-                            }
-                    )
-                }
-            }
+            BackgroundTiles(inspectedEventViewModel, hoursToday, startOfDay)
             Box( // Day Content
                 Modifier
                     .fillMaxSize()
                     .clip(RoundedCornerShape(10.dp))
             ) {
                 val isEditing by inspectedEventViewModel.isEditing.collectAsState()
-                val syncable by inspectedEventViewModel.editedSyncable.collectAsState()
-                val newEvent by inspectedEventViewModel.event.collectAsState()
-                val collectedProposedEvents by calendarViewModel.getProposedEventsAt(date).collectAsState()
-                val coroutineScope = rememberCoroutineScope()
                 val instantEventSize = InstantEvent.INSTANTEVENTSIZE * oneHourDp
-                val segments by calendarViewModel.getSegmentedEvents(date).collectAsState()
-                for(segmentedEvent in segments) {
-                    if(isEditing && segmentedEvent.event.id == newEvent.id) continue
-                    val haptic = LocalHapticFeedback.current
-                    segmentedEvent.Render(calendarViewModel, oneHourDp, instantEventSize, startOfDay, endOfDay, width, !isEditing, {
-                        haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                        inspectedEventViewModel.setEditing(true)
-                        inspectedEventViewModel.setInspectedEventTo(
-                            segmentedEvent.event
-                        )
-                    }) {
-                        inspectedEventViewModel.setInspectedEventTo(segmentedEvent.event)
-                        navController.navigate("fullscreen_event")
+
+                RenderEvents(
+                    calendarViewModel,
+                    inspectedEventViewModel,
+                    date,
+                    isEditing,
+                    oneHourDp,
+                    instantEventSize,
+                    startOfDay,
+                    endOfDay,
+                    width
+                )
+                RenderInstantEvents(
+                    calendarViewModel,
+                    inspectedEventViewModel,
+                    date,
+                    startOfDay,
+                    endOfDay,
+                    oneHourDp
+                )
+
+                RenderProposedEvents(
+                    calendarViewModel,
+                    date,
+                    oneHourDp,
+                    startOfDay,
+                    endOfDay
+                )
+
+                RenderCurrentTimeCursor(
+                    calendarViewModel,
+                    calendar,
+                    isEditing,
+                    oneHourDp,
+                    date
+                )
+
+                RenderEditing(
+                    inspectedEventViewModel,
+                    isEditing,
+                    startOfDay,
+                    endOfDay,
+                    oneHourDp,
+                    oneHourPx,
+                    instantEventSize,
+                    calendar
+                )
+            }
+        }
+    }
+}
+@Composable
+private fun RenderCurrentTimeCursor(
+    calendarViewModel: CalendarViewModel,
+    calendar: Calendar,
+    isEditing: Boolean,
+    oneHourDp: Dp,
+    date: LocalDate
+) {
+    val time by calendarViewModel.minuteFlow.collectAsStateWithLifecycle()
+    calendar.timeInMillis = time
+    val zone = remember { ZoneId.systemDefault() }
+    val start = remember(date) { date.atStartAsMillis(zone) }
+    // We render the cursor up to 2 days in each direction to support the cursor to smoothly move from one to another day
+    if(abs(start - time) < 1000L * 3600 * 24 * 2) Box(
+        Modifier
+            .offset(y = (-5).dp + (time - start) / (3600f * 1000f) * oneHourDp)
+            .height(10.dp)
+            .alpha(if (isEditing) .3f else .7f)
+            .fillMaxWidth()
+    ) {
+        Box(
+            Modifier
+                .fillMaxWidth()
+                .background(Theme.primary, CircleShape)
+                .align(Alignment.CenterStart)
+                .height(2.dp)
+        )
+        Box(
+            Modifier
+                .background(Theme.primary, CircleShape)
+                .align(Alignment.CenterStart)
+                .size(10.dp)
+        )
+    }
+}
+
+@Composable
+private fun RenderEvents(
+    calendarViewModel: CalendarViewModel,
+    inspectedEventViewModel: InspectedEventViewModel,
+    date: LocalDate,
+    isEditing: Boolean,
+    oneHourDp: Dp,
+    instantEventSize: Dp,
+    startOfDay: Long,
+    endOfDay: Long,
+    width: Dp
+) {
+    val editedEvent by inspectedEventViewModel.event.collectAsState()
+    val segments by calendarViewModel.getSegmentedEvents(date).collectAsState()
+    val screens = LocalScreens.current
+    for(segmentedEvent in segments) {
+        if(isEditing && segmentedEvent.event.id == editedEvent.id) continue
+        val haptic = LocalHapticFeedback.current
+        segmentedEvent.Render(
+            calendarViewModel,
+            oneHourDp,
+            instantEventSize,
+            startOfDay,
+            endOfDay,
+            width,
+            !isEditing,
+            {
+                haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                inspectedEventViewModel.setEditing(true)
+                inspectedEventViewModel.setInspectedEventTo(
+                    segmentedEvent.event
+                )
+            }) {
+            inspectedEventViewModel.setInspectedEventTo(segmentedEvent.event)
+            screens.gotoEventDetails()
+        }
+    }
+}
+
+@Composable
+private fun BackgroundTiles(
+    inspectedEventViewModel: InspectedEventViewModel,
+    hoursToday: Int,
+    startOfDay: Long,
+) {
+    Column(
+        verticalArrangement = Arrangement.SpaceEvenly
+    ) {
+        repeat(hoursToday){
+            Box(
+                Modifier
+                    .padding(vertical = 2.dp)
+                    .background(Theme.background, RoundedCornerShape(25))
+                    .fillMaxWidth()
+                    .weight(1f)
+                    .clickable(null, null) {
+                        inspectedEventViewModel.updateStartTs(startOfDay + it * 3600 * 1000L)
                     }
+            )
+        }
+    }
+}
+
+@Composable
+private fun RenderInstantEvents(
+    calendarViewModel: CalendarViewModel,
+    inspectedEventViewModel: InspectedEventViewModel,
+    date: LocalDate,
+    startOfDay: Long,
+    endOfDay: Long,
+    oneHourDp: Dp
+){
+    val syncable by inspectedEventViewModel.editedSyncable.collectAsState()
+    val collectedInstantEvents by calendarViewModel.getInstantEventsForDay(syncable, date)
+    for (group in collectedInstantEvents) {
+        group.Render(startOfDay, endOfDay, oneHourDp)
+    }
+}
+
+@Composable
+private fun BoxScope.RenderProposedEvents(
+    calendarViewModel: CalendarViewModel,
+    date: LocalDate,
+    oneHourDp: Dp,
+    startOfDay: Long,
+    endOfDay: Long,
+) {
+    val collectedProposedEvents by calendarViewModel.getProposedEventsAt(date).collectAsState()
+    val coroutineScope = rememberCoroutineScope()
+    for(event in collectedProposedEvents) {
+        Box(Modifier
+            .fillMaxHeight()
+            .fillMaxWidth()
+            .align(Alignment.CenterStart)) {
+            event.Render(oneHourDp, startOfDay, endOfDay,{
+                coroutineScope.launch {
+                    calendarViewModel.removeProposedEvent(event)
                 }
-                val collectedInstantEvents by calendarViewModel.getInstantEventsForDay(syncable, date)
-                for (group in collectedInstantEvents) {
-                    group.Render(startOfDay, endOfDay, oneHourDp)
-                }
-                for(event in collectedProposedEvents) {
-                    Box(Modifier
-                        .fillMaxHeight()
-                        .fillMaxWidth()
-                        .align(Alignment.CenterStart)) {
-                        event.Render(oneHourDp, startOfDay, endOfDay,{
-                            coroutineScope.launch {
-                                calendarViewModel.removeProposedEvent(event)
-                            }
-                        }) {
-                            calendarViewModel.saveProposedEvent(event)
-                        }
-                    }
-                }
-                run {
-                    val time by calendarViewModel.minuteFlow.collectAsStateWithLifecycle()
-                    calendar.timeInMillis = time
-                    val currentHour = calendar.get(Calendar.HOUR_OF_DAY)
-                    val currentMinute = calendar.get(Calendar.MINUTE)
-                    val totalHoursFloat = (currentHour * 60 + currentMinute) / 60f
-                    if(isToday) Box(
-                        Modifier
-                            .offset(y = (-5).dp)
-                            .offset(y = totalHoursFloat * oneHourDp)
-                            .height(10.dp)
-                            .alpha(if (isEditing) .3f else .7f)
-                            .fillMaxWidth()
-                    ) {
-                        Box(
-                            Modifier
-                                .fillMaxWidth()
-                                .background(Theme.primary, CircleShape)
-                                .align(Alignment.CenterStart)
-                                .height(2.dp)
-                        )
-                        Box(
-                            Modifier
-                                .background(Theme.primary, CircleShape)
-                                .align(Alignment.CenterStart)
-                                .size(10.dp)
-                        )
-                    }
-                }
-                if(isEditing) {
-                    if(syncable == null && newEvent.proposed.end > startOfDay && newEvent.proposed.start < endOfDay) {
-                        val colors = newEvent.proposed.type.color
-                        val gradientBottom = remember(colors) {
-                            Brush.radialGradient( listOf( colors, Color.Transparent ),
-                                Offset(Float.POSITIVE_INFINITY, Float.POSITIVE_INFINITY), 100f )
-                        }
-                        val gradientTop = remember {
-                            Brush.radialGradient( listOf( colors, Color.Transparent ),
-                                Offset(0f, 0f), 100f )
-                        }
-                        suspend fun PointerInputScope.dragEvent(start: Boolean, end: Boolean){
-                            var totalDrag = 0f
-                            var ev = inspectedEventViewModel.event.value
-                            this.detectVerticalDragGestures(
-                                onDragStart = {
-                                    ev = inspectedEventViewModel.event.value; totalDrag = 0f
-                                },
-                                onDragEnd = { lastDayDragEnd = System.currentTimeMillis() }
-                            ) { _, it ->
-                                totalDrag += it;
-                                val offsetInMs =
-                                    ((totalDrag / hourInPx * 4).toInt() * 900 * 1000L)
-                                inspectedEventViewModel.setInspectedEventTo(
-                                    when{
-                                        !start && end -> {
-                                            ev.copyWithTimes(
-                                                start = ev.proposed.start,
-                                                end = (ev.proposed.end + offsetInMs).coerceAtLeast(
-                                                    ev.proposed.start + 900 * 1000
-                                                )
-                                            )
-                                        }
-                                        start && !end -> {
-                                            ev.copyWithTimes(
-                                                start = (ev.proposed.start + offsetInMs).coerceAtMost(
-                                                    ev.proposed.end - 900 * 1000
-                                                ),
-                                                end = newEvent.proposed.end
-                                            )
-                                        }
-                                        else -> {
-                                            ev.copyWithTimes(
-                                                ev.proposed.start + offsetInMs,
-                                                ev.proposed.end + offsetInMs
-                                            )
-                                        }
-                                    }
-                                )
-                            }
-                        }
-                        val bottomDragger: @Composable BoxScope.() -> Unit = @Composable {
-                            Box(
-                                Modifier
-                                    .fillMaxWidth(0.4f)
-                                    .height(oneHourDp * 2)
-                                    .align(Alignment.BottomEnd)
-                                    .background(
-                                        gradientBottom,
-                                        RoundedCornerShape(10.dp)
-                                    )
-                                    .pointerInput("end", lastDayDragEnd) {
-                                        dragEvent(false, end = true)
-                                    },
-                                Alignment.Center
-                            ) {}
-                        }
-                        val topDragger: @Composable BoxScope.() -> Unit = @Composable {
-                            Box(
-                                Modifier
-                                    .fillMaxWidth(0.4f)
-                                    .height(oneHourDp * 2)
-                                    .align(Alignment.TopStart)
-                                    .background(gradientTop, RoundedCornerShape(10.dp))
-                                    .pointerInput("start", lastDayDragEnd) {
-                                        dragEvent(true, end = false)
-                                    },
-                                Alignment.Center
-                            ) {}
-                        }
-                        Box(
-                            Modifier
-                                .fillMaxWidth()
-                                .padding(top = newEvent.proposed.getTopPadding(oneHourDp, startOfDay))
-                                .clickable(null, null) {
-                                    navController.navigate("fullscreen_event")
-                                }
-                                .pointerInput("move_newday", lastDayDragEnd) {
-                                    dragEvent(true, end = true)
-                                }
-                                .height(newEvent.proposed.getHeightDp(oneHourDp, startOfDay, endOfDay))
-                                .border(2.dp, newEvent.proposed.type.color, RoundedCornerShape(10.dp))
-                                .boxShadow(
-                                    alpha = .25f,
-                                    blur = 10.dp,
-                                    shape = RoundedCornerShape(10.dp)
-                                )
-                        ) {
-                            if (newEvent.proposed.start >= startOfDay) topDragger()
-                            if (newEvent.proposed.end <= endOfDay) bottomDragger()
-                            Box(
-                                Modifier
-                                    .fillMaxSize()
-                                    .alpha(.7f)
-                                    .background(
-                                        newEvent.proposed.getBackgroundBrush(6/7f), // Just no
-                                        RoundedCornerShape(10.dp)
-                                    )
-                            ) {
-                                with(newEvent.proposed){
-                                    RenderContent(oneHourDp, startOfDay, endOfDay, false,
-                                        getBlockHeight(startOfDay, endOfDay)
-                                    )
-                                }
-                            }
-                        }
-                        Box(
-                            Modifier
-                                .align(Alignment.TopCenter)
-                                .offset(
-                                    y = -FontSize.LARGE.size.toDp() + newEvent.proposed.getTopPadding(
-                                        oneHourDp,
-                                        startOfDay
-                                    ).run { if (this == 1.dp) (-2).dp else this })
-                                .clickable(null, null) {
-                                    navController.navigate("fullscreen_event")
-                                }
-                                .pointerInput("top_bar"){
-                                    dragEvent(true, end = false)
-                                }
-                        ) {
-                            calendar.timeInMillis = newEvent.proposed.start
-                            val currentHour = calendar.get(Calendar.HOUR_OF_DAY)
-                            val currentMinute = calendar.get(Calendar.MINUTE)
-                            Text(
-                                "${if(currentHour<=9) "0" else ""}$currentHour:${if(currentMinute<=9) "0" else ""}$currentMinute",
-                                Modifier
-                                    .background(
-                                        newEvent.proposed.type.color,
-                                        RoundedCornerShape(50, 50, 0, 0)
-                                    )
-                                    .padding(horizontal = 5.dp, vertical = 2.dp)
-                                ,
-                                color = newEvent.proposed.type.selectedColor,
-                                textAlign = TextAlign.Right
-                            )
-                        }
-                        Box(
-                            Modifier
-                                .align(Alignment.TopCenter)
-                                .offset(
-                                    y = newEvent.proposed.getTopPadding(
-                                        oneHourDp,
-                                        startOfDay
-                                    ) + newEvent.proposed.getHeightDp(
-                                        oneHourDp,
-                                        startOfDay,
-                                        endOfDay
-                                    ) - 1.dp
-                                )
-                                .clickable(null, null) {
-                                    navController.navigate("fullscreen_event")
-                                }
-                                .pointerInput("top_bar"){
-                                    dragEvent(false, end = true)
-                                }
-                        ) {
-                            calendar.timeInMillis = newEvent.proposed.end
-                            val currentHour = calendar.get(Calendar.HOUR_OF_DAY)
-                            val currentMinute = calendar.get(Calendar.MINUTE)
-                            Text(
-                                "${if(currentHour<=9) "0" else ""}$currentHour:${if(currentMinute<=9) "0" else ""}$currentMinute",
-                                Modifier
-                                    .background(
-                                        newEvent.proposed.type.color,
-                                        RoundedCornerShape(0, 0, 50, 50)
-                                    )
-                                    .padding(horizontal = 5.dp, vertical = 2.dp)
-                                ,
-                                color = newEvent.proposed.type.selectedColor,
-                                textAlign = TextAlign.Left
-                            )
-                        }
-                    } else {
-                        val syncable = syncable ?: return
-                        if(syncable is ManualTransactionSyncable && syncable.timestamp <= endOfDay && syncable.timestamp >= startOfDay) {
-                            val instant = syncable.asInstantEvent() ?: return
-                            Box(
-                                Modifier
-                                    .offset(y = ((instant.timestamp - startOfDay) / 3_600_000f) * oneHourDp - instantEventSize / 2)
-                                    .height(instantEventSize)
-                                    .fillMaxWidth()
-                                    .pointerInput("start", lastDayDragEnd) {
-                                        var totalDrag = 0f
-                                        var ev: ManualTransactionSyncable = inspectedEventViewModel.editedSyncable.value as? ManualTransactionSyncable ?: return@pointerInput
-                                        this.detectVerticalDragGestures(
-                                            onDragStart = {
-                                                ev = inspectedEventViewModel.editedSyncable.value as? ManualTransactionSyncable ?: return@detectVerticalDragGestures
-                                                totalDrag = 0f
-                                            },
-                                            onDragEnd = { lastDayDragEnd = System.currentTimeMillis() }
-                                        ) { _, it ->
-                                            totalDrag += it
-                                            val offsetInMs = ((totalDrag / hourInPx * 3600L * 1000L)).toLong()
-                                            inspectedEventViewModel.updateStartTs(ev.timestamp + offsetInMs)
-                                        }
-                                    }
-                                ,
-                                contentAlignment = Alignment.CenterEnd
-                            ) {
-                                instant.RenderContent(oneHourDp, true){
-                                    navController.navigate("fullscreen_event")
-                                }
-                            }
-                        }
-                    }
-                }
+            }) {
+                calendarViewModel.saveProposedEvent(event)
             }
         }
     }
 }
 
-fun Long.formatMsToDuration(ignoreSeconds: Boolean=false): String {
-    val t = this/1000
-    val h = (t/3600)
-    val m = (t/60)%60
-    val s = t%60
-    return "" +
-            (if(h!=0L) "${h}h" else "") +
-            "${if(h!=0L && m!=0L) if(m<=9) " 0" else " " else ""}${if(m!=0L) "${m}m" else ""}" +
-            if(!ignoreSeconds) "${if((h!=0L || m!=0L) && s<=9) " 0" else " "}${s}s" else ""
-}
-
 @Composable
-fun DayPill(imageVector: Painter, text: String, progress: Float, color: Color){
-    Box(
-        Modifier
-            .height(daySummaryHeight)
-            .background(OldColors.DAYPILLBG, CircleShape)
-            .widthIn(40.dp)
-            .clip(CircleShape)
-    ) {
-        Box(
-            Modifier
-                .matchParentSize()
-        ) {
-            Box(
-                Modifier
-                    .background(color, CircleShape)
-                    .fillMaxHeight()
-                    .fillMaxWidth(progress)
+private fun BoxScope.RenderEditing(
+    inspectedEventViewModel: InspectedEventViewModel,
+    isEditing: Boolean,
+    startOfDay: Long,
+    endOfDay: Long,
+    oneHourDp: Dp,
+    oneHourPx: Float,
+    instantEventSize: Dp,
+    calendar: Calendar,
+){
+    val editedEvent by inspectedEventViewModel.event.collectAsState()
+    val syncable by inspectedEventViewModel.editedSyncable.collectAsState()
+    if (isEditing) {
+        if (syncable == null && editedEvent.proposed.end > startOfDay && editedEvent.proposed.start < endOfDay) {
+            RenderEventEditing(
+                inspectedEventViewModel,
+                startOfDay,
+                endOfDay,
+                oneHourDp,
+                oneHourPx,
+                calendar
             )
-        }
-        Row(
-            Modifier
-                .fillMaxSize()
-                .widthIn(40.dp)
-                .padding(horizontal = 2.dp)
-                .padding(end = 5.dp)
-        ,
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.SpaceBetween
-        ) {
-            Icon(imageVector, null,
-                Modifier
-                    .size(daySummaryHeight)
-                    .padding(2.dp),
-                OldColors.PRIMARYFONT
+        } else {
+            RenderEditSyncable(
+                inspectedEventViewModel,
+                syncable,
+                startOfDay,
+                endOfDay,
+                instantEventSize,
+                oneHourDp,
+                oneHourPx
             )
-            Spacer(Modifier.width(5.dp))
-            Text(text, style = TypoStyleOld(FontColor.PRIMARY, FontSize.SMALL).copy(fontWeight = FontWeight.Bold))
         }
     }
 }
-open class DefinedDurationEvent(val start: Long, val end: Long) {
-    fun length() = (end - start).coerceAtLeast(15*1000L*60)
-    fun getBlockHeight(startOfDay: Long, endOfDay: Long): Int = (min(length(), min(endOfDay - start, end - startOfDay))/(900*1000)).toInt()
-    fun getBlockLength() = (length() / (900*1000)).toInt()
-    fun getTopPadding(oneHour: Dp, startOfDay: Long) = ((this.start - startOfDay).coerceAtLeast(0L) / (3600 * 1000L).toFloat()) * oneHour + 1.dp
-    fun getHeightDp(oneHour: Dp, startOfDay: Long, endOfDay: Long) = oneHour*(getBlockHeight(startOfDay, endOfDay)/4f) - 1.dp
-}
 
-@OptIn(ExperimentalFoundationApi::class)
 @Composable
-fun ProposedEvent.Render(oneHour: Dp, startOfDay: Long, endOfDay: Long, removeProposedEvent: ()->Unit, syncEvent: ()->Unit){
+private fun BoxScope.RenderEventEditing(
+    inspectedEventViewModel: InspectedEventViewModel,
+    startOfDay: Long,
+    endOfDay: Long,
+    oneHourDp: Dp,
+    hourInPx: Float,
+    calendar: Calendar
+){
+    val screens = LocalScreens.current
+    val editedEvent by inspectedEventViewModel.event.collectAsState()
+    val colors = editedEvent.proposed.type.color
+    val gradientBottom = remember(colors) {
+        Brush.radialGradient(
+            listOf(colors, Color.Transparent),
+            Offset(Float.POSITIVE_INFINITY, Float.POSITIVE_INFINITY), 100f
+        )
+    }
+    val gradientTop = remember {
+        Brush.radialGradient(
+            listOf(colors, Color.Transparent),
+            Offset(0f, 0f), 100f
+        )
+    }
+
+    suspend fun PointerInputScope.dragEvent(start: Boolean, end: Boolean) {
+        var totalDrag = 0f
+        var ev = inspectedEventViewModel.event.value
+        this.detectVerticalDragGestures(
+            onDragStart = {
+                ev = inspectedEventViewModel.event.value; totalDrag = 0f
+            }
+        ) { _, it ->
+            totalDrag += it;
+            val offsetInMs =
+                ((totalDrag / hourInPx * 4).toInt() * 900 * 1000L)
+            inspectedEventViewModel.setInspectedEventTo(
+                when {
+                    !start && end -> {
+                        ev.copyWithTimes(
+                            start = ev.proposed.start,
+                            end = (ev.proposed.end + offsetInMs).coerceAtLeast(
+                                ev.proposed.start + 900 * 1000
+                            )
+                        )
+                    }
+
+                    start && !end -> {
+                        ev.copyWithTimes(
+                            start = (ev.proposed.start + offsetInMs).coerceAtMost(
+                                ev.proposed.end - 900 * 1000
+                            ),
+                            end = editedEvent.proposed.end
+                        )
+                    }
+
+                    else -> {
+                        ev.copyWithTimes(
+                            ev.proposed.start + offsetInMs,
+                            ev.proposed.end + offsetInMs
+                        )
+                    }
+                }
+            )
+        }
+    }
+
+    val bottomDragger: @Composable BoxScope.() -> Unit = @Composable {
+        Box(
+            Modifier
+                .fillMaxWidth(0.4f)
+                .height(oneHourDp * 2)
+                .align(Alignment.BottomEnd)
+                .background(
+                    gradientBottom,
+                    RoundedCornerShape(10.dp)
+                )
+                .pointerInput("end") {
+                    dragEvent(false, end = true)
+                },
+            Alignment.Center
+        ) {}
+    }
+    val topDragger: @Composable BoxScope.() -> Unit = @Composable {
+        Box(
+            Modifier
+                .fillMaxWidth(0.4f)
+                .height(oneHourDp * 2)
+                .align(Alignment.TopStart)
+                .background(gradientTop, RoundedCornerShape(10.dp))
+                .pointerInput("start") {
+                    dragEvent(true, end = false)
+                },
+            Alignment.Center
+        ) {}
+    }
     Box(
         Modifier
-            .padding(top = getTopPadding(oneHour, startOfDay))
-            .height(getHeightDp(oneHour, startOfDay, endOfDay))
-            .background(type.color.copy(.5f), RoundedCornerShape(10.dp))
             .fillMaxWidth()
+            .padding(
+                top = editedEvent.proposed.getTopPadding(
+                    oneHourDp,
+                    startOfDay
+                )
+            )
+            .clickable(null, null) {
+                screens.gotoEventDetails()
+            }
+            .pointerInput("move_newday") {
+                dragEvent(true, end = true)
+            }
+            .height(
+                editedEvent.proposed.getHeightDp(
+                    oneHourDp,
+                    startOfDay,
+                    endOfDay
+                )
+            )
+            .border(
+                2.dp,
+                editedEvent.proposed.type.color,
+                RoundedCornerShape(10.dp)
+            )
+            .boxShadow(
+                alpha = .25f,
+                blur = 10.dp,
+                shape = RoundedCornerShape(10.dp)
+            )
     ) {
+        if (editedEvent.proposed.start >= startOfDay) topDragger()
+        if (editedEvent.proposed.end <= endOfDay) bottomDragger()
         Box(
             Modifier
                 .fillMaxSize()
-                .alpha(.5f)
+                .alpha(.7f)
+                .background(
+                    editedEvent.proposed.getBackgroundBrush(6 / 7f), // Just no
+                    RoundedCornerShape(10.dp)
+                )
         ) {
-            RenderContent(oneHour, startOfDay, endOfDay, false,
-                getBlockHeight(startOfDay, endOfDay)
-            )
+            with(editedEvent.proposed) {
+                RenderContent(
+                    oneHourDp, startOfDay, endOfDay, false,
+                    getBlockHeight(startOfDay, endOfDay)
+                )
+            }
         }
-        Row(
+    }
+    Box(
+        Modifier
+            .align(Alignment.TopCenter)
+            .offset(
+                y = -FontSize.LARGE.size.toDp() + editedEvent.proposed.getTopPadding(
+                    oneHourDp,
+                    startOfDay
+                ).run { if (this == 1.dp) (-2).dp else this })
+            .clickable(null, null) {
+                screens.gotoEventDetails()
+            }
+            .pointerInput("top_bar") {
+                dragEvent(true, end = false)
+            }
+    ) {
+        calendar.timeInMillis = editedEvent.proposed.start
+        val currentHour = calendar.get(Calendar.HOUR_OF_DAY)
+        val currentMinute = calendar.get(Calendar.MINUTE)
+        Text(
+            "${if (currentHour <= 9) "0" else ""}$currentHour:${if (currentMinute <= 9) "0" else ""}$currentMinute",
             Modifier
-                .clip(RoundedCornerShape(10.dp))
-                .fillMaxSize(),
-        ) {
-            Box(
-                Modifier
-                    .fillMaxHeight()
-                    .weight(1f)
-                    .background(OldColors.ACCEPT)
-                    .clip(RoundedCornerShape(10.dp))
-                    .rippleClick {
-                        syncEvent()
-                        removeProposedEvent()
+                .background(
+                    editedEvent.proposed.type.color,
+                    RoundedCornerShape(50, 50, 0, 0)
+                )
+                .padding(horizontal = 5.dp, vertical = 2.dp),
+            color = editedEvent.proposed.type.selectedColor,
+            textAlign = TextAlign.Right
+        )
+    }
+    Box(
+        Modifier
+            .align(Alignment.TopCenter)
+            .offset(
+                y = editedEvent.proposed.getTopPadding(
+                    oneHourDp,
+                    startOfDay
+                ) + editedEvent.proposed.getHeightDp(
+                    oneHourDp,
+                    startOfDay,
+                    endOfDay
+                ) - 1.dp
+            )
+            .clickable(null, null) {
+                screens.gotoEventDetails()
+            }
+            .pointerInput("top_bar") {
+                dragEvent(false, end = true)
+            }
+    ) {
+        calendar.timeInMillis = editedEvent.proposed.end
+        val currentHour = calendar.get(Calendar.HOUR_OF_DAY)
+        val currentMinute = calendar.get(Calendar.MINUTE)
+        Text(
+            "${if (currentHour <= 9) "0" else ""}$currentHour:${if (currentMinute <= 9) "0" else ""}$currentMinute",
+            Modifier
+                .background(
+                    editedEvent.proposed.type.color,
+                    RoundedCornerShape(0, 0, 50, 50)
+                )
+                .padding(horizontal = 5.dp, vertical = 2.dp),
+            color = editedEvent.proposed.type.selectedColor,
+            textAlign = TextAlign.Left
+        )
+    }
+}
+
+@Composable
+private fun RenderEditSyncable(
+    inspectedEventViewModel: InspectedEventViewModel,
+    syncable: Syncable.DatedSyncable?,
+    startOfDay: Long,
+    endOfDay: Long,
+    instantEventSize: Dp,
+    oneHourDp: Dp,
+    oneHourPx: Float
+){
+    val screens = LocalScreens.current
+    if (syncable is ManualTransactionSyncable && syncable.timestamp <= endOfDay && syncable.timestamp >= startOfDay) {
+        val instant = syncable.asInstantEvent() ?: return
+        Box(
+            Modifier
+                .offset(y = ((instant.timestamp - startOfDay) / 3_600_000f) * oneHourDp - instantEventSize / 2)
+                .height(instantEventSize)
+                .fillMaxWidth()
+                .pointerInput("start") {
+                    var totalDrag = 0f
+                    var ev: ManualTransactionSyncable =
+                        inspectedEventViewModel.editedSyncable.value as? ManualTransactionSyncable
+                            ?: return@pointerInput
+                    this.detectVerticalDragGestures(
+                        onDragStart = {
+                            ev =
+                                inspectedEventViewModel.editedSyncable.value as? ManualTransactionSyncable
+                                    ?: return@detectVerticalDragGestures
+                            totalDrag = 0f
+                        }
+                    ) { _, it ->
+                        totalDrag += it
+                        val offsetInMs =
+                            ((totalDrag / oneHourPx * 3600L * 1000L)).toLong()
+                        inspectedEventViewModel.updateStartTs(ev.timestamp + offsetInMs)
                     }
-            )
-            Box(
-                Modifier
-                    .fillMaxHeight()
-                    .weight(1f)
-                    .background(OldColors.DECLINE)
-                    .clip(RoundedCornerShape(10.dp))
-                    .combinedClickable(onLongClick = {
-                        removeProposedEvent()
-                    }) {}
-            )
+                },
+            contentAlignment = Alignment.CenterEnd
+        ) {
+            instant.RenderContent(oneHourDp, true) {
+                screens.gotoEventDetails()
+            }
         }
     }
 }

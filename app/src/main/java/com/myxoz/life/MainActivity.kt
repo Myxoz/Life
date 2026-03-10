@@ -254,8 +254,6 @@ class MainActivity : ComponentActivity() {
                         DayOverviewComposable(LocalDate.ofEpochDay(epochDay), dayOverviewViewModel)
                     }
                     composable("instant_events_between") {
-                        val start = it.arguments?.getLong("start") ?: 0L
-                        val end = it.arguments?.getLong("end") ?: 0L
                         InstantEventsScreen(instantEventsViewModel)
                     }
                     composable("day/{epochDay}/screentime", arguments = listOf(

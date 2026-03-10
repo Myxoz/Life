@@ -50,9 +50,9 @@ import com.myxoz.life.R
 import com.myxoz.life.Theme
 import com.myxoz.life.ui.theme.FontSize
 import com.myxoz.life.ui.theme.TypoStyle
-import com.myxoz.life.utils.collectAsMutableState
 import com.myxoz.life.utils.rippleClick
 import com.myxoz.life.utils.toDp
+import com.myxoz.life.utils.windowPadding
 import com.myxoz.life.viewmodels.CalendarViewModel
 import com.myxoz.life.viewmodels.InspectedEventViewModel
 import kotlinx.coroutines.launch
@@ -60,25 +60,17 @@ import java.time.LocalDate
 import kotlin.math.abs
 
 val dateBarHeight = 50.dp
-val fullDayBarHeight = 15.dp
+val paddingBetweenSummaryAndDate = 15.dp
 val daySummaryHeight = 15.dp
 val sidebarWidth = 40.dp
+
 @Composable
-fun CalendarComposable(calendarViewModel: CalendarViewModel, inspectedEventViewModel: InspectedEventViewModel, showDaySelector: ()->Unit) {
+fun CalendarComposable(calendarViewModel: CalendarViewModel, inspectedEventViewModel: InspectedEventViewModel) {
     val conf = LocalWindowInfo.current.containerDpSize
-    val density = LocalDensity.current
-    val today = LocalDate.now()
-    val currentYear by calendarViewModel.currentYear.collectAsState()
-    val currentMonth by calendarViewModel.currentMonth.collectAsState()
-    val days by calendarViewModel.days.collectAsMutableState()
-    val listState = calendarViewModel.lazyListState
+    val today by calendarViewModel.todayFlow.collectAsState()
     val isEditing by inspectedEventViewModel.isEditing.collectAsState()
     val displayedDays by calendarViewModel.dayAmount.collectAsState()
-    val eachDayWidthGoal by remember(displayedDays) {
-        mutableFloatStateOf(
-            (conf.width.value-sidebarWidth.value+1)/displayedDays.toFloat()
-        )
-    }
+    val eachDayWidthGoal = (conf.width.value-sidebarWidth.value+1)/displayedDays.toFloat()
     val eachDayWidth by animateFloatAsState(eachDayWidthGoal)
     val focusManager = LocalFocusManager.current
     val isSearching by calendarViewModel.search.isSearching.collectAsState()
@@ -93,142 +85,164 @@ fun CalendarComposable(calendarViewModel: CalendarViewModel, inspectedEventViewM
         Modifier
             .fillMaxSize()
     ) {
-        Column(
-            Modifier
-                .width(sidebarWidth)
-                .fillMaxHeight(),
-            horizontalAlignment = Alignment.CenterHorizontally
-        ) {
-            Column(
-                Modifier
-                    .height(dateBarHeight)
-                    .clickable(null, null){
-                        showDaySelector()
-                    }
-                ,
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.Center
-            ) {
-                Text(currentMonth, style = TypoStyle(Theme.primary, FontSize.MEDIUM))
-                Text(currentYear.toString(), style = TypoStyle(Theme.primary, FontSize.SMALL))
-            }
-            Box(
-                Modifier.height(fullDayBarHeight)
-            ) {
-                var rotation by remember { mutableFloatStateOf(0f) }
-                val coroutineScope = rememberCoroutineScope()
-                LaunchedEffect(calendarViewModel.dayAmount, today) {
-                    snapshotFlow { listState.firstVisibleItemScrollOffset to listState.firstVisibleItemIndex }.collect {
-                        val itemProgress = it.first / (eachDayWidth * density.density)
-                        val day = days.getOrNull(it.second)?:return@collect
-                        rotation = if(day.isEqual(today)) {
-                            90f * itemProgress
-                        } else if(days[it.second].isAfter(today)) {
-                            90f
-                        } else if(days.getOrNull(it.second+displayedDays)?.isEqual(today)==true){
-                            -90f * (1 - itemProgress)
-                        } else if(days.getOrNull(it.second+displayedDays)?.isBefore(today)==true){
-                            -90f
-                        } else {
-                            0f
-                        }
-                    }
-                }
-                Icon(
-                    painterResource(R.drawable.drop_down),
-                    "Today",
-                    Modifier
-                        .size(fullDayBarHeight)
-                        .background(Theme.primaryContainer, CircleShape)
-                        .clip(CircleShape)
-                        .rotate(rotation)
-                        .rippleClick{
-                            val index = days.indexOfFirst { today.isEqual(it) }
-                            if(index==-1) {
-                                calendarViewModel.days.value = listOf(today)
-                            } else {
-                                coroutineScope.launch {
-                                    listState.animateScrollToItem(index)
-                                }
-                            }
-                        }
-                    ,
-                    Theme.onPrimaryContainer
-                )
-            }
-            Spacer(Modifier)
-            Box(
-                Modifier,
-                contentAlignment = Alignment.Center
-            ){
-                var timelineHeight by remember { mutableStateOf(100.dp) }
-                val currentTime by calendarViewModel.minuteFlow.collectAsStateWithLifecycle()
-                val calendar = remember { Calendar.getInstance() }
-                calendar.timeInMillis = currentTime
-                val currentHour = calendar.get(Calendar.HOUR_OF_DAY)
-                val currentMinute = calendar.get(Calendar.MINUTE)
-                val totalMinutes = currentHour * 60 + currentMinute
-                val totalHoursFloat = totalMinutes / 60f
-                val offset = FontSize.SMALL.size.toDp() / 2f
-                Column(
-                    Modifier
-                        .onGloballyPositioned{ coordinates ->
-                            with(density) {
-                                timelineHeight = ((coordinates.size.height.toDp() - daySummaryHeight) / 24)
-                            }
-                        }
-                    ,
-                    horizontalAlignment = Alignment.CenterHorizontally
-                ) {
-                    Spacer(Modifier.height(daySummaryHeight))
-                    repeat(24) { hour ->
-                        val within30m = abs((hour * 60) - totalMinutes) < 30
-                        val label = "${if (hour > 9) "" else "0"}$hour:00"
-                        Text(
-                            label,
-                            Modifier
-                                .weight(1f)
-                                .offset(0.dp, -offset)
-                            ,
-                            style = TypoStyle(if(within30m) Theme.tertiary.copy(.5f) else Theme.secondary, FontSize.SMALL)
-                        )
-                    }
-                }
-                Box(
-                    Modifier
-                        .fillMaxSize()
-                        .offset(
-                            y = daySummaryHeight + (timelineHeight * totalHoursFloat)
-                        )
-                    ,
-                ) {
-                    Text(
-                        "${if(currentHour<=9) "0" else ""}$currentHour:${if(currentMinute<=9) "0" else ""}$currentMinute",
-                        Modifier
-                            .fillMaxWidth()
-                            .offset(0.dp, -offset - 2.dp)
-                            .padding(horizontal = 4.dp)
-                            .background(Theme.primary, CircleShape)
-                            .padding(vertical = 2.dp)
-                        ,
-                        style = TypoStyle(Theme.onPrimary, FontSize.SMALL)
-                            .copy(fontWeight = FontWeight.W900),
-                        textAlign = TextAlign.Center
-                    )
-                }
-            }
-        }
+        CalendarTimeline(calendarViewModel, today, eachDayWidth, displayedDays)
+
+        val days by calendarViewModel.days.collectAsState()
+        val insets = windowPadding
+        val screenHeight = LocalWindowInfo.current.containerDpSize.height
+        val density = LocalDensity.current
+        val fullDayDp = screenHeight -
+                insets.calculateTopPadding() -
+                insets.calculateBottomPadding() -
+                (FontSize.LARGE.size.toDp() + 34.dp) - // 20.dp + 2 * 7.dp bottom bar
+                (daySummaryHeight + dateBarHeight + paddingBetweenSummaryAndDate)
+        val fullDayHeightPx = with(density) { fullDayDp.toPx() }
         LazyRow(
-            state=listState,
+            state = calendarViewModel.lazyListState,
             flingBehavior = calendarViewModel.snapFlingBehavior
         ) {
             items(days, {it.toEpochDay()}) { day ->
                 DayComposable(
                     calendarViewModel,
                     inspectedEventViewModel,
-                    day == today,
                     day,
                     eachDayWidth.dp,
+                    fullDayDp,
+                    fullDayHeightPx
+                )
+            }
+        }
+    }
+}
+
+@Composable
+fun CalendarTimeline(calendarViewModel: CalendarViewModel, today: LocalDate, eachDayWidth: Float, displayedDays: Int){
+    val listState = calendarViewModel.lazyListState
+    val density = LocalDensity.current
+    val currentYear by calendarViewModel.currentYear.collectAsState()
+    val currentMonth by calendarViewModel.currentMonth.collectAsState()
+    Column(
+        Modifier
+            .width(sidebarWidth)
+            .fillMaxHeight(),
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        Column(
+            Modifier
+                .height(dateBarHeight)
+                .clickable(null, null){
+                    calendarViewModel.isSelectDayVisible.value = true
+                }
+            ,
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center
+        ) {
+            Text(currentMonth, style = TypoStyle(Theme.primary, FontSize.MEDIUM))
+            Text(currentYear.toString(), style = TypoStyle(Theme.primary, FontSize.SMALL))
+        }
+        Box(
+            Modifier.height(paddingBetweenSummaryAndDate)
+        ) {
+            var rotation by remember { mutableFloatStateOf(0f) }
+            val coroutineScope = rememberCoroutineScope()
+            val days by calendarViewModel.days.collectAsState()
+            LaunchedEffect(calendarViewModel.dayAmount, today) {
+                snapshotFlow { listState.firstVisibleItemScrollOffset to listState.firstVisibleItemIndex }.collect {
+                    val itemProgress = it.first / (eachDayWidth * density.density)
+                    val day = days.getOrNull(it.second)?:return@collect
+                    rotation = if(day.isEqual(today)) {
+                        90f * itemProgress
+                    } else if(days[it.second].isAfter(today)) {
+                        90f
+                    } else if(days.getOrNull(it.second+displayedDays)?.isEqual(today)==true){
+                        -90f * (1 - itemProgress)
+                    } else if(days.getOrNull(it.second+displayedDays)?.isBefore(today)==true){
+                        -90f
+                    } else {
+                        0f
+                    }
+                }
+            }
+            Icon(
+                painterResource(R.drawable.drop_down),
+                "Today",
+                Modifier
+                    .size(paddingBetweenSummaryAndDate)
+                    .background(Theme.primaryContainer, CircleShape)
+                    .clip(CircleShape)
+                    .rotate(rotation)
+                    .rippleClick{
+                        val index = days.indexOfFirst { today.isEqual(it) }
+                        if(index==-1) {
+                            calendarViewModel.days.value = listOf(today)
+                        } else {
+                            coroutineScope.launch {
+                                listState.animateScrollToItem(index)
+                            }
+                        }
+                    }
+                ,
+                Theme.onPrimaryContainer
+            )
+        }
+        Spacer(Modifier)
+        Box(
+            Modifier,
+            contentAlignment = Alignment.Center
+        ){
+            var timelineHeight by remember { mutableStateOf(100.dp) }
+            val currentTime by calendarViewModel.minuteFlow.collectAsStateWithLifecycle()
+            val calendar = remember { Calendar.getInstance() }
+            calendar.timeInMillis = currentTime
+            val currentHour = calendar.get(Calendar.HOUR_OF_DAY)
+            val currentMinute = calendar.get(Calendar.MINUTE)
+            val totalMinutes = currentHour * 60 + currentMinute
+            val totalHoursFloat = totalMinutes / 60f
+            val offset = FontSize.SMALL.size.toDp() / 2f
+            Column(
+                Modifier
+                    .onGloballyPositioned{ coordinates ->
+                        with(density) {
+                            timelineHeight = ((coordinates.size.height.toDp() - daySummaryHeight) / 24)
+                        }
+                    }
+                ,
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                Spacer(Modifier.height(daySummaryHeight))
+                repeat(24) { hour ->
+                    val within30m = abs((hour * 60) - totalMinutes) < 30
+                    val label = "${if (hour > 9) "" else "0"}$hour:00"
+                    Text(
+                        label,
+                        Modifier
+                            .weight(1f)
+                            .offset(0.dp, -offset)
+                        ,
+                        style = TypoStyle(if(within30m) Theme.tertiary.copy(.5f) else Theme.secondary, FontSize.SMALL)
+                    )
+                }
+            }
+            Box(
+                Modifier
+                    .fillMaxSize()
+                    .offset(
+                        y = daySummaryHeight + (timelineHeight * totalHoursFloat)
+                    )
+                ,
+            ) {
+                Text(
+                    "${if(currentHour<=9) "0" else ""}$currentHour:${if(currentMinute<=9) "0" else ""}$currentMinute",
+                    Modifier
+                        .fillMaxWidth()
+                        .offset(0.dp, -offset - 2.dp)
+                        .padding(horizontal = 4.dp)
+                        .background(Theme.primary, CircleShape)
+                        .padding(vertical = 2.dp)
+                    ,
+                    style = TypoStyle(Theme.onPrimary, FontSize.SMALL)
+                        .copy(fontWeight = FontWeight.W900),
+                    textAlign = TextAlign.Center
                 )
             }
         }

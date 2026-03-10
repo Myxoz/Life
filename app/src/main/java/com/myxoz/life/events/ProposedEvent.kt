@@ -1,17 +1,34 @@
 package com.myxoz.life.events
 
 import android.content.SharedPreferences
+import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.background
+import androidx.compose.foundation.combinedClickable
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxScope
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.dp
 import com.myxoz.life.dbwrapper.events.EventEntity
 import com.myxoz.life.dbwrapper.events.ReadEventDetailsDao
 import com.myxoz.life.dbwrapper.events.WriteEventDetailsDao
+import com.myxoz.life.events.additionals.DefinedDurationEvent
 import com.myxoz.life.events.additionals.EventType
-import com.myxoz.life.screens.feed.main.DefinedDurationEvent
+import com.myxoz.life.ui.theme.OldColors
+import com.myxoz.life.utils.rippleClick
 import org.json.JSONObject
 import java.time.Instant
 import java.time.LocalDate
@@ -24,6 +41,55 @@ abstract class ProposedEvent(start: Long, end: Long, val type: EventType, val us
     abstract suspend fun saveEventSpecifics(writeEventDetailsDao: WriteEventDetailsDao, id: Long): Boolean
     @Composable
     abstract fun BoxScope.RenderContent(oneHourDp: Dp, startOfDay: Long, endOfDay: Long, isSmall: Boolean, blockHeight: Int)
+
+    @OptIn(ExperimentalFoundationApi::class)
+    @Composable
+    fun Render(oneHour: Dp, startOfDay: Long, endOfDay: Long, removeProposedEvent: ()->Unit, syncEvent: ()->Unit){
+        Box(
+            Modifier
+                .padding(top = getTopPadding(oneHour, startOfDay))
+                .height(getHeightDp(oneHour, startOfDay, endOfDay))
+                .background(type.color.copy(.5f), RoundedCornerShape(10.dp))
+                .fillMaxWidth()
+        ) {
+            Box(
+                Modifier
+                    .fillMaxSize()
+                    .alpha(.5f)
+            ) {
+                RenderContent(oneHour, startOfDay, endOfDay, false,
+                    getBlockHeight(startOfDay, endOfDay)
+                )
+            }
+            Row(
+                Modifier
+                    .clip(RoundedCornerShape(10.dp))
+                    .fillMaxSize(),
+            ) {
+                Box(
+                    Modifier
+                        .fillMaxHeight()
+                        .weight(1f)
+                        .background(OldColors.ACCEPT)
+                        .clip(RoundedCornerShape(10.dp))
+                        .rippleClick {
+                            syncEvent()
+                            removeProposedEvent()
+                        }
+                )
+                Box(
+                    Modifier
+                        .fillMaxHeight()
+                        .weight(1f)
+                        .background(OldColors.DECLINE)
+                        .clip(RoundedCornerShape(10.dp))
+                        .combinedClickable(onLongClick = {
+                            removeProposedEvent()
+                        }) {}
+                )
+            }
+        }
+    }
     protected abstract suspend fun eraseEventSpecificsFromDB(db: WriteEventDetailsDao, id: Long)
     suspend fun eraseFromDB(db: WriteEventDetailsDao, id: Long) {
         db.removeEventById(id)

@@ -47,7 +47,6 @@ import com.myxoz.life.Theme
 import com.myxoz.life.api.syncables.PersonSyncable
 import com.myxoz.life.dbwrapper.banking.formatCents
 import com.myxoz.life.repositories.BankingRepo
-import com.myxoz.life.screens.feed.main.formatMsToDuration
 import com.myxoz.life.screens.feed.main.screenTimeGoal
 import com.myxoz.life.screens.feed.main.stepsGoal
 import com.myxoz.life.ui.SCREENMAXWIDTH
@@ -59,6 +58,7 @@ import com.myxoz.life.ui.theme.TypoStyle
 import com.myxoz.life.utils.MaterialShapes
 import com.myxoz.life.utils.diagrams.PieChart
 import com.myxoz.life.utils.formatMToDistance
+import com.myxoz.life.utils.formatMsToDuration
 import com.myxoz.life.utils.rippleClick
 import com.myxoz.life.utils.toShape
 import com.myxoz.life.utils.windowPadding

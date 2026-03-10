@@ -29,3 +29,14 @@ fun Int.formatMToDistance(): String =
         in 1000..10_000 -> "${this/1000},${(this/10)%100} km"
         else -> "${this/1000},${(this/100)%10} km"
     }
+
+fun Long.formatMsToDuration(ignoreSeconds: Boolean=false): String {
+    val t = this/1000
+    val h = (t/3600)
+    val m = (t/60)%60
+    val s = t%60
+    return "" +
+            (if(h!=0L) "${h}h" else "") +
+            "${if(h!=0L && m!=0L) if(m<=9) " 0" else " " else ""}${if(m!=0L) "${m}m" else ""}" +
+            if(!ignoreSeconds) "${if((h!=0L || m!=0L) && s<=9) " 0" else " "}${s}s" else ""
+}

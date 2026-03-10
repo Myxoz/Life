@@ -80,6 +80,9 @@ class LocalScreensProvider(
         inspectedEventViewModel.popUpToHomeOnEdit.value = true
         nav.navigate("fullscreen_event")
     }
+    fun gotoEventDetails() {
+        nav.navigate("fullscreen_event")
+    }
     fun openLocation(location: LocationSyncable, screenWidthPx: Float){
         nav.navigate("map")
         mapViewModel.isEditing.value = false
@@ -126,5 +129,9 @@ class LocalScreensProvider(
     fun editLocation(location: LocationSyncable) {
         locationEditingViewModel.nowEditing = location
         nav.navigate("modify_event/add_location")
+    }
+
+    fun openDayOverview(date: LocalDate) {
+        nav.navigate("day/${date.toEpochDay()}/overview")
     }
 }

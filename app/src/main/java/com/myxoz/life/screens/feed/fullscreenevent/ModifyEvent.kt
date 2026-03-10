@@ -106,7 +106,6 @@ import com.myxoz.life.events.additionals.TagLike
 import com.myxoz.life.events.additionals.TimedTagLikeContainer
 import com.myxoz.life.events.additionals.TitleEvent
 import com.myxoz.life.events.additionals.Vehicle
-import com.myxoz.life.screens.feed.main.formatMsToDuration
 import com.myxoz.life.ui.ArrowDirection
 import com.myxoz.life.ui.Chip
 import com.myxoz.life.ui.RowChip
@@ -121,6 +120,7 @@ import com.myxoz.life.utils.AndroidUtils
 import com.myxoz.life.utils.def
 import com.myxoz.life.utils.filteredWith
 import com.myxoz.life.utils.formatMinutesToVisual
+import com.myxoz.life.utils.formatMsToDuration
 import com.myxoz.life.utils.formatTimeStamp
 import com.myxoz.life.utils.rippleClick
 import com.myxoz.life.utils.toDp

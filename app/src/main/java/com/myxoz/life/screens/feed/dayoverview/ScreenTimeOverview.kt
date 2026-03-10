@@ -50,13 +50,13 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.myxoz.life.R
 import com.myxoz.life.Theme
 import com.myxoz.life.dbwrapper.DayScreenTimeEntity
-import com.myxoz.life.screens.feed.main.formatMsToDuration
 import com.myxoz.life.ui.rememberAsymmetricalVerticalCornerRadius
 import com.myxoz.life.ui.setMaxTabletWidth
 import com.myxoz.life.ui.theme.FontFamily
 import com.myxoz.life.ui.theme.FontSize
 import com.myxoz.life.ui.theme.OldColors
 import com.myxoz.life.ui.theme.TypoStyle
+import com.myxoz.life.utils.formatMsToDuration
 import com.myxoz.life.utils.rippleClick
 import com.myxoz.life.utils.toDp
 import com.myxoz.life.utils.windowPadding

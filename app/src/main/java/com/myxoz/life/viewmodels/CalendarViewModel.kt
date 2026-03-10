@@ -45,11 +45,13 @@ class CalendarViewModel(
     private val repos: AppRepositories
 ): ViewModel() {
     val days = MutableStateFlow(listOf<LocalDate>())
+    val isSelectDayVisible = MutableStateFlow(false)
     val search = SearchField()
     @OptIn(ExperimentalCoroutinesApi::class)
     val yesterdaySummaryAdded = repos.calendarRepo.todayFlow.flatMapLatest {
         getDaySummary(it.minusDays(1))
     }
+    val todayFlow = repos.calendarRepo.todayFlow.subscribeToColdFlow(viewModelScope, LocalDate.now())
     val steps = repos.stepRepo.steps
     private val calendar: Calendar = Calendar.getInstance()
     val currentYear = MutableStateFlow(calendar.get(Calendar.YEAR))

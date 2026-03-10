@@ -68,13 +68,13 @@ import com.myxoz.life.R
 import com.myxoz.life.Theme
 import com.myxoz.life.events.DigSocEvent
 import com.myxoz.life.events.additionals.EventType
-import com.myxoz.life.screens.feed.main.formatMsToDuration
 import com.myxoz.life.ui.ActionBar
 import com.myxoz.life.ui.SCREENMAXWIDTH
 import com.myxoz.life.ui.setMaxTabletWidth
 import com.myxoz.life.ui.theme.FontSize
 import com.myxoz.life.ui.theme.TypoStyle
 import com.myxoz.life.utils.diagrams.PieChart
+import com.myxoz.life.utils.formatMsToDuration
 import com.myxoz.life.utils.rippleClick
 import com.myxoz.life.utils.toDp
 import com.myxoz.life.utils.windowPadding
