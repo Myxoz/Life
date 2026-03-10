@@ -143,12 +143,12 @@ object DatabaseProvider {
  * 8. Create event renderer and EventClass by copying a file from [com.myxoz.life.events]
  * 9. Add to [com.myxoz.life.events.ProposedEvent.from]
  * 10. Add to when in [com.myxoz.life.events.ProposedEvent.getProposedEventByJson]
- * 11. Add to [com.myxoz.life.api.ServerSyncable.overwriteDBByJsonAfterRepoUpdates] AEFL
+ * 11. Add to [com.myxoz.life.api.API.overwriteByJson] AEFL
  * 12. Add to modify/add screen [com.myxoz.life.screens.feed.fullscreenevent.ModifyEvent] CalendarChip and to the content renderer
  * 13. Add to display screen [com.myxoz.life.screens.feed.fullscreenevent.DisplayEvent]
  * 14. Add to [com.myxoz.life.screens.feed.main.SegmentedEvent.getSegmentedEvents] to be rendered at all
  * 15. Go to serverside ( sshvim myxoz:~/myxoz.de/life/_api.php )
- * 16. Add event to the receive event specifcs (RCEV)
+ * 16. Add event to the recieve event specifcs (RCEV)
  * 17. Add event to the remove event specifcs from db (RFDB)
  * 18. Add event to the fetch event section (FEEV) and also to the if statement checking fetching calendars (FETT)
  *
