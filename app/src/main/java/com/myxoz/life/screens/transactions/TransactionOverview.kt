@@ -1,8 +1,8 @@
 package com.myxoz.life.screens.transactions
 
 import android.icu.util.Calendar
+import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.Spring
-import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
@@ -32,7 +32,6 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -401,40 +400,23 @@ fun BankCard(
     largeDataCache: LargeDataCache?,
     transactionViewModel: TransactionViewModel
 ) {
-    var offsetX by remember { mutableFloatStateOf(0f) }
-    var offsetY by remember { mutableFloatStateOf(0f) }
+    val animatedOffsetX = remember { Animatable(0f) }
+    val animatedOffsetY = remember { Animatable(0f) }
     var displaysIban by remember { mutableStateOf(true) }
     val decodedPeople by transactionViewModel.getPeopleWithIbanLike(fromIBAN).collectAsState()
 
-    val animatedOffsetX by animateFloatAsState(
-        targetValue = offsetX,
-        animationSpec = spring(
-            dampingRatio = Spring.DampingRatioMediumBouncy,
-            stiffness = Spring.StiffnessLow
-        ),
-        label = "offsetX"
-    )
+    val rotationY = (animatedOffsetX.value / 10f)
+    val rotationX = (-animatedOffsetY.value / 10f)
 
-    val animatedOffsetY by animateFloatAsState(
-        targetValue = offsetY,
-        animationSpec = spring(
-            dampingRatio = Spring.DampingRatioMediumBouncy,
-            stiffness = Spring.StiffnessLow
-        ),
-        label = "offsetY"
-    )
-
-    val rotationY = (animatedOffsetX / 10f)
-    val rotationX = (-animatedOffsetY / 10f)
-
+    val coroutineScope = rememberCoroutineScope()
     Box(
         Modifier
             .graphicsLayer {
                 this.rotationY = rotationY
                 this.rotationX = rotationX
                 this.cameraDistance = 12f * density
-                this.translationX = animatedOffsetX * 0.1f
-                this.translationY = animatedOffsetY * 0.1f
+                this.translationX = animatedOffsetX.value * 0.1f
+                this.translationY = animatedOffsetY.value * 0.1f
             }
             .zIndex(1f)
             .shadow(10.dp, RoundedCornerShape(10))
@@ -454,19 +436,39 @@ fun BankCard(
             )
             .padding(vertical = 15.dp, horizontal = 20.dp)
             .pointerInput(Unit) {
+                val end =  {
+                    coroutineScope.launch {
+                        animatedOffsetX.animateTo(
+                            0f,
+                            spring(
+                                dampingRatio = Spring.DampingRatioMediumBouncy,
+                                stiffness = Spring.StiffnessLow
+                            )
+                        )
+                    }
+                    coroutineScope.launch {
+                        animatedOffsetY.animateTo(
+                            0f,
+                            spring(
+                                dampingRatio = Spring.DampingRatioMediumBouncy,
+                                stiffness = Spring.StiffnessLow
+                            )
+                        )
+                    }
+                }
                 detectDragGestures(
                     onDragEnd = {
-                        offsetX = 0f
-                        offsetY = 0f
+                        end()
                     },
                     onDragCancel = {
-                        offsetX = 0f
-                        offsetY = 0f
+                        end()
                     },
                     onDrag = { change, dragAmount ->
                         change.consume()
-                        offsetX += dragAmount.x*.6f
-                        offsetY += dragAmount.y*.6f
+                        coroutineScope.launch {
+                            animatedOffsetX.snapTo(animatedOffsetX.value + dragAmount.x*.6f)
+                            animatedOffsetY.snapTo(animatedOffsetY.value + dragAmount.y*.6f)
+                        }
                     }
                 )
             }

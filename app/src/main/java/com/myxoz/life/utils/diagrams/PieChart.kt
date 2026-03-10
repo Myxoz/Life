@@ -24,6 +24,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
+val chartBasedAnimation = tween<Float>(durationMillis = 1000, easing = FastOutSlowInEasing)
 class PieChart(){
     val components = MutableStateFlow<Map<String, PieChartPart>>(mapOf())
     fun update(newComponents: Map<String, PieChartPart>) {
@@ -49,7 +50,7 @@ class PieChart(){
                 launch {
                     animatedAngles[id]?.animateTo(
                         targetValue = targetAngle,
-                        animationSpec = tween(durationMillis = 1000, easing = FastOutSlowInEasing)
+                        animationSpec = chartBasedAnimation
                     )
                 }
             }

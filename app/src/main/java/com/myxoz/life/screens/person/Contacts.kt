@@ -31,6 +31,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -76,8 +77,10 @@ import com.myxoz.life.utils.toPx
 import com.myxoz.life.utils.toShape
 import com.myxoz.life.utils.windowPadding
 import com.myxoz.life.viewmodels.ContactsViewModel
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import kotlin.math.abs
 import kotlin.math.roundToInt
 
@@ -110,14 +113,19 @@ fun Contacts(contactsViewModel: ContactsViewModel){
             }
             var favoriteIds by contactsViewModel.favoriteIds.collectAsMutableState()
             LaunchedEffect(Unit) {
-                if(settings.features.addNewPerson.hasAssured()) contactsViewModel.requestRefetchDeviceContacts()
+                if(settings.features.addNewPerson.hasAssured()) withContext(Dispatchers.IO){
+                     contactsViewModel.requestRefetchDeviceContacts()
+                }
             }
-            val filteredLifeContacts = remember(search, lifeContacts.hashCode() /* Idk if needed but lists... */) {
-                lifeContacts.filteredWith(search, {it.fullName?:""}) {it.name}
+            val filteredLifeContacts by remember {
+                derivedStateOf {
+                    lifeContacts.filteredWith(search, {it.fullName?:""}) {it.name}
+                }
             }
-            val filteredDeviceContacts = remember(search, deviceContacts.hashCode()) {
-                deviceContacts
-                    .filteredWith(search, {it.fullName?:""}) {it.name}
+            val filteredDeviceContacts by remember {
+                derivedStateOf {
+                    deviceContacts.filteredWith(search, { it.fullName ?: "" }) { it.name }
+                }
             }
             LazyColumn(
                 Modifier
@@ -180,8 +188,7 @@ fun Contacts(contactsViewModel: ContactsViewModel){
                                     onDragStopped = {
                                         snapTo = false
                                         if (swipedRight) {
-                                            /* Empirically set this */
-                                            if ((offsetX.value > dragThreshold || it > 1000f) && contact.phoneNumber != null) {
+                                            if (offsetX.value > dragThreshold && contact.phoneNumber != null) {
                                                 val number = ("tel:" + contact.phoneNumber).toUri()
                                                 val intent =
                                                     Intent(if (settings.features.callFromLife.hasAssured()) Intent.ACTION_CALL else Intent.ACTION_DIAL)
@@ -191,7 +198,7 @@ fun Contacts(contactsViewModel: ContactsViewModel){
                                                 delay(1000)
                                             }
                                         } else {
-                                            if ((offsetX.value < -dragThreshold || it < -1000f) && platform != null) {
+                                            if (offsetX.value < -dragThreshold && platform != null) {
                                                 platform.openPlatform(
                                                     context,
                                                     contact.socials[0].handle,

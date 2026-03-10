@@ -99,7 +99,7 @@ class API(
             Log.i(LOGTAG,"JSON:\n${optionallySkip(json.toString(2))}")
             val response = send(Method.Send, json.toString(), offset)
             Log.i(LOGTAG,"Server responded:\n${optionallySkip(response)}\n")
-            if (response == null || response.isBlank()) {
+            if (response.isNullOrBlank()) {
                 Log.e(LOGTAG, "Server didnt respond or threw an error (null or empty string reponse). We cant work with this!")
                 isSyncing = false
                 return null

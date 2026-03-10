@@ -22,7 +22,7 @@ fun Long.formatMinutesToVisual() = "${this / 60}${(this%60).toInt().padStart(2,'
 fun Int?.plural(s: String) = if(this == 1) "" else s
 operator fun Int.plus(other: Boolean) = this + (if(other) 1 else 0)
 operator fun Boolean.plus(other: Boolean) = if(this && other) 2 else if(this || other) 1 else 0
-fun <T> T?.def(value: T) = this ?: value
+inline fun <T> T?.def(value: T) = this ?: value
 fun Int.formatMToDistance(): String =
     when(this) {
         in 0..1000 -> "${this}m"

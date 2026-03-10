@@ -1,5 +1,6 @@
 package com.myxoz.life.screens.feed.dayoverview
 
+import androidx.compose.animation.core.Animatable
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -23,6 +24,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
@@ -56,7 +58,9 @@ import com.myxoz.life.ui.theme.FontSize
 import com.myxoz.life.ui.theme.OldColors
 import com.myxoz.life.ui.theme.TypoStyle
 import com.myxoz.life.utils.MaterialShapes
+import com.myxoz.life.utils.def
 import com.myxoz.life.utils.diagrams.PieChart
+import com.myxoz.life.utils.diagrams.chartBasedAnimation
 import com.myxoz.life.utils.formatMToDistance
 import com.myxoz.life.utils.formatMsToDuration
 import com.myxoz.life.utils.rippleClick
@@ -111,8 +115,8 @@ fun DayOverviewComposable(date: LocalDate, dayOverviewViewModel: DayOverviewView
             } else {
                 summary?.steps?.toLong()
             }
-            if(showSteps) DisplayStepsBlock(steps)
             if(birthdays.isNotEmpty()) BirthdayBlock(birthdays,date, dayOverviewViewModel)
+            if(showSteps) DisplayStepsBlock(steps)
             val screentime by settings.features.screentime.has.collectAsState()
             val nav = LocalNavController.current
             if(screentime) DisplayTimeBlock(screenTime) { nav.navigate("day/${date.toEpochDay()}/screentime") }
@@ -221,6 +225,11 @@ fun FeelingsBlock(happyness: Int?, stress: Int?, successfulness: Int?){
 }
 @Composable
 fun FeelingsBlockItem(name: String, value: Int?, color: Color, fromLeft: Boolean){
+    val anim = remember { Animatable(0f) }
+    val displayedValue = if(value != null) anim.value else null
+    LaunchedEffect(value) {
+        anim.animateTo(value?.toFloat() ?: 0f, chartBasedAnimation)
+    }
     Box (
         Modifier
             .fillMaxWidth()
@@ -230,7 +239,7 @@ fun FeelingsBlockItem(name: String, value: Int?, color: Color, fromLeft: Boolean
     ) {
         Box(
             Modifier
-                .fillMaxWidth(value?.div(100f)?:0f)
+                .fillMaxWidth(displayedValue.def(0f)/100)
                 .background(color, CircleShape)
                 .fillMaxHeight()
                 .align(
@@ -247,17 +256,22 @@ fun FeelingsBlockItem(name: String, value: Int?, color: Color, fromLeft: Boolean
         ) {
             if(fromLeft) {
                 Text(name, style = TypoStyle(Theme.onPrimaryContainer, FontSize.LARGE))
-                Text(value?.toString()?:"--", style = TypoStyle(Theme.onPrimaryContainer, FontSize.DISPLAY, FontFamily.Display).copy(fontWeight = FontWeight.Bold))
+                Text(displayedValue?.toInt()?.toString()?:"--", style = TypoStyle(Theme.onPrimaryContainer, FontSize.DISPLAY, FontFamily.Display).copy(fontWeight = FontWeight.Bold))
             } else {
-                Text(value?.toString()?:"--", style = TypoStyle(Theme.onPrimaryContainer, FontSize.DISPLAY, FontFamily.Display).copy(fontWeight = FontWeight.Bold))
+                Text(displayedValue?.toInt()?.toString()?:"--", style = TypoStyle(Theme.onPrimaryContainer, FontSize.DISPLAY, FontFamily.Display).copy(fontWeight = FontWeight.Bold))
                 Text(name, style = TypoStyle(Theme.onPrimaryContainer, FontSize.LARGE))
             }
         }
     }
 }
 @Composable
-fun DisplayTimeBlock(timeInMs: Long?, openScreenTime: ()->Unit){
-    Column (
+fun DisplayTimeBlock(rawTimeInMs: Long?, openScreenTime: ()->Unit){
+    val anim = remember { Animatable(0f) }
+    val timeInMs = if(rawTimeInMs != null) anim.value else null
+    LaunchedEffect(rawTimeInMs) {
+        anim.animateTo(rawTimeInMs?.toFloat() ?: 0f, chartBasedAnimation)
+    }
+    Column(
         Modifier
             .fillMaxWidth()
             .border(1.dp, Theme.outlineVariant,  RoundedCornerShape(25.dp))
@@ -285,7 +299,7 @@ fun DisplayTimeBlock(timeInMs: Long?, openScreenTime: ()->Unit){
                     .background(OldColors.SCREENTIME, CircleShape)
             )
             Text(
-                timeInMs?.formatMsToDuration()?:"--h --m --s",
+                timeInMs?.toLong()?.formatMsToDuration()?:"--h --m --s",
                 style = TypoStyle(Theme.onPrimaryContainer, FontSize.XLARGE, FontFamily.Display),
                 modifier =
                     Modifier
@@ -297,7 +311,12 @@ fun DisplayTimeBlock(timeInMs: Long?, openScreenTime: ()->Unit){
 }
 
 @Composable
-fun DisplayStepsBlock(steps: Long?){
+fun DisplayStepsBlock(rawSteps: Long?){
+    val anim = remember { Animatable(0f) }
+    LaunchedEffect(rawSteps) {
+        anim.animateTo(rawSteps?.toFloat()?:0f, chartBasedAnimation)
+    }
+    val steps = anim.value.takeIf { rawSteps != null }
     Column (
         Modifier
             .fillMaxWidth()
@@ -326,7 +345,7 @@ fun DisplayStepsBlock(steps: Long?){
                         .background(OldColors.STEPS, CircleShape)
                 )
                 Text(
-                    steps?.toString()?:"Keine",
+                    steps?.toInt()?.toString()?:"Keine",
                     Modifier
                         .align(
                             Alignment.CenterEnd
@@ -344,7 +363,7 @@ fun DisplayStepsBlock(steps: Long?){
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
             Text("Schritte", style = TypoStyle(Theme.primary, FontSize.MEDIUM).copy(fontWeight = FontWeight.Bold))
-            Text("${if(steps!=null) "ca. ${(steps*.7).toInt().formatMToDistance()} · " else ""}${((steps?:0L)/ stepsGoal *100).toInt()}%", style = TypoStyle(Theme.primary, FontSize.MEDIUM).copy(fontWeight = FontWeight.Bold))
+            Text("${if(steps!=null) "ca. ${(steps*.7).toInt().formatMToDistance()} · " else ""}${((steps?:0f) / stepsGoal * 100).toInt()}%", style = TypoStyle(Theme.primary, FontSize.MEDIUM).copy(fontWeight = FontWeight.Bold))
         }
     }
 }
