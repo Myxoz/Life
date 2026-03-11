@@ -140,7 +140,6 @@ class MainActivity : ComponentActivity() {
             if(settings.permissions.contacts.checkEnabled())
                 contacsViewModel.requestRefetchDeviceContacts()
             calendarViewModel.requireAllPeople()
-            calendarViewModel.requestAutoDetectedEventStart(settings)
             largeDataCache.preloadAll(applicationContext)
         }
         createNotificationChannels(applicationContext)

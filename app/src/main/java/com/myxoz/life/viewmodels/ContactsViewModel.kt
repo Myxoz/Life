@@ -1,6 +1,5 @@
 package com.myxoz.life.viewmodels
 
-import androidx.compose.foundation.ScrollState
 import androidx.core.content.edit
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -17,7 +16,7 @@ class ContactsViewModel(private val repos: AppRepositories): ViewModel() {
         (repos.prefs.getStringSet("favorite_people", setOf())  ?: setOf()).mapNotNull { it.toLongOrNull() }
     )
     fun getAllDeviceContacts() = repos.contactRepo.allContacts
-    /** Call only from Dispatcher.IO else massive lag spikes, fetches all device contacts and udpates old ones, if size changes */
+    /** Call only from Dispatcher.IO else massive lag spikes, fetches all device contacts and udpates old ones */
     fun requestRefetchDeviceContacts() = repos.contactRepo.refetchDeviceContacts()
     val getAllLifeContacts = repos.peopleRepo.getAllPeople().subscribeToColdFlow(viewModelScope, listOf())
     var showIcons = MutableStateFlow(false)

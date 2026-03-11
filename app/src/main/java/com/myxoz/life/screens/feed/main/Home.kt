@@ -10,18 +10,26 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import com.myxoz.life.LocalSettings
 import com.myxoz.life.Theme
 import com.myxoz.life.screens.feed.search.LifeBottomBar
 import com.myxoz.life.utils.windowPadding
 import com.myxoz.life.viewmodels.CalendarViewModel
 import com.myxoz.life.viewmodels.InspectedEventViewModel
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HomeComposable(calendarViewModel: CalendarViewModel, inspectedEventViewModel: InspectedEventViewModel){
+    val settings = LocalSettings.current
     LaunchedEffect(Unit) {
         calendarViewModel.resync()
         calendarViewModel.refetchAlarmClockTs()
+        withContext(Dispatchers.IO) {
+            calendarViewModel.requestAutoDetectedEventStart(settings)
+        }
+
     }
     Box(
         Modifier
