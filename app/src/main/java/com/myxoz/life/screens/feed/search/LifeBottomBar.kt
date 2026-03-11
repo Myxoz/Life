@@ -45,6 +45,7 @@ import com.myxoz.life.LocalScreens
 import com.myxoz.life.R
 import com.myxoz.life.Theme
 import com.myxoz.life.events.additionals.TagLike
+import com.myxoz.life.screens.NavPath
 import com.myxoz.life.ui.theme.FontSize
 import com.myxoz.life.ui.theme.TypoStyle
 import com.myxoz.life.utils.MaterialShapes
@@ -110,7 +111,7 @@ fun LifeBottomBar(calendarViewModel: CalendarViewModel){
                     .clip(RoundedCornerShape(50, 20, 20, 50))
                     .background(Theme.secondaryContainer, RoundedCornerShape(50, 20, 20, 50))
                     .rippleClick {
-                        nav.navigate("advanced_search")
+                        nav.navigate(NavPath.ADVANCED_SEARCH)
                     }
                     .padding(horizontal = 5.dp)
                     .height(rowHeight)
@@ -286,7 +287,7 @@ fun LifeBottomBar(calendarViewModel: CalendarViewModel){
                 .padding(7.dp)
                 .rippleClick {
                     search.mode.value = SearchField.SearchMode.Target
-                    navController.navigate("advanced_search")
+                    navController.navigate(NavPath.ADVANCED_SEARCH)
                 }
         ) {
             Icon(painterResource(R.drawable.target), "Search Specific", Modifier.fillMaxSize(), Theme.primary)
@@ -299,7 +300,7 @@ fun LifeBottomBar(calendarViewModel: CalendarViewModel){
                 .background(Theme.primary)
                 .padding(7.dp)
                 .rippleClick {
-                    navController.navigate("menu")
+                    navController.navigate(NavPath.MENU)
                 }
         ) {
             Icon(painterResource(R.drawable.menu), "Life", Modifier.fillMaxSize(), Theme.onPrimary)

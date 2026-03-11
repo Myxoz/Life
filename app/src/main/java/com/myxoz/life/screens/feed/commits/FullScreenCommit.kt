@@ -40,6 +40,7 @@ import com.myxoz.life.LocalScreens
 import com.myxoz.life.R
 import com.myxoz.life.Theme
 import com.myxoz.life.android.integration.GitHub
+import com.myxoz.life.screens.NavPath
 import com.myxoz.life.screens.feed.dayoverview.edgeToEdgeGradient
 import com.myxoz.life.ui.setMaxTabletWidth
 import com.myxoz.life.ui.theme.FontFamily
@@ -93,7 +94,7 @@ fun FullScreenCommit(sha: String, commitsViewModel: CommitsViewModel){
                             Modifier
                                 .weight(1f)
                                 .rippleClick{
-                                    nav.navigate("commits/repo/${displayCommit.repoName}")
+                                    nav.navigate(NavPath.Menu.Repos.REPO.with(displayCommit.commitSha))
                                 }
                             ,
                             style = TypoStyle(Theme.secondary, FontSize.MEDIUM),

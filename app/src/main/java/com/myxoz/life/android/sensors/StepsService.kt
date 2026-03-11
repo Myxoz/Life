@@ -16,6 +16,7 @@ import com.myxoz.life.MainActivity
 import com.myxoz.life.R
 import com.myxoz.life.repositories.MainApplication
 import com.myxoz.life.repositories.StepRepo
+import com.myxoz.life.screens.NavPath
 
 class StepsService : Service(), SensorEventListener {
     private lateinit var sensorManager: SensorManager
@@ -53,7 +54,7 @@ class StepsService : Service(), SensorEventListener {
         nm.createNotificationChannel(channel)
         val intent = Intent(this, MainActivity::class.java).apply {
             flags = Intent.FLAG_ACTIVITY_SINGLE_TOP or Intent.FLAG_ACTIVITY_CLEAR_TOP
-            navigateTo("day/0/overview")
+            navigateTo(NavPath.DAY_OVERVIEW.with(0))
         }
         val pendingIntent = PendingIntent.getActivity(
             this, 0, intent,

@@ -45,9 +45,11 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.Layout
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalWindowInfo
 import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.min
 import androidx.compose.ui.unit.times
 import com.myxoz.life.Theme
 import com.myxoz.life.screens.feed.fullscreenevent.InputField
@@ -446,6 +448,8 @@ fun ToggleButton(active: MutableStateFlow<Boolean>, onClick: ((Boolean) -> Unit)
     }
 }
 val SCREENMAXWIDTH = 700.dp
+@Composable
+fun getMaxTabletScreenWidth(): Dp = min(LocalWindowInfo.current.containerDpSize.width * .95f, SCREENMAXWIDTH)
 fun Modifier.setMaxTabletWidth() =
     this
         .widthIn(max = SCREENMAXWIDTH)

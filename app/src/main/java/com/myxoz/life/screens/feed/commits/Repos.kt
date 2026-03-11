@@ -37,6 +37,7 @@ import com.myxoz.life.LocalNavController
 import com.myxoz.life.R
 import com.myxoz.life.Theme
 import com.myxoz.life.android.integration.GitHub
+import com.myxoz.life.screens.NavPath
 import com.myxoz.life.screens.feed.dayoverview.edgeToEdgeGradient
 import com.myxoz.life.ui.BOTTOMSEARCHBARHEIGHT
 import com.myxoz.life.ui.BottomSearchBar
@@ -90,7 +91,7 @@ fun FullScreenRepos(commitsViewModel: CommitsViewModel){
                     i == 0,
                     i == displayedRepos.size-1,
                     {
-                        nav.navigate("commits/repo/${it.repoName}")
+                        nav.navigate(NavPath.Menu.Repos.REPO.with(it.repoName))
                     }
                 ) {
                     AndroidUtils.openLink(context, GitHub.generateLinkForRepo(it))
@@ -152,7 +153,7 @@ fun FullScreenRepo(name: String, commitsViewModel: CommitsViewModel){
                     i == 0,
                     i == displayedCommits.size-1,
                     {
-                        nav.navigate("commits/commit/${it.commitSha}")
+                        nav.navigate(NavPath.Menu.Repos.COMMIT.with(it.commitSha))
                     }
                 ) {
                     AndroidUtils.openLink(context, it.commitUrl?:"")

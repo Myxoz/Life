@@ -74,6 +74,7 @@ import com.myxoz.life.R
 import com.myxoz.life.Theme
 import com.myxoz.life.android.integration.MapBoxAPI
 import com.myxoz.life.api.syncables.LocationSyncable
+import com.myxoz.life.screens.NavPath
 import com.myxoz.life.screens.person.displayperson.ListEditingField
 import com.myxoz.life.screens.person.displayperson.ListEntry
 import com.myxoz.life.screens.person.displayperson.navigateForResult
@@ -564,7 +565,7 @@ fun MapSheet(mapViewModel: MapViewModel, innerPadding: PaddingValues){
                             Modifier
                                 .rippleClick{
                                     nav.navigateForResult<String?>(
-                                        "pick/existing/location",
+                                        NavPath.Pick.LOCATION,
                                         "pelocation",
                                         {
                                             setOrRemove("pequery", mapViewModel.lifeQuery.value)

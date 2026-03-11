@@ -51,6 +51,8 @@ import com.myxoz.life.LocalNavController
 import com.myxoz.life.MainActivity
 import com.myxoz.life.R
 import com.myxoz.life.Theme
+import com.myxoz.life.screens.NavPath
+import com.myxoz.life.screens.options.SubOption.Companion.RenderSubOptions
 import com.myxoz.life.ui.setMaxTabletWidth
 import com.myxoz.life.ui.theme.FontFamily
 import com.myxoz.life.ui.theme.FontSize
@@ -65,8 +67,6 @@ import java.time.LocalDate
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun MenuComposable() {
-    val context = LocalContext.current
-    val nav = LocalNavController.current
     val currentDate = LocalDate.now()
     Box(
         Modifier
@@ -76,157 +76,102 @@ fun MenuComposable() {
         ,
         Alignment.BottomCenter
     ) {
-        FlowRow(
-            Modifier
-                .setMaxTabletWidth()
-                .padding(windowPadding)
-            ,
-            maxItemsInEachRow = 2,
-            verticalArrangement = Arrangement.Bottom,
-            horizontalArrangement = Arrangement.End
-        ) {
-            val isWrapped = currentDate.dayOfYear < 20
-            val all = arrayOf(
-                SubOption(R.drawable.github, "Repositories", "commits/repos"),
-                SubOption(R.drawable.info, "Informationen", "information"),
-                SubOption(R.drawable.graph, "Social Graph", "social_graph"),
-                SubOption(R.drawable.bank_transfer, "Transaktionen", "transactions"),
-                SubOption(R.drawable.location, "Life Maps", "map"),
-                SubOption(R.drawable.settings, "Settings", "settings"),
-                SubOption(R.drawable.contacts, "Kontakte", "contacts"),
+        val displayWrapped = currentDate.dayOfYear < 20
+        val wrappedEntry = SubOption(R.drawable.liffy_outer, "Wrapped", NavPath.Menu.LIFE_WRAPPED) { mod ->
+            val gradient = Brush.linearGradient(
+                listOf(Color(0xFF1BA1E3), Color(0xFF5489D6), Color(0xFF9B72CB), Color(0xFFD96570), Color(0xFFF49C46))
             )
-            if(isWrapped) {
-                val gradient = Brush.linearGradient(
-                    listOf(Color(0xFF1BA1E3), Color(0xFF5489D6), Color(0xFF9B72CB), Color(0xFFD96570), Color(0xFFF49C46))
-                )
-                Column(
-                    Modifier
-                        .run{
-                            if(all.size % 2 == 1) {
-                                Modifier.weight(1f)
-                            } else {
-                                Modifier.fillMaxWidth()
-                            }
-                        }
-                        .padding(8.dp)
-                        .border(1.dp, gradient, RoundedCornerShape(20.dp))
-                        .background(Theme.surfaceContainer, RoundedCornerShape(20.dp))
-                        .clip(RoundedCornerShape(20.dp))
-                        .combinedRippleClick{
-                            nav.navigate("life_wrapped")
-                        }
-                        .padding(vertical = 20.dp)
-                    ,
-                    horizontalAlignment = Alignment.CenterHorizontally
-                ) {
-                    val fontSize = FontSize.DISPLAY.size.toDp()
-                    Box {
-                        val rotation = remember { Animatable(0f) }
-
-                        LaunchedEffect(Unit) {
-                            while (true) {
-                                delay(2000)
-                                rotation.animateTo(
-                                    targetValue = 180f,
-                                    animationSpec = spring(
-                                        Spring.DampingRatioMediumBouncy,
-                                        Spring.StiffnessVeryLow
-                                    )
-                                )
-
-                                delay(2000)
-
-                                rotation.animateTo(
-                                    targetValue = 360f,
-                                    animationSpec = spring(
-                                        Spring.DampingRatioMediumBouncy,
-                                        Spring.StiffnessVeryLow
-                                    )
-                                )
-                                rotation.snapTo(0f)
-                            }
-                        }
-                        Column(
-                            Modifier
-                                .size(fontSize)
-                                .rotate(rotation.value)
-                            ,
-                            verticalArrangement = Arrangement.Center,
-                            horizontalAlignment = Alignment.CenterHorizontally
-                        ) {
-                            val style = TextStyle.Default.copy(
-                                brush  = gradient,
-                                fontSize = FontSize.DISPLAY.size/2,
-                                fontFamily = FontFamily.Display.family
-                            )
-                            Text(
-                                currentDate.year.minus(1).toString().take(2)
-                                ,
-                                style = style
-                            )
-                            Text(
-                                currentDate.year.minus(1).toString().takeLast(2),
-                                Modifier
-                                    .rotate(180f)
-                                ,
-                                style = style
-                            )
-                        }
-                    }
-                    Spacer(Modifier.height(5.dp))
-                    Text("Wrapped", style = TypoStyle(Theme.primary, FontSize.LARGE, FontFamily.Display))
-                }
-            }
-            all.forEachIndexed { i, it ->
-                val mod = Modifier
-                    .padding(8.dp)
-                    .border(1.dp, Theme.outlineVariant, RoundedCornerShape(20.dp))
+            Column(
+                mod
+                    .border(1.dp, gradient, RoundedCornerShape(20.dp))
                     .background(Theme.surfaceContainer, RoundedCornerShape(20.dp))
-                    .clip(RoundedCornerShape(20.dp))
-                    .combinedRippleClick(
-                        onHold = {
-                            it.createAndRequestShortcut(context)
-                        }
-                    ){
-                        nav.navigate(it.route)
-                    }
                     .padding(vertical = 20.dp)
-                Column(
-                    if(i==0 && !isWrapped && all.size % 2 != 0) {
-                        mod.fillMaxWidth()
-                    } else {
-                        mod.weight(1f)
-                    },
-                    horizontalAlignment = Alignment.CenterHorizontally
-                ) {
-                    val fontSize = FontSize.DISPLAY.size.toDp()
-                    Icon(painterResource(it.icon), it.text, Modifier.size(fontSize), Theme.secondary)
-                    Spacer(Modifier.height(5.dp))
-                    Text(it.text, style = TypoStyle(Theme.primary, FontSize.LARGE, FontFamily.Display))
+                ,
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                val fontSize = FontSize.DISPLAY.size.toDp()
+                Box {
+                    val rotation = remember { Animatable(0f) }
+
+                    LaunchedEffect(Unit) {
+                        while (true) {
+                            delay(2000)
+                            rotation.animateTo(
+                                targetValue = 180f,
+                                animationSpec = spring(
+                                    Spring.DampingRatioMediumBouncy,
+                                    Spring.StiffnessVeryLow
+                                )
+                            )
+
+                            delay(2000)
+
+                            rotation.animateTo(
+                                targetValue = 360f,
+                                animationSpec = spring(
+                                    Spring.DampingRatioMediumBouncy,
+                                    Spring.StiffnessVeryLow
+                                )
+                            )
+                            rotation.snapTo(0f)
+                        }
+                    }
+                    Column(
+                        Modifier
+                            .size(fontSize)
+                            .rotate(rotation.value)
+                        ,
+                        verticalArrangement = Arrangement.Center,
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        val style = TextStyle.Default.copy(
+                            brush  = gradient,
+                            fontSize = FontSize.DISPLAY.size/2,
+                            fontFamily = FontFamily.Display.family
+                        )
+                        Text(
+                            currentDate.year.minus(1).toString().take(2)
+                            ,
+                            style = style
+                        )
+                        Text(
+                            currentDate.year.minus(1).toString().takeLast(2),
+                            Modifier
+                                .rotate(180f)
+                            ,
+                            style = style
+                        )
+                    }
                 }
+                Spacer(Modifier.height(5.dp))
+                Text("Wrapped", style = TypoStyle(Theme.primary, FontSize.LARGE, FontFamily.Display))
             }
         }
+        listOfNotNull(
+            if(displayWrapped) wrappedEntry else null,
+            SubOption(R.drawable.github, "Repositories", NavPath.Menu.REPOS),
+            SubOption(R.drawable.graph, "Social Graph", NavPath.Menu.SOCIAL_GRAPH),
+            SubOption(R.drawable.bank_transfer, "Transaktionen", NavPath.Menu.TRANSACTION_FEED),
+            SubOption(R.drawable.location, "Life Maps", NavPath.Menu.MAP),
+            SubOption(R.drawable.menu, "Weitere", NavPath.Menu.MORE),
+            SubOption(R.drawable.contacts, "Kontakte", NavPath.Menu.CONTACTS),
+        ).RenderSubOptions()
     }
 }
-data class SubOption(val icon: Int, val text: String, val route: String) {
+
+data class SubOption(val icon: Int, val text: String, val route: String? = null, val subtext: String? = null, val onClick: (()->Unit)? = null, val customRenderer: @Composable ((Modifier)->Unit)? = null) {
     private fun adaptiveIconFromDrawables(context: Context, fg: Drawable): Icon {
         val size = context.resources.getDimensionPixelSize(android.R.dimen.app_icon_size)
         val renderSize = size * 4
-
         val bg = OldColors.APPICONBG.toArgb().toDrawable()
         val tintedFg = DrawableCompat.wrap(fg.mutate()).apply {
             setTint(OldColors.PRIMARYFONT.toArgb())
         }
-
-        // 25% padding total means foreground inset of 25% on each side [web:21]
         val pad = (renderSize * 0.48f).toInt()
         val insetFg = InsetDrawable(tintedFg, pad, pad, pad, pad)
-
         val adaptive = AdaptiveIconDrawable(bg, insetFg)
-
         val bitmap = createBitmap(renderSize, renderSize)
         val canvas = Canvas(bitmap)
-
         // Full-bleed draw so background fills the entire bitmap (no outline)
         adaptive.setBounds(0, 0, canvas.width, canvas.height)
         adaptive.draw(canvas)
@@ -249,6 +194,59 @@ data class SubOption(val icon: Int, val text: String, val route: String) {
 
         if (shortcutManager.isRequestPinShortcutSupported) {
             shortcutManager.requestPinShortcut(shortcut, null)
+        }
+    }
+    @Composable
+    fun Render(modifier: Modifier){
+        customRenderer?.invoke(modifier) ?:
+        Column(
+            modifier
+                .border(1.dp, Theme.outlineVariant, RoundedCornerShape(20.dp))
+                .background(Theme.surfaceContainer, RoundedCornerShape(20.dp))
+                .padding(vertical = 20.dp)
+            , horizontalAlignment = Alignment.CenterHorizontally) {
+            val fontSize = FontSize.DISPLAY.size.toDp()
+            Icon(painterResource(icon), text, Modifier.size(fontSize), Theme.secondary)
+            if(subtext!=null){
+                Spacer(Modifier.height(10.dp))
+                Text(subtext, style = TypoStyle(Theme.secondary, FontSize.MEDIUM))
+            }
+            Spacer(Modifier.height(5.dp))
+            Text(text, style = TypoStyle(Theme.primary, FontSize.LARGE, FontFamily.Display))
+        }
+    }
+    companion object {
+        @Composable
+        fun List<SubOption>.RenderSubOptions(){
+            val context = LocalContext.current
+            val nav = LocalNavController.current
+            val mod = Modifier
+                .padding(8.dp)
+                .clip(RoundedCornerShape(20.dp))
+            FlowRow(
+                Modifier
+                    .setMaxTabletWidth()
+                    .padding(windowPadding)
+                ,
+                maxItemsInEachRow = 2,
+                verticalArrangement = Arrangement.Bottom,
+                horizontalArrangement = Arrangement.End
+            ) {
+                forEachIndexed { i, it ->
+                    it.Render(mod
+                        .run {
+                            if (i == 0 && size % 2 != 0) fillMaxWidth() else weight(1f)
+                        }
+                        .combinedRippleClick(
+                            onHold = {
+                                if(it.route != null) it.createAndRequestShortcut(context)
+                            }
+                        ) {
+                            it.onClick?.invoke() ?: nav.navigate(it.route ?: return@combinedRippleClick)
+                        }
+                    )
+                }
+            }
         }
     }
 }

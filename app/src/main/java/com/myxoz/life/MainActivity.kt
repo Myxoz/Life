@@ -41,6 +41,7 @@ import com.myxoz.life.events.TravelEvent
 import com.myxoz.life.repositories.MainApplication
 import com.myxoz.life.screens.LocalScreensProvider
 import com.myxoz.life.screens.ModifyLocation
+import com.myxoz.life.screens.NavPath
 import com.myxoz.life.screens.feed.commits.FullScreenCommit
 import com.myxoz.life.screens.feed.commits.FullScreenRepo
 import com.myxoz.life.screens.feed.commits.FullScreenRepos
@@ -54,7 +55,9 @@ import com.myxoz.life.screens.feed.summarizeday.SummarizeDay
 import com.myxoz.life.screens.map.MapBoxMap
 import com.myxoz.life.screens.options.AISettings
 import com.myxoz.life.screens.options.DebugScreen
+import com.myxoz.life.screens.options.InformationComposable
 import com.myxoz.life.screens.options.MenuComposable
+import com.myxoz.life.screens.options.MoreComposable
 import com.myxoz.life.screens.options.SettingsComposable
 import com.myxoz.life.screens.options.SettingsPermissionComposable
 import com.myxoz.life.screens.person.Contacts
@@ -160,8 +163,7 @@ class MainActivity : ComponentActivity() {
                     transactionViewModel,
                     instantEventsViewModel,
                     locationEditingViewModel,
-                    navController,
-                    applicationContext
+                    navController
                 ),
                 LocalColors provides colorScheme,
                 LocalTextSelectionColors provides selectionColors
@@ -191,7 +193,7 @@ class MainActivity : ComponentActivity() {
                 var showHome by remember { mutableStateOf(stashedRoute==null) }
                 NavHost(
                     navController = navController,
-                    startDestination = "home",
+                    startDestination = NavPath.HOME,
                     modifier = Modifier.fillMaxSize().background(Theme.background),
                     enterTransition = {
                         slideInHorizontally { it/2 } + fadeIn(navigationTransitionSpec)
@@ -206,85 +208,76 @@ class MainActivity : ComponentActivity() {
                         slideOutHorizontally { it/2 } + fadeOut(navigationTransitionSpec)
                     },
                 ) {
-                    composable("home") {
+                    //  ---------- FEED ----------
+                    composable(NavPath.HOME) {
                         if(!showHome) { return@composable } // Do not render
                         HomeComposable(calendarViewModel, inspectedEventViewModel)
                     }
-                    composable("fullscreen_event") {
+                    composable(NavPath.FULLSCREEN_EVENT) {
                         FullScreenEvent(inspectedEventViewModel)
                     }
-                    composable("display_person/{personId}", arguments = listOf(
-                        navArgument("personId") { type = NavType.LongType }
-                    )){
-                        val personId = it.arguments?.getLong("personId") ?: return@composable
-                        ProfileFullScreen(personId, photoPicker, largeDataCache, profileInfoModel)
-                    }
-                    composable("modify_event/add_location") {
-                        ModifyLocation(locationEditingViewModel)
-                    }
-                    composable("pick/existing/location") {
-                        PickExistingLocation(mapViewModel)
-                    }
-                    composable("menu") {
-                        MenuComposable()
-                    }
-                    composable("settings") {
-                        SettingsComposable()
-                    }
-                    composable("settings/permissions") {
-                        SettingsPermissionComposable(calendarViewModel)
-                    }
-                    composable("settings/ai") {
-                        AISettings(aiSettingsViewModel)
-                    }
-                    composable("summarize_day") {
+                    composable(NavPath.SUMMARIZE_DAY) {
                         SummarizeDay(dayOverviewViewModel)
                     }
-                    composable("transactions") {
-                        TransactionFeed(transactionViewModel)
-                    }
-                    composable("contacts") {
-                        Contacts(contacsViewModel)
-                    }
-                    composable("day/{epochDay}/overview", arguments = listOf(
-                        navArgument("epochDay") { type = NavType.LongType }
-                    )) {
-                        val epochDay = (it.arguments?.getLong("epochDay") ?: 0).run { if(this == 0L) LocalDate.now().toEpochDay() else this}
-                        // Semantic value: 0 == today, due to pending intent targetRoute, which isn't computable
-                        DayOverviewComposable(LocalDate.ofEpochDay(epochDay), dayOverviewViewModel)
-                    }
-                    composable("instant_events_between") {
+                    composable(NavPath.INSTANT_EVENT_SELECTION) {
                         InstantEventsScreen(instantEventsViewModel)
                     }
-                    composable("day/{epochDay}/screentime", arguments = listOf(
-                        navArgument("epochDay") { type = NavType.LongType }
-                    )) {
-                        val epochDay = it.arguments?.getLong("epochDay") ?: 0
-                        ScreenTimeOverview(LocalDate.ofEpochDay(epochDay), dayOverviewViewModel)
+                    composable(NavPath.ADVANCED_SEARCH) {
+                        AdvancedSearch(calendarViewModel)
                     }
-                    composable("day/{epochDay}/transactions", arguments = listOf(
-                        navArgument("epochDay") { type = NavType.LongType }
-                    )) {
-                        val epochDay = it.arguments?.getLong("epochDay") ?: 0
-                        TransactionList(LocalDate.ofEpochDay(epochDay), transactionViewModel)
+
+                        //  ---------- FEED -> Location ----------
+                        composable(NavPath.Pick.LOCATION) {
+                            PickExistingLocation(mapViewModel)
+                        }
+                        composable(NavPath.MODIFY_LOCATION) {
+                            ModifyLocation(locationEditingViewModel)
+                        }
+
+                        //  ---------- FEED -> Transaction ----------
+                        composable(NavPath.Menu.TRANSACTION_FEED) {
+                            TransactionFeed(transactionViewModel)
+                        }
+                        composable(NavPath.Transaction.DETAILS) {
+                            TransactionOverview(largeDataCache, transactionViewModel)
+                        }
+                        composable(NavPath.Transaction.ME) {
+                            MyCard(largeDataCache, transactionViewModel)
+                        }
+
+                        //  ---------- FEED -> DAY_OVERVIEW ----------
+                        composable(NavPath.DAY_OVERVIEW.asTemplate, arguments = listOf(
+                            navArgument(NavPath.DAY_OVERVIEW.parameterName) { type = NavType.LongType }
+                        )) {
+                            val epochDay = (it.arguments?.getLong(NavPath.DAY_OVERVIEW.parameterName) ?: 0).run { if(this == 0L) LocalDate.now().toEpochDay() else this}
+                            // Semantic value: 0 == today, due to pending intent targetRoute, which isn't computable
+                            DayOverviewComposable(LocalDate.ofEpochDay(epochDay), dayOverviewViewModel)
+                        }
+                        composable(NavPath.DayOverview.SCREENTIME.asTemplate, arguments = listOf(
+                            navArgument(NavPath.DayOverview.SCREENTIME.parameterName) { type = NavType.LongType }
+                        )) {
+                            val epochDay = it.arguments?.getLong(NavPath.DayOverview.SCREENTIME.parameterName) ?: 0
+                            ScreenTimeOverview(LocalDate.ofEpochDay(epochDay), dayOverviewViewModel)
+                        }
+                        composable(NavPath.DayOverview.TRANSACTIONS.asTemplate, arguments = listOf(
+                            navArgument(NavPath.DayOverview.TRANSACTIONS.parameterName) { type = NavType.LongType }
+                        )) {
+                            val epochDay = it.arguments?.getLong(NavPath.DayOverview.TRANSACTIONS.parameterName) ?: 0
+                            TransactionList(LocalDate.ofEpochDay(epochDay), transactionViewModel)
+                        }
+
+                    //  ---------- Menu ----------
+                    composable(NavPath.MENU) {
+                        MenuComposable()
                     }
-                    composable("bank/transaction") {
-                        TransactionOverview(largeDataCache, transactionViewModel)
-                    }
-                    composable("bank/me") {
-                        MyCard(largeDataCache, transactionViewModel)
-                    }
-                    composable("information") {
-                        DebugScreen(
-                            repositories.api.heyAPIAlmighlyGodEtcCanIPleaseOnlyForDebugHaveAllDaoAccessImReallyTheDebugOnlyPleasePleasePlease(),
-                            repositories.api
-                        )
-                    }
-                    composable("social_graph") {
+                    composable(NavPath.Menu.SOCIAL_GRAPH) {
                         SocialGraph(socialGraphViewModel)
                     }
+                    composable(NavPath.Menu.LIFE_WRAPPED) {
+                        LifeWrappedScreen(repositories.api.getReadableDaosForWrapped(), profileInfoModel)
+                    }
                     composable(
-                        "map",
+                        NavPath.Menu.MAP,
                         exitTransition = {
                             slideOutHorizontally { it }
                         },
@@ -292,28 +285,58 @@ class MainActivity : ComponentActivity() {
                             slideInHorizontally { it }
                         },
 
-                    ) {
+                        ) {
                         MapBoxMap(mapViewModel)
                     }
-                    composable("advanced_search") {
-                        AdvancedSearch(calendarViewModel)
-                    }
 
-                    composable("commits/commit/{sha}") {
-                        val sha = it.arguments?.getString("sha") ?: return@composable
-                        FullScreenCommit(sha, commitsViewModel)
-                    }
-                    composable("commits/repos") {
-                        FullScreenRepos(commitsViewModel)
-                    }
-                    composable("commits/repo/{name}") {
-                        val name = it.arguments?.getString("name") ?: return@composable
-                        FullScreenRepo(name, commitsViewModel)
-                    }
-                    composable("life_wrapped") {
-                        LifeWrappedScreen(repositories.api.getReadableDaosForWrapped(), profileInfoModel)
-                    }
+                        //  ---------- Menu -> REPOS ----------
+                        composable(NavPath.Menu.REPOS) {
+                            FullScreenRepos(commitsViewModel)
+                        }
+                        composable(NavPath.Menu.Repos.COMMIT.asTemplate) {
+                            val sha = it.arguments?.getString(NavPath.Menu.Repos.COMMIT.parameterName) ?: return@composable
+                            FullScreenCommit(sha, commitsViewModel)
+                        }
+                        composable(NavPath.Menu.Repos.REPO.asTemplate) {
+                            val name = it.arguments?.getString(NavPath.Menu.Repos.REPO.parameterName) ?: return@composable
+                            FullScreenRepo(name, commitsViewModel)
+                        }
 
+                        //  ---------- Menu -> Contacts ----------
+                        composable(NavPath.Menu.CONTACTS) {
+                            Contacts(contacsViewModel)
+                        }
+                        composable(NavPath.Menu.Contacts.DISPLAY_PERSON.asTemplate, arguments = listOf(
+                            navArgument(NavPath.Menu.Contacts.DISPLAY_PERSON.parameterName) { type = NavType.LongType }
+                        )){
+                            val personId = it.arguments?.getLong(NavPath.Menu.Contacts.DISPLAY_PERSON.parameterName) ?: return@composable
+                            ProfileFullScreen(personId, photoPicker, largeDataCache, profileInfoModel)
+                        }
+
+                        //  ---------- Menu -> More ----------
+                        composable(NavPath.Menu.MORE) {
+                            MoreComposable()
+                        }
+                        composable(NavPath.Menu.More.INFORMATION) {
+                            InformationComposable()
+                        }
+                        composable(NavPath.Menu.More.AI) {
+                            AISettings(aiSettingsViewModel)
+                        }
+                        composable(NavPath.Menu.More.DEBUG) {
+                            DebugScreen(
+                                repositories.api.heyAPIAlmighlyGodEtcCanIPleaseOnlyForDebugHaveAllDaoAccessImReallyTheDebugOnlyPleasePleasePlease(),
+                                repositories.api
+                            )
+                        }
+
+                            //  ---------- Menu -> More -> Settings ----------
+                            composable(NavPath.Menu.More.SETTINGS) {
+                                SettingsComposable()
+                            }
+                            composable(NavPath.Menu.More.Settings.PERMISSIONS) {
+                                SettingsPermissionComposable(calendarViewModel)
+                            }
                 }
                 LaunchedEffect(Unit) {
                     if(stashedRoute!=null) {

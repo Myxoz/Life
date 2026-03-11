@@ -106,6 +106,7 @@ import com.myxoz.life.events.additionals.TagLike
 import com.myxoz.life.events.additionals.TimedTagLikeContainer
 import com.myxoz.life.events.additionals.TitleEvent
 import com.myxoz.life.events.additionals.Vehicle
+import com.myxoz.life.screens.NavPath
 import com.myxoz.life.ui.ArrowDirection
 import com.myxoz.life.ui.Chip
 import com.myxoz.life.ui.RowChip
@@ -377,7 +378,7 @@ fun ModifyEvent(viewModel: InspectedEventViewModel){
                     )
                 }
                 PersonBar(event.people, event.more, true, {
-                    nav.navigate("contacts")
+                    nav.navigate(NavPath.Menu.CONTACTS)
                 }) { people, more ->
                     setEventTo(
                         SocialEvent(
@@ -410,7 +411,7 @@ fun ModifyEvent(viewModel: InspectedEventViewModel){
 
             is DigSocEvent -> {
                 PersonBar(event.people, false, false, {
-                    nav.navigate("contacts")
+                    nav.navigate(NavPath.Menu.CONTACTS)
                 }) { people, _ ->
                     setEventTo(
                         DigSocEvent(
@@ -1118,7 +1119,7 @@ fun LocationBar(defaultLocation: Long, setLocation: (Long)->Unit){
                 }
             } else {
                 Chip({
-                    navController.navigate("map")
+                    navController.navigate(NavPath.Menu.MAP)
                 },
                     color = Theme.secondaryContainer
                 ) {

@@ -1,6 +1,5 @@
 package com.myxoz.life.viewmodels
 
-import android.content.Context
 import android.graphics.Bitmap
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -12,6 +11,7 @@ import com.myxoz.life.repositories.AppRepositories
 import com.myxoz.life.repositories.utils.StateFlowCache
 import com.myxoz.life.repositories.utils.VersionedCache
 import com.myxoz.life.repositories.utils.subscribeToColdFlow
+import com.myxoz.life.screens.NavPath
 import com.myxoz.life.utils.diagrams.PieChart
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -116,10 +116,10 @@ class ProfileInfoModel(val repos: AppRepositories): ViewModel(){
         }.subscribeToColdFlow(viewModelScope, null)
     }
     fun getPieChartForPerson(personId: Long) = piechartFlowCache.get(personId)
-    fun openPersonDetails(personId: Long, nav: NavController, context: Context){
+    fun openPersonDetails(personId: Long, nav: NavController){
         isExtended.value = false
         isProfilePictureFullScreen.value = false
-        nav.navigate("display_person/${personId}")
+        nav.navigate(NavPath.Menu.Contacts.DISPLAY_PERSON.with(personId))
     }
 
     private val profilePictureCache = StateFlowCache<Long, Bitmap?>{ personId ->

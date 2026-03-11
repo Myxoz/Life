@@ -5,6 +5,7 @@ import android.content.Intent
 import android.os.Bundle
 import com.myxoz.life.MainActivity
 import com.myxoz.life.repositories.MainApplication
+import com.myxoz.life.screens.NavPath
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -22,7 +23,7 @@ class ShareReceiverActivity : Activity() {
                     // Launch MainActivity with navigation intent
                     with(Dispatchers.Main){
                         val mainIntent = Intent(applicationContext, MainActivity::class.java).apply {
-                            putExtra("targetRoute", "fullscreen_event")
+                            putExtra("targetRoute", NavPath.FULLSCREEN_EVENT)
                             putExtra("shared_travel_event", travelEvent.toJson().toString())
                             flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
                         }

@@ -11,6 +11,7 @@ import com.myxoz.life.events.additionals.PeopleEvent
 import com.myxoz.life.events.additionals.TagEvent
 import com.myxoz.life.events.additionals.TitleEvent
 import com.myxoz.life.events.additionals.Vehicle
+import com.myxoz.life.screens.NavPath
 import com.myxoz.life.screens.feed.main.SegmentedEvent
 import com.myxoz.life.viewmodels.CalendarViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -112,7 +113,7 @@ class SearchField {
         applied()
         mode.value = SearchMode.Target
         wasUpdated()
-        nav.popBackStack("home", false)
+        nav.popBackStack(NavPath.HOME, false)
     }
     enum class SearchMode{
         Target,

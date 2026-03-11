@@ -16,7 +16,9 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Outline
 import androidx.compose.ui.graphics.Paint
@@ -33,6 +35,11 @@ import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlin.math.PI
+import kotlin.math.atan2
+import kotlin.math.cos
+import kotlin.math.hypot
+import kotlin.math.sin
 
 @Composable
 fun Modifier.rippleClick(enabled: Boolean=true, run: ()->Unit): Modifier = this.clickable( remember { MutableInteractionSource() }, ripple(), onClick = run, enabled = enabled)
@@ -168,3 +175,33 @@ fun Modifier.boxShadow(
         }
     }
 }
+// Fuck AI we use StackOverflow here:
+// https://stackoverflow.com/questions/68218714/angled-gradient-background-in-jetpack-compose#68219962
+fun Modifier.angledGradientBackground(colors: List<Color>, degrees: Float) = this.drawBehind {
+        val (x, y) = size
+        val gamma = atan2(y, x)
+        if (gamma == 0f || gamma == (PI / 2).toFloat()) {
+            return@drawBehind
+        }
+        val degreesNormalised = (degrees % 360).let { if (it < 0) it + 360 else it }
+        val alpha = (degreesNormalised * PI / 180).toFloat()
+        val gradientLength = when (alpha) {
+            in 0f..gamma, in (2*PI - gamma)..2*PI -> { x / cos(alpha) }
+            in gamma..(PI - gamma).toFloat() -> { y / sin(alpha) }
+            in (PI - gamma)..(PI + gamma) -> { x / -cos(alpha) }
+            in (PI + gamma)..(2*PI - gamma) -> { y / -sin(alpha) }
+            else -> hypot(x, y)
+        }
+
+        val centerOffsetX = cos(alpha) * gradientLength / 2
+        val centerOffsetY = sin(alpha) * gradientLength / 2
+
+        drawRect(
+            brush = Brush.linearGradient(
+                colors = colors,
+                start = Offset(center.x - centerOffsetX,center.y - centerOffsetY),
+                end = Offset(center.x + centerOffsetX, center.y + centerOffsetY)
+            ),
+            size = size
+        )
+    }

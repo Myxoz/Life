@@ -48,6 +48,7 @@ import com.myxoz.life.LocalNavController
 import com.myxoz.life.LocalScreens
 import com.myxoz.life.R
 import com.myxoz.life.Theme
+import com.myxoz.life.screens.NavPath
 import com.myxoz.life.ui.ActionBar
 import com.myxoz.life.ui.setMaxTabletWidth
 import com.myxoz.life.ui.theme.FontColor
@@ -217,8 +218,8 @@ fun FullScreenEvent(inspectedEventViewModel: InspectedEventViewModel){
                             if(!isEditing) {
                                 inspectedEventViewModel.setEditing(true)
                                 if(inspectedEventViewModel.popUpToHomeOnEdit.value) {
-                                    nav.navigate("fullscreen_event") {
-                                        popUpTo("home")
+                                    nav.navigate(NavPath.FULLSCREEN_EVENT) {
+                                        popUpTo(NavPath.HOME)
                                     }
                                     inspectedEventViewModel.popUpToHomeOnEdit.value = false
                                 }

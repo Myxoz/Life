@@ -60,6 +60,7 @@ import com.myxoz.life.Theme
 import com.myxoz.life.dbwrapper.banking.formatCents
 import com.myxoz.life.repositories.BankingRepo
 import com.myxoz.life.repositories.BankingRepo.BankingDisplayEntity.Companion.finalDailyBalance
+import com.myxoz.life.screens.NavPath
 import com.myxoz.life.screens.feed.dayoverview.edgeToEdgeGradient
 import com.myxoz.life.ui.ActionBar
 import com.myxoz.life.ui.SCREENMAXWIDTH
@@ -73,7 +74,7 @@ import com.myxoz.life.ui.theme.TypoStyle
 import com.myxoz.life.ui.theme.TypoStyleOld
 import com.myxoz.life.utils.collectAsMutableState
 import com.myxoz.life.utils.copy
-import com.myxoz.life.utils.formatMinutes
+import com.myxoz.life.utils.formatDayTime
 import com.myxoz.life.utils.formatTimeStamp
 import com.myxoz.life.utils.rippleClick
 import com.myxoz.life.utils.toDp
@@ -119,7 +120,7 @@ fun TransactionOverview(largeDataCache: LargeDataCache, transactionViewModel: Tr
                         .background(Theme.surfaceContainer, CircleShape)
                         .clip(CircleShape)
                         .rippleClick {
-                            nav.navigate("bank/me")
+                            nav.navigate(NavPath.Transaction.ME)
                         }
                         .fillMaxWidth()
                         .padding(vertical = 20.dp)
@@ -352,7 +353,7 @@ fun BankingEntryComposable(entry: BankingRepo.BankingDisplayEntity, isFirst: Boo
                 )
             }
             Text(
-                entry.timestamp.formatMinutes(calendar),
+                entry.timestamp.formatDayTime(calendar),
                 style = TypoStyle(Theme.secondary, FontSize.MEDIUMM)
             )
         }

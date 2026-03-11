@@ -36,6 +36,7 @@ import com.myxoz.life.Theme
 import com.myxoz.life.events.additionals.DigSocPlatform
 import com.myxoz.life.events.additionals.EventType
 import com.myxoz.life.events.additionals.Vehicle
+import com.myxoz.life.screens.NavPath
 import com.myxoz.life.screens.feed.fullscreenevent.CalendarChip
 import com.myxoz.life.screens.feed.fullscreenevent.InputField
 import com.myxoz.life.screens.feed.fullscreenevent.PersonBar
@@ -174,7 +175,7 @@ fun AdvancedSearch(calendarViewModel: CalendarViewModel){
                 false,
                 false,
                 {
-                    nav.navigate("contacts")
+                    nav.navigate(NavPath.Menu.CONTACTS)
                 }
             ) { l, _ ->
                 search.selectedPeople.value = l
@@ -183,14 +184,14 @@ fun AdvancedSearch(calendarViewModel: CalendarViewModel){
             ActionBar(
                 {
                     search.reset()
-                    nav.popBackStack("home", false, true)
+                    nav.popBackStack(NavPath.HOME, false, true)
                 },
                 {
                     Icon(painterResource(R.drawable.close), "Close", Modifier.fillMaxSize(), tint = OldColors.SECONDARYFONT)
                 },
                 OldColors.SELECTED,
                 {
-                    nav.popBackStack("home", false, true)
+                    nav.popBackStack(NavPath.HOME, false, true)
                 },
             ) {
                 Text(

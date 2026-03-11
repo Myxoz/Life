@@ -34,12 +34,10 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shadow
 import androidx.compose.ui.graphics.asImageBitmap
-import androidx.compose.ui.platform.LocalWindowInfo
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.min
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.myxoz.life.LocalNavController
 import com.myxoz.life.LocalScreens
@@ -49,9 +47,10 @@ import com.myxoz.life.Theme
 import com.myxoz.life.api.syncables.PersonSyncable
 import com.myxoz.life.dbwrapper.banking.formatCents
 import com.myxoz.life.repositories.BankingRepo
+import com.myxoz.life.screens.NavPath
 import com.myxoz.life.screens.feed.main.screenTimeGoal
 import com.myxoz.life.screens.feed.main.stepsGoal
-import com.myxoz.life.ui.SCREENMAXWIDTH
+import com.myxoz.life.ui.getMaxTabletScreenWidth
 import com.myxoz.life.ui.setMaxTabletWidth
 import com.myxoz.life.ui.theme.FontFamily
 import com.myxoz.life.ui.theme.FontSize
@@ -119,8 +118,12 @@ fun DayOverviewComposable(date: LocalDate, dayOverviewViewModel: DayOverviewView
             if(showSteps) DisplayStepsBlock(steps)
             val screentime by settings.features.screentime.has.collectAsState()
             val nav = LocalNavController.current
-            if(screentime) DisplayTimeBlock(screenTime) { nav.navigate("day/${date.toEpochDay()}/screentime") }
-            if(bankingDisplayEntitys.isNotEmpty()) BankingBlock(bankingDisplayEntitys) { nav.navigate("day/${date.toEpochDay()}/transactions") }
+            if(screentime) DisplayTimeBlock(screenTime) {
+                nav.navigate(NavPath.DayOverview.SCREENTIME.with(date.toEpochDay()))
+            }
+            if(bankingDisplayEntitys.isNotEmpty()) BankingBlock(bankingDisplayEntitys) {
+                nav.navigate(NavPath.DayOverview.TRANSACTIONS.with(date.toEpochDay()))
+            }
             Column (
                 Modifier
                     .fillMaxWidth()
@@ -132,8 +135,7 @@ fun DayOverviewComposable(date: LocalDate, dayOverviewViewModel: DayOverviewView
             ) {
                 Text("Aufteilung", style = TypoStyle(Theme.primary, FontSize.MEDIUM), modifier = Modifier.fillMaxWidth())
                 Spacer(Modifier.height(10.dp))
-                val screenWidth = min(LocalWindowInfo.current.containerDpSize.width, SCREENMAXWIDTH)
-                Box(Modifier.size(screenWidth*.7f)){
+                Box(Modifier.size(getMaxTabletScreenWidth() *.7f)){
                     chart.Render()
                 }
             }

@@ -81,6 +81,7 @@ import com.myxoz.life.android.contacts.AndroidContacts
 import com.myxoz.life.android.integration.HVV
 import com.myxoz.life.api.syncables.LocationSyncable
 import com.myxoz.life.api.syncables.PersonSyncable
+import com.myxoz.life.screens.NavPath
 import com.myxoz.life.screens.feed.fullscreenevent.getId
 import com.myxoz.life.ui.Chip
 import com.myxoz.life.ui.theme.FontSize
@@ -423,7 +424,7 @@ fun ProfileInfo(largeDataCache: LargeDataCache, profileInfoModel: ProfileInfoMod
                             Chip(
                                 {
                                     nav.navigateForResult<String?>(
-                                        "pick/existing/location",
+                                        NavPath.Pick.LOCATION,
                                         "pelocation"
                                     ) { res ->
                                         profileInfoModel.edit(personId){

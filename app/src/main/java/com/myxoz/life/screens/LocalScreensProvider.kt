@@ -1,6 +1,5 @@
 package com.myxoz.life.screens
 
-import android.content.Context
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.MotionDurationScale
 import androidx.lifecycle.viewModelScope
@@ -41,11 +40,10 @@ class LocalScreensProvider(
     private val instantEventsViewModel: InstantEventsViewModel,
     private val locationEditingViewModel: LocationEditingViewModel,
     private val nav: NavController,
-    private val context: Context,
 ) {
     private var calendarCooldown = System.currentTimeMillis()
     fun openPersonDetails(personId: Long){
-        profileInfoModel.openPersonDetails(personId, nav, context)
+        profileInfoModel.openPersonDetails(personId, nav)
     }
     fun setProfileInfoChartScale(scale: Int){
         profileInfoModel.chartScale.value = scale
@@ -56,7 +54,7 @@ class LocalScreensProvider(
     fun openCalendarAt(date: LocalDate){
         if(System.currentTimeMillis() - calendarCooldown > calendarViewModel.viewModelScope.coroutineContext[MotionDurationScale]?.scaleFactor.def(1f)*2000L) {
             calendarViewModel.setDay(date)
-            nav.popBackStack("home", false)
+            nav.popBackStack(NavPath.HOME, false)
             calendarCooldown = System.currentTimeMillis()
         }
     }
@@ -73,18 +71,18 @@ class LocalScreensProvider(
                 }
             )
         }
-        nav.navigate("social_graph")
+        nav.navigate(NavPath.Menu.SOCIAL_GRAPH)
     }
     fun openFullScreenEvent(event: SyncedEvent) {
         inspectedEventViewModel.setInspectedEventTo(event)
         inspectedEventViewModel.popUpToHomeOnEdit.value = true
-        nav.navigate("fullscreen_event")
+        nav.navigate(NavPath.FULLSCREEN_EVENT)
     }
     fun gotoEventDetails() {
-        nav.navigate("fullscreen_event")
+        nav.navigate(NavPath.FULLSCREEN_EVENT)
     }
     fun openLocation(location: LocationSyncable, screenWidthPx: Float){
-        nav.navigate("map")
+        nav.navigate(NavPath.Menu.MAP)
         mapViewModel.isEditing.value = false
         mapViewModel.setSheetLocation(location)
         val targetMetersOnScreen = 2 * location.radiusM.takeIf { it != 0 }.def(10) / .002f // TODO TWEAK
@@ -107,31 +105,31 @@ class LocalScreensProvider(
     }
     fun openTransaction(transaction: BankingRepo.BankingDisplayEntity) {
         transactionViewModel.inspectedTransaction.value = transaction
-        nav.navigate("bank/transaction")
+        nav.navigate(NavPath.Transaction.DETAILS)
     }
 
     fun editTransaction(transaction: BankingRepo.BankingDisplayEntity) {
         val sync = transaction.getStoredManualTransactionSyncable() ?: return
         inspectedEventViewModel.setEditedSyncableTo(sync)
-        nav.navigate("fullscreen_event") {
-            popUpTo("home")
+        nav.navigate(NavPath.FULLSCREEN_EVENT) {
+            popUpTo(NavPath.HOME)
         }
     }
 
     fun openCommit(commitSha: String) {
-        nav.navigate("commits/commit/$commitSha")
+        nav.navigate(NavPath.Menu.Repos.COMMIT.with(commitSha))
     }
     fun openInstantEventRange(instantEvents: List<InstantEvent>){
-        nav.navigate("instant_events_between")
+        nav.navigate(NavPath.INSTANT_EVENT_SELECTION)
         instantEventsViewModel.lookedAtInstantEvents.value = instantEvents
     }
 
     fun editLocation(location: LocationSyncable) {
         locationEditingViewModel.nowEditing = location
-        nav.navigate("modify_event/add_location")
+        nav.navigate(NavPath.MODIFY_LOCATION)
     }
 
     fun openDayOverview(date: LocalDate) {
-        nav.navigate("day/${date.toEpochDay()}/overview")
+        nav.navigate(NavPath.DAY_OVERVIEW.with(date.toEpochDay()))
     }
 }

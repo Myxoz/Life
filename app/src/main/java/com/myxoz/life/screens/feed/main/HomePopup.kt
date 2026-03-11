@@ -40,6 +40,7 @@ import com.myxoz.life.LocalNavController
 import com.myxoz.life.LocalSettings
 import com.myxoz.life.R
 import com.myxoz.life.Theme
+import com.myxoz.life.screens.NavPath
 import com.myxoz.life.screens.feed.summarizeday.LiffyFace
 import com.myxoz.life.screens.options.getUsageDataBetween
 import com.myxoz.life.screens.person.displayperson.UnmodalBottomSheet
@@ -63,7 +64,7 @@ fun DaySummaryPopUp(calendarViewModel: CalendarViewModel, inspectedEventViewMode
     val currentBackStackEntry by nav.currentBackStackEntryAsState()
     LaunchedEffect(currentBackStackEntry) {
         val currentRoute = currentBackStackEntry?.destination?.route
-        if (currentRoute == "home") {
+        if (currentRoute == NavPath.HOME) {
             calendarViewModel.yesterdaySummaryAdded.collect {
                 showDayPopup = (it == null) && !inspectedEventViewModel.isEditing.value
             }
@@ -172,7 +173,7 @@ fun DaySummaryPopUp(calendarViewModel: CalendarViewModel, inspectedEventViewMode
                     Theme.primaryContainer,
                     {
                         showDayPopup = false
-                        navController.navigate("summarize_day")
+                        navController.navigate(NavPath.SUMMARIZE_DAY)
                     },
                 ) {
                     Text(
