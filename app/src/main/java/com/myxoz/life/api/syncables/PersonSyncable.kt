@@ -6,12 +6,12 @@ import android.content.Intent
 import android.util.Log
 import androidx.compose.ui.graphics.Color
 import com.myxoz.life.R
+import com.myxoz.life.api.API
 import com.myxoz.life.api.ServerSyncableCompanion
 import com.myxoz.life.api.Syncable
 import com.myxoz.life.dbwrapper.people.PersonEntity
 import com.myxoz.life.dbwrapper.people.ReadPeopleDao
 import com.myxoz.life.dbwrapper.people.SocialsEntity
-import com.myxoz.life.api.API
 import com.myxoz.life.screens.feed.fullscreenevent.getId
 import com.myxoz.life.utils.AndroidUtils
 import com.myxoz.life.utils.getLongOrNull
@@ -141,7 +141,7 @@ class PersonSyncable(
                     intent(
                         ComponentName("com.whatsapp", "com.whatsapp.Conversation"),
                         listOf(
-                            "jid" to (phoneNumber ?: "").replace(
+                            "jid" to (handle.takeIf { it != "WhatsApp" } ?: phoneNumber ?: "").replace(
                                 "\\D".toRegex(),
                                 ""
                             ) + "@s.whatsapp.net"

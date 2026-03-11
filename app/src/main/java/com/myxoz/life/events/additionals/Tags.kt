@@ -7,7 +7,7 @@ import com.myxoz.life.utils.forEach
 import org.json.JSONArray
 import org.json.JSONObject
 
-enum class EventTag(override val id: Int, val displayName: String, val queryString: List<String>, override val drawable: Int): TagLike {
+enum class EventTag(override val id: Int, override val displayName: String, val queryString: List<String>, override val drawable: Int): TagLike {
     Party(1, "Feier", listOf("Party", "Feiern", "Geburtstagsfeier"), R.drawable.party),
     Eat(2, "Essen", listOf("Futtern", "Snack", "Snacken", "Frühstück", "Mittagessen", "Abendessen", "Fooden"), R.drawable.food),
     Cards(3, "Gesellschafsspiele", listOf("Karten", "Brettspiele", "Poker", "Uno", "Spieleabend"), R.drawable.poker_card),
@@ -35,6 +35,7 @@ enum class EventTag(override val id: Int, val displayName: String, val queryStri
 }
 interface TagLike {
     val id: Int
+    val displayName: String
     val drawable: Int
 }
 interface TagEvent {

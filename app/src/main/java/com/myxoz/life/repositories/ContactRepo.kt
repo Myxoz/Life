@@ -43,9 +43,6 @@ class ContactRepo(
         return _savedInContacts.flowByKey(appScope, phoneNumber)
     }
     suspend fun isSavedInContactsNOW(phone: String) = updateIsSavedInContacts(phone)
-    init {
-        refetchDeviceContacts()
-    }
     fun refetchDeviceContacts(){
         appScope.launch {
             withContext(Dispatchers.IO){

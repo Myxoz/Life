@@ -1,9 +1,11 @@
 package com.myxoz.life.screens.feed.main
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -17,20 +19,20 @@ import androidx.compose.material3.DatePicker
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
-import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Text
 import androidx.compose.material3.rememberDatePickerState
-import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.platform.LocalClipboard
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
@@ -49,9 +51,14 @@ import com.myxoz.life.ui.ActionBar
 import com.myxoz.life.ui.theme.FontFamily
 import com.myxoz.life.ui.theme.FontSize
 import com.myxoz.life.ui.theme.TypoStyle
+import com.myxoz.life.utils.collectAsMutableState
+import com.myxoz.life.utils.copy
+import com.myxoz.life.utils.def
 import com.myxoz.life.utils.formatMsToDuration
+import com.myxoz.life.utils.rippleClick
 import com.myxoz.life.viewmodels.CalendarViewModel
 import com.myxoz.life.viewmodels.InspectedEventViewModel
+import kotlinx.coroutines.launch
 import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneId
@@ -70,135 +77,83 @@ fun DaySummaryPopUp(calendarViewModel: CalendarViewModel, inspectedEventViewMode
             }
         }
     }
-    if (showDayPopup) {
-        ModalBottomSheet(
-            {
-                showDayPopup = false
-            },
-            sheetState = rememberModalBottomSheetState(true),
-            containerColor = Theme.surfaceContainer
-        ) {
+    LiffyPopup(
+        showDayPopup,
+        "Hey!",
+        "Trage deinen gestrigen Tag endgültig ein",
+        {
+            showDayPopup = false
+        },
+        {
+            nav.navigate(NavPath.SUMMARIZE_DAY)
+        },
+        "Eintragen",
+    ) {
+        Spacer(Modifier.height(20.dp))
+        val day = remember { LocalDate.now().minusDays(1) }
+        Text(
+            "${day.dayOfMonth}.${day.month.value}.${day.year}",
+            style = TypoStyle(Theme.primary, FontSize.MEDIUM)
+        )
+        val settings = LocalSettings.current
+        val screenTimeEnabled by settings.features.screentime.has.collectAsState()
+        val stepCountEnabled by settings.features.stepCounting.has.collectAsState()
+        if(screenTimeEnabled || stepCountEnabled)
             Column(
                 Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 20.dp),
-                verticalArrangement = Arrangement.spacedBy(10.dp)
+                    .border(1.dp, Theme.outlineVariant, RoundedCornerShape(25.dp))
+                    .padding(horizontal = 25.dp, vertical = 20.dp)
             ) {
-                Box(
-                    Modifier
-                        .align(Alignment.CenterHorizontally)
-                        .size(70.dp)
-                ) {
-                    Icon(
-                        painterResource(R.drawable.liffy_outer),
-                        "Liffy",
-                        Modifier
-                            .size(70.dp),
-                        tint = Theme.primary
-                    )
-                    LiffyFace(70.dp)
-                }
-                Text("Hey!", style = TypoStyle(Theme.primary, FontSize.LARGE))
-                Text(
-                    "Trage deinen gestrigen Tag endgültig ein",
-                    style = TypoStyle(Theme.secondary, FontSize.MEDIUM)
-                )
-                Spacer(Modifier.height(20.dp))
-                val day = remember { LocalDate.now().minusDays(1) }
-                Text(
-                    "${day.dayOfMonth}.${day.month.value}.${day.year}",
-                    style = TypoStyle(Theme.primary, FontSize.MEDIUM)
-                )
-                val settings = LocalSettings.current
-                val screenTimeEnabled by settings.features.screentime.has.collectAsState()
-                val stepCountEnabled by settings.features.stepCounting.has.collectAsState()
-                if(screenTimeEnabled || stepCountEnabled)
-                    Column(
-                        Modifier
-                            .fillMaxWidth()
-                            .border(1.dp, Theme.outlineVariant, RoundedCornerShape(25.dp))
-                            .padding(horizontal = 25.dp, vertical = 20.dp)
-                    ) {
-                        val context = LocalContext.current
-                        if(stepCountEnabled) {
-                            val steps by calendarViewModel.lastInsertedSteps.collectAsState()
-                            Text(
-                                "Schritte",
-                                style = TypoStyle(Theme.primary, FontSize.SMALL)
-                            )
-                            Text(
-                                steps.toString(),
-                                style = TypoStyle(
-                                    Theme.secondary,
-                                    FontSize.XLARGE,
-                                    FontFamily.Display
-                                )
-                            )
-                        }
-                        if(screenTimeEnabled) {
-                            val zone = remember { ZoneId.systemDefault() }
-                            val screenTime = remember {
-                                getUsageDataBetween(
-                                    context,
-                                    day.atStartOfDay(zone).toEpochSecond() * 1000L,
-                                    day.plusDays(1).atStartOfDay(zone).toEpochSecond() * 1000L
-                                )
-                            }
-                            Spacer(Modifier.height(20.dp))
-                            Text(
-                                "Bildschirmzeit",
-                                style = TypoStyle(Theme.primary, FontSize.SMALL)
-                            )
-                            Text(
-                                screenTime.formatMsToDuration(),
-                                style = TypoStyle(
-                                    Theme.secondary,
-                                    FontSize.XLARGE,
-                                    FontFamily.Display
-                                )
-                            )
-                        }
-                    }
-                Spacer(Modifier.height(20.dp))
-                HorizontalDivider(color = Theme.outlineVariant, thickness = 3.dp, modifier = Modifier.clip(CircleShape))
-                Spacer(Modifier)
-                val navController = LocalNavController.current
-                ActionBar(
-                    {
-                        showDayPopup = false
-                    },
-                    {
-                        Icon(painterResource(R.drawable.close),"Close",Modifier.fillMaxSize(),Theme.onSecondaryContainer)
-                    },
-                    Theme.primaryContainer,
-                    {
-                        showDayPopup = false
-                        navController.navigate(NavPath.SUMMARIZE_DAY)
-                    },
-                ) {
+                val context = LocalContext.current
+                if(stepCountEnabled) {
+                    val steps by calendarViewModel.lastInsertedSteps.collectAsState()
                     Text(
-                        "Eintragen",
-                        style = TypoStyle(
-                            Theme.onPrimaryContainer,
-                            FontSize.LARGE
-                        ).copy(fontWeight = FontWeight.W900)
+                        "Schritte",
+                        style = TypoStyle(Theme.primary, FontSize.SMALL)
                     )
-                    Spacer(Modifier.width(8.dp))
-                    Icon(
-                        painterResource(R.drawable.arrow_right),
-                        "Continue",
-                        tint = Theme.onPrimaryContainer,
-                        modifier = Modifier.height(20.dp)
+                    Text(
+                        steps.toString(),
+                        style = TypoStyle(
+                            Theme.secondary,
+                            FontSize.XLARGE,
+                            FontFamily.Display
+                        )
+                    )
+                }
+                if(screenTimeEnabled) {
+                    val zone = remember { ZoneId.systemDefault() }
+                    val screenTime = remember {
+                        getUsageDataBetween(
+                            context,
+                            day.atStartOfDay(zone).toEpochSecond() * 1000L,
+                            day.plusDays(1).atStartOfDay(zone).toEpochSecond() * 1000L
+                        )
+                    }
+                    Spacer(Modifier.height(20.dp))
+                    Text(
+                        "Bildschirmzeit",
+                        style = TypoStyle(Theme.primary, FontSize.SMALL)
+                    )
+                    Text(
+                        screenTime.formatMsToDuration(),
+                        style = TypoStyle(
+                            Theme.secondary,
+                            FontSize.XLARGE,
+                            FontFamily.Display
+                        )
                     )
                 }
             }
-        }
+        Spacer(Modifier.height(20.dp))
+        HorizontalDivider(color = Theme.outlineVariant, thickness = 3.dp, modifier = Modifier.clip(CircleShape))
+        Spacer(Modifier)
     }
 }
 
 @Composable
 fun MainFeedDatePicker(calendarViewModel: CalendarViewModel){
-    var isSelectDayVisible by remember { mutableStateOf(false) }
+    var isSelectDayVisible by calendarViewModel.isSelectDayVisible.collectAsMutableState()
 
     UnmodalBottomSheet(isSelectDayVisible, {calendarViewModel.isSelectDayVisible.value = false}) {
         val datePickerState = rememberDatePickerState()
@@ -235,5 +190,115 @@ fun MainFeedDatePicker(calendarViewModel: CalendarViewModel){
                 modifier = Modifier.height(20.dp)
             )
         }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun LiffyPopup(
+    isVisible: Boolean,
+    title: String = "Hey!",
+    subtitle: String,
+    closeRequest: ()->Unit,
+    actionClick: ()->Unit,
+    actionText: String,
+    content: @Composable ColumnScope.()->Unit
+){
+    UnmodalBottomSheet(
+        isVisible,
+        closeRequest,
+    ) {
+        Column(
+            Modifier
+                .fillMaxWidth(),
+            verticalArrangement = Arrangement.spacedBy(10.dp)
+        ) {
+            Box(
+                Modifier
+                    .align(Alignment.CenterHorizontally)
+                    .size(70.dp)
+            ) {
+                Icon(
+                    painterResource(R.drawable.liffy_outer),
+                    "Liffy",
+                    Modifier
+                        .size(70.dp),
+                    tint = Theme.primary
+                )
+                LiffyFace(70.dp)
+            }
+            Text(title, style = TypoStyle(Theme.primary, FontSize.LARGE))
+            Text(
+                subtitle,
+                style = TypoStyle(Theme.secondary, FontSize.MEDIUM)
+            )
+            content()
+            ActionBar(
+                closeRequest,
+                {
+                    Icon(painterResource(R.drawable.close),"Close",Modifier.fillMaxSize(),Theme.onSecondaryContainer)
+                },
+                Theme.primaryContainer,
+                {
+                    actionClick()
+                    closeRequest()
+                },
+            ) {
+                Text(
+                    actionText,
+                    style = TypoStyle(
+                        Theme.onPrimaryContainer,
+                        FontSize.LARGE
+                    ).copy(fontWeight = FontWeight.W900)
+                )
+                Spacer(Modifier.width(8.dp))
+                Icon(
+                    painterResource(R.drawable.arrow_right),
+                    "Continue",
+                    tint = Theme.onPrimaryContainer,
+                    modifier = Modifier.height(20.dp)
+                )
+            }
+        }
+    }
+}
+
+@Composable
+fun BackupIssuesPopup(calendarViewModel: CalendarViewModel){
+    val lastApiResp by calendarViewModel.lastAPIResponse.collectAsState()
+    var ignore by remember { mutableStateOf(false) }
+    val nav = LocalNavController.current
+    val clipboard = LocalClipboard.current
+    val coroutineScope = rememberCoroutineScope()
+    LiffyPopup(
+        // Only handles server responses not offline / connection problems
+        !ignore && lastApiResp?.hasFailed.def(false) && lastApiResp?.failedText != null,
+        "Aua!",
+        "Der Server hat unverarbeitbar geantwortet. Du kannst entweder die " +
+                "Serversynchronisation ausschalten oder das serverseitige Problem beheben.",
+        {ignore = true},
+        {
+            nav.navigate(NavPath.Menu.More.Settings.PERMISSIONS)
+        },
+        "Berechtigungen"
+    ) {
+        Spacer(Modifier.height(10.dp))
+        Text("Serverantwort:", style = TypoStyle(Theme.primary, FontSize.MEDIUM))
+        Text(lastApiResp?.failedText?:"", style = TypoStyle(Theme.secondary, FontSize.LARGE))
+        Spacer(Modifier.height(20.dp))
+        Box(
+            Modifier
+                .background(Theme.primary, CircleShape)
+                .clip(CircleShape)
+                .rippleClick{
+                    coroutineScope.launch {
+                        clipboard.copy(calendarViewModel.getBase64Public())
+                    }
+                }
+                .padding(horizontal = 10.dp, vertical = 5.dp)
+        ) {
+            Text("Publickey kopieren", style = TypoStyle(Theme.onPrimary, FontSize.MEDIUM))
+        }
+        Spacer(Modifier)
     }
 }

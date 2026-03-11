@@ -65,8 +65,8 @@ class API(
     private val security = Security()
     private val logSyncableContent = true
     private fun optionallySkip(text: String?) = if(logSyncableContent) text else "[Skipped]"
-    /** Returns the amount of entries that are updated, null on fail */
-    suspend fun resync(): Int? {
+    data class SyncingResponse(val syncedEntryAmount: Int, val hasFailed: Boolean, val failedText: String?)
+    suspend fun resync(): SyncingResponse {
         isSyncing = true
         val elementsPerRequest = 500
         var offset = 0
@@ -102,7 +102,7 @@ class API(
             if (response.isNullOrBlank()) {
                 Log.e(LOGTAG, "Server didnt respond or threw an error (null or empty string reponse). We cant work with this!")
                 isSyncing = false
-                return null
+                return SyncingResponse(0, true, response)
             }
             val resJson = JSONObject(response)
             resJson
@@ -122,12 +122,12 @@ class API(
             val responseText = send(Method.Resync, "[]", offset)
             if (responseText == null) {
                 isSyncing = false
-                return null
+                return SyncingResponse(0, true, responseText)
             }
             if (!responseText.trim().startsWith("{")) {
-                Log.w(LOGTAG,"API Unexpected response: $responseText current time: ${System.currentTimeMillis()}")
+                Log.w(LOGTAG,"API Unexpected response: \"$responseText\". Current time: ${System.currentTimeMillis()}")
                 isSyncing = false
-                return null
+                return SyncingResponse(0, true, responseText)
             }
             val response = JSONObject(responseText)
             Log.i(LOGTAG, "Server entries (${responseText.length} bytes):\n${optionallySkip(response.toString(2))}}")
@@ -149,7 +149,7 @@ class API(
         }
         Log.i(LOGTAG, "Done with resyncing")
         isSyncing = false
-        return updateAmount
+        return SyncingResponse(updateAmount, false, null)
     }
 
     private suspend fun send(method: Method, data: String, offset: Int?): String? = security.send(

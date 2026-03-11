@@ -29,7 +29,6 @@ fun HomeComposable(calendarViewModel: CalendarViewModel, inspectedEventViewModel
         withContext(Dispatchers.IO) {
             calendarViewModel.requestAutoDetectedEventStart(settings)
         }
-
     }
     Box(
         Modifier
@@ -47,6 +46,7 @@ fun HomeComposable(calendarViewModel: CalendarViewModel, inspectedEventViewModel
             LifeBottomBar(calendarViewModel)
         }
         DaySummaryPopUp(calendarViewModel, inspectedEventViewModel)
+        BackupIssuesPopup(calendarViewModel)
         MainFeedDatePicker(calendarViewModel)
     }
 }

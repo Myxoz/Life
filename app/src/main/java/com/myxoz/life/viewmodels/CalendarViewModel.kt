@@ -18,6 +18,7 @@ import androidx.compose.runtime.snapshotFlow
 import androidx.core.content.edit
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.myxoz.life.api.API
 import com.myxoz.life.api.Syncable
 import com.myxoz.life.api.syncables.FullDaySyncable
 import com.myxoz.life.api.syncables.PersonSyncable
@@ -63,6 +64,7 @@ class CalendarViewModel(
         spring(stiffness = Spring.StiffnessMediumLow)
     )
     val lastInsertedSteps = repos.stepRepo.lastInsertedSteps
+    val lastAPIResponse = MutableStateFlow<API.SyncingResponse?>(null)
     val dayAmount = MutableStateFlow(repos.prefs.getInt("displayed_days", 2))
     val minuteFlow = flow {
         emit(System.currentTimeMillis())
@@ -71,7 +73,7 @@ class CalendarViewModel(
             emit(System.currentTimeMillis())
         }
     }.subscribeToColdFlow(viewModelScope, System.currentTimeMillis())
-    suspend fun resync() { repos.api.resync() }
+    suspend fun resync() = repos.api.resync().also { lastAPIResponse.value = it }
     init {
         viewModelScope.launch {
             viewModelScope.launch {

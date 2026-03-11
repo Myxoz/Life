@@ -523,84 +523,52 @@ fun ProfileInfo(largeDataCache: LargeDataCache, profileInfoModel: ProfileInfoMod
                 horizontalArrangement = Arrangement.spacedBy(5.dp)
             ) {
                 val phoneNumber = inspectedPerson?.phoneNumber
+                val features = LocalSettings.current.features
+                val context = LocalContext.current
                 AnimatedVisibility(
-                    !isEditing && phoneNumber!=null,
+                    !isEditing,
                     enter = fadeIn(tween(animationDuration)) + expandHorizontally(tween(animationDuration)),
                     exit = fadeOut(tween(animationDuration)) + shrinkHorizontally(tween(animationDuration))
                 ) {
-                    val features = LocalSettings.current.features
-                    val context = LocalContext.current
-                    Chip(
-                        {
-                            val number = ("tel:" + (phoneNumber ?: return@Chip)).toUri()
+                    Row(
+                        horizontalArrangement = Arrangement.spacedBy(5.dp)
+                    ) {
+                        @Composable
+                        fun ClickableIcon(icon: Int, desc: String, onClick: ()->Unit){
+                            Chip(
+                                onClick,
+                                color = Theme.secondaryContainer
+                            ) {
+                                Box(
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Icon(
+                                        painterResource(icon),
+                                        desc,
+                                        Modifier.size(FontSize.MEDIUM.size.toDp()),
+                                        Theme.onSecondaryContainer
+                                    )
+                                    Text(" ", style = TypoStyle(Theme.onSecondaryContainer, FontSize.MEDIUM))
+                                }
+                            }
+                        }
+                        ClickableIcon(R.drawable.phone, "Call") {
+                            val number = ("tel:" + (phoneNumber ?: return@ClickableIcon)).toUri()
                             val intent = Intent(if(features.callFromLife.hasAssured()) Intent.ACTION_CALL else Intent.ACTION_DIAL)
                             intent.setData(number)
                             intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
                             context.startActivity(intent)
-                        },
-                        color = Theme.secondaryContainer
-                    ) {
-                        Text(
-                            "Anrufen",
-                            Modifier.animateContentSize(tween(animationDuration)),
-                            style = TypoStyle(Theme.onSecondaryContainer, FontSize.MEDIUM)
-                        )
-                    }
-                }
-                AnimatedVisibility(
-                    !isEditing,
-                    enter = fadeIn(tween(animationDuration)) + expandHorizontally(tween(animationDuration)),
-                    exit = fadeOut(tween(animationDuration)) + shrinkHorizontally(tween(animationDuration))
-                ) {
-                    val icon = platforms.getOrNull(0)?.platform?.icon ?: return@AnimatedVisibility
-                    val context = LocalContext.current
-                    Chip(
-                        {
-                            platforms.getOrNull(0)?.platform?.openPlatform(context, platforms.getOrNull(0)?.handle?:"", phoneNumber)
-                        },
-                        color = Theme.secondaryContainer
-                    ) {
-                        Box(
-                            Modifier.animateContentSize(tween(animationDuration)),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Text(
-                                "",
-                                style = TypoStyle(Theme.onSecondaryContainer, FontSize.MEDIUM)
-                            )
-                            Icon(
-                                painterResource(icon),
-                                "Message",
-                                Modifier.size(FontSize.MEDIUM.size.toDp()),
-                                Theme.onSecondaryContainer
-                            )
                         }
-                    }
-                }
-                val lastInteraction by profileInfoModel.lastInteractionFlow(personId).collectAsState()
-                AnimatedVisibility(
-                    !isEditing,
-                    enter = fadeIn(tween(animationDuration)) + expandHorizontally(tween(animationDuration)),
-                    exit = fadeOut(tween(animationDuration)) + shrinkHorizontally(tween(animationDuration))
-                ) {
-                    if (lastInteraction != null) {
-                        Chip(
-                            {
+                        val platform = platforms.getOrNull(0)?.platform
+                        if(platform != null) {
+                            ClickableIcon(platform.icon, platform.name) {
+                                platform.openPlatform(context, platforms.getOrNull(0)?.handle?:"", phoneNumber)
+                            }
+                        }
+                        val lastInteraction by profileInfoModel.lastInteractionFlow(personId).collectAsState()
+                        if(lastInteraction != null) {
+                            ClickableIcon(R.drawable.graph, "Social Graph") {
                                 screens.openSocialGraphWithNodeSelected(personId, lastInteraction?.proposed?.end)
-                            },
-                            color = Theme.secondaryContainer
-                        ) {
-                            Box(
-                                Modifier.animateContentSize(tween(animationDuration)),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                Text("", style = TypoStyle(Theme.onSecondaryContainer, FontSize.MEDIUM))
-                                Icon(
-                                    painterResource(R.drawable.graph),
-                                    "Social Graph",
-                                    Modifier.size(FontSize.MEDIUM.size.toDp()),
-                                    Theme.onSecondaryContainer
-                                )
                             }
                         }
                     }

@@ -85,7 +85,7 @@ class LocalScreensProvider(
         nav.navigate(NavPath.Menu.MAP)
         mapViewModel.isEditing.value = false
         mapViewModel.setSheetLocation(location)
-        val targetMetersOnScreen = 2 * location.radiusM.takeIf { it != 0 }.def(10) / .002f // TODO TWEAK
+        val targetMetersOnScreen = 2 * location.radiusM.takeIf { it != 0 }.def(10) / .002f
         val metersPerPixel = targetMetersOnScreen / screenWidthPx
         val zoom = ln(EARTH_R * cos(Math.toRadians(location.lat)) / metersPerPixel) / ln(2.0)
         mapViewModel.viewModelScope.launch {

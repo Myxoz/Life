@@ -14,7 +14,7 @@ enum class EventType(val id: Int, val color: Color, val selectedColor: Color, va
     Travel(7, OldColors.Calendar.Travel.BG, Color.Black, "Travel"),
     DigSoc(8, OldColors.Calendar.DigSoc.BG, Color.Black, "DigSoc"),
     Work(9, OldColors.Calendar.Work.BG, Color.White, "Arbeit"),
-    // TODO INCREMENT ID! AND ADD TO BELOW
+    // ALWAYS INCREMENT ID! AND ADD TO BELOW
     ;
     fun isTagEvent() = this in arrayOf(Hobby, Learn, Spont, Social, Work)
     fun isTitleEvent() = this in arrayOf(Hobby, Learn, Spont, Social, DigSoc, Work)

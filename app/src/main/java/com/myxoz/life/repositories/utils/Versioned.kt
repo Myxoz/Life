@@ -153,7 +153,7 @@ class VersionedDayedCache<K, V, L>(
     }
     val allDaysFlow = dayedCache.allMappedFlow
     /** Marks all days as loaded and will never call the cacheDayIfNeeded again.
-     * This is an advanced call, make sure that it really loaded all days. */
+     * This is an ADVANCED call, make sure that it really loaded all days. */
     fun markAllDaysAsLoaded(){
         allDaysLoaded = true
     }

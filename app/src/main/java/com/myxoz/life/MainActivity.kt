@@ -137,7 +137,7 @@ class MainActivity : ComponentActivity() {
         prefs = getSharedPreferences(localClassName, MODE_PRIVATE)
         settings = Settings(prefs, applicationContext, this)
         CoroutineScope(Dispatchers.IO).launch {
-            if(settings.permissions.contacts.checkEnabled())
+            if(settings.features.addNewPerson.hasAssured())
                 contacsViewModel.requestRefetchDeviceContacts()
             calendarViewModel.requireAllPeople()
             largeDataCache.preloadAll(applicationContext)

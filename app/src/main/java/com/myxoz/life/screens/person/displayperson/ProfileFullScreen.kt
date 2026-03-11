@@ -9,6 +9,7 @@ import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -411,7 +412,9 @@ fun UnmodalBottomSheet(isVisible: Boolean, close: ()->Unit, content: @Composable
             Modifier
                 .fillMaxSize()
                 .background(Color.Black.copy(0.4f))
-                .pointerInput(Unit) {} // Block underlying scroll
+                .clickable(null, null) {
+                    close()
+                }
         )
     }
     AnimatedVisibility(
@@ -439,11 +442,26 @@ fun UnmodalBottomSheet(isVisible: Boolean, close: ()->Unit, content: @Composable
                 Modifier
                     .fillMaxWidth()
                     .background(Theme.surfaceContainer, RoundedCornerShape(20.dp, 20.dp))
+                    .pointerInput(Unit) {} // Block underlying scroll
                     .padding(15.dp)
                     .align(Alignment.BottomCenter)
                 ,
                 verticalArrangement = Arrangement.spacedBy(10.dp)
             ) {
+                Box(
+                    Modifier
+                        .fillMaxWidth()
+                        .pointerInput(Unit){
+                            close()
+                        }
+                        .padding(vertical = 10.dp)
+                    ,
+                    contentAlignment = Alignment.Center
+                ) {
+                    Box(
+                        Modifier.width(30.dp).height(4.dp).background(Theme.outline, CircleShape)
+                    )
+                }
                 content()
             }
         }

@@ -1,19 +1,26 @@
 <?xml version="1.0" encoding="utf-8"?><!--
    Sample data extraction rules file; uncomment and customize as necessary.
    See https://developer.android.com/about/versions/12/backup-restore#xml-changes
+   Better see: https://developer.android.com/identity/data/autobackup#XMLSyntax
+   Tests: https://developer.android.com/identity/data/testingbackup
    for details.
 -->
 <data-extraction-rules>
     <cloud-backup>
-        <!-- TODO: Use <include> and <exclude> to control what is backed up.
-        <include .../>
-        <exclude .../>
-        -->
+        <include domain="sharedpref" path="."/>
+        <!-- <exclude domain="sharedpref" path="steps.xml"/> Include device specific step counting -->
+        <!-- <exclude domain="sharedpref" path="mapbox_settings.xml"/> Include mapboxsettings -->
+
+        <include domain="file" path="55"/> <!-- Profile pictures -->
+        <!-- <include domain="file" path="models"/> Ignore Local AI / retraining is easy -->
+        <include domain="database" path="database.db"/> <!-- Database / the heart -->
     </cloud-backup>
-    <!--
     <device-transfer>
-        <include .../>
-        <exclude .../>
+        <include domain="sharedpref" path="."/>
+        <exclude domain="sharedpref" path="steps.xml"/> <!-- Ignore device specific step counting -->
+        <exclude domain="sharedpref" path="mapbox_settings.xml"/> <!-- Ignore mapboxsettings -->
+        <include domain="file" path="55"/> <!-- Profile pictures -->
+        <include domain="file" path="models"/> <!-- Local AI -->
+        <include domain="database" path="database.db"/> <!-- Database / the heart -->
     </device-transfer>
-    -->
 </data-extraction-rules>

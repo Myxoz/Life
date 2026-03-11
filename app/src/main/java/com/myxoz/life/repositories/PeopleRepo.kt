@@ -99,12 +99,14 @@ class PeopleRepo(
         if(requestedAllPeople) return
         requestedAllPeople = true
         appScope.launch {
+            // We mark this before loading to avoid race conditions
+            _cachedPeople.markAllDaysAsLoaded()
+
             _cachedPeople.cache.overwriteAll(
                 readPeopleDao.getAllPeople().map {
                     it.id to PersonSyncable.from(readPeopleDao,it)
                 }
             )
-            _cachedPeople.markAllDaysAsLoaded()
         }
     }
     fun getCachedPeopleById(ids: List<Long>) = ids.mapNotNull { _cachedPeople.cache.getCached(it)?.data }
