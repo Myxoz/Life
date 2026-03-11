@@ -23,40 +23,21 @@ class StepRepo(
     val lastInsertedSteps: StateFlow<Int> = _lastInsertedSteps
     private val stepsAtMidnight = MutableStateFlow(stepsPrefs.getLong("steps_at_midnight", 0L))
     private var lastDateSaved = stepsPrefs.getLong("last_steps_date", 0L)
-    private var lastRebootTs = stepsPrefs.getLong("last_reboot_ts", 0L)
     val steps = _steps.combine(stepsAtMidnight){ steps, atMidnight ->  steps - atMidnight }
         .subscribeToColdFlow(appScope, _steps.value - stepsAtMidnight.value)
     init {
-        val currentRebootTs = System.currentTimeMillis() - android.os.SystemClock.elapsedRealtime()
-        if (currentRebootTs - lastRebootTs > 5_000) { // Has rebooted
-            if(lastDateSaved < LocalDate.now().toEpochDay()) { // We have rebooted before 0 am to a new day
-                appScope.launch {
-                    resetStepsAsOldDay()
-                }
-            } else { // We rebooted durring the day
-                val atMid = -(lastSavedSteps - stepsAtMidnight.value)
-                stepsPrefs.edit{
-                    putLong("last_reboot_ts", currentRebootTs)
-                    putLong("saved_steps", 0)
-                    putLong("steps_at_midnight", atMid)
-                }
-                stepsAtMidnight.value = atMid
-                lastSavedSteps = 0
-                _steps.value = 0
-            }
-        }
     }
     /** Inserts steps as the last date where steps were saved */
-    private suspend fun resetStepsAsOldDay(totalSteps: Long? = null) {
-        val nowDay = LocalDate.now().toEpochDay()
+    private suspend fun resetStepsAsOldDay(totalSteps: Long? = null, midnightSteps: Long? = null) {
+        val today = LocalDate.now().toEpochDay()
         val stepsToInsert = (lastSavedSteps - stepsAtMidnight.value).coerceAtLeast(0).toInt()
         dao.insertSteps(ProposedStepsEntity(lastDateSaved, stepsToInsert))
-
-        lastDateSaved = nowDay
-        stepsAtMidnight.value = totalSteps ?: lastSavedSteps
-        lastSavedSteps = totalSteps ?: lastSavedSteps
         _lastInsertedSteps.value = stepsToInsert
-        stepsPrefs.edit().apply {
+
+        lastDateSaved = today
+        stepsAtMidnight.value = midnightSteps ?: totalSteps ?: lastSavedSteps
+        lastSavedSteps = totalSteps ?: lastSavedSteps
+        stepsPrefs.edit {
             putLong("last_steps_date", lastDateSaved)
             putLong("steps_at_midnight", stepsAtMidnight.value)
             putLong("saved_steps", lastSavedSteps)
@@ -64,29 +45,46 @@ class StepRepo(
         }
         _steps.value = lastSavedSteps
     }
-    fun updateSteps(totalStepsSinceReboot: Long){
+    fun updateSteps(totalSensorSteps: Long){
         appScope.launch {
-            val nowDay = LocalDate.now().toEpochDay()
-            if (nowDay > lastDateSaved) {
-                resetStepsAsOldDay(totalStepsSinceReboot)
+            val today = LocalDate.now().toEpochDay()
+            // Reboot (or random sensor reset FUCK OEMs)
+            if(totalSensorSteps < lastSavedSteps){
+                // To new day (edge case e.x. reboot at midnight)
+                if(today > lastDateSaved) {
+                    resetStepsAsOldDay(totalSensorSteps, 0)
+                } else { // Step drop durring the day
+                    val atMid = -lastSavedSteps + stepsAtMidnight.value
+                    stepsPrefs.edit{
+                        putLong("saved_steps", totalSensorSteps)
+                        putLong("steps_at_midnight", atMid)
+                    }
+                    stepsAtMidnight.value = atMid
+                    lastSavedSteps = totalSensorSteps
+                    _steps.value = totalSensorSteps
+                }
+            } else if (today > lastDateSaved) {
+                resetStepsAsOldDay(totalSensorSteps)
             }
 
-            val delta = totalStepsSinceReboot - lastSavedSteps
-            _steps.value = totalStepsSinceReboot
+
+            val delta = totalSensorSteps - lastSavedSteps
+            _steps.value = totalSensorSteps
             if (delta >= 10) {
-                lastSavedSteps = totalStepsSinceReboot
-                lastDateSaved = nowDay
-                savePersistentSteps(nowDay)
+                lastSavedSteps = totalSensorSteps
+                lastDateSaved = today
+                savePersistentSteps(today)
             }
         }
     }
     private fun savePersistentSteps(day: Long) {
-        stepsPrefs.edit().apply {
+        stepsPrefs.edit {
             putLong("saved_steps", lastSavedSteps)
             putLong("last_steps_date", day)
             apply()
         }
     }
+    fun debugGetRawSteps() = _steps
     init {
         appScope.launch {
             _lastInsertedSteps.value = dao.getStepsByDay(LocalDate.now().minusDays(1).toEpochDay())?.steps ?: 0

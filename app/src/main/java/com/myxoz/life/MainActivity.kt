@@ -325,7 +325,8 @@ class MainActivity : ComponentActivity() {
                         composable(NavPath.Menu.More.DEBUG) {
                             DebugScreen(
                                 repositories.api.heyAPIAlmighlyGodEtcCanIPleaseOnlyForDebugHaveAllDaoAccessImReallyTheDebugOnlyPleasePleasePlease(),
-                                repositories.api
+                                repositories.api,
+                                repositories
                             )
                         }
 

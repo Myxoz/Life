@@ -1,11 +1,6 @@
 package com.myxoz.life.screens.options
 
-import android.content.Context
 import android.content.Context.MODE_PRIVATE
-import android.hardware.Sensor
-import android.hardware.SensorEvent
-import android.hardware.SensorEventListener
-import android.hardware.SensorManager
 import android.icu.util.Calendar
 import android.provider.CallLog
 import androidx.activity.compose.LocalActivity
@@ -20,15 +15,14 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
@@ -39,6 +33,7 @@ import com.myxoz.life.MainActivity
 import com.myxoz.life.api.API
 import com.myxoz.life.api.Syncable
 import com.myxoz.life.dbwrapper.Daos
+import com.myxoz.life.repositories.AppRepositories
 import com.myxoz.life.repositories.MainApplication
 import com.myxoz.life.ui.theme.FontColor
 import com.myxoz.life.ui.theme.FontSize
@@ -51,7 +46,8 @@ import java.io.File
 @Composable
 fun DebugScreen(
     db: Daos,
-    api: API
+    api: API,
+    repos: AppRepositories
 ){
     Scaffold(
         Modifier.fillMaxSize(),
@@ -160,45 +156,13 @@ fun DebugScreen(
                 "Last date saved: $lastDateSaved",
                 style = TypoStyleOld(FontColor.PRIMARY, FontSize.MEDIUM)
             )
-            StepCounterText {
-                Text("Steps live: $it", style = TypoStyleOld(FontColor.PRIMARY, FontSize.MEDIUM))
-            }
+            val steps by repos.stepRepo.debugGetRawSteps().collectAsState()
+            Text("Steps live: $steps", style = TypoStyleOld(FontColor.PRIMARY, FontSize.MEDIUM))
             if(features.autoDetectCalls.hasAssured()){
                 CallLogDumpDebug()
             }
         }
     }
-}
-@Composable
-fun StepCounterText(content: @Composable (Long)->Unit) {
-    val context = LocalContext.current
-    val sensorManager = remember { context.getSystemService(Context.SENSOR_SERVICE) as SensorManager }
-    val stepSensor = remember { sensorManager.getDefaultSensor(Sensor.TYPE_STEP_COUNTER) }
-    val midnight = remember { context.getSharedPreferences("steps", MODE_PRIVATE).getLong("steps_at_midnight", 0L) }
-
-    var steps: Long by rememberSaveable { mutableLongStateOf(0L) }
-
-    DisposableEffect(stepSensor) {
-        if (stepSensor == null) {
-            onDispose { }
-        } else {
-            val listener = object : SensorEventListener {
-                override fun onSensorChanged(event: SensorEvent) {
-                    steps = event.values[0].toLong()-midnight
-                }
-
-                override fun onAccuracyChanged(sensor: Sensor?, accuracy: Int) {}
-            }
-
-            sensorManager.registerListener(listener, stepSensor, SensorManager.SENSOR_DELAY_FASTEST)
-
-            onDispose {
-                sensorManager.unregisterListener(listener)
-            }
-        }
-    }
-
-    content(steps)
 }
 @Composable
 fun CallLogDumpDebug() {
