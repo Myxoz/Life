@@ -149,6 +149,7 @@ fun MenuComposable() {
         }
         listOfNotNull(
             if(displayWrapped) wrappedEntry else null,
+            SubOption(R.drawable.alarm_clock, "Wecker", NavPath.Menu.ALARM),
             SubOption(R.drawable.github, "Repositories", NavPath.Menu.REPOS),
             SubOption(R.drawable.graph, "Social Graph", NavPath.Menu.SOCIAL_GRAPH),
             SubOption(R.drawable.bank_transfer, "Transaktionen", NavPath.Menu.TRANSACTION_FEED),

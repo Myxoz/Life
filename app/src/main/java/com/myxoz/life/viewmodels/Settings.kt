@@ -2,6 +2,7 @@ package com.myxoz.life.viewmodels
 
 import android.Manifest
 import android.app.Activity
+import android.app.AlarmManager
 import android.app.AppOpsManager
 import android.app.NotificationManager
 import android.content.ComponentName
@@ -96,7 +97,14 @@ class Settings(val prefs: SharedPreferences, context: Context, activity: Activit
             listOf(permissions.readNotifications),
             prefs
         )
-        val all = arrayOf(mapBoxLocation, stepCounting, callFromLife, screentime, autoDetectSleep, addNewPerson, readPaymentNotifications, autoDetectCalls)
+        val lifeAlarmClock = Feature(
+            LIFEALARMCLOCK,
+            "Wecker",
+            "Ermöglicht es Wecker zum Aufstehen zu stellen",
+            listOf(permissions.alarms),
+            prefs
+        )
+        val all = arrayOf(mapBoxLocation, stepCounting, callFromLife, screentime, autoDetectSleep, addNewPerson, readPaymentNotifications, autoDetectCalls, lifeAlarmClock)
         // NO syncWithServer
         class Feature(val spk: String, val name: String, val description: String, val reliesOn: List<Permissions.Permission>, val prefs: SharedPreferences) {
             private val _flow = MutableStateFlow(prefs.getBoolean(spk, false))
@@ -235,7 +243,24 @@ class Settings(val prefs: SharedPreferences, context: Context, activity: Activit
                 )
             }
         }
-        val all = arrayOf(location, usageStats, internet, phone, contacts, physicalActivity, postNotifications, readNotifications, readCallLogs)
+        val alarms = Permission(context, "Wecker & Erinnerungen", {
+            val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as AlarmManager
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                alarmManager.canScheduleExactAlarms()
+            } else {
+                true // Automatically granted before Android 12
+            }
+        }, {
+            openAppInfo()
+        }) {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                val intent = Intent(Settings.ACTION_REQUEST_SCHEDULE_EXACT_ALARM).apply {
+                    data = Uri.fromParts("package", context.packageName, null)
+                }
+                activity.startActivity(intent)
+            }
+        }
+        val all = arrayOf(location, usageStats, internet, phone, contacts, physicalActivity, postNotifications, readNotifications, readCallLogs, alarms)
         class Permission(val context: Context, val name: String, val check: Permission.()-> Boolean, val onDisable: Permission.()->Unit, val onEnable: Permission.()->Unit){
             private val _flow = MutableStateFlow(check())
             val has = _flow.asStateFlow()
@@ -286,6 +311,7 @@ class Settings(val prefs: SharedPreferences, context: Context, activity: Activit
         const val SYNCWITHSERVER = "syncwithserver"
         const val SCREENTIME = "screentime"
         const val READPAYMENTNOTIFICATIONS = "readpaymentnotifications"
+        const val LIFEALARMCLOCK = "lifealarmclock"
         const val AUTODETECTSLEEP = "autodetectsleep"
         const val ADDNEWPERSON = "addnewperson"
         const val INTERNET = "internet"

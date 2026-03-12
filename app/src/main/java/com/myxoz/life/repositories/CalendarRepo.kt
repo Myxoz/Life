@@ -166,4 +166,11 @@ class CalendarRepo(
         val tomorrow = now.toLocalDate().plusDays(1).atStartOfDay()
         return Duration.between(now, tomorrow).toMillis()
     }
+
+    suspend fun getNextEventAfter(ts: Long): SyncedEvent?{
+        return SyncedEvent.from(
+            readSyncableDaos.eventDetailsDao,
+            readSyncableDaos.eventDetailsDao.getEventAfter(ts) ?: return null
+        )
+    }
 }

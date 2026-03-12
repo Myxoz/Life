@@ -660,7 +660,7 @@ fun CalendarChip(
             .drawBehind{
                 val maxWidth = size.width
                 drawCircle(
-                    type.color,
+                    type.colors.bg,
                     (maxWidth*progress)+defaultSize/2,
                     Offset(offsetX, offsetY)
                 )
@@ -1230,7 +1230,7 @@ fun VehicleSelection(defSelected: List<TimedTagLikeContainer<Vehicle>>, inspectV
 fun <T: TagLike> TimeBasedTagLikeSelection(allSelectables: List<T>, defSelection: List<TimedTagLikeContainer<T>>, setVehiclesTo: (List<TimedTagLikeContainer<T>>) -> Unit){
     val iconHeight = FontSize.MEDIUM.size.toDp()
     val selectedTagLike = remember { defSelection.toMutableStateList() }
-    val textMessurer = rememberTextMeasurer()
+    val textMeasurer = rememberTextMeasurer()
     var itemWasAdded by remember { mutableStateOf(false) }
     FlowRow(
         horizontalArrangement = Arrangement.spacedBy(10.dp),
@@ -1266,7 +1266,7 @@ fun <T: TagLike> TimeBasedTagLikeSelection(allSelectables: List<T>, defSelection
                         tint = Theme.onPrimaryContainer
                     )
                     val textWidth = with(LocalDensity.current){
-                        textMessurer.measure(
+                        textMeasurer.measure(
                             TimeBasedVisualTransformation.toTransformed(text),
                             style = TypoStyleOld(FontColor.PRIMARY, FontSize.MEDIUM),
                         ).size.width.toDp()

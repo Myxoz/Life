@@ -59,7 +59,7 @@ class SleepEvent(start: Long, end: Long, uss: Boolean, usl: Boolean): ProposedEv
             Text(
                 "${if(blockEvent>=4) "${blockEvent/4}h " else ""}${if(blockEvent%4!=0) "${(blockEvent%4)*15}m" else ""}",
                 fontSize = ((blockHeight*.9f).coerceIn(0f, if(!isSmall) 2f else 1.25f)*oneHourDp/4).toSp(),
-                color = OldColors.Calendar.Sleep.FG,
+                color = type.colors.textColor,
                 fontWeight = FontWeight.Bold
             )
         }

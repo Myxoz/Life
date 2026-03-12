@@ -2,18 +2,19 @@ package com.myxoz.life.events.additionals
 
 import android.util.Log
 import androidx.compose.ui.graphics.Color
+import com.myxoz.life.ui.theme.EventColors
 import com.myxoz.life.ui.theme.OldColors
 
-enum class EventType(val id: Int, val color: Color, val selectedColor: Color, val calendarName: String){
-    Empty(1, OldColors.SELECTED, Color.White, "DEBUG"),
-    Sleep(2, OldColors.Calendar.Sleep.BG, Color.White, "Schlaf"),
-    Spont(3, OldColors.Calendar.Spont.BG, Color.Black, "Spontan"),
-    Hobby(4, OldColors.Calendar.Hobby.BG, Color.White, "Hobby"),
-    Learn(5, OldColors.Calendar.Learn.BG, Color.White, "Lernen"),
-    Social(6, OldColors.Calendar.Social.BG, Color.White, "Sozial"),
-    Travel(7, OldColors.Calendar.Travel.BG, Color.Black, "Travel"),
-    DigSoc(8, OldColors.Calendar.DigSoc.BG, Color.Black, "DigSoc"),
-    Work(9, OldColors.Calendar.Work.BG, Color.White, "Arbeit"),
+enum class EventType(val id: Int, val colors: EventColors, val selectedColor: Color, val calendarName: String){
+    Empty(1, OldColors.Calendar.Empty, Color.White, "DEBUG"),
+    Sleep(2, OldColors.Calendar.Sleep, Color.White, "Schlaf"),
+    Spont(3, OldColors.Calendar.Spont, Color.Black, "Spontan"),
+    Hobby(4, OldColors.Calendar.Hobby, Color.White, "Hobby"),
+    Learn(5, OldColors.Calendar.Learn, Color.White, "Lernen"),
+    Social(6, OldColors.Calendar.Social, Color.White, "Sozial"),
+    Travel(7, OldColors.Calendar.Travel, Color.Black, "Travel"),
+    DigSoc(8, OldColors.Calendar.DigSoc, Color.Black, "DigSoc"),
+    Work(9, OldColors.Calendar.Work, Color.White, "Arbeit"),
     // ALWAYS INCREMENT ID! AND ADD TO BELOW
     ;
     fun isTagEvent() = this in arrayOf(Hobby, Learn, Spont, Social, Work)

@@ -5,7 +5,6 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.CircleShape
@@ -21,7 +20,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.rememberTextMeasurer
@@ -31,17 +29,15 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.times
 import com.myxoz.life.events.additionals.EventTag
 import com.myxoz.life.events.additionals.TagLike
-import com.myxoz.life.ui.theme.TagColors
+import com.myxoz.life.ui.theme.EventColors
 import com.myxoz.life.utils.toSp
 
 @Composable
-fun RenderTagAndTitleBar(tags: List<TagLike>, title: String?, oneHourDp: Dp, blockHeight: Int, color: TagColors, textColor: Color){
+fun RenderTagAndTitleBar(tags: List<TagLike>, title: String?, oneHourDp: Dp, blockHeight: Int, color: EventColors){
     val mightNeedScaling = blockHeight in 2..4 && title != null && title.length > 10
     var actualWidth by remember { mutableIntStateOf(0) }
-    Row(
-        Modifier
-            .fillMaxWidth()
-    ) {
+    val tagColors = color.tagColors ?: return
+    Row {
         val startPadding = when(blockHeight) {
             1 -> 0.dp
             2 -> 1.dp
@@ -74,7 +70,7 @@ fun RenderTagAndTitleBar(tags: List<TagLike>, title: String?, oneHourDp: Dp, blo
                     .run {
                         if (blockHeight != 1) {
                             padding(vertical = if (blockHeight > 2) 2.dp else 1.dp)
-                                .background(color.CONTAINER, CircleShape)
+                                .background(tagColors.CONTAINER, CircleShape)
                                 .padding(horizontal = 8.dp, vertical = 1.dp)
                         } else {
                             this.padding(start = 2.dp)
@@ -87,7 +83,7 @@ fun RenderTagAndTitleBar(tags: List<TagLike>, title: String?, oneHourDp: Dp, blo
                         painterResource(it.drawable),
                         null,
                         Modifier.height(height * optimalScaling),
-                        if(blockHeight == 1) textColor else color.ICON
+                        if(blockHeight == 1) color.textColor else tagColors.ICON
                     )
                 }
             }
@@ -97,13 +93,12 @@ fun RenderTagAndTitleBar(tags: List<TagLike>, title: String?, oneHourDp: Dp, blo
             Modifier
                 .padding(start = 4.dp, top = height*.1f, end = 4.dp)
                 .align(Alignment.CenterVertically)
-                .fillMaxWidth()
                 .onGloballyPositioned{
                     actualWidth = it.size.width
                 }
             ,
             fontSize = fontHeight * optimalScaling,
-            color = textColor,
+            color = color.textColor,
             overflow = TextOverflow.Ellipsis
         )
     }
@@ -116,9 +111,7 @@ fun RenderBasicEventContent(
     smallText: String,
     isSmall: Boolean,
     tags: List<TagLike>?,
-    fontColor: Color,
-    secondaryColor: Color,
-    tagColors: TagColors,
+    eventColors: EventColors,
     oneHourDp: Dp,
     blockHeight: Int,
 ){
@@ -128,21 +121,21 @@ fun RenderBasicEventContent(
             Modifier
                 .padding(all = 3.dp),
             fontSize = (oneHourDp / 4f).toSp(),
-            color = fontColor,
+            color = eventColors.textColor,
             overflow = TextOverflow.Ellipsis
         )
     } else Column(
         Modifier
             .fillMaxSize()
     ) {
-        RenderTagAndTitleBar(tags?:listOf(), title, oneHourDp, blockHeight, tagColors, fontColor)
+        RenderTagAndTitleBar(tags?:listOf(), title, oneHourDp, blockHeight, eventColors)
         if(blockHeight>3 && details != null) {
             Text(
                 details,
                 Modifier
                     .padding(start = 10.dp),
                 fontSize = (oneHourDp / 3f).toSp(),
-                color = secondaryColor,
+                color = eventColors.secondary,
                 overflow = TextOverflow.Ellipsis
             )
         }

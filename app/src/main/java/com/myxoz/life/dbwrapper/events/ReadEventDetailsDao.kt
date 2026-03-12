@@ -25,6 +25,9 @@ interface ReadEventDetailsDao {
     @Query("SELECT * FROM events WHERE ends > :start AND :end > start")
     suspend fun getEventsBetween(start: Long, end: Long): List<EventEntity>
 
+    @Query("SELECT * FROM events WHERE start > :start ORDER BY start ASC LIMIT 1")
+    suspend fun getEventAfter(start: Long): EventEntity?
+
 
     // Work
     @Query("SELECT * FROM work WHERE id = :id LIMIT 1")

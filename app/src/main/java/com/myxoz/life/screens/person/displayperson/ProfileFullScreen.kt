@@ -261,7 +261,7 @@ fun ProfileFullScreen(
                                         Modifier
                                             .size(fontSize)
                                             .background(
-                                                calendar?.color ?: it.value.color,
+                                                calendar?.colors?.bg ?: it.value.color,
                                                 CircleShape
                                             ) // Should be the same
                                     )
@@ -299,7 +299,7 @@ fun ProfileFullScreen(
                                     Modifier
                                         .size(fontSize)
                                         .background(
-                                            Brush.sweepGradient(EventType.order.map { it.color }),
+                                            Brush.sweepGradient(EventType.order.map { it.colors.bg }),
                                             CircleShape
                                         ) // Should be the same
                                 )

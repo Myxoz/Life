@@ -29,7 +29,7 @@ enum class FontSize(val size: TextUnit) {
     MLARGE(23.sp),
     XLARGE(30.sp),
     XXLARGE(40.sp),
-    DISPLAY(50.sp),
+    DISPLAY(50.sp)
 }
 
 enum class FontFamily(val family: FontFamily) {

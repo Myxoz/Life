@@ -42,6 +42,7 @@ import com.myxoz.life.repositories.MainApplication
 import com.myxoz.life.screens.LocalScreensProvider
 import com.myxoz.life.screens.ModifyLocation
 import com.myxoz.life.screens.NavPath
+import com.myxoz.life.screens.alarm.AlarmScreen
 import com.myxoz.life.screens.feed.commits.FullScreenCommit
 import com.myxoz.life.screens.feed.commits.FullScreenRepo
 import com.myxoz.life.screens.feed.commits.FullScreenRepos
@@ -73,6 +74,7 @@ import com.myxoz.life.screens.wrapped.LifeWrappedScreen
 import com.myxoz.life.utils.rememberTextSelectionColors
 import com.myxoz.life.utils.systemColorScheme
 import com.myxoz.life.viewmodels.AISettingsViewModel
+import com.myxoz.life.viewmodels.AlarmViewModel
 import com.myxoz.life.viewmodels.CalendarViewModel
 import com.myxoz.life.viewmodels.CommitsViewModel
 import com.myxoz.life.viewmodels.ContactsViewModel
@@ -106,6 +108,7 @@ class MainActivity : ComponentActivity() {
             (application as MainApplication).repositories,
         )
     }
+    private val alarmViewModel: AlarmViewModel by viewModels { factory }
     private val calendarViewModel: CalendarViewModel by viewModels { factory }
     private val inspectedEventViewModel: InspectedEventViewModel by viewModels { factory }
     private val locationEditingViewModel: LocationEditingViewModel by viewModels { factory }
@@ -268,6 +271,9 @@ class MainActivity : ComponentActivity() {
                     //  ---------- Menu ----------
                     composable(NavPath.MENU) {
                         MenuComposable()
+                    }
+                    composable(NavPath.Menu.ALARM) {
+                        AlarmScreen(alarmViewModel)
                     }
                     composable(NavPath.Menu.SOCIAL_GRAPH) {
                         SocialGraph(socialGraphViewModel)

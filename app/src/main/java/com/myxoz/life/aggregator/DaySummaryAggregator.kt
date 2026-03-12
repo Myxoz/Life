@@ -35,7 +35,7 @@ class DaySummaryAggregator(
             total[it.proposed.type] = total[it.proposed.type]?.plus(duration) ?: duration
         }
         total.mapValues {
-            PieChart.Companion.PieChartPart(it.key.color, it.value.toDouble())
+            PieChart.Companion.PieChartPart(it.key.colors.bg, it.value.toDouble())
         }.mapKeys {
             it.key.calendarName
         }

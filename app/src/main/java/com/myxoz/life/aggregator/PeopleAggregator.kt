@@ -96,7 +96,7 @@ class PeopleAggregator(
         val newChart = PieChart.build {
             totals.forEach {
                 val type = EventType.getById(it.key) ?: EventType.Empty
-                add(type.color, it.value.toDouble(), type.id.toString())
+                add(type.colors.bg, it.value.toDouble(), type.id.toString())
             }
         }
         return newChart

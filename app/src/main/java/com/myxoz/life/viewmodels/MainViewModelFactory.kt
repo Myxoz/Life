@@ -10,6 +10,9 @@ class MainViewModelFactory(
 
     override fun <T : ViewModel> create(modelClass: Class<T>): T {
         return when {
+            modelClass.isAssignableFrom(AlarmViewModel::class.java) ->
+                AlarmViewModel(repositories) as T
+
             modelClass.isAssignableFrom(CalendarViewModel::class.java) ->
                 CalendarViewModel(repositories) as T
 

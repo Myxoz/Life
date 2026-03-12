@@ -38,6 +38,7 @@ object NavPath {
             val DISPLAY_PERSON = SingleParamaterizedPath("personId",) { "display_person/$it" }
         }
         const val SOCIAL_GRAPH = "$MENU/social_graph"
+        const val ALARM = "$MENU/alarm"
         const val MAP = "$MENU/map"
         const val MORE = "$MENU/more"
         const val REPOS = "repos"

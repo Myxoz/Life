@@ -59,80 +59,93 @@ object OldColors {
     }
 
     object Calendar {
-        object Sleep {
-            val BG = Color(0xFF666666)
-            val FG = Color(0xFFbfbfbf)
+        val semanticNull = Color(0x00000000)
+        object Empty: EventColors {
+            override val tagColors = null
+            override val textColor = Color(0xFFFFFFFF)
+            override val bg = Color(0xFFFF7777)
+            override val secondary = semanticNull
+        }
+        object Sleep: EventColors {
+            override val tagColors = null
+            override val textColor = Color(0xFFbfbfbf)
+            override val bg = Color(0xFF666666)
+            override val secondary = semanticNull
         }
 
-        object Work {
-            val TEXT = Color.White
-            val Tag = TagColors(
+        object Work: EventColors {
+            override val textColor = Color.White
+            override val tagColors = TagColors(
                 Color.Black,
-                TEXT,
+                textColor,
             )
-            val BG = Color(0xFF7A2E3A)
-            val SECONDARY = Color(0xFFAAAAAA)
+            override val bg = Color(0xFF7A2E3A)
+            override val secondary = Color(0xFFAAAAAA)
         }
 
-        object Spont {
-            val TEXT = Color(0xFF444444)
-            val Tag = TagColors(
+        object Spont: EventColors {
+            override val textColor = Color(0xFF444444)
+            override val tagColors = TagColors(
                 Color.White,
-                TEXT
+                textColor
             )
-            val BG = Color(0xFFFFEE6A)
+            override val bg = Color(0xFFFFEE6A)
+            override val secondary = semanticNull
         }
 
-        object Hobby {
-            val TEXT = Color(0xFFFFFFFF)
-            val Tag = TagColors(
+        object Hobby: EventColors {
+            override val tagColors = TagColors(
                 Color.White,
                 Color(0xFF3f258c)
-                //Color(0xFF3f258c)
             )
-            val BG = Color(0xFF5C4899)
-
-            //val BG = Color(0xFF54428B)
-            val SECONDARY = Color(0xFFAAAAAA)
+            override val textColor = Color(0xFFFFFFFF)
+            override val bg = Color(0xFF5C4899)
+            override val secondary = Color(0xFFAAAAAA)
         }
 
-        object Learn {
-            val TEXT = Color(0xFFFFFFFF)
-            val Tag = TagColors(
+        object Learn: EventColors {
+            override val tagColors = TagColors(
                 Color.White,
                 Color(0xFF266380)
             )
-            val BG = Color(0xFF368BB3)
-            val SECONDARY = Color(0xFFDEDEDE)
+            override val textColor = Color(0xFFFFFFFF)
+            override val bg = Color(0xFF368BB3)
+            override val secondary = Color(0xFFDEDEDE)
         }
 
-        object Social {
-            val TEXT = Color(0xFFFFFFFF)
-            val Tag = TagColors(
+        object Social: EventColors {
+            override val tagColors = TagColors(
                 Color.White,
                 Color(0xFF317e6b)
             )
-            val BG = Color(0xFF41a68d)
-            val SECONDARY = Color(0xFFE3E3E3)
+            override val textColor = Color(0xFFFFFFFF)
+            override val bg = Color(0xFF41a68d)
+            override val secondary = Color(0xFFE3E3E3)
         }
 
-        object Travel {
-            val TEXT = Color(0xFF363636)
-            val BG = Color(0xFFafa084)
-            val SECONDARY = Color(0xFF585858)
+        object Travel: EventColors {
+            override val textColor = Color(0xFF363636)
+            override val tagColors = null
+            override val bg = Color(0xFFafa084)
+            override val secondary = Color(0xFF585858)
         }
 
-        object DigSoc {
-            val TEXT = Color(0xFF363636)
-            val BG = Color(0xFF94D16E)
-            val SECONDARY = Color(0xFF585858)
-            val Tag = TagColors(
+        object DigSoc: EventColors {
+            override val textColor = Color(0xFF363636)
+            override val bg = Color(0xFF94D16E)
+            override val secondary = Color(0xFF585858)
+            override val tagColors = TagColors(
                 Color(0xFF363636),
                 Color(0xFFE3E3E3)
             )
         }
-
     }
 }
 
 data class TagColors(val ICON: Color, val CONTAINER: Color)
+interface EventColors {
+    val tagColors: TagColors?
+    val textColor: Color
+    val bg: Color
+    val secondary: Color
+}

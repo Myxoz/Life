@@ -5,6 +5,8 @@
         tools:ignore="ProtectedPermissions" />
     <uses-permission android:name="android.permission.ACTIVITY_RECOGNITION" />
     <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM" />
+    <uses-permission android:name="android.permission.USE_FULL_SCREEN_INTENT" tools:ignore="FullScreenIntentPolicy" />
     <uses-permission android:name="android.permission.QUERY_ALL_PACKAGES"
         tools:ignore="PackageVisibilityPolicy,QueryAllPackagesPermission" />
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>
@@ -69,6 +71,14 @@
                 <data android:mimeType="text/plain" />
             </intent-filter>
         </activity>
+        <activity
+            android:name=".screens.alarm.AlarmActivity"
+            android:showWhenLocked="true"
+            android:turnScreenOn="true"
+            android:exported="false"/>
+        <receiver
+            android:name=".screens.alarm.AlarmReceiver"
+            android:exported="false"/>
         <service
             android:name=".android.notifications.NotificationReaderService"
             android:exported="false"
@@ -78,8 +88,5 @@
                 <action android:name="android.service.notification.NotificationListenerService" />
             </intent-filter>
         </service>
-        <meta-data
-            android:name="preloaded_fonts"
-            android:resource="@array/preloaded_fonts" />
     </application>
 </manifest>

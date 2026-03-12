@@ -71,7 +71,7 @@ fun FullScreenEvent(inspectedEventViewModel: InspectedEventViewModel){
     val nav = LocalNavController.current
     val screens = LocalScreens.current
     val isEditing by inspectedEventViewModel.isEditing.collectAsState()
-    val colorScheme = rememberColorScemeFromColor(event.proposed.type.color, event)
+    val colorScheme = rememberColorScemeFromColor(event.proposed.type.colors.bg, event)
     val animatedColorScheme = animateColorSchemeAsState(colorScheme)
     CompositionLocalProvider(
         LocalColors provides animatedColorScheme,
@@ -131,7 +131,7 @@ fun FullScreenEvent(inspectedEventViewModel: InspectedEventViewModel){
                                 Box(
                                     Modifier
                                         .fillMaxWidth()
-                                        .background(event.proposed.type.color, RoundedCornerShape(25))
+                                        .background(event.proposed.type.colors.bg, RoundedCornerShape(25))
                                         .clip(RoundedCornerShape(25))
                                         .rippleClick{
                                             screens.openCalendarWithSearch{
@@ -212,7 +212,7 @@ fun FullScreenEvent(inspectedEventViewModel: InspectedEventViewModel){
                                     Icon(painterResource(R.drawable.tick), "Done", Modifier.fillMaxSize(), Theme.onSecondaryContainer)
                         },
                         if(syn != null && syn.getInvalidReason() == null) Theme.primaryContainer
-                        else if(event.proposed.getInvalidReason()!=null) OldColors.SECONDARY else event.proposed.type.color,
+                        else if(event.proposed.getInvalidReason()!=null) OldColors.SECONDARY else event.proposed.type.colors.bg,
                         {
                             if(isSending) return@ActionBar
                             if(!isEditing) {

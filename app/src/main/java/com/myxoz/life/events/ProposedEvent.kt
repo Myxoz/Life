@@ -49,7 +49,7 @@ abstract class ProposedEvent(start: Long, end: Long, val type: EventType, val us
             Modifier
                 .padding(top = getTopPadding(oneHour, startOfDay))
                 .height(getHeightDp(oneHour, startOfDay, endOfDay))
-                .background(type.color.copy(.5f), RoundedCornerShape(10.dp))
+                .background(type.colors.bg.copy(.5f), RoundedCornerShape(10.dp))
                 .fillMaxWidth()
         ) {
             Box(
@@ -96,11 +96,11 @@ abstract class ProposedEvent(start: Long, end: Long, val type: EventType, val us
         eraseEventSpecificsFromDB(db, id)
     }
     protected abstract fun addEventSpecifics(jsonObject: JSONObject): JSONObject
-    fun getBackgroundBrush(alpha: Float = 1f) = if(!uss && !usl) SolidColor(type.color.copy(alpha)) else Brush.verticalGradient(
+    fun getBackgroundBrush(alpha: Float = 1f) = if(!uss && !usl) SolidColor(type.colors.bg.copy(alpha)) else Brush.verticalGradient(
         listOf(
-            if(uss) Color.Transparent else type.color.copy(alpha),
-            type.color.copy(alpha),
-            if(usl) Color.Transparent else type.color.copy(alpha)
+            if(uss) Color.Transparent else type.colors.bg.copy(alpha),
+            type.colors.bg.copy(alpha),
+            if(usl) Color.Transparent else type.colors.bg.copy(alpha)
         )
     )
     fun toJson(): JSONObject =

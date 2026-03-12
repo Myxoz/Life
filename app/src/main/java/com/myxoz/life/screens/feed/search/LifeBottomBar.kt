@@ -140,7 +140,7 @@ fun LifeBottomBar(calendarViewModel: CalendarViewModel){
                                 Box(
                                     Modifier
                                         .offset(x = rowHeight / 2 * i)
-                                        .background(type.color, CircleShape)
+                                        .background(type.colors.bg, CircleShape)
                                         .size(rowHeight)
                                 )
                             }

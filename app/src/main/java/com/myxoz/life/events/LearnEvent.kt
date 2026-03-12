@@ -14,7 +14,6 @@ import com.myxoz.life.events.additionals.TagEvent
 import com.myxoz.life.events.additionals.TagEvent.Companion.getTagsFromJson
 import com.myxoz.life.events.additionals.TitleEvent
 import com.myxoz.life.screens.feed.main.RenderBasicEventContent
-import com.myxoz.life.ui.theme.OldColors
 import com.myxoz.life.utils.getStringOrNull
 import org.json.JSONObject
 
@@ -55,9 +54,7 @@ class LearnEvent(
             title,
             isSmall,
             eventTags,
-            OldColors.Calendar.Learn.TEXT,
-            OldColors.Calendar.Learn.SECONDARY,
-            OldColors.Calendar.Learn.Tag,
+            type.colors,
             oneHourDp,
             blockHeight
         )

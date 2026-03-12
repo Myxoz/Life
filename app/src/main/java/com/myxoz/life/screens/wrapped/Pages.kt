@@ -83,7 +83,7 @@ abstract class WrappedPage {
     class LifeWrappedCallContext(val profileInfoModel: ProfileInfoModel) {
         var flow = MutableStateFlow(
             LifeWrappedColorContext(
-                OldColors.Calendar.Hobby.BG,
+                OldColors.Calendar.Hobby.bg,
                 2f,
                 0.35f,
                 0f
@@ -139,7 +139,7 @@ class MostPopularEventType(val type: EventType, val duration: Long, val followed
             Reveal(step >= 1) { SubtleLine("Your favorite activity was ${if(type == EventType.Sleep) "(luckily)" else ""}") }
             Reveal(step >= 4, {
                 setColorTo(
-                    flow.value.copy(backgroundAccentColor = type.color, ribbonAmp = 0.5f)
+                    flow.value.copy(backgroundAccentColor = type.colors.bg, ribbonAmp = 0.5f)
                 )
             }) {
                 BigWord(type.calendarName)
@@ -170,7 +170,7 @@ class SecondFavoritedEventType(val type: EventType, val duration: Long, val foll
             Reveal(step >= 1) { SubtleLine("Your second most loved activity seams to be") }
             Reveal(step >= 4, {
                 setColorTo(
-                    flow.value.copy(backgroundAccentColor = type.color, ribbonAmp = 2f)
+                    flow.value.copy(backgroundAccentColor = type.colors.bg, ribbonAmp = 2f)
                 )
             }) {
                 BigWord(type.calendarName)
@@ -229,7 +229,7 @@ class NewSocialContact(val amount: Int) : WrappedPage() {
             LaunchedEffect(Unit) {
                 setColorTo(
                     flow.value.copy(
-                        backgroundAccentColor = OldColors.Calendar.Social.BG,
+                        backgroundAccentColor = OldColors.Calendar.Social.bg,
                         ribbonDetail = 0.5f, ribbonSpike = 3f
                     )
                 )
@@ -491,7 +491,7 @@ class TravelingOverview(val type: Vehicle, val duration: Long, val totalDuration
             Reveal(step >= 1) { SubtleLine("Your total time spend traveling accumulated to") }
             Reveal(step >= 4, {
                 setColorTo(
-                    flow.value.copy(backgroundAccentColor = OldColors.Calendar.Travel.BG, ribbonAmp = 2f)
+                    flow.value.copy(backgroundAccentColor = OldColors.Calendar.Travel.bg, ribbonAmp = 2f)
                 )
             }) {
                 RollingLong(

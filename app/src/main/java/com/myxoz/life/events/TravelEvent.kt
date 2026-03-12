@@ -42,7 +42,6 @@ import com.myxoz.life.events.additionals.TimedTagLikeContainer
 import com.myxoz.life.events.additionals.Vehicle
 import com.myxoz.life.ui.ArrowDirection
 import com.myxoz.life.ui.drawArrowBehind
-import com.myxoz.life.ui.theme.OldColors
 import com.myxoz.life.utils.jsonObjArray
 import com.myxoz.life.utils.toPx
 import com.myxoz.life.utils.toSp
@@ -114,7 +113,7 @@ class TravelEvent(
                 ){
                     Text(
                         fromDisplay,
-                        color = OldColors.Calendar.Travel.TEXT,
+                        color = type.colors.textColor,
                         fontSize = fontSize,
                         fontWeight = FontWeight.W900
                     )
@@ -123,14 +122,14 @@ class TravelEvent(
                         horizontalArrangement = Arrangement.spacedBy(3.dp)
                     ) {
                         vehicles.forEach {
-                            Icon(painterResource(it.type.drawable), it.type.name, Modifier.run{if(it.type == Vehicle.Bus) width(2f*size).height(size) else size(size)}, OldColors.Calendar.Travel.SECONDARY)
+                            Icon(painterResource(it.type.drawable), it.type.name, Modifier.run{if(it.type == Vehicle.Bus) width(2f*size).height(size) else size(size)}, type.colors.secondary)
                         }
                         Spacer(Modifier/*.width(3.dp) */)
-                        Box(Modifier.width(1.5*size).height(size).drawArrowBehind(ArrowDirection.Right, size.toPx()/2, OldColors.Calendar.Travel.TEXT))
+                        Box(Modifier.width(1.5*size).height(size).drawArrowBehind(ArrowDirection.Right, size.toPx()/2, type.colors.textColor))
                     }
                     Text(
                         toDisplay,
-                        color = OldColors.Calendar.Travel.TEXT,
+                        color = type.colors.textColor,
                         fontSize = fontSize,
                         fontWeight = FontWeight.Bold
                     )
@@ -145,13 +144,13 @@ class TravelEvent(
                         horizontalArrangement = Arrangement.SpaceBetween,
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Text(fromDisplay, color = OldColors.Calendar.Travel.TEXT, fontSize = fontSize, fontWeight = FontWeight.Bold)
+                        Text(fromDisplay, color = type.colors.textColor, fontSize = fontSize, fontWeight = FontWeight.Bold)
                         Row(
                             verticalAlignment = Alignment.CenterVertically,
                             horizontalArrangement = Arrangement.spacedBy(3.dp)
                         ) {
                             vehicles.forEach {
-                                Icon(painterResource(it.type.drawable), it.type.name, Modifier.run{if(it.type == Vehicle.Bus) width(2f*size).height(size) else size(size)}, OldColors.Calendar.Travel.SECONDARY)
+                                Icon(painterResource(it.type.drawable), it.type.name, Modifier.run{if(it.type == Vehicle.Bus) width(2f*size).height(size) else size(size)}, type.colors.secondary)
                             }
                         }
                     }
@@ -160,9 +159,9 @@ class TravelEvent(
                         horizontalArrangement = Arrangement.spacedBy(3.dp, Alignment.End),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Box(Modifier.width(1.5*size).height(size).drawArrowBehind(ArrowDirection.Right, size.toPx()/2, OldColors.Calendar.Travel.TEXT))
+                        Box(Modifier.width(1.5*size).height(size).drawArrowBehind(ArrowDirection.Right, size.toPx()/2, type.colors.textColor))
                         Spacer(Modifier.width(3.dp))
-                        Text(toDisplay, color = OldColors.Calendar.Travel.TEXT, fontSize = fontSize, fontWeight = FontWeight.Bold)
+                        Text(toDisplay, color = type.colors.textColor, fontSize = fontSize, fontWeight = FontWeight.Bold)
                     }
                 }
             }
@@ -171,32 +170,32 @@ class TravelEvent(
                     Modifier.fillMaxSize().padding(horizontal = 5.dp),
                     verticalArrangement = Arrangement.SpaceBetween
                 ) {
-                    Text(fromDisplay, color = OldColors.Calendar.Travel.TEXT, fontSize = fontSize, fontWeight = FontWeight.Bold, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                    Text(fromDisplay, color = type.colors.textColor, fontSize = fontSize, fontWeight = FontWeight.Bold, maxLines = 1, overflow = TextOverflow.Ellipsis)
                     Box(
                         Modifier
                             .weight(1f)
                             .fillMaxWidth(),
                     ) {
-                        Box(Modifier.width(2*size).fillMaxHeight().drawArrowBehind(ArrowDirection.Down, size.toPx()/(12/blockHeight.coerceAtMost(6)), OldColors.Calendar.Travel.TEXT))
+                        Box(Modifier.width(2*size).fillMaxHeight().drawArrowBehind(ArrowDirection.Down, size.toPx()/(12/blockHeight.coerceAtMost(6)), type.colors.textColor))
                         Row(
                             Modifier
                                 .align(Alignment.CenterStart)
                                 .run{
                                     if(blockHeight < 7)
-                                        offset(x = 1.5 * size).background(OldColors.Calendar.Travel.BG, CircleShape).padding(horizontal = 2.dp)
+                                        offset(x = 1.5 * size).background(type.colors.bg, CircleShape).padding(horizontal = 2.dp)
                                     else
-                                        padding(start = size/2).background(OldColors.Calendar.Travel.BG, RoundedCornerShape(size/5))
+                                        padding(start = size/2).background(type.colors.bg, RoundedCornerShape(size/5))
                                 }
                             ,
                             verticalAlignment = Alignment.CenterVertically,
                             horizontalArrangement = Arrangement.spacedBy(1.dp)
                         ) {
                             vehicles.forEach {
-                                Icon(painterResource(it.type.drawable), it.type.name, Modifier.run{if(it.type == Vehicle.Bus) width(2f*size).height(size) else size(size)}, OldColors.Calendar.Travel.SECONDARY)
+                                Icon(painterResource(it.type.drawable), it.type.name, Modifier.run{if(it.type == Vehicle.Bus) width(2f*size).height(size) else size(size)}, type.colors.secondary)
                             }
                         }
                     }
-                    Text(toDisplay, color = OldColors.Calendar.Travel.TEXT, fontSize = fontSize, fontWeight = FontWeight.Bold, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                    Text(toDisplay, color = type.colors.textColor, fontSize = fontSize, fontWeight = FontWeight.Bold, maxLines = 1, overflow = TextOverflow.Ellipsis)
                 }
             }
         }

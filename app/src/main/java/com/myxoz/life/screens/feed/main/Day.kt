@@ -337,7 +337,7 @@ private fun BoxScope.RenderEventEditing(
 ){
     val screens = LocalScreens.current
     val editedEvent by inspectedEventViewModel.event.collectAsState()
-    val colors = editedEvent.proposed.type.color
+    val colors = editedEvent.proposed.type.colors.bg
     val gradientBottom = remember(colors) {
         Brush.radialGradient(
             listOf(colors, Color.Transparent),
@@ -446,7 +446,7 @@ private fun BoxScope.RenderEventEditing(
             )
             .border(
                 2.dp,
-                editedEvent.proposed.type.color,
+                editedEvent.proposed.type.colors.bg,
                 RoundedCornerShape(10.dp)
             )
             .boxShadow(
@@ -496,7 +496,7 @@ private fun BoxScope.RenderEventEditing(
             "${if (currentHour <= 9) "0" else ""}$currentHour:${if (currentMinute <= 9) "0" else ""}$currentMinute",
             Modifier
                 .background(
-                    editedEvent.proposed.type.color,
+                    editedEvent.proposed.type.colors.bg,
                     RoundedCornerShape(50, 50, 0, 0)
                 )
                 .padding(horizontal = 5.dp, vertical = 2.dp),
@@ -531,7 +531,7 @@ private fun BoxScope.RenderEventEditing(
             "${if (currentHour <= 9) "0" else ""}$currentHour:${if (currentMinute <= 9) "0" else ""}$currentMinute",
             Modifier
                 .background(
-                    editedEvent.proposed.type.color,
+                    editedEvent.proposed.type.colors.bg,
                     RoundedCornerShape(0, 0, 50, 50)
                 )
                 .padding(horizontal = 5.dp, vertical = 2.dp),
