@@ -49,7 +49,16 @@ class StepRepo(
         appScope.launch {
             val today = LocalDate.now().toEpochDay()
             // Reboot (or random sensor reset FUCK OEMs)
+            // Fuck Samsung again because they sometimes seam to remove a small amount of steps and don't fully reset the sensor,
+            // I will log this and TODO look at the logs and understand how the sensor works
             if(totalSensorSteps < lastSavedSteps){
+                stepsPrefs.edit {
+                    val stepLog = (stepsPrefs.getStringSet("step_reset_log",setOf()) ?: setOf())
+                        .toMutableSet().apply { add(
+                            "$lastSavedSteps;$totalSensorSteps;${System.currentTimeMillis()}"
+                        )}
+                    putStringSet("step_reset_log", stepLog)
+                }
                 // To new day (edge case e.x. reboot at midnight)
                 if(today > lastDateSaved) {
                     resetStepsAsOldDay(totalSensorSteps, 0)

@@ -21,6 +21,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateListOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
@@ -78,6 +79,14 @@ fun DebugScreen(
                         "last_steps_date",
                         0L
                     )
+                )
+            }
+            var stepLog by remember {
+                mutableStateOf(
+                    prefs.getStringSet(
+                        "step_reset_log",
+                        setOf()
+                    ) ?: setOf()
                 )
             }
             Text(
@@ -156,6 +165,13 @@ fun DebugScreen(
                 "Last date saved: $lastDateSaved",
                 style = TypoStyleOld(FontColor.PRIMARY, FontSize.MEDIUM)
             )
+            val calendar = remember { Calendar.getInstance() }
+            stepLog.map{ it.split(";") }.sortedByDescending { it[3].toLong() }.forEach {
+                Text(
+                    "From ${it[0]} to ${it[1]} at ${it[2]} (${it[2].toLong().formatTimeStamp(calendar)})",
+                    style = TypoStyleOld(FontColor.PRIMARY, FontSize.MEDIUM)
+                )
+            }
             val steps by repos.stepRepo.debugGetRawSteps().collectAsState()
             Text("Steps live: $steps", style = TypoStyleOld(FontColor.PRIMARY, FontSize.MEDIUM))
             if(features.autoDetectCalls.hasAssured()){
