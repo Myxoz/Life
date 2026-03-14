@@ -36,13 +36,12 @@ import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import com.myxoz.life.android.notifications.createNotificationChannels
 import com.myxoz.life.api.syncables.SyncedEvent
-import com.myxoz.life.events.ProposedEvent
-import com.myxoz.life.events.TravelEvent
 import com.myxoz.life.repositories.MainApplication
 import com.myxoz.life.screens.LocalScreensProvider
 import com.myxoz.life.screens.ModifyLocation
 import com.myxoz.life.screens.NavPath
 import com.myxoz.life.screens.alarm.AlarmScreen
+import com.myxoz.life.screens.alarm.AlarmSoundSettings
 import com.myxoz.life.screens.feed.commits.FullScreenCommit
 import com.myxoz.life.screens.feed.commits.FullScreenRepo
 import com.myxoz.life.screens.feed.commits.FullScreenRepos
@@ -272,9 +271,6 @@ class MainActivity : ComponentActivity() {
                     composable(NavPath.MENU) {
                         MenuComposable()
                     }
-                    composable(NavPath.Menu.ALARM) {
-                        AlarmScreen(alarmViewModel)
-                    }
                     composable(NavPath.Menu.SOCIAL_GRAPH) {
                         SocialGraph(socialGraphViewModel)
                     }
@@ -316,6 +312,14 @@ class MainActivity : ComponentActivity() {
                         )){
                             val personId = it.arguments?.getLong(NavPath.Menu.Contacts.DISPLAY_PERSON.parameterName) ?: return@composable
                             ProfileFullScreen(personId, photoPicker, largeDataCache, profileInfoModel)
+                        }
+
+                        //  ---------- Menu -> Alarm ----------
+                        composable(NavPath.Menu.ALARM) {
+                            AlarmScreen(alarmViewModel)
+                        }
+                        composable(NavPath.Menu.Alarm.ALARM_SOUND_SETTINGS) {
+                            AlarmSoundSettings(alarmViewModel)
                         }
 
                         //  ---------- Menu -> More ----------
@@ -378,21 +382,25 @@ class MainActivity : ComponentActivity() {
         handleIntent(intent)
     }
     private fun handleSharingIntent(intent: Intent) {
-        intent.getStringExtra("shared_travel_event")?.let { jsonString ->
+        intent.getStringExtra("shared_event")?.let { jsonString ->
             try {
-                val travelEvent = ProposedEvent.getProposedEventByJson(JSONObject(jsonString))
-                if(travelEvent !is TravelEvent) return
+                val event = SyncedEvent.fromJSON(JSONObject(jsonString))
                 inspectedEventViewModel.setInspectedEventTo(
-                    if(inspectedEventViewModel.isEditing.value) {
-                        inspectedEventViewModel.event.value.copy(proposedEvent = travelEvent)
+                    if (!event.isSynced()) {
+                        if(inspectedEventViewModel.isEditing.value) {
+                            inspectedEventViewModel.event.value.copy(proposedEvent = event.proposed)
+                        } else {
+                            inspectedEventViewModel.setEditing(true)
+                            event
+                        }
                     } else {
-                        inspectedEventViewModel.setEditing(true)
-                        SyncedEvent(-1L, 0L, null, travelEvent)
+                        inspectedEventViewModel.setEditing(false)
+                        event
                     }
                 )
 
                 // Clear the intent extra to avoid reprocessing
-                intent.removeExtra("shared_travel_event")
+                intent.removeExtra("shared_event")
             } catch (e: Exception) {
                 Log.e("Activity", "Failed to parse travel event from intent", e)
             }

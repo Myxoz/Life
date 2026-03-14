@@ -1,6 +1,12 @@
 package com.myxoz.life.screens.alarm
 
+import android.content.Intent
 import android.icu.util.Calendar
+import android.media.MediaPlayer
+import android.widget.Toast
+import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.AnimationVector1D
+import androidx.compose.animation.core.TwoWayConverter
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -15,18 +21,26 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.material3.Icon
+import androidx.compose.material3.RadioButton
+import androidx.compose.material3.RadioButtonColors
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -38,18 +52,23 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.TextLayoutResult
 import androidx.compose.ui.text.drawText
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.rememberTextMeasurer
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.myxoz.life.LocalNavController
 import com.myxoz.life.LocalScreens
 import com.myxoz.life.LocalSettings
+import com.myxoz.life.MainActivity
+import com.myxoz.life.R
 import com.myxoz.life.Theme
 import com.myxoz.life.api.syncables.SyncedEvent
 import com.myxoz.life.events.DigSocEvent
@@ -57,7 +76,9 @@ import com.myxoz.life.events.TravelEvent
 import com.myxoz.life.events.additionals.TagEvent
 import com.myxoz.life.events.additionals.TitleEvent
 import com.myxoz.life.repositories.AppRepositories
+import com.myxoz.life.screens.LocalScreensProvider
 import com.myxoz.life.screens.NavPath
+import com.myxoz.life.screens.feed.dayoverview.edgeToEdgeGradient
 import com.myxoz.life.screens.feed.fullscreenevent.TimeBasedVisualTransformation
 import com.myxoz.life.screens.feed.main.RenderTagAndTitleBar
 import com.myxoz.life.ui.ArrowDirection
@@ -69,7 +90,10 @@ import com.myxoz.life.ui.theme.FontSize
 import com.myxoz.life.ui.theme.TypoStyle
 import com.myxoz.life.utils.atStartAsMillis
 import com.myxoz.life.utils.collectAsMutableState
+import com.myxoz.life.utils.diagrams.chartBasedAnimation
+import com.myxoz.life.utils.diagrams.chartBasedLongAnimation
 import com.myxoz.life.utils.formatDayTime
+import com.myxoz.life.utils.formatMinutesToVisual
 import com.myxoz.life.utils.formatMsToDuration
 import com.myxoz.life.utils.rippleClick
 import com.myxoz.life.utils.toDp
@@ -77,6 +101,10 @@ import com.myxoz.life.utils.toLocalDate
 import com.myxoz.life.utils.toPx
 import com.myxoz.life.utils.windowPadding
 import com.myxoz.life.viewmodels.AlarmViewModel
+import com.myxoz.life.viewmodels.ProfileInfoModel
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import java.time.ZoneId
 import kotlin.math.cos
 import kotlin.math.max
@@ -85,7 +113,7 @@ import kotlin.math.sin
 @Composable
 fun AlarmScreen(alarmViewModel: AlarmViewModel){
     LaunchedEffect(Unit) {
-        alarmViewModel.refreshNextEvent()
+        alarmViewModel.refresh()
     }
     Column(
         Modifier
@@ -95,16 +123,53 @@ fun AlarmScreen(alarmViewModel: AlarmViewModel){
         ,
         horizontalAlignment = Alignment.CenterHorizontally
     ){
+        val nav = LocalNavController.current
         val rawNextEvent by alarmViewModel.nextEvent.collectAsState()
         val nextEvent = rawNextEvent
         if(nextEvent == null) {
             Text("Kein nächstes Event", style = TypoStyle(Theme.secondary, FontSize.MEDIUM))
             return@Column
         }
-        NextEventInformation(alarmViewModel, nextEvent)
+        NextEventInformation(alarmViewModel, nextEvent, LocalScreens.current, LocalScreens.current.profileInfoModel)
         Spacer(Modifier.weight(1f))
         RenderClockVisual(alarmViewModel, nextEvent.proposed.start)
         Spacer(Modifier.weight(1f))
+        Row(
+            Modifier
+                .setMaxTabletWidth()
+            ,
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment =  Alignment.CenterVertically
+        ) {
+            Text("", style = TypoStyle(Theme.secondary, FontSize.MEDIUM))
+        }
+        Row(
+            Modifier
+                .setMaxTabletWidth()
+            ,
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment =  Alignment.CenterVertically
+        ) {
+            val alarmSound by alarmViewModel.alarmSound.collectAsState()
+            Text("Alarmton", style = TypoStyle(Theme.secondary, FontSize.MEDIUM))
+            Spacer(Modifier.width(10.dp))
+            Row(
+                Modifier
+                    .background(Theme.secondaryContainer, CircleShape)
+                    .clip(CircleShape)
+                    .rippleClick{
+                        nav.navigate(NavPath.Menu.Alarm.ALARM_SOUND_SETTINGS)
+                    }
+                    .padding(horizontal = 15.dp, vertical = 10.dp)
+                    .weight(1f, false)
+                ,
+                horizontalArrangement = Arrangement.spacedBy(10.dp)
+            ) {
+                Text(alarmSound?.name ?: "Systemstandard", Modifier.weight(1f, false), style = TypoStyle(Theme.onSecondaryContainer, FontSize.SMALLM), overflow = TextOverflow.Ellipsis, maxLines = 1)
+                Icon(painterResource(R.drawable.settings), "Settings", Modifier.size(FontSize.SMALLM.size.toDp()), Theme.onSecondaryContainer)
+            }
+        }
+        Spacer(Modifier.height(10.dp))
         Row(
             Modifier
                 .setMaxTabletWidth()
@@ -116,7 +181,7 @@ fun AlarmScreen(alarmViewModel: AlarmViewModel){
             var timeToGetReadyMinutes by alarmViewModel.minutesToGetReady.collectAsMutableState()
             val focusManager = LocalFocusManager.current
             val textMeasurer = rememberTextMeasurer()
-            val text = timeToGetReadyMinutes.toString()
+            var text = timeToGetReadyMinutes.formatMinutesToVisual()
             val textWidth = with(LocalDensity.current){
                 textMeasurer.measure(
                     TimeBasedVisualTransformation.toTransformed(text),
@@ -126,7 +191,8 @@ fun AlarmScreen(alarmViewModel: AlarmViewModel){
             BasicTextField(
                 text,
                 {
-                    timeToGetReadyMinutes = it.toIntOrNull() ?: 0
+                    text = it.trimStart('0')
+                    timeToGetReadyMinutes = TimeBasedVisualTransformation.displayMinutesToMinutes(it).toLong()
                 },
                 textStyle = TypoStyle(Theme.onSecondary, FontSize.MEDIUM),
                 keyboardOptions = KeyboardOptions(
@@ -148,7 +214,6 @@ fun AlarmScreen(alarmViewModel: AlarmViewModel){
         Spacer(Modifier.height(10.dp))
         val settings = LocalSettings.current
         val hasAlarmsPermission by settings.features.lifeAlarmClock.has.collectAsState()
-        val nav = LocalNavController.current
         val nextScheduledTs by alarmViewModel.nextScheduled.collectAsState()
         val alarmIsSet = nextScheduledTs > System.currentTimeMillis()
         Box(
@@ -176,11 +241,32 @@ fun AlarmScreen(alarmViewModel: AlarmViewModel){
 }
 
 @Composable
-fun RenderEventPreview(alarmViewModel: AlarmViewModel, syncedEvent: SyncedEvent){
+fun RenderEventPreview(syncedEvent: SyncedEvent, screens: LocalScreensProvider?, profileInfoModel: ProfileInfoModel){
     val height = 40.dp
+    val context = LocalContext.current
+    val coroutineScope = rememberCoroutineScope()
+    val openFullScreenEvent: () -> Unit = if(screens != null)
+            ({ screens.openFullScreenEvent(syncedEvent) })
+    else
+            ({
+                coroutineScope.launch {
+                    val intent = Intent(context, MainActivity::class.java).apply {
+                        putExtra("targetRoute", NavPath.FULLSCREEN_EVENT)
+                        putExtra("shared_event", syncedEvent.toJson().toString())
+                        flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
+                    }
+                    withContext(Dispatchers.Main){
+                        context.startActivity(intent)
+                    }
+                }
+            })
     Box(
         Modifier
             .background(syncedEvent.proposed.type.colors.bg, CircleShape)
+            .clip(CircleShape)
+            .rippleClick{
+                openFullScreenEvent()
+            }
             .padding(5.dp, 5.dp, 10.dp, 5.dp)
     ) {
         when(val event = syncedEvent.proposed) {
@@ -192,8 +278,7 @@ fun RenderEventPreview(alarmViewModel: AlarmViewModel, syncedEvent: SyncedEvent)
                 event.type.colors
             )
             is DigSocEvent -> {
-                val profileViewModel = LocalScreens.current.profileInfoModel
-                val people by profileViewModel.getPeople(event.people).collectAsState()
+                val people by profileInfoModel.getPeople(event.people).collectAsState()
                 val displayText = people.joinToString(" · ") { it.name }
                 RenderTagAndTitleBar(
                     event.digSocEntries.map { it.type },
@@ -204,20 +289,21 @@ fun RenderEventPreview(alarmViewModel: AlarmViewModel, syncedEvent: SyncedEvent)
                 )
             }
             is TravelEvent -> {
-                val mapViewModel = LocalScreens.current.mapViewModel
-                val profileInfoModel = LocalScreens.current.profileInfoModel
                 val from by profileInfoModel.getLocationById(event.from).collectAsState()
                 val to by profileInfoModel.getLocationById(event.to).collectAsState()
                 val fromDisplay = from?.name ?: "Von"
                 val toDisplay = to?.name ?: "Nach"
                 Row(
                     Modifier
+                        .padding(horizontal = 5.dp)
                         .height(IntrinsicSize.Min)
+                    ,
+                    horizontalArrangement = Arrangement.spacedBy(5.dp)
                 ) {
                     Text(fromDisplay, style = TypoStyle(event.type.colors.textColor, FontSize.LARGE))
                     Box(
                         Modifier
-                            .width(10.dp)
+                            .width(20.dp)
                             .fillMaxHeight()
                             .drawArrowBehind(ArrowDirection.Right, (height/5).toPx(), event.type.colors.secondary)
                     )
@@ -228,6 +314,10 @@ fun RenderEventPreview(alarmViewModel: AlarmViewModel, syncedEvent: SyncedEvent)
     }
 }
 
+private val LongToAnimationVector = TwoWayConverter<Long, AnimationVector1D>(
+    convertToVector = { AnimationVector1D(it.toFloat()) },
+    convertFromVector = { it.value.toLong() }
+)
 @Composable
 fun RenderClockVisual(alarmViewModel: AlarmViewModel, eventStart: Long) {
     val boxSize = getMaxTabletScreenWidth()
@@ -239,11 +329,20 @@ fun RenderClockVisual(alarmViewModel: AlarmViewModel, eventStart: Long) {
     val hoursInDay = 24
     val anglesInDay = (hoursInDay*1000f*3600/360f)
     val nowAngle = remember(now) { (now - now.toLocalDate(zone).atStartAsMillis(zone)) / anglesInDay - 90f }
-    val rotationAngle = remember(eventStart, getReadyMinutes) {
-        val goal = (eventStart - now - getReadyMinutes * 1000L * 60) / anglesInDay
-        // This might happen if you go to bed before midnight (so a really unlikely edgecase for me)
-        if(goal < nowAngle) goal + 360f else goal
+
+    val wakeUpTarget = eventStart - getReadyMinutes * 60_000L
+    val wakeUpAnim = remember { Animatable(System.currentTimeMillis() + 10_000L, LongToAnimationVector) }
+    LaunchedEffect(wakeUpTarget) {
+        wakeUpAnim.animateTo( wakeUpTarget, chartBasedLongAnimation)
     }
+    val animatedWakeUp = wakeUpAnim.value
+
+    val rotationAngle = remember(animatedWakeUp, now) {
+        val goal = (animatedWakeUp - now) / anglesInDay
+        // This might happen if you go to bed before midnight (so a really unlikely edgecase for me)
+        if (animatedWakeUp < nowAngle) goal + 360f else goal
+    }
+
     val calendar = remember { Calendar.getInstance() }
     val primaryFill = Theme.primary
     val secondaryFill = Theme.primaryContainer
@@ -254,7 +353,9 @@ fun RenderClockVisual(alarmViewModel: AlarmViewModel, eventStart: Long) {
     val onPrimaryContainer = Theme.onPrimaryContainer
     val messuredNowText = remember { textMeasurer.measure("Jetzt", TypoStyle(onPrimaryContainer, FontSize.SMALLM)) }
     val onPrimary = Theme.onPrimary
-    val messuredWakeUpTimeText = remember(eventStart, getReadyMinutes) { textMeasurer.measure((eventStart - getReadyMinutes * 1000L * 60).formatDayTime(calendar), TypoStyle(onPrimary, FontSize.MEDIUM, FontFamily.Display)) }
+    val messuredWakeUpTimeText = remember(animatedWakeUp) {
+        textMeasurer.measure(animatedWakeUp.formatDayTime(calendar), TypoStyle(onPrimary, FontSize.MEDIUM, FontFamily.Display))
+    }
     Box(
         Modifier
             .width(boxSize)
@@ -348,7 +449,7 @@ fun RenderClockVisual(alarmViewModel: AlarmViewModel, eventStart: Long) {
     }
 }
 @Composable
-fun NextEventInformation(alarmViewModel: AlarmViewModel, nextEvent: SyncedEvent){
+fun NextEventInformation(alarmViewModel: AlarmViewModel, nextEvent: SyncedEvent, screens: LocalScreensProvider?, profileInfoModel: ProfileInfoModel){
     Column(
         Modifier
             .fillMaxWidth()
@@ -360,16 +461,20 @@ fun NextEventInformation(alarmViewModel: AlarmViewModel, nextEvent: SyncedEvent)
         val currentTime by alarmViewModel.minuteFlow.collectAsState()
         Spacer(Modifier)
         Text("Nächstes Event:", style = TypoStyle(Theme.secondary, FontSize.MEDIUM))
-        RenderEventPreview(alarmViewModel, nextEvent)
+        RenderEventPreview(nextEvent, screens, profileInfoModel)
         Text("Um ${nextEvent.proposed.start.formatDayTime(calendar)} in", style = TypoStyle(Theme.secondary, FontSize.MEDIUM))
-        Text((nextEvent.proposed.start - currentTime).formatMsToDuration(true), style = TypoStyle(Theme.primary, FontSize.XXLARGE, FontFamily.Display))
+        val animatedTime = remember { Animatable(0f) }
+        LaunchedEffect(currentTime) {
+            animatedTime.animateTo((nextEvent.proposed.start - currentTime).toFloat(), chartBasedAnimation)
+        }
+        Text(animatedTime.value.toLong().formatMsToDuration(true), style = TypoStyle(Theme.primary, FontSize.XXLARGE, FontFamily.Display))
     }
 }
 @Composable
-fun AlarmingScreen(repos: AppRepositories, dimiss: ()->Unit, snooze: ()->Unit){
+fun AlarmingScreen(repos: AppRepositories, dimiss: ()->Unit, snooze: ()->Unit, profileInfoModel: ProfileInfoModel){
     val alarmViewModel: AlarmViewModel = remember { AlarmViewModel(repos) }
     LaunchedEffect(Unit) {
-        alarmViewModel.refreshNextEvent()
+        alarmViewModel.refresh()
     }
     Column(
         Modifier
@@ -392,7 +497,7 @@ fun AlarmingScreen(repos: AppRepositories, dimiss: ()->Unit, snooze: ()->Unit){
                     .padding(20.dp)
                 ,
             )  {
-                NextEventInformation(alarmViewModel, nextEvent)
+                NextEventInformation(alarmViewModel, nextEvent, null, profileInfoModel)
             }
         }
         Spacer(Modifier.weight(3f))
@@ -423,4 +528,80 @@ fun AlarmingScreen(repos: AppRepositories, dimiss: ()->Unit, snooze: ()->Unit){
         }
         Spacer(Modifier.weight(.5f))
     }
+}
+@Composable
+fun AlarmSoundSettings(alarmViewModel: AlarmViewModel){
+    val context = LocalContext.current
+    val allSound = remember {
+        AlarmViewModel.getSystemAlarms(context)
+    }
+    var selectedAlarm by alarmViewModel.alarmSound.collectAsMutableState()
+    val mediaPlayer = remember { MediaPlayer().apply {
+        isLooping = true
+    } }
+    fun previewSound(sound: AlarmViewModel.Companion.AlarmSound){
+        if(!alarmViewModel.hasWarnedFullSound) {
+            Toast.makeText(context, "Der Alarm spielt immer auf voller Lautstärke", Toast.LENGTH_LONG).show()
+            alarmViewModel.hasWarnedFullSound = true
+        }
+        mediaPlayer.apply {
+            reset()
+            setDataSource(context, sound.uri)
+            prepare()
+            start()
+        }
+    }
+    DisposableEffect(Unit) {
+        onDispose { mediaPlayer.release() }
+    }
+    Column(
+        Modifier
+            .fillMaxSize()
+            .background(Theme.background)
+    ) {
+        LazyColumn(
+            Modifier
+                .weight(1f)
+                .fillMaxSize()
+                .edgeToEdgeGradient(Theme.background, windowPadding)
+            ,
+            horizontalAlignment = Alignment.CenterHorizontally,
+            contentPadding = windowPadding,
+        ) {
+            items(allSound, {it.uri}){
+                Row(
+                    Modifier
+                        .setMaxTabletWidth()
+                        .rippleClick{
+                            selectedAlarm = it
+                            previewSound(it)
+                        }
+                    ,
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Text(
+                        it.name,
+                        Modifier
+                            .weight(1f)
+                        ,
+                        style = TypoStyle(Theme.primary, FontSize.MEDIUM)
+                    )
+                    RadioButton(
+                        selectedAlarm == it,
+                        {
+                            selectedAlarm = it
+                            previewSound(it)
+                        },
+                        colors = RadioButtonColors(
+                            Theme.primary,
+                            Theme.outline,
+                            Theme.primary,
+                            Theme.outline,
+                        )
+                    )
+                }
+            }
+        }
+   }
 }

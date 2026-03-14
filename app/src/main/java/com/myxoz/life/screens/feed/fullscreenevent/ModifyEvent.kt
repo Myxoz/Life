@@ -1280,9 +1280,7 @@ fun <T: TagLike> TimeBasedTagLikeSelection(allSelectables: List<T>, defSelection
                             if(index==-1) return@BasicTextField
                             selectedTagLike[index] = TimedTagLikeContainer(
                                 item.type,
-                                (it.toIntOrNull()?:0).let { minutes ->
-                                    (minutes/100)*60+(minutes%100)
-                                }*60*1000L
+                                TimeBasedVisualTransformation.displayMinutesToMinutes(it)*60*1000L
                             )
                             setVehiclesTo(selectedTagLike)
                         },
@@ -1349,6 +1347,7 @@ class TimeBasedVisualTransformation: VisualTransformation {
     }
     class TimeBasedOffsetMapping(val transformed: String, val original: String): OffsetMapping {
         override fun originalToTransformed(offset: Int): Int {
+            if(original == "0") return transformed.length - 1
             // 1005
             // to 10h 05m
             return transformed.length - when(original.length-offset){ // 0  is at the end
@@ -1375,7 +1374,9 @@ class TimeBasedVisualTransformation: VisualTransformation {
     }
     companion object {
         fun toTransformed(text: String): String{
+            if(text == "0") return "m"
             return if(text.length > 2) "${text.take(text.length-2)}h ${text.takeLast(2)}m" else "${text.takeLast(2)}m"
         }
+        fun displayMinutesToMinutes(text: String) = (text.toIntOrNull()?:0).let { minutes -> (minutes/100)*60+(minutes%100) }
     }
 }

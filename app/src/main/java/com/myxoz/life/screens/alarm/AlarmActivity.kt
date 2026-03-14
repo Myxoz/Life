@@ -1,20 +1,23 @@
 package com.myxoz.life.screens.alarm
 
 import android.app.NotificationManager
-import android.media.AudioAttributes
-import android.media.AudioManager
+import android.content.Context
 import android.media.MediaPlayer
+import android.media.RingtoneManager
+import android.net.Uri
 import android.os.Bundle
+import android.os.Vibrator
 import android.view.WindowManager
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.remember
 import androidx.core.content.edit
 import com.myxoz.life.LocalColors
-import com.myxoz.life.R
 import com.myxoz.life.repositories.MainApplication
 import com.myxoz.life.utils.systemColorScheme
 import com.myxoz.life.viewmodels.AlarmViewModel
+import com.myxoz.life.viewmodels.ProfileInfoModel
 
 class AlarmActivity : ComponentActivity() {
 
@@ -30,10 +33,10 @@ class AlarmActivity : ComponentActivity() {
                     WindowManager.LayoutParams.FLAG_SHOW_WHEN_LOCKED
         )
 
-        startAlarmSound()
+        val repos = (this.application as? MainApplication)?.repositories ?: return
+        startAlarmSound(AlarmViewModel.Companion.AlarmSound.fromPrefs(repos.prefs))
 
         setContent {
-            val repos = (this.application as? MainApplication)?.repositories ?: return@setContent
             val colorScheme = systemColorScheme()
             CompositionLocalProvider(
                 LocalColors provides colorScheme
@@ -41,43 +44,64 @@ class AlarmActivity : ComponentActivity() {
                 AlarmingScreen(
                     repos,
                     { stopAlarm() },
-                    { snoozeAlarm() }
+                    { snoozeAlarm() },
+                    remember { ProfileInfoModel(repos) }
                 )
             }
         }
     }
 
-    private fun startAlarmSound() {
-        // BIG TODO THIS IS NOT LEGAL; SOOORY;  THISIS TESTING
-        // https://pixabay.com/sound-effects/search/alarm%20clock%20music/
-        // https://pixabay.com/sound-effects/musical-star-dust-alarm-clock-114194/
-        // Big shoutout: https://pixabay.com/users/lesiakower-25701529/
-        val audioManager = getSystemService(AUDIO_SERVICE) as AudioManager
-        val maxVolume = audioManager.getStreamMaxVolume(AudioManager.STREAM_ALARM)
-        audioManager.setStreamVolume(AudioManager.STREAM_ALARM, maxVolume, 0)
+    private fun startAlarmSound(preferedSound: AlarmViewModel.Companion.AlarmSound?) {
+        // Get default alarm URI
+        val alertUri = resolveAlarmUri(application, preferedSound?.uri)
 
-        mediaPlayer = MediaPlayer.create(this, R.raw.wakeup).apply {
-            isLooping = true
+        mediaPlayer = MediaPlayer().apply {
+            setDataSource(applicationContext, alertUri)
             setAudioAttributes(
-                AudioAttributes.Builder()
-                    .setUsage(AudioAttributes.USAGE_ALARM)
-                    .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
+                android.media.AudioAttributes.Builder()
+                    .setUsage(android.media.AudioAttributes.USAGE_ALARM)
+                    .setContentType(android.media.AudioAttributes.CONTENT_TYPE_MUSIC)
                     .build()
             )
-            start()
+            isLooping = true
+            try {
+                prepare()
+                start()
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
         }
+
+        // Vibrate the phone
+        val vibrator = getSystemService(VIBRATOR_SERVICE) as Vibrator
+        val pattern = longArrayOf(0, 500, 500)
+        vibrator.vibrate(android.os.VibrationEffect.createWaveform(pattern, 0))
+    }
+    fun resolveAlarmUri(context: Context, preferred: Uri?): Uri {
+        if (preferred != null) {
+            val ringtone = RingtoneManager.getRingtone(context, preferred)
+            if (ringtone != null) {
+                return preferred
+            }
+        }
+
+        return RingtoneManager.getDefaultUri(RingtoneManager.TYPE_ALARM)
+            ?: RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION)
+            ?: RingtoneManager.getDefaultUri(RingtoneManager.TYPE_RINGTONE)
     }
 
     private fun stopAlarm() {
         mediaPlayer?.stop()
         mediaPlayer?.release()
         mediaPlayer = null
+        val vibrator = getSystemService(VIBRATOR_SERVICE) as Vibrator
+        vibrator.cancel() // stop looping vibration
         killNotification()
         val repos = (this.application as? MainApplication)?.repositories ?: return
         repos.prefs.edit {
             putLong("nextAlarmTs", -1L)
         }
-        finish()
+        finishAndRemoveTask()
     }
 
     private fun snoozeAlarm() {
@@ -91,7 +115,7 @@ class AlarmActivity : ComponentActivity() {
         repos.prefs.edit {
             putLong("nextAlarmTs", snoozeTime)
         }
-        finish()
+        finishAndRemoveTask()
     }
 
     private fun killNotification(){

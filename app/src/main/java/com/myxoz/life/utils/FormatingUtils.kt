@@ -17,7 +17,7 @@ fun Long.roundToNearest15Min(): Long {
     val block = 15 * 60 * 1000L // 15 minutes in ms
     return ((this + block / 2) / block) * block
 }
-fun Long.formatMinutesToVisual() = "${this / 60}${(this%60).toInt().padStart(2,'0')}"
+fun Long.formatMinutesToVisual() = if(this == 0L) "" else "${if(this >= 60) this / 60 else ""}${if(this >= 60) (this%60).toInt().padStart(2,'0') else this%60}"
 
 fun Int?.plural(s: String) = if(this == 1) "" else s
 operator fun Int.plus(other: Boolean) = this + (if(other) 1 else 0)

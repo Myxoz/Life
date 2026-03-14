@@ -31,6 +31,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalWindowInfo
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.unit.dp
@@ -190,10 +191,15 @@ fun DisplayEvent(fullEvent: SyncedEvent){
             val size = FontSize.MEDIUM.size.toDp()
             @Composable
             fun RenderLocation(location: LocationSyncable?, isFrom: Boolean) {
+                val screenWidthPx = LocalWindowInfo.current.containerDpSize.width.toPx()
                 Column(
                     Modifier
                         .fillMaxWidth()
                         .background(Theme.surfaceContainerHighest, RoundedCornerShape(20))
+                        .clip(RoundedCornerShape(20))
+                        .rippleClick{
+                            screens.openLocation(location?:return@rippleClick, screenWidthPx)
+                        }
                         .padding(20.dp)
                 ) {
                     Text(

@@ -13,7 +13,6 @@ import com.myxoz.life.viewmodels.SharingContent
 data class SharedRouteParser(val event: TravelEvent): SharingContent() {
     companion object {
         suspend fun from(sharedText: String, context: Context, locationRepo: LocationRepo): TravelEvent?{
-            // Write to shared preferences
             val parsedRoute = HVV.parseTransitRoute(sharedText) ?: return null
             val db = DatabaseProvider.getDatabase(context)
 

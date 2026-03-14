@@ -7,20 +7,29 @@ import android.app.NotificationManager
 import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
+import android.content.SharedPreferences
+import android.media.RingtoneManager
+import android.net.Uri
 import android.os.Build
 import androidx.core.content.edit
+import androidx.core.net.toUri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.myxoz.life.api.syncables.SyncedEvent
 import com.myxoz.life.repositories.AppRepositories
 import com.myxoz.life.repositories.utils.subscribeToColdFlow
 import com.myxoz.life.screens.alarm.AlarmReceiver
+import com.myxoz.life.utils.syncLongToPrefs
+import com.myxoz.life.utils.syncStringToPrefs
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
+import org.json.JSONObject
 
 class AlarmViewModel(val repos: AppRepositories): ViewModel() {
+    var hasWarnedFullSound = false
     val nextScheduled = MutableStateFlow(repos.prefs.getLong("nextAlarmTs", -1)).apply {
         viewModelScope.launch {
             this@apply.collect {
@@ -30,8 +39,13 @@ class AlarmViewModel(val repos: AppRepositories): ViewModel() {
             }
         }
     }
+    val alarmSound = MutableStateFlow(AlarmSound.fromPrefs(repos.prefs)).apply {
+        map { it?.toJson() }.syncStringToPrefs(viewModelScope, repos.prefs, "alarmSound")
+    }
     val nextEvent = MutableStateFlow<SyncedEvent?>(null)
-    val minutesToGetReady = MutableStateFlow(30)
+    val minutesToGetReady = MutableStateFlow(repos.prefs.getLong("minutesToGetReady", 30L)).apply {
+        syncLongToPrefs(viewModelScope, repos.prefs, "minutesToGetReady")
+    }
     val minuteFlow = flow {
         emit(System.currentTimeMillis())
         while (true){
@@ -39,7 +53,10 @@ class AlarmViewModel(val repos: AppRepositories): ViewModel() {
             emit(System.currentTimeMillis())
         }
     }.subscribeToColdFlow(viewModelScope, System.currentTimeMillis())
-    suspend fun refreshNextEvent(){
+    suspend fun refresh(){
+        // This is a bit of a Band-Aid fix, this will refresh the nextAlarmTs on screen opening,
+        // this might be problematic due to snooze not notifying the viewmodel
+        nextScheduled.value = repos.prefs.getLong("nextAlarmTs", -1L)
         nextEvent.value = repos.calendarRepo.getNextEventAfter(System.currentTimeMillis())
     }
     fun setAlarm(settings: Settings, eventTs: Long){
@@ -54,6 +71,13 @@ class AlarmViewModel(val repos: AppRepositories): ViewModel() {
         nextScheduled.value = -1L
     }
     companion object {
+        data class AlarmSound(val name: String, val uri: Uri){
+            fun toJson() = JSONObject().put("name", name).put("uri", uri.toString()).toString()
+            companion object {
+                fun fromJSON(json: JSONObject) = AlarmSound(json.getString("name"), json.getString("uri").toUri())
+                fun fromPrefs(prefs: SharedPreferences): AlarmSound? = prefs.getString("alarmSound", null)?.let { fromJSON( JSONObject(it)) }
+            }
+        }
         fun alarmIntent(context: Context): PendingIntent {
             val intent = Intent(context, AlarmReceiver::class.java)
             return PendingIntent.getBroadcast(
@@ -76,6 +100,19 @@ class AlarmViewModel(val repos: AppRepositories): ViewModel() {
                 alarmIntent(context)
             )
         }
+        fun getSystemAlarms(context: Context): List<AlarmSound> {
+            val manager = RingtoneManager(context)
+            manager.setType(RingtoneManager.TYPE_ALARM)
+            val cursor = manager.cursor
+            val list = mutableListOf<AlarmSound>()
+            while (cursor.moveToNext()) {
+                val title = cursor.getString(RingtoneManager.TITLE_COLUMN_INDEX)
+                val uri = manager.getRingtoneUri(cursor.position)
+                list.add(AlarmSound(title, uri))
+            }
+            cursor.close()
+            return list
+        }
     }
     init {
         val channel = NotificationChannel(
@@ -83,6 +120,8 @@ class AlarmViewModel(val repos: AppRepositories): ViewModel() {
             "Alarm",
             NotificationManager.IMPORTANCE_HIGH
         )
+        channel.setSound(null, null) // we control sound manually
+        channel.enableVibration(true)
 
         channel.lockscreenVisibility = Notification.VISIBILITY_PUBLIC
 

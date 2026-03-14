@@ -13,7 +13,6 @@ class MainApplication: Application() {
     lateinit var repositories: AppRepositories
         private set
 
-    val spk = "MainActivity"
     override fun onCreate() {
         super.onCreate()
         db = Daos(DatabaseProvider.getDatabase(applicationContext))
@@ -33,7 +32,7 @@ class MainApplication: Application() {
             db.writeBankingDao,
             db.writeCommitsDao
         )
-        val mainPrefs = applicationContext.getSharedPreferences(spk, MODE_PRIVATE)
+        val mainPrefs = applicationContext.getSharedPreferences(SPK, MODE_PRIVATE)
         val appScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
         val bankingRepo = BankingRepo(
             readSyncableDaos.bankingDao,
@@ -111,5 +110,8 @@ class MainApplication: Application() {
             mainPrefs,
             applicationContext
         )
+    }
+    companion object {
+        const val SPK = "MainActivity"
     }
 }

@@ -1,6 +1,7 @@
 package com.myxoz.life.utils
 
 import android.content.ClipData
+import android.content.SharedPreferences
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
@@ -34,7 +35,14 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.core.content.edit
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.FlowPreview
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.debounce
+import kotlinx.coroutines.launch
 import kotlin.math.PI
 import kotlin.math.atan2
 import kotlin.math.cos
@@ -97,6 +105,40 @@ fun <T> MutableStateFlow<T?>.collectAsMutableNonNullState(defValue: T): MutableS
             override fun component1(): T = value
             override fun component2(): (T) -> Unit = { value = it }
         }
+    }
+}
+@OptIn(FlowPreview::class)
+fun Flow<Long?>.syncLongToPrefs(
+    scope: CoroutineScope,
+    prefs: SharedPreferences,
+    key: String,
+    debounceMs: Long = 200
+) {
+    scope.launch(Dispatchers.IO) {
+        this@syncLongToPrefs
+            .debounce(debounceMs)
+            .collect { value ->
+                prefs.edit{
+                    putLong(key, value ?: return@edit)
+                }
+            }
+    }
+}
+@OptIn(FlowPreview::class)
+fun Flow<String?>.syncStringToPrefs(
+    scope: CoroutineScope,
+    prefs: SharedPreferences,
+    key: String,
+    debounceMs: Long = 200
+) {
+    scope.launch(Dispatchers.IO) {
+        this@syncStringToPrefs
+            .debounce(debounceMs)
+            .collect { value ->
+                prefs.edit{
+                    putString(key, value)
+                }
+            }
     }
 }
 

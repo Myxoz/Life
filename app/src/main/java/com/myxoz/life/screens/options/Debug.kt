@@ -41,6 +41,7 @@ import com.myxoz.life.ui.theme.FontSize
 import com.myxoz.life.ui.theme.OldColors
 import com.myxoz.life.ui.theme.TypoStyleOld
 import com.myxoz.life.utils.formatTimeStamp
+import com.myxoz.life.viewmodels.AlarmViewModel
 import kotlinx.coroutines.launch
 import java.io.File
 
@@ -135,6 +136,11 @@ fun DebugScreen(
                 }
             }) {
                 Text("Add manual transaction now")
+            }
+            Button({
+                AlarmViewModel.setAlarm(System.currentTimeMillis() + 10*1000L, repos.context)
+            }) {
+                Text("Alarm in 10s")
             }
             var shouldWipeDp by remember { mutableIntStateOf(0) }
             Button({

@@ -39,6 +39,9 @@ object NavPath {
         }
         const val SOCIAL_GRAPH = "$MENU/social_graph"
         const val ALARM = "$MENU/alarm"
+        object Alarm {
+            const val ALARM_SOUND_SETTINGS = "${ALARM}/soundsettings"
+        }
         const val MAP = "$MENU/map"
         const val MORE = "$MENU/more"
         const val REPOS = "repos"

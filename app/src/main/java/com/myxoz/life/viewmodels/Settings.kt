@@ -100,8 +100,8 @@ class Settings(val prefs: SharedPreferences, context: Context, activity: Activit
         val lifeAlarmClock = Feature(
             LIFEALARMCLOCK,
             "Wecker",
-            "Ermöglicht es Wecker zum Aufstehen zu stellen",
-            listOf(permissions.alarms),
+            "Ermöglicht es Wecker zum Aufstehen zu stellen. Dafür muss einerseits ein exakter Alarm gestellt werden (${permissions.alarms.name}) als auch eine Vollbildbenachrichtigung (${permissions.postNotifications.name}) zu dem  Zeitpunkt versendet werden.",
+            listOf(permissions.alarms, permissions.postNotifications),
             prefs
         )
         val all = arrayOf(mapBoxLocation, stepCounting, callFromLife, screentime, autoDetectSleep, addNewPerson, readPaymentNotifications, autoDetectCalls, lifeAlarmClock)
