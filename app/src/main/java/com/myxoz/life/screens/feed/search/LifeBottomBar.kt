@@ -44,6 +44,7 @@ import com.myxoz.life.LocalNavController
 import com.myxoz.life.LocalScreens
 import com.myxoz.life.R
 import com.myxoz.life.Theme
+import com.myxoz.life.events.additionals.EventType
 import com.myxoz.life.events.additionals.TagLike
 import com.myxoz.life.screens.NavPath
 import com.myxoz.life.ui.theme.FontSize
@@ -148,7 +149,8 @@ fun LifeBottomBar(calendarViewModel: CalendarViewModel){
                         }
                     }
                     val vehicle by search.selectedVehicles.collectAsState()
-                    val digsocPlatforms by search.digsocPlatforms.collectAsState()
+                    // This is cursed and smark, digsoc and tw cant be active at the same time
+                    val digsocPlatforms by (if(eventTypes.contains(EventType.DigSoc)) search.digsocPlatforms else search.timewastePlatform).collectAsState()
                     for (like in arrayOf<List<TagLike>>(tags, vehicle, digsocPlatforms)) {
                         if(like.isEmpty()) continue
                         Row(

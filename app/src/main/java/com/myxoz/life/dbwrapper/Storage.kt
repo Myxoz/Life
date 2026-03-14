@@ -27,6 +27,8 @@ import com.myxoz.life.dbwrapper.events.ReadEventDetailsDao
 import com.myxoz.life.dbwrapper.events.SocialEntity
 import com.myxoz.life.dbwrapper.events.SpontEntity
 import com.myxoz.life.dbwrapper.events.TagsEntity
+import com.myxoz.life.dbwrapper.events.TimewasteEntity
+import com.myxoz.life.dbwrapper.events.TimewastePlatformEntity
 import com.myxoz.life.dbwrapper.events.TravelEntity
 import com.myxoz.life.dbwrapper.events.VehicleEntity
 import com.myxoz.life.dbwrapper.events.WorkEntity
@@ -39,21 +41,18 @@ import com.myxoz.life.dbwrapper.people.ReadPeopleDao
 import com.myxoz.life.dbwrapper.people.SocialsEntity
 import com.myxoz.life.dbwrapper.people.WritePeopleDao
 
-const val currVer = 35
+const val currVer = 37
 val migration = object : Migration(currVer-1, currVer) {
     override fun migrate(db: SupportSQLiteDatabase) {
         // Create the new dayscreentime table
         //db.execSQL("ALTER TABLE people ADD COLUMN birthday INTEGER")
         db.execSQL(
             """
-            CREATE TABLE IF NOT EXISTS manual_transactions (
-                id INTEGER NOT NULL PRIMARY KEY,
-                digital INTEGER NOT NULL,
-                cashless INTEGER NOT NULL,
-                amount_cents INTEGER NOT NULL,
-                name TEXT NOT NULL,
-                timestamp INTEGER NOT NULL,
-                purpose TEXT
+            CREATE TABLE IF NOT EXISTS timewasteplatform (
+                event_id INTEGER NOT NULL,
+                timewasteplatform INTEGER NOT NULL,
+                duration_ms INTEGER NOT NULL,
+                PRIMARY KEY(event_id, timewasteplatform)
             )
             """.trimIndent()
         )
@@ -87,6 +86,8 @@ val migration = object : Migration(currVer-1, currVer) {
         CommitEntity::class,
         WorkEntity::class,
         ManualTransactionEntity::class,
+        TimewasteEntity::class,
+        TimewastePlatformEntity::class
     ],
     version = currVer,
     exportSchema = true

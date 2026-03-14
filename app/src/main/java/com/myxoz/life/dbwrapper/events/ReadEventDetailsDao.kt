@@ -6,7 +6,7 @@ import androidx.room.Query
 /** This special DAO has only read and not write access, this can therefore be shared outside of repos */
 @Dao
 interface ReadEventDetailsDao {
-    // Events themself
+    // Events themselves
     @Query("SELECT * FROM events WHERE ends > :rangeStart AND start < :rangeEnd")
     suspend fun getEventsOverlapping(
         rangeStart: Long,
@@ -70,6 +70,14 @@ interface ReadEventDetailsDao {
     // Spont
     @Query("SELECT * FROM spont WHERE id = :id LIMIT 1")
     suspend fun getSpont(id: Long): SpontEntity?
+
+    // Timewaste
+    @Query("SELECT * FROM timewaste WHERE id = :id LIMIT 1")
+    suspend fun getTimewaste(id: Long): TimewasteEntity?
+
+        // Timewaste Mapping
+        @Query("SELECT * FROM timewasteplatform WHERE event_id = :id")
+        suspend fun getTimewastePlatformsById(id: Long): List<TimewastePlatformEntity>
 
     // Additionals
     // Tags

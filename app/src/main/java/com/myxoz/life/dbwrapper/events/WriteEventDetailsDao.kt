@@ -63,6 +63,13 @@ interface WriteEventDetailsDao {
     @Query("DELETE FROM spont WHERE id = :id")
     suspend fun removeSpont(id: Long)
 
+    // Timewaste
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertTimewaste(tw: TimewasteEntity)
+
+    @Query("DELETE FROM timewaste WHERE id = :id")
+    suspend fun removeTimewaste(id: Long)
+
     // Additionals
     // Tags
     @Insert(onConflict = OnConflictStrategy.REPLACE)
@@ -97,4 +104,14 @@ interface WriteEventDetailsDao {
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertVehicle(vehicle: VehicleEntity)
+
+    // Timewasteplatform
+    @Query("DELETE FROM timewasteplatform WHERE event_id = :id")
+    suspend fun removeAllTimewastePlatformsFor(id: Long)
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertTimewastePlatform(twp: TimewastePlatformEntity)
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertTimewastePlatforms(twps: List<TimewastePlatformEntity>)
 }

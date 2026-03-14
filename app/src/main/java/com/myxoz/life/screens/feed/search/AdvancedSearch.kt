@@ -35,6 +35,7 @@ import com.myxoz.life.R
 import com.myxoz.life.Theme
 import com.myxoz.life.events.additionals.DigSocPlatform
 import com.myxoz.life.events.additionals.EventType
+import com.myxoz.life.events.additionals.TimewastePlatform
 import com.myxoz.life.events.additionals.Vehicle
 import com.myxoz.life.screens.NavPath
 import com.myxoz.life.screens.feed.fullscreenevent.CalendarChip
@@ -78,6 +79,12 @@ fun AdvancedSearch(calendarViewModel: CalendarViewModel){
                 val digsocPlatforms by search.digsocPlatforms.collectAsState()
                 TagLikeSelection(DigSocPlatform.entries.toList(), digsocPlatforms){
                     search.digsocPlatforms.value = it
+                }
+            }
+            if(selectedCalendars.isNotEmpty() && selectedCalendars.none { it != EventType.Timewaste }){
+                val timewastePlatform by search.timewastePlatform.collectAsState()
+                TagLikeSelection(TimewastePlatform.entries.toList(), timewastePlatform){
+                    search.timewastePlatform.value = it
                 }
             }
             if(selectedCalendars.isNotEmpty() && selectedCalendars.all { it.isTagEvent() }) {

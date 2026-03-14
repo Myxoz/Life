@@ -15,14 +15,15 @@ enum class EventType(val id: Int, val colors: EventColors, val selectedColor: Co
     Travel(7, OldColors.Calendar.Travel, Color.Black, "Travel"),
     DigSoc(8, OldColors.Calendar.DigSoc, Color.Black, "DigSoc"),
     Work(9, OldColors.Calendar.Work, Color.White, "Arbeit"),
+    Timewaste(10, OldColors.Calendar.Timewaste, Color.White, "Timewaste"),
     // ALWAYS INCREMENT ID! AND ADD TO BELOW
     ;
     fun isTagEvent() = this in arrayOf(Hobby, Learn, Spont, Social, Work)
-    fun isTitleEvent() = this in arrayOf(Hobby, Learn, Spont, Social, DigSoc, Work)
+    fun isTitleEvent() = this in arrayOf(Hobby, Learn, Spont, Social, DigSoc, Work, Timewaste)
     fun isDetailsEvent() = this in arrayOf(Hobby, Learn, Work)
     fun isPeopleEvent() = this in arrayOf(DigSoc, Social)
     companion object {
-        val order = arrayOf(Sleep, Spont, Hobby, Learn, Travel, Social, DigSoc, Work);
+        val order = arrayOf(Sleep, Spont, Hobby, Learn, Travel, Social, DigSoc, Work, Timewaste);
         fun getById(id: Int): EventType? = EventType.entries.firstOrNull { it.id == id }.apply { if(this==null) Log.w("Calendar","Couldnt find calendar with id $id in EventType.getById") }
     }
 }

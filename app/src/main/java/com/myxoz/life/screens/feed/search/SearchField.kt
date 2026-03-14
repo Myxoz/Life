@@ -2,6 +2,7 @@ package com.myxoz.life.screens.feed.search
 
 import androidx.navigation.NavController
 import com.myxoz.life.events.DigSocEvent
+import com.myxoz.life.events.TimewasteEvent
 import com.myxoz.life.events.TravelEvent
 import com.myxoz.life.events.additionals.DetailsEvent
 import com.myxoz.life.events.additionals.DigSocPlatform
@@ -9,6 +10,7 @@ import com.myxoz.life.events.additionals.EventTag
 import com.myxoz.life.events.additionals.EventType
 import com.myxoz.life.events.additionals.PeopleEvent
 import com.myxoz.life.events.additionals.TagEvent
+import com.myxoz.life.events.additionals.TimewastePlatform
 import com.myxoz.life.events.additionals.TitleEvent
 import com.myxoz.life.events.additionals.Vehicle
 import com.myxoz.life.screens.NavPath
@@ -31,6 +33,7 @@ class SearchField {
     val detailsQuery = MutableStateFlow("")
     val titleQuery = MutableStateFlow("")
     val digsocPlatforms = MutableStateFlow(listOf<DigSocPlatform>())
+    val timewastePlatform = MutableStateFlow(listOf<TimewastePlatform>())
     val isSearching = MutableStateFlow(false)
     // TODO ADD TO RESET
     fun setText(text: String?){
@@ -46,8 +49,8 @@ class SearchField {
                     (proposed is TitleEvent && proposed.title.contains(text, true)) ||
                     (proposed is DetailsEvent && proposed.details?.contains(text, true) == true) ||
                     (proposed is DigSocEvent && proposed.digSocEntries.any{it.type.name.contains(text, true)}) ||
+                    (proposed is TimewasteEvent && proposed.timewastePlatforms.any{it.type.name.contains(text, true)}) ||
                     (proposed is TravelEvent && proposed.vehicles.any{it.type.name.contains(text, true)}) ||
-                    (proposed is DigSocEvent && proposed.digSocEntries.any{it.type.name.contains(text, true)}) ||
                     (proposed is TravelEvent && listOf(calendarViewModel.getCachedLocation(proposed.from), calendarViewModel.getCachedLocation(proposed.to))
                         .any{it?.name?.contains(text, true) == true}) ||
                     (proposed is PeopleEvent && calendarViewModel.getCachedPeopleById(proposed.people).any { it.name.contains(text, true) })
@@ -62,6 +65,7 @@ class SearchField {
                     (selectedEventTypes.value.isEmpty() || proposed.type in selectedEventTypes.value) &&
                     (locationTo.value.isEmpty() || (proposed is TravelEvent && proposed.to in locationTo.value)) &&
                     (digsocPlatforms.value.isEmpty() || (proposed is DigSocEvent && proposed.digSocEntries.any { it.type in digsocPlatforms.value })) &&
+                    (timewastePlatform.value.isEmpty() || (proposed is TimewasteEvent && proposed.timewastePlatforms.any { it.type in timewastePlatform.value })) &&
                     (locationFrom.value.isEmpty() || (proposed is TravelEvent && proposed.from in locationFrom.value)) &&
                     (selectedVehicles.value.isEmpty() || (proposed is TravelEvent && selectedVehicles.value.all { it in proposed.vehicles.map { c -> c.type } })) &&
                     (tags.value.isEmpty() || (proposed is TagEvent && proposed.eventTags.any{ it in tags.value}))
@@ -89,12 +93,14 @@ class SearchField {
         detailsQuery.value = ""
         titleQuery.value = ""
         digsocPlatforms.value = listOf()
+        timewastePlatform.value = listOf()
         wasUpdated()
     }
     fun wasUpdated(){
         lastUpdated.value = System.currentTimeMillis()
         if(mode.value == SearchMode.Target){
             if(selectedEventTypes.value.isEmpty() || selectedEventTypes.value.any { it != EventType.DigSoc }) digsocPlatforms.value = listOf()
+            if(selectedEventTypes.value.isEmpty() || selectedEventTypes.value.any { it != EventType.Timewaste }) timewastePlatform.value = listOf()
             if(selectedEventTypes.value.isEmpty() || selectedEventTypes.value.any { !it.isTagEvent() }) tags.value = listOf()
             if(selectedEventTypes.value.isEmpty() || selectedEventTypes.value.any { !it.isTitleEvent() }) titleQuery.value = ""
             if(selectedEventTypes.value.isEmpty() || selectedEventTypes.value.any { it != EventType.Travel }) {

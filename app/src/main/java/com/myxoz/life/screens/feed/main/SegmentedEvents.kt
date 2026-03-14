@@ -64,6 +64,7 @@ data class SegmentedEvent(val event: SyncedEvent, val isFullWidth: Boolean, val 
     companion object {
         fun getSegmentedEvents(events: List<SyncedEvent>, instantEntries: List<InstantEvent.InstantEventGroup>, instantEventDisplaySize: Long): List<SegmentedEvent> {
             val order = arrayOf(
+                EventType.Timewaste,
                 EventType.DigSoc,
                 EventType.Social,
                 EventType.Sleep,

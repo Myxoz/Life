@@ -201,6 +201,10 @@ class API(
                         writeSyncableDaos.eventDetailsDao.deleteDigSocMapping(id)
                         writeSyncableDaos.eventDetailsDao.deletePeopleMapping(id)
                     }
+                    EventType.Timewaste.id -> {
+                        writeSyncableDaos.eventDetailsDao.removeTimewaste(id)
+                        writeSyncableDaos.eventDetailsDao.removeAllTimewastePlatformsFor(id)
+                    }
                 }
             }
 
@@ -232,7 +236,7 @@ class API(
                 val displayEntity = BankingRepo.BankingDisplayEntity.from(
                     new.transactionId, readSyncableDaos.bankingDao
                 )
-                if(displayEntity!=null){ // Else Transactiton isnt yet synced
+                if(displayEntity!=null){ // Else Transactiton isn't yet synced
                     bankingRepo.updateCachedTransaction(new.transactionId, displayEntity)
                 }
             }

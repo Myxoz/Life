@@ -66,6 +66,12 @@ object OldColors {
             override val bg = Color(0xFFFF7777)
             override val secondary = semanticNull
         }
+        object Timewaste: EventColors {
+            override val textColor = Color(0xFFFFFFFF)
+            override val tagColors = TagColors(textColor, Color(0xFF342D1E))
+            override val bg = Color(0xFF4A412A)
+            override val secondary = semanticNull
+        }
         object Sleep: EventColors {
             override val tagColors = null
             override val textColor = Color(0xFFbfbfbf)

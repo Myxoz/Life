@@ -43,6 +43,7 @@ import com.myxoz.life.api.syncables.LocationSyncable
 import com.myxoz.life.api.syncables.SyncedEvent
 import com.myxoz.life.events.DigSocEvent
 import com.myxoz.life.events.SocialEvent
+import com.myxoz.life.events.TimewasteEvent
 import com.myxoz.life.events.TravelEvent
 import com.myxoz.life.events.additionals.DetailsEvent
 import com.myxoz.life.events.additionals.EventType
@@ -142,6 +143,14 @@ fun DisplayEvent(fullEvent: SyncedEvent){
                 screens.openCalendarWithSearch {
                     selectedEventTypes.value = listOf(EventType.DigSoc)
                     digsocPlatforms.value = digsocPlatforms.value.toMutableList().apply { add(it) }
+                }
+            }
+        }
+        if(fullEvent.proposed is TimewasteEvent) {
+            TimedTagLikeBar(fullEvent.proposed.timewastePlatforms) {
+                screens.openCalendarWithSearch {
+                    selectedEventTypes.value = listOf(EventType.Timewaste)
+                    timewastePlatform.value = timewastePlatform.value.toMutableList().apply { add(it) }
                 }
             }
         }

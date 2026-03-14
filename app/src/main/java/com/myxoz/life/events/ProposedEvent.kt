@@ -167,6 +167,7 @@ abstract class ProposedEvent(start: Long, end: Long, val type: EventType, val us
                 EventType.Travel.id -> TravelEvent.from(db, event)
                 EventType.DigSoc.id -> DigSocEvent.from(db, event)
                 EventType.Work.id -> WorkEvent.from(db, event)
+                EventType.Timewaste.id -> TimewasteEvent.from(db, event)
                 else -> null
             }
         fun getProposedEventByJson(json: JSONObject): ProposedEvent {
@@ -190,6 +191,7 @@ abstract class ProposedEvent(start: Long, end: Long, val type: EventType, val us
                 EventType.Travel -> TravelEvent.fromJson(json, start, end, uss, usl)
                 EventType.DigSoc -> DigSocEvent.fromJson(json, start, end, uss, usl)
                 EventType.Work -> WorkEvent.fromJson(json, start, end, uss, usl)
+                EventType.Timewaste -> TimewasteEvent.fromJson(json, start, end, uss, usl)
             }
         }
     }

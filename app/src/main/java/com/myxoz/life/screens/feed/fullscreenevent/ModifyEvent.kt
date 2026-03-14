@@ -94,6 +94,7 @@ import com.myxoz.life.events.ProposedEvent
 import com.myxoz.life.events.SleepEvent
 import com.myxoz.life.events.SocialEvent
 import com.myxoz.life.events.SpontEvent
+import com.myxoz.life.events.TimewasteEvent
 import com.myxoz.life.events.TravelEvent
 import com.myxoz.life.events.WorkEvent
 import com.myxoz.life.events.additionals.DetailsEvent
@@ -104,6 +105,7 @@ import com.myxoz.life.events.additionals.PeopleEvent
 import com.myxoz.life.events.additionals.TagEvent
 import com.myxoz.life.events.additionals.TagLike
 import com.myxoz.life.events.additionals.TimedTagLikeContainer
+import com.myxoz.life.events.additionals.TimewastePlatform
 import com.myxoz.life.events.additionals.TitleEvent
 import com.myxoz.life.events.additionals.Vehicle
 import com.myxoz.life.screens.NavPath
@@ -452,6 +454,32 @@ fun ModifyEvent(viewModel: InspectedEventViewModel){
                     )
                 }
             }
+            is TimewasteEvent -> {
+                TimeBasedTagLikeSelection(TimewastePlatform.entries.toList(), event.timewastePlatforms) {
+                    setEventTo(
+                        TimewasteEvent(
+                            event.start,
+                            event.end,
+                            event.uss,
+                            event.usl,
+                            it,
+                            event.title
+                        )
+                    )
+                }
+                InputField(event.title.ifEmpty { null }, "Titel") {
+                    setEventTo(
+                        TimewasteEvent(
+                            event.start,
+                            event.end,
+                            event.uss,
+                            event.usl,
+                            event.timewastePlatforms,
+                            it
+                        )
+                    )
+                }
+            }
 
             is TravelEvent -> {
                 LocationBar(event.from) {
@@ -632,6 +660,18 @@ fun ModifyEvent(viewModel: InspectedEventViewModel){
                     if (event is TagEvent) ((event as TagEvent).eventTags) else listOf(),
                     if (event is TitleEvent) (event as TitleEvent).title else "",
                     if (event is DetailsEvent) (event as DetailsEvent).details else ""
+                )
+            )
+        }
+        CalendarChip(
+            EventType.Timewaste,
+            event is TimewasteEvent
+        ) {
+            setEventTo(
+                TimewasteEvent(
+                    event.start, event.end, event.uss, event.usl,
+                    listOf(),
+                    if (event is TitleEvent) (event as TitleEvent).title else ""
                 )
             )
         }
