@@ -1045,7 +1045,7 @@ fun PersonBar(
             }) {
                 Text(
                     "+ weitere",
-                    style = TypoStyle(Theme.onSecondaryContainer, FontSize.SMALL)
+                    style = TypoStyle(if(more) Theme.onSecondaryContainer else Theme.outline, FontSize.SMALL)
                 )
             }
         }

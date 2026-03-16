@@ -5,7 +5,10 @@ import androidx.activity.compose.PredictiveBackHandler
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.animate
+import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
@@ -18,6 +21,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.RowScope
+import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -36,6 +40,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawWithCache
+import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
@@ -46,11 +51,13 @@ import androidx.compose.ui.layout.Layout
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalWindowInfo
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.min
 import androidx.compose.ui.unit.times
+import com.myxoz.life.R
 import com.myxoz.life.Theme
 import com.myxoz.life.screens.feed.fullscreenevent.InputField
 import com.myxoz.life.ui.theme.FontSize
@@ -454,3 +461,36 @@ fun Modifier.setMaxTabletWidth() =
     this
         .widthIn(max = SCREENMAXWIDTH)
         .fillMaxWidth(.95f)
+
+@Composable
+fun LifeProgressIndicator(modifier: Modifier, color: Color){
+    Box(
+        modifier
+            .aspectRatio(1f)
+    ) {
+        val infiniteAnimation = rememberInfiniteTransition()
+        val rotation by infiniteAnimation.animateFloat(
+            0f,
+            360f,
+            infiniteRepeatable(
+                tween(2000, easing = LinearEasing))
+            )
+        Icon(
+            painterResource(R.drawable.life_icon_outer_trimmed),
+            "Loading",
+            Modifier
+                .fillMaxSize()
+                .rotate(rotation)
+            ,
+            color
+        )
+        Icon(
+            painterResource(R.drawable.life_icon_center_trimmed),
+            null,
+            Modifier
+                .fillMaxSize()
+            ,
+            color
+        )
+    }
+}

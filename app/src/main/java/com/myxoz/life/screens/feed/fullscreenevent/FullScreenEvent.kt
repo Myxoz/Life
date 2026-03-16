@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -24,7 +25,6 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.selection.LocalTextSelectionColors
 import androidx.compose.foundation.text.selection.TextSelectionColors
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
@@ -50,6 +50,7 @@ import com.myxoz.life.R
 import com.myxoz.life.Theme
 import com.myxoz.life.screens.NavPath
 import com.myxoz.life.ui.ActionBar
+import com.myxoz.life.ui.LifeProgressIndicator
 import com.myxoz.life.ui.setMaxTabletWidth
 import com.myxoz.life.ui.theme.FontColor
 import com.myxoz.life.ui.theme.FontSize
@@ -183,8 +184,8 @@ fun FullScreenEvent(inspectedEventViewModel: InspectedEventViewModel){
                         {
                             if(isSending) return@ActionBar
                             coroutineScope.launch {
-                                isSending = true
                                 affectsDelete = true
+                                isSending = true
                                 if(syn != null) {
                                     if(syn.id != -1L) {
                                         inspectedEventViewModel.updateOrCreateSynced(syn, true)
@@ -207,7 +208,7 @@ fun FullScreenEvent(inspectedEventViewModel: InspectedEventViewModel){
                                 Icon(painterResource(R.drawable.delete), "Delete", Modifier.fillMaxSize(), Theme.onSecondaryContainer)
                             else
                                 if(isSending)
-                                    CircularProgressIndicator(color = OldColors.SECONDARYFONT)
+                                    LifeProgressIndicator(Modifier.fillMaxHeight(), color = Theme.primary)
                                 else if(wasSuccessful)
                                     Icon(painterResource(R.drawable.tick), "Done", Modifier.fillMaxSize(), Theme.onSecondaryContainer)
                         },
@@ -265,7 +266,9 @@ fun FullScreenEvent(inspectedEventViewModel: InspectedEventViewModel){
                                     verticalAlignment = Alignment.CenterVertically,
                                     horizontalArrangement = Arrangement.Center
                                 ) {
-                                    if (!affectsDelete && isSending) CircularProgressIndicator(color = OldColors.PRIMARYFONT) else
+                                    if (!affectsDelete && isSending)
+                                        LifeProgressIndicator(Modifier.fillMaxHeight(), color = Theme.primary)
+                                    else
                                         if (affectsDelete || !wasSuccessful) {
                                             Text(
                                                 if (event.id != -1L || syncable?.id != -1L) "Ändern" else "Hinzufügen",
