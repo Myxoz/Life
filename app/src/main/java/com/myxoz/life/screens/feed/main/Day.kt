@@ -4,6 +4,7 @@ import android.icu.util.Calendar
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.gestures.detectVerticalDragGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -132,6 +133,22 @@ fun DayComposable(
                     oneHourDp,
                     date
                 )
+
+                if (isEditing) {
+                    Box(
+                        Modifier
+                            .fillMaxSize()
+                            .pointerInput(Unit) {
+                                detectTapGestures {
+                                    val clickY = it.y
+                                    val verticalOffset = clickY / fullHeightPx
+                                    inspectedEventViewModel.updateStartTs(
+                                        startOfDay + (hoursToday * 1000L * 3600L * verticalOffset).toLong()
+                                    )
+                                }
+                            }
+                    )
+                }
 
                 RenderEditing(
                     inspectedEventViewModel,

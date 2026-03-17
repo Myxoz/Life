@@ -22,7 +22,6 @@ import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import com.myxoz.life.LocalScreens
 import com.myxoz.life.api.syncables.SyncedEvent
 import com.myxoz.life.events.additionals.DefinedDurationEvent
 import com.myxoz.life.events.additionals.EventType
@@ -31,14 +30,20 @@ import com.myxoz.life.screens.feed.instantevents.InstantEvent
 import com.myxoz.life.viewmodels.CalendarViewModel
 
 
-data class SegmentedEvent(val event: SyncedEvent, val isFullWidth: Boolean, val isLeft: Boolean, val hasContent: Boolean, val segmentStart: Long, val segmentEnd: Long): DefinedDurationEvent(segmentStart, segmentEnd) {
+data class SegmentedEvent(
+    val event: SyncedEvent,
+    val isFullWidth: Boolean,
+    val isLeft: Boolean,
+    val hasContent: Boolean,
+    val segmentStart: Long,
+    val segmentEnd: Long
+): DefinedDurationEvent(segmentStart, segmentEnd) {
     val nextToPeople = mutableSetOf<Long>()
     @OptIn(ExperimentalFoundationApi::class)
     @Composable
     fun Render(calendarViewModel: CalendarViewModel, oneHour: Dp, bankingSizeDp: Dp, startOfDay: Long, endOfDay: Long, width: Dp, isClickEnabled: Boolean, editEvent: ()->Unit, openEventDetails: ()->Unit){
         val lastUpdated by calendarViewModel.search.lastUpdated.collectAsState()
         var isSearched by remember { mutableStateOf(true) }
-        val profileInfoModel = LocalScreens.current.profileInfoModel
         LaunchedEffect(lastUpdated) {
             isSearched = calendarViewModel.search.isSearched(calendarViewModel, this@SegmentedEvent)
         }
