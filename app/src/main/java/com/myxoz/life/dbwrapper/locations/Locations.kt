@@ -1,4 +1,4 @@
-package com.myxoz.life.dbwrapper
+package com.myxoz.life.dbwrapper.locations
 
 import androidx.room.ColumnInfo
 import androidx.room.Entity

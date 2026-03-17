@@ -6,6 +6,7 @@ import androidx.room.Entity
 import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.Query
+import com.myxoz.life.api.Syncable
 
 @Entity(tableName = "waitingsync", primaryKeys = ["id", "calendar"])
 data class WaitingSyncEntity(
@@ -26,4 +27,8 @@ interface WaitingSyncDao {
 
     @Query("DELETE FROM waitingsync WHERE id = :id AND calendar = :calendar")
     suspend fun deleteWaitingSync(id: Long, calendar: Int)
+
+    suspend fun requestSync(syncable: Syncable){
+        insertWaitingSync(WaitingSyncEntity(syncable.id, syncable.calendarId, System.currentTimeMillis()))
+    }
 }

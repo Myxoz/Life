@@ -65,6 +65,7 @@ import com.myxoz.life.screens.person.SocialGraph
 import com.myxoz.life.screens.person.displayperson.PhotoPicker
 import com.myxoz.life.screens.person.displayperson.ProfileFullScreen
 import com.myxoz.life.screens.pick.PickExistingLocation
+import com.myxoz.life.screens.todo.FullScreenTodo
 import com.myxoz.life.screens.transactions.MyCard
 import com.myxoz.life.screens.transactions.TransactionFeed
 import com.myxoz.life.screens.transactions.TransactionList
@@ -87,6 +88,7 @@ import com.myxoz.life.viewmodels.MapViewModel
 import com.myxoz.life.viewmodels.ProfileInfoModel
 import com.myxoz.life.viewmodels.Settings
 import com.myxoz.life.viewmodels.SocialGraphViewModel
+import com.myxoz.life.viewmodels.TodoViewModel
 import com.myxoz.life.viewmodels.TransactionViewModel
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -121,6 +123,7 @@ class MainActivity : ComponentActivity() {
     private val commitsViewModel: CommitsViewModel by viewModels{ factory }
     private val mapViewModel: MapViewModel by viewModels{ factory }
     private val aiSettingsViewModel: AISettingsViewModel by viewModels { factory }
+    private val todoViewModel: TodoViewModel by viewModels { factory }
     private val photoPicker = PhotoPicker()
     private val imagePickerLauncher = registerForActivityResult(
         ActivityResultContracts.StartActivityForResult()
@@ -252,6 +255,7 @@ class MainActivity : ComponentActivity() {
                         )) {
                             val epochDay = (it.arguments?.getLong(NavPath.DAY_OVERVIEW.parameterName) ?: 0).run { if(this == 0L) LocalDate.now().toEpochDay() else this}
                             // Semantic value: 0 == today, due to pending intent targetRoute, which isn't computable
+                            // And jep the resulting bug is that 1.1.1970 always displays the current day in the dayoverview, congrats for finding out
                             DayOverviewComposable(LocalDate.ofEpochDay(epochDay), dayOverviewViewModel)
                         }
                         composable(NavPath.DayOverview.SCREENTIME.asTemplate, arguments = listOf(
@@ -289,6 +293,18 @@ class MainActivity : ComponentActivity() {
                         ) {
                         MapBoxMap(mapViewModel)
                     }
+
+                        //  ---------- Menu -> TODOS ----------
+                        composable(NavPath.Menu.Todo.MAIN) {
+                            FullScreenRepos(commitsViewModel)
+                        }
+                        composable(
+                            NavPath.Menu.Todo.DETAILS.asTemplate, arguments = listOf(
+                            navArgument(NavPath.Menu.Todo.DETAILS.parameterName) { type = NavType.LongType })
+                        ) {
+                            val todoId = it.arguments?.getLong(NavPath.Menu.Todo.DETAILS.parameterName).takeIf { it != 0L } ?: return@composable
+                            FullScreenTodo(todoId, todoViewModel)
+                        }
 
                         //  ---------- Menu -> REPOS ----------
                         composable(NavPath.Menu.REPOS) {

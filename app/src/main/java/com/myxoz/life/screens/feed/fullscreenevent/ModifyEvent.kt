@@ -6,8 +6,6 @@ import androidx.compose.animation.core.EaseIn
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
-import androidx.compose.animation.scaleIn
-import androidx.compose.animation.scaleOut
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -20,9 +18,7 @@ import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxHeight
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
@@ -75,7 +71,6 @@ import androidx.compose.ui.text.input.OffsetMapping
 import androidx.compose.ui.text.input.TransformedText
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.text.rememberTextMeasurer
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.times
 import com.myxoz.life.LocalNavController
@@ -86,6 +81,7 @@ import com.myxoz.life.android.integration.HVV
 import com.myxoz.life.api.Syncable
 import com.myxoz.life.api.syncables.LocationSyncable
 import com.myxoz.life.api.syncables.ManualTransactionSyncable
+import com.myxoz.life.api.syncables.TodoSyncable
 import com.myxoz.life.events.DigSocEvent
 import com.myxoz.life.events.EmptyEvent
 import com.myxoz.life.events.HobbyEvent
@@ -120,11 +116,12 @@ import com.myxoz.life.ui.theme.OldColors
 import com.myxoz.life.ui.theme.TypoStyle
 import com.myxoz.life.ui.theme.TypoStyleOld
 import com.myxoz.life.utils.AndroidUtils
-import com.myxoz.life.utils.def
 import com.myxoz.life.utils.filteredWith
 import com.myxoz.life.utils.formatMinutesToVisual
 import com.myxoz.life.utils.formatMsToDuration
 import com.myxoz.life.utils.formatTimeStamp
+import com.myxoz.life.utils.matchInstrinsicHeight
+import com.myxoz.life.utils.nullIfEmpty
 import com.myxoz.life.utils.rippleClick
 import com.myxoz.life.utils.toDp
 import com.myxoz.life.utils.toPx
@@ -133,7 +130,6 @@ import kotlinx.coroutines.launch
 import org.json.JSONObject
 import java.time.Instant
 import java.time.ZoneId
-import kotlin.math.abs
 
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
@@ -146,67 +142,11 @@ fun ModifyEvent(viewModel: InspectedEventViewModel){
     val setEventTo: (ProposedEvent)->Unit = {
         viewModel.setInspectedEventTo(syncedEvent.copy(proposedEvent = it))
     }
-    val setSyncableTo: (Syncable.DatedSyncable)->Unit = {
+    val setSyncableTo: (Syncable.FeedInstantEventSyncable)->Unit = {
         viewModel.setEditedSyncableTo(it)
     }
     if(syncable!=null){
-        when(syncable) {
-            is ManualTransactionSyncable -> {
-                Row(
-                    Modifier
-                        .fillMaxWidth()
-                        .height(IntrinsicSize.Min)
-                    ,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    var enteredCents by remember { mutableStateOf(abs(syncable.amountCents).takeIf { it != 0 }?.toString().def("")) }
-                    var isNegative by remember { mutableStateOf(syncable.amountCents <= 0) }
-                    fun updateCents(){
-                        setSyncableTo(syncable.copy(amountCents = enteredCents.toIntOrNull().def(0) * (if(isNegative) -1 else 1)))
-                    }
-                    val color by animateColorAsState(if(isNegative) OldColors.Transactions.MINUS else OldColors.Transactions.PLUS)
-                    Box(
-                        Modifier
-                            .clip(CircleShape)
-                            .background(color)
-                            .rippleClick{
-                                isNegative = !isNegative
-                                updateCents()
-                            }
-                            .aspectRatio(1f)
-                            .fillMaxHeight(.5f)
-                            .height(0.dp)
-                    ) {
-                        androidx.compose.animation.AnimatedVisibility(!isNegative, enter = scaleIn(), exit = scaleOut()) {
-                            Icon(painterResource(R.drawable.add), "Positive", Modifier.fillMaxSize(), Theme.onPrimaryContainer)
-                        }
-                        androidx.compose.animation.AnimatedVisibility(isNegative, enter = scaleIn(), exit = scaleOut()) {
-                            Icon(painterResource(R.drawable.minus), "Negative", Modifier.fillMaxSize(), Theme.onPrimaryContainer)
-                        }
-                    }
-                    BasicTextField(
-                        enteredCents,
-                        {
-                            enteredCents = it
-                            updateCents()
-                        },
-                        Modifier
-                            .weight(1f)
-                        ,
-                        singleLine = true,
-                        textStyle = TypoStyle(color, FontSize.XLARGE, FontFamily.Display).copy(textAlign = TextAlign.End),
-                        visualTransformation = ManualTransactionSyncable.MoneyBasedVisualTransformation(),
-                        cursorBrush = SolidColor(color)
-                    )
-                }
-                InputField(syncable.name.ifEmpty { null }, "Empfänger") {
-                    setSyncableTo(syncable.copy(name = it))
-                }
-                InputField(syncable.purpose?.ifEmpty { null }, "Verwendungszweck") {
-                    setSyncableTo(syncable.copy(purpose = it))
-                }
-            }
-        }
+        syncable.ModifyEventInputs{ setSyncableTo(it) }
     } else {
         when (event) {
             is EmptyEvent -> {}
@@ -261,7 +201,7 @@ fun ModifyEvent(viewModel: InspectedEventViewModel){
                             event.usl,
                             event.eventTags,
                             event.title,
-                            it
+                            it.nullIfEmpty()
                         )
                     )
                 }
@@ -303,7 +243,7 @@ fun ModifyEvent(viewModel: InspectedEventViewModel){
                             event.usl,
                             event.eventTags,
                             event.title,
-                            it
+                            it.nullIfEmpty()
                         )
                     )
                 }
@@ -345,7 +285,7 @@ fun ModifyEvent(viewModel: InspectedEventViewModel){
                             event.usl,
                             event.eventTags,
                             event.title,
-                            it
+                            it.nullIfEmpty()
                         )
                     )
                 }
@@ -529,15 +469,43 @@ fun ModifyEvent(viewModel: InspectedEventViewModel){
         thickness = 3.dp
     )
     if(event.type == EventType.Empty) {
-        Row(
-            Modifier
-                .clip(CircleShape)
-                .background(Theme.tertiaryContainer)
-                .then(if(syncable is ManualTransactionSyncable) Modifier.border(1.dp, Theme.outline, CircleShape) else Modifier)
-                .padding(15.dp, 5.dp)
-                .height(IntrinsicSize.Min)
-                .rippleClick{
-                    viewModel.setEditedSyncableTo(ManualTransactionSyncable(
+        FlowRow(
+            horizontalArrangement = Arrangement.spacedBy(10.dp),
+        ) {
+            @Composable
+            fun SyncableChip(icon: Int, title: String, selected: Boolean, select: ()-> Unit){
+                Row(
+                    Modifier
+                        .clip(CircleShape)
+                        .background(Theme.tertiaryContainer)
+                        .then(
+                            if (selected) Modifier.border(
+                                1.dp,
+                                Theme.outline,
+                                CircleShape
+                            ) else Modifier
+                        )
+                        .padding(15.dp, 5.dp)
+                        .height(IntrinsicSize.Min)
+                        .rippleClick {
+                            if(!selected) select()
+                        },
+                    horizontalArrangement = Arrangement.spacedBy(5.dp)
+                ) {
+                    Icon(
+                        painterResource(icon),
+                        "Option",
+                        Modifier
+                            .matchInstrinsicHeight()
+                        ,
+                        Theme.onTertiaryContainer
+                    )
+                    Text(title, style = TypoStyle(Theme.onTertiaryContainer, FontSize.SMALL))
+                }
+            }
+            SyncableChip(R.drawable.cash, "Echtgeld", syncable is ManualTransactionSyncable) {
+                viewModel.setEditedSyncableTo(
+                    ManualTransactionSyncable(
                         -1L,
                         false,
                         false,
@@ -545,22 +513,20 @@ fun ModifyEvent(viewModel: InspectedEventViewModel){
                         "",
                         viewModel.event.value.proposed.start,
                         null
-                    ))
-                }
-            ,
-            horizontalArrangement = Arrangement.spacedBy(5.dp)
-        ) {
-            Icon(
-                painterResource(R.drawable.cash),
-                "Cash",
-                Modifier
-                    .fillMaxHeight()
-                    .height(0.dp)
-                // Overwrite default height to 0.dp so while messuring this appears as 0.dp and gets streched later. Remember this trick.
-                ,
-                Theme.onTertiaryContainer
-            )
-            Text("Echtgeld", style = TypoStyle(Theme.onTertiaryContainer, FontSize.SMALL))
+                    )
+                )
+            }
+            SyncableChip(R.drawable.todos_icon, "Todo", syncable is TodoSyncable) {
+                viewModel.setEditedSyncableTo(
+                    TodoSyncable(
+                        -1L,
+                        "",
+                        null,
+                        false,
+                        viewModel.event.value.proposed.start,
+                    )
+                )
+            }
         }
     }
     FlowRow(

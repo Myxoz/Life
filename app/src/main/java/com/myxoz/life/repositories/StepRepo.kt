@@ -2,8 +2,8 @@ package com.myxoz.life.repositories
 
 import android.content.SharedPreferences
 import androidx.core.content.edit
-import com.myxoz.life.dbwrapper.ProposedStepsDao
-import com.myxoz.life.dbwrapper.ProposedStepsEntity
+import com.myxoz.life.dbwrapper.days.ProposedStepsDao
+import com.myxoz.life.dbwrapper.days.ProposedStepsEntity
 import com.myxoz.life.repositories.utils.subscribeToColdFlow
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow

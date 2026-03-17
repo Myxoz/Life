@@ -9,6 +9,8 @@ import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.asPaddingValues
+import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.systemBars
 import androidx.compose.material3.ripple
 import androidx.compose.runtime.Composable
@@ -247,3 +249,7 @@ fun Modifier.angledGradientBackground(colors: List<Color>, degrees: Float) = thi
             size = size
         )
     }
+
+
+// Overwrite default height to 0.dp so while messuring this appears as 0.dp and gets streched later. Remember this trick.
+fun Modifier.matchInstrinsicHeight() = this.fillMaxHeight().height(0.dp)

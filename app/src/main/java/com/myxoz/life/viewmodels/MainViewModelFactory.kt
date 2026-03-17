@@ -4,12 +4,16 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import com.myxoz.life.repositories.AppRepositories
 
+@Suppress("UNCHECKED_CAST")
 class MainViewModelFactory(
     private val repositories: AppRepositories,
 ) : ViewModelProvider.Factory {
 
     override fun <T : ViewModel> create(modelClass: Class<T>): T {
         return when {
+            modelClass.isAssignableFrom(TodoViewModel::class.java) ->
+                TodoViewModel(repositories) as T
+
             modelClass.isAssignableFrom(AlarmViewModel::class.java) ->
                 AlarmViewModel(repositories) as T
 

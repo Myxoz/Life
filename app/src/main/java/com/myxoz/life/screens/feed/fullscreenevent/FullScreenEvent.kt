@@ -271,7 +271,7 @@ fun FullScreenEvent(inspectedEventViewModel: InspectedEventViewModel){
                                     else
                                         if (affectsDelete || !wasSuccessful) {
                                             Text(
-                                                if (event.id != -1L || syncable?.id != -1L) "Ändern" else "Hinzufügen",
+                                                if (event.isSynced() || syncable?.isSynced() == true) "Ändern" else "Hinzufügen",
                                                 style = TypoStyleOld(
                                                     FontColor.PRIMARY,
                                                     FontSize.LARGE

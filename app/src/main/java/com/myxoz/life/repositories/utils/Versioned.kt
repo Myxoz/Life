@@ -125,7 +125,7 @@ class StateFlowCache<K, V>(
     }
 }
 class VersionedDayedCache<K, V, L>(
-    private val nativeFetchKey: suspend (key: K) -> V,
+    nativeFetchKey: suspend (key: K) -> V,
     private val cacheDayIfNeeded: suspend (date: LocalDate, cache: VersionedCache<K, V>) -> Unit,
     private val onValueUpdate: (suspend (cache: VersionedCache<LocalDate, List<L>>, key: K, old:V?, new: V) -> Unit)
 ){

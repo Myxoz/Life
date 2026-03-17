@@ -44,7 +44,6 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.myxoz.life.LocalScreens
 import com.myxoz.life.Theme
 import com.myxoz.life.api.Syncable
-import com.myxoz.life.api.syncables.ManualTransactionSyncable
 import com.myxoz.life.screens.feed.instantevents.InstantEvent
 import com.myxoz.life.ui.theme.FontSize
 import com.myxoz.life.utils.atStartAsMillis
@@ -544,16 +543,16 @@ private fun BoxScope.RenderEventEditing(
 @Composable
 private fun RenderEditSyncable(
     inspectedEventViewModel: InspectedEventViewModel,
-    syncable: Syncable.DatedSyncable?,
+    syncable: Syncable.FeedInstantEventSyncable?,
     startOfDay: Long,
     endOfDay: Long,
     instantEventSize: Dp,
     oneHourDp: Dp,
     oneHourPx: Float
-){
+) {
     val screens = LocalScreens.current
-    if (syncable is ManualTransactionSyncable && syncable.timestamp <= endOfDay && syncable.timestamp >= startOfDay) {
-        val instant = syncable.asInstantEvent() ?: return
+    if (syncable != null && syncable.timestamp <= endOfDay && syncable.timestamp >= startOfDay) {
+        val instant = syncable.asInstantEvent()
         Box(
             Modifier
                 .offset(y = ((instant.timestamp - startOfDay) / 3_600_000f) * oneHourDp - instantEventSize / 2)
@@ -561,20 +560,15 @@ private fun RenderEditSyncable(
                 .fillMaxWidth()
                 .pointerInput("start") {
                     var totalDrag = 0f
-                    var ev: ManualTransactionSyncable =
-                        inspectedEventViewModel.editedSyncable.value as? ManualTransactionSyncable
-                            ?: return@pointerInput
+                    var ev = inspectedEventViewModel.editedSyncable.value ?: return@pointerInput
                     this.detectVerticalDragGestures(
                         onDragStart = {
-                            ev =
-                                inspectedEventViewModel.editedSyncable.value as? ManualTransactionSyncable
-                                    ?: return@detectVerticalDragGestures
+                            ev = inspectedEventViewModel.editedSyncable.value ?: return@detectVerticalDragGestures
                             totalDrag = 0f
                         }
                     ) { _, it ->
                         totalDrag += it
-                        val offsetInMs =
-                            ((totalDrag / oneHourPx * 3600L * 1000L)).toLong()
+                        val offsetInMs = ((totalDrag / oneHourPx * 3600L * 1000L)).toLong()
                         inspectedEventViewModel.updateStartTs(ev.timestamp + offsetInMs)
                     }
                 },

@@ -1,5 +1,6 @@
 package com.myxoz.life.aggregator
 
+import android.app.AlarmManager
 import com.myxoz.life.R
 import com.myxoz.life.api.syncables.CommitSyncable
 import com.myxoz.life.api.syncables.ManualTransactionSyncable
@@ -20,19 +21,11 @@ class CalendarAggregator(
     fun getInstantEventsForDay(date: LocalDate) = combine(
         repos.calendarRepo.nextAlarmClockTs,
         repos.commitsRepo.getCommitsForDay(date),
-        repos.bankingRepo.getSortedTransactionsAt(date)
-    ) { nextAlarm, commits, transactions ->
+        repos.bankingRepo.getSortedTransactionsAt(date),
+        repos.todoRepo.getTodosForDay(date)
+    ) { nextAlarm, commits, transactions, todos ->
         val nextAlarmEvent = listOfNotNull(
-            nextAlarm?.let {
-                InstantEvent(
-                    R.drawable.alarm_clock,
-                    "Wecker",
-                    it.triggerTime,
-                    {false},
-                ) {
-                    nextAlarm.showIntent?.sendWithBal()
-                }
-            }
+            nextAlarm?.let { alarmToInstantEvent(it) }
         )
         val commits = commits?.data.def(listOf()).mapNotNull {
             commitToInstantEvent(it)
@@ -40,17 +33,10 @@ class CalendarAggregator(
         val transactions = transactions.def(listOf()).mapNotNull {
             bankEntryAsInstantEvent(it)
         }
-        createGroupedInstantEvents(commits + transactions + nextAlarmEvent)
-    }
-    private fun commitToInstantEvent(commitSyncable: CommitSyncable): InstantEvent? {
-        return InstantEvent(
-            R.drawable.commit,
-            commitSyncable.repoName,
-            commitSyncable.commitDate ?: return null,
-            { it is CommitSyncable && it.commitSha == commitSyncable.commitSha }
-        ) { screens ->
-            screens.openCommit(commitSyncable.commitSha)
+        val todos = todos?.data.def(listOf()).map {
+            it.asInstantEvent()
         }
+        createGroupedInstantEvents(commits + transactions + nextAlarmEvent + todos)
     }
     private fun createGroupedInstantEvents(mix: List<InstantEvent>): List<InstantEvent.InstantEventGroup>{
         val mix = mix.sortedBy { it.timestamp }
@@ -76,15 +62,41 @@ class CalendarAggregator(
         )
     }
     companion object {
-        fun bankEntryAsInstantEvent(entity: BankingRepo.BankingDisplayEntity): InstantEvent?{
+        private fun asInstantEvent(entity: BankingRepo.BankingDisplayEntity): InstantEvent{
             return InstantEvent(
                 entity.icon,
                 entity.amount.formatCents(),
-                if(!entity.isTransaction) entity.timestamp else return null,
+                entity.timestamp,
                 { it is ManualTransactionSyncable && it.id == entity.getStoredManualTransactionSyncable()?.id }
             ) { screens ->
                 screens.openTransaction(entity)
             }
         }
+        fun bankEntryAsInstantEvent(entity: BankingRepo.BankingDisplayEntity): InstantEvent?{
+            return if(!entity.isTransaction) asInstantEvent(entity) else null
+        }
+        fun manualTransactionEntityAsInstantEvent(manualTransactionSyncable: ManualTransactionSyncable): InstantEvent {
+            return asInstantEvent(BankingRepo.BankingDisplayEntity.from(manualTransactionSyncable))
+        }
+        private fun commitToInstantEvent(commitSyncable: CommitSyncable): InstantEvent? {
+            return InstantEvent(
+                R.drawable.commit,
+                commitSyncable.repoName,
+                commitSyncable.commitDate ?: return null,
+                { it is CommitSyncable && it.commitSha == commitSyncable.commitSha }
+            ) { screens ->
+                screens.openCommit(commitSyncable.commitSha)
+            }
+        }
+        private fun alarmToInstantEvent(alarm: AlarmManager.AlarmClockInfo) =
+            InstantEvent(
+                R.drawable.alarm_clock,
+                "Wecker",
+                alarm.triggerTime,
+                {false},
+            ) {
+                alarm.showIntent?.sendWithBal()
+            }
+
     }
 }

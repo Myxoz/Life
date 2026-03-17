@@ -40,3 +40,5 @@ fun Long.formatMsToDuration(ignoreSeconds: Boolean=false): String {
             "${if(h!=0L && m!=0L) if(m<=9) " 0" else " " else ""}${if(m!=0L) "${m}m" else ""}" +
             if(!ignoreSeconds) "${if((h!=0L || m!=0L) && s<=9) " 0" else " "}${s}s" else ""
 }
+
+inline fun String.nullIfEmpty() = if(!isEmpty()) this else null

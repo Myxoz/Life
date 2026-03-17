@@ -1,7 +1,7 @@
 package com.myxoz.life.aggregator
 
 import android.content.Context
-import com.myxoz.life.dbwrapper.DayScreenTimeEntity
+import com.myxoz.life.dbwrapper.days.DayScreenTimeEntity
 import com.myxoz.life.events.additionals.EventType
 import com.myxoz.life.repositories.AppRepositories
 import com.myxoz.life.repositories.utils.FlowCache

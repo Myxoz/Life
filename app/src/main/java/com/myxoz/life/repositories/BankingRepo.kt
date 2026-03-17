@@ -7,11 +7,9 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.produceState
 import com.myxoz.life.R
 import com.myxoz.life.api.API
-import com.myxoz.life.api.Syncable
 import com.myxoz.life.api.syncables.DeleteEntry
 import com.myxoz.life.api.syncables.ManualTransactionSyncable
 import com.myxoz.life.dbwrapper.WaitingSyncDao
-import com.myxoz.life.dbwrapper.WaitingSyncEntity
 import com.myxoz.life.dbwrapper.banking.BankingEntity
 import com.myxoz.life.dbwrapper.banking.BankingSidecarEntity
 import com.myxoz.life.dbwrapper.banking.ReadBankingDao
@@ -171,9 +169,7 @@ class BankingRepo(
         val manual = maybeUnsyncedManual.ensureSynced()
         _manualTransactions.cache.overwrite(manual.id, manual)
         manual.saveToDB(writeSyncableDaos)
-        waitingSyncDao.insertWaitingSync(
-            WaitingSyncEntity(manual.id, manual.calendarId, System.currentTimeMillis())
-        )
+        waitingSyncDao.requestSync(manual)
     }
     private suspend fun checkForExistingTransaction(future: ManualTransactionSyncable): Boolean {
         val day = future.timestamp.toLocalDate(zone)
@@ -242,7 +238,7 @@ class BankingRepo(
         val title = manual?.name ?: sidecar?.name ?: entity?.fromName ?: error("This can't happend")
         val subTitle = if(manual != null) manual.purpose ?: ""
             else if(sidecar == null && entity != null) entity.fromIban.chunked(4).joinToString(" ") else entity?.fromName ?: ""
-        fun getStoredManualTransactionSyncable(): Syncable.DatedSyncable? = manual
+        fun getStoredManualTransactionSyncable(): ManualTransactionSyncable? = manual
         fun equals(other: BankingDisplayEntity): Boolean {
             return if(entity != null && other.entity?.id == entity.id)
                 true

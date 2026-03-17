@@ -2,6 +2,7 @@ package com.myxoz.life.api
 
 import android.content.Context
 import android.util.Log
+import androidx.compose.runtime.Composable
 import com.myxoz.life.api.syncables.BankingSidecarSyncable
 import com.myxoz.life.api.syncables.DeleteEntry
 import com.myxoz.life.api.syncables.FullDaySyncable
@@ -10,8 +11,11 @@ import com.myxoz.life.api.syncables.ManualTransactionSyncable
 import com.myxoz.life.api.syncables.PersonSyncable
 import com.myxoz.life.api.syncables.ProfilePictureSyncable
 import com.myxoz.life.api.syncables.SyncedEvent
+import com.myxoz.life.api.syncables.TodoSyncable
 import com.myxoz.life.dbwrapper.WaitingSyncDao
 import com.myxoz.life.dbwrapper.WaitingSyncEntity
+import com.myxoz.life.repositories.AppRepositories
+import com.myxoz.life.screens.feed.instantevents.InstantEvent
 import org.json.JSONObject
 
 interface ServerSyncableCompanion<T: ServerSyncable> {
@@ -21,20 +25,26 @@ interface ServerSyncableCompanion<T: ServerSyncable> {
     fun fromJSON(json: JSONObject): T
 }
 
-abstract class ServerSyncable(val calendarId: Int) {
-    fun addTypeToJson(json: JSONObject): JSONObject = json.put("type", calendarId)
-    abstract suspend fun saveToDB(db: API.WriteSyncableDaos)
+abstract class ServerSyncable(override val calendarId: Int): ServerSyncableContract {
+    override fun addTypeToJson(json: JSONObject): JSONObject = json.put("type", calendarId)
+    abstract override suspend fun saveToDB(db: API.WriteSyncableDaos)
+}
+
+interface ServerSyncableContract {
+    val calendarId: Int
+    fun addTypeToJson(json: JSONObject): JSONObject
+    suspend fun saveToDB(db: API.WriteSyncableDaos)
 }
 
 abstract class Syncable(
     calendarId: Int,
-    open val id: Long
-) : ServerSyncable(calendarId) {
-    suspend fun toJson(): JSONObject? =
+    override val id: Long
+) : ServerSyncable(calendarId), SyncableContract {
+    override suspend fun toJson(): JSONObject? =
         specificsToJson()?.let { addTypeToJson(it).put("id", id.toString()) }
 
-    abstract suspend fun specificsToJson(): JSONObject?
-    suspend fun addToWaitingSyncDao(db: WaitingSyncDao) {
+    abstract override suspend fun specificsToJson(): JSONObject?
+    override suspend fun addToWaitingSyncDao(db: WaitingSyncDao) {
         db.insertWaitingSync(
             WaitingSyncEntity(
                 id,
@@ -44,12 +54,14 @@ abstract class Syncable(
         )
     }
 
-    suspend fun updateAndStageSync(db: API.WriteSyncableDaos, waitingSync: WaitingSyncDao) {
+    override fun isSynced() = id > 0
+
+    override suspend fun updateAndStageSync(db: API.WriteSyncableDaos, waitingSync: WaitingSyncDao) {
         saveToDB(db)
         addToWaitingSyncDao(waitingSync)
     }
 
-    open fun getInvalidReason(): String? = null
+    override fun getInvalidReason(): String? = null
 
     companion object {
         suspend fun from(entry: WaitingSyncEntity, readSyncableDaos: API.ReadSyncableDaos, context: Context): Syncable? {
@@ -103,6 +115,11 @@ abstract class Syncable(
                     ProfilePictureSyncable.fromDB(entry.id, context)
                 }
 
+                SpecialSyncablesIds.TODOS -> {
+                    val dbEntry = readSyncableDaos.todosDao.getById(entry.id) ?: return null
+                    TodoSyncable.fromEntity(dbEntry)
+                }
+
                 else -> {
                     val dbEntry =  readSyncableDaos.eventDetailsDao.getEvent(entry.id)
                     if (dbEntry == null) {
@@ -135,16 +152,33 @@ abstract class Syncable(
         const val PROFILEPICTURE = 55
         const val COMMITS = 56
         const val MANUALTRANSACTION = 57
+        const val TODOS = 58
     }
-    interface DatedSyncable{
+    interface DatedSyncable<T>: SyncableContract {
         val timestamp: Long
-        val id: Long
-        val calendarId: Int
-        fun copyWithTs(timestamp: Long): DatedSyncable
-        suspend fun toJson(): JSONObject?
-        suspend fun specificsToJson(): JSONObject?
-        suspend fun addToWaitingSyncDao(db: WaitingSyncDao)
-        suspend fun updateAndStageSync(db: API.WriteSyncableDaos, waitingSync: WaitingSyncDao)
-        fun getInvalidReason(): String? = null
+        fun copyWithTs(timestamp: Long): T
     }
+    interface InstantEventSyncable {
+        fun asInstantEvent(): InstantEvent
+    }
+    interface FeedInstantEventSyncable: DatedSyncable<FeedInstantEventSyncable>, InstantEventSyncable {
+        suspend fun delete(repos: AppRepositories): Unit
+        suspend fun saveWithCache(repos: AppRepositories): Unit
+        fun getFeedInvalidReason(): String?
+        override fun getInvalidReason() = getFeedInvalidReason()
+        @Composable
+        fun ModifyEventInputs(setSyncableTo: (FeedInstantEventSyncable) -> Unit)
+    }
+}
+interface SyncableContract: ServerSyncableContract {
+    val id: Long
+    suspend fun toJson(): JSONObject?
+    suspend fun specificsToJson(): JSONObject?
+    suspend fun addToWaitingSyncDao(db: WaitingSyncDao)
+
+    fun isSynced(): Boolean
+
+    suspend fun updateAndStageSync(db: API.WriteSyncableDaos, waitingSync: WaitingSyncDao)
+
+    fun getInvalidReason(): String?
 }

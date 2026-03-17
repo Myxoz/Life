@@ -58,5 +58,9 @@ object NavPath {
                 const val PERMISSIONS = "$SETTINGS/permissions"
             }
         }
+        object Todo {
+            const val MAIN = "$MENU/todo"
+            val DETAILS = SingleParamaterizedPath("todo") { "$MAIN/details/$it" }
+        }
     }
 }

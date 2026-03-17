@@ -40,7 +40,7 @@ import androidx.compose.ui.unit.dp
 import com.myxoz.life.LocalSettings
 import com.myxoz.life.R
 import com.myxoz.life.Theme
-import com.myxoz.life.dbwrapper.DayScreenTimeEntity
+import com.myxoz.life.dbwrapper.days.DayScreenTimeEntity
 import com.myxoz.life.screens.feed.dayoverview.edgeToEdgeGradient
 import com.myxoz.life.screens.person.displayperson.switchColors
 import com.myxoz.life.ui.setMaxTabletWidth

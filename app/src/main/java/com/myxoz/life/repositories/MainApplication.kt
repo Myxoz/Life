@@ -23,6 +23,7 @@ class MainApplication: Application() {
             db.readDaysDao,
             db.readBankingDao,
             db.readCommitsDao,
+            db.readTodosDao
         )
         val writeSyncableDaos = API.WriteSyncableDaos(
             db.writeEventDetailsDao,
@@ -30,7 +31,8 @@ class MainApplication: Application() {
             db.writeLocationsDao,
             db.writeDaysDao,
             db.writeBankingDao,
-            db.writeCommitsDao
+            db.writeCommitsDao,
+            db.writeTodosDao
         )
         val mainPrefs = applicationContext.getSharedPreferences(SPK, MODE_PRIVATE)
         val appScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
@@ -81,6 +83,12 @@ class MainApplication: Application() {
             readSyncableDaos,
             appScope
         )
+        val todosRepo = TodoRepo(
+            readSyncableDaos.todosDao,
+            writeSyncableDaos,
+            appScope,
+            db.waitingSync
+        )
         val stepRepo = StepRepo(db.proposedSteps, applicationContext.getSharedPreferences("steps", MODE_PRIVATE), appScope)
         repositories = AppRepositories(
             calendarRepo,
@@ -92,6 +100,7 @@ class MainApplication: Application() {
             bankingRepo,
             locationRepo,
             aiPredictionRepo,
+            todosRepo,
             API(
                 calendarRepo,
                 daySummaryRepo,
@@ -99,6 +108,7 @@ class MainApplication: Application() {
                 bankingRepo,
                 locationRepo,
                 commitsRepo,
+                todosRepo,
                 db.waitingSync,
                 readSyncableDaos,
                 writeSyncableDaos,

@@ -2,7 +2,6 @@ package com.myxoz.life.dbwrapper.days
 
 import androidx.room.Dao
 import androidx.room.Query
-import com.myxoz.life.dbwrapper.DayScreenTimeEntity
 
 @Dao
 interface ReadDaysDao {

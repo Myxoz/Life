@@ -41,8 +41,6 @@ class SyncedEvent(
 
     fun makeSynced() = SyncedEvent(if(isSynced()) id else API.generateId(), created, edited, proposed)
 
-    fun isSynced() = id > 0
-
     fun copyWithTimes(start: Long = proposed.start, end: Long = proposed.end) =
         SyncedEvent(id, created, edited, proposed.copyWithTimes(start, end))
 

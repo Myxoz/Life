@@ -163,7 +163,7 @@ class CalendarViewModel(
         repos.aggregators.calendarAggregator.getInstantEventsForDay(date).subscribeToColdFlow(viewModelScope, listOf())
     }
     @Composable
-    fun getInstantEventsForDay(syncable: Syncable.DatedSyncable?, date: LocalDate): State<List<InstantEvent.InstantEventGroup>> {
+    fun getInstantEventsForDay(syncable: Syncable.FeedInstantEventSyncable?, date: LocalDate): State<List<InstantEvent.InstantEventGroup>> {
         val baseEvents by instantEventsForDayCache.get(date).collectAsState()
 
         val zone = remember { ZoneId.systemDefault() }

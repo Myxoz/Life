@@ -49,7 +49,7 @@ import androidx.core.graphics.drawable.toBitmap
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.myxoz.life.R
 import com.myxoz.life.Theme
-import com.myxoz.life.dbwrapper.DayScreenTimeEntity
+import com.myxoz.life.dbwrapper.days.DayScreenTimeEntity
 import com.myxoz.life.ui.rememberAsymmetricalVerticalCornerRadius
 import com.myxoz.life.ui.setMaxTabletWidth
 import com.myxoz.life.ui.theme.FontFamily

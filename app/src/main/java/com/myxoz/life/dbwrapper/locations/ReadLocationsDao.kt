@@ -2,7 +2,6 @@ package com.myxoz.life.dbwrapper.locations
 
 import androidx.room.Dao
 import androidx.room.Query
-import com.myxoz.life.dbwrapper.LocationEntity
 
 @Dao
 interface ReadLocationsDao {

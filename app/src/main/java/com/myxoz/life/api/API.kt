@@ -14,6 +14,7 @@ import com.myxoz.life.api.syncables.ManualTransactionSyncable
 import com.myxoz.life.api.syncables.PersonSyncable
 import com.myxoz.life.api.syncables.ProfilePictureSyncable
 import com.myxoz.life.api.syncables.SyncedEvent
+import com.myxoz.life.api.syncables.TodoSyncable
 import com.myxoz.life.dbwrapper.Daos
 import com.myxoz.life.dbwrapper.WaitingSyncDao
 import com.myxoz.life.dbwrapper.banking.ReadBankingDao
@@ -28,6 +29,8 @@ import com.myxoz.life.dbwrapper.locations.ReadLocationsDao
 import com.myxoz.life.dbwrapper.locations.WriteLocationsDao
 import com.myxoz.life.dbwrapper.people.ReadPeopleDao
 import com.myxoz.life.dbwrapper.people.WritePeopleDao
+import com.myxoz.life.dbwrapper.todos.ReadTodosDao
+import com.myxoz.life.dbwrapper.todos.WriteTodosDao
 import com.myxoz.life.events.additionals.EventType
 import com.myxoz.life.repositories.BankingRepo
 import com.myxoz.life.repositories.CalendarRepo
@@ -35,6 +38,7 @@ import com.myxoz.life.repositories.CommitsRepo
 import com.myxoz.life.repositories.DaySummaryRepo
 import com.myxoz.life.repositories.LocationRepo
 import com.myxoz.life.repositories.PeopleRepo
+import com.myxoz.life.repositories.TodoRepo
 import com.myxoz.life.screens.feed.fullscreenevent.getId
 import com.myxoz.life.utils.forEach
 import com.myxoz.life.utils.jsonObjArray
@@ -50,6 +54,7 @@ class API(
     private val bankingRepo: BankingRepo,
     private val locationRepo: LocationRepo,
     private val commitsRepo: CommitsRepo,
+    private val todoRepo: TodoRepo,
     private val waitingSyncDao: WaitingSyncDao,
     private val readSyncableDaos: ReadSyncableDaos,
     private val writeSyncableDaos: WriteSyncableDaos,
@@ -253,6 +258,10 @@ class API(
                 val manual = ManualTransactionSyncable.overwriteDBByJson(writeSyncableDaos, json)
                 bankingRepo.updateCachedManualTransaction(manual)
             }
+            Syncable.SpecialSyncablesIds.TODOS -> {
+                val todo = TodoSyncable.overwriteDBByJson(writeSyncableDaos, json)
+                todoRepo.updateCachedTodo(todo)
+            }
 
             else -> {
                 val syned = SyncedEvent.overwriteDBByJson(writeSyncableDaos, json)
@@ -286,6 +295,7 @@ class API(
         val daysDao: ReadDaysDao,
         val bankingDao: ReadBankingDao,
         val commitsDao: ReadCommitsDao,
+        val todosDao: ReadTodosDao,
     )
     class WriteSyncableDaos(
         val eventDetailsDao: WriteEventDetailsDao,
@@ -294,6 +304,7 @@ class API(
         val daysDao: WriteDaysDao,
         val bankingDao: WriteBankingDao,
         val commitsDao: WriteCommitsDao,
+        val todosDao: WriteTodosDao,
     )
     fun getBase64Public() = security.getBase64Public()
 }

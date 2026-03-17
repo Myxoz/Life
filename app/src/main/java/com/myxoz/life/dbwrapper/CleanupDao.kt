@@ -75,6 +75,9 @@ interface DatabaseCleanupDao {
     @Query("DELETE FROM timewasteplatform")
     suspend fun clearTimewastePlatform()
 
+    @Query("DELETE FROM todos")
+    suspend fun clearTodos()
+
     @Transaction
     suspend fun clearAllExceptPersistent() {
         clearWork()
@@ -100,5 +103,6 @@ interface DatabaseCleanupDao {
         clearManualTransaction()
         clearTimewaste()
         clearTimewastePlatform()
+        clearTodos()
     }
 }

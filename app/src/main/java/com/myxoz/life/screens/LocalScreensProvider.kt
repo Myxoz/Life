@@ -6,8 +6,10 @@ import androidx.lifecycle.viewModelScope
 import androidx.navigation.NavController
 import com.mapbox.geojson.Point
 import com.mapbox.maps.CameraOptions
+import com.myxoz.life.api.Syncable
 import com.myxoz.life.api.syncables.LocationSyncable
 import com.myxoz.life.api.syncables.SyncedEvent
+import com.myxoz.life.api.syncables.TodoSyncable
 import com.myxoz.life.repositories.BankingRepo
 import com.myxoz.life.screens.feed.instantevents.InstantEvent
 import com.myxoz.life.screens.feed.search.SearchField
@@ -110,7 +112,11 @@ class LocalScreensProvider(
 
     fun editTransaction(transaction: BankingRepo.BankingDisplayEntity) {
         val sync = transaction.getStoredManualTransactionSyncable() ?: return
-        inspectedEventViewModel.setEditedSyncableTo(sync)
+        editSyncable(sync)
+    }
+
+    fun editSyncable(syncable: Syncable.FeedInstantEventSyncable) {
+        inspectedEventViewModel.setEditedSyncableTo(syncable)
         nav.navigate(NavPath.FULLSCREEN_EVENT) {
             popUpTo(NavPath.HOME)
         }
@@ -131,5 +137,9 @@ class LocalScreensProvider(
 
     fun openDayOverview(date: LocalDate) {
         nav.navigate(NavPath.DAY_OVERVIEW.with(date.toEpochDay()))
+    }
+
+    fun fullScreenTodo(todo: TodoSyncable) {
+        nav.navigate(NavPath.Menu.Todo.DETAILS.with(todo.id))
     }
 }

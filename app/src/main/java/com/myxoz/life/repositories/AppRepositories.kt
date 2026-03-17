@@ -15,6 +15,7 @@ class AppRepositories(
     val bankingRepo: BankingRepo,
     val locationRepo: LocationRepo,
     val aiPredictionRepo: AIPredictionRepo,
+    val todoRepo: TodoRepo,
     val api: API,
     val readSyncableDaos: API.ReadSyncableDaos,
     val prefs: SharedPreferences,

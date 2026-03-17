@@ -59,7 +59,7 @@ import com.myxoz.life.LocalSettings
 import com.myxoz.life.R
 import com.myxoz.life.Theme
 import com.myxoz.life.api.syncables.FullDaySyncable
-import com.myxoz.life.dbwrapper.DayScreenTimeEntity
+import com.myxoz.life.dbwrapper.days.DayScreenTimeEntity
 import com.myxoz.life.screens.options.getMappedUsageDataBetween
 import com.myxoz.life.screens.options.getUsageDataBetween
 import com.myxoz.life.ui.theme.FontColor

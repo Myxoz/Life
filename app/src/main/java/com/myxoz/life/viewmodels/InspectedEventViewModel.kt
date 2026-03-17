@@ -3,7 +3,6 @@ package com.myxoz.life.viewmodels
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.myxoz.life.api.Syncable
-import com.myxoz.life.api.syncables.ManualTransactionSyncable
 import com.myxoz.life.api.syncables.SyncedEvent
 import com.myxoz.life.events.EmptyEvent
 import com.myxoz.life.repositories.AppRepositories
@@ -18,7 +17,7 @@ class InspectedEventViewModel(val repos: AppRepositories): ViewModel() {
     private val _event = MutableStateFlow(SyncedEvent.getSemanticNullValueEvent())
     val event = _event.asStateFlow()
 
-    private val _editedSyncable = MutableStateFlow<Syncable.DatedSyncable?>(null)
+    private val _editedSyncable = MutableStateFlow<Syncable.FeedInstantEventSyncable?>(null)
     val editedSyncable = _editedSyncable.asStateFlow()
 
     private val _isEditing = MutableStateFlow(false)
@@ -63,7 +62,7 @@ class InspectedEventViewModel(val repos: AppRepositories): ViewModel() {
         }
     }
 
-    fun setEditedSyncableTo(editedSyncable: Syncable.DatedSyncable){
+    fun setEditedSyncableTo(editedSyncable: Syncable.FeedInstantEventSyncable){
         _isEditing.value = true
         _event.value = SyncedEvent.getSemanticNullValueEvent()
         _editedSyncable.value = editedSyncable
@@ -75,23 +74,11 @@ class InspectedEventViewModel(val repos: AppRepositories): ViewModel() {
     }
     suspend fun removeSyncedEvent(event: SyncedEvent) = repos.calendarRepo.removeSyncedEvent(event)
     suspend fun updateOrCreateSyncedEvent(event: SyncedEvent) = repos.calendarRepo.updateOrCreateSyncedEvent(event)
-    suspend fun updateOrCreateSynced(syncable: Syncable.DatedSyncable, delete: Boolean = false) {
+    suspend fun updateOrCreateSynced(syncable: Syncable.FeedInstantEventSyncable, delete: Boolean = false) {
         if(delete){
-            when(syncable){
-                is ManualTransactionSyncable -> {
-                    repos.bankingRepo.deleteManualTransaction(syncable)
-                }
-                else -> error("Tried to save syncable, but the syncable is not implemented and therefore can't be saved nor synced")
-                // Just using .saveToDb is not possible, because of cache problems.
-            }
+            syncable.delete(repos)
         } else {
-            when(syncable){
-                is ManualTransactionSyncable -> {
-                    repos.bankingRepo.putManualTransaction(syncable)
-                }
-                else -> error("Tried to save syncable, but the syncable is not implemented and therefore can't be saved nor synced")
-                // Just using .saveToDb is not possible, because of cache problems.
-            }
+            syncable.saveWithCache(repos)
         }
     }
     suspend fun resync() = repos.api.resync()

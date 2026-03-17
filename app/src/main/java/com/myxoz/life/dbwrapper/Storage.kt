@@ -4,8 +4,7 @@ import android.content.Context
 import androidx.room.Database
 import androidx.room.Room
 import androidx.room.RoomDatabase
-import androidx.room.migration.Migration
-import androidx.sqlite.db.SupportSQLiteDatabase
+import com.myxoz.life.dbwrapper.DatabaseMigrator.Companion.applyAllMigrations
 import com.myxoz.life.dbwrapper.banking.BankingEntity
 import com.myxoz.life.dbwrapper.banking.BankingSidecarEntity
 import com.myxoz.life.dbwrapper.banking.ManualTransactionEntity
@@ -14,7 +13,10 @@ import com.myxoz.life.dbwrapper.banking.WriteBankingDao
 import com.myxoz.life.dbwrapper.commits.CommitEntity
 import com.myxoz.life.dbwrapper.commits.ReadCommitsDao
 import com.myxoz.life.dbwrapper.commits.WriteCommitsDao
+import com.myxoz.life.dbwrapper.days.DayScreenTimeEntity
 import com.myxoz.life.dbwrapper.days.DaysEntity
+import com.myxoz.life.dbwrapper.days.ProposedStepsDao
+import com.myxoz.life.dbwrapper.days.ProposedStepsEntity
 import com.myxoz.life.dbwrapper.days.ReadDaysDao
 import com.myxoz.life.dbwrapper.days.WriteDaysDao
 import com.myxoz.life.dbwrapper.events.DigSocEntity
@@ -33,6 +35,7 @@ import com.myxoz.life.dbwrapper.events.TravelEntity
 import com.myxoz.life.dbwrapper.events.VehicleEntity
 import com.myxoz.life.dbwrapper.events.WorkEntity
 import com.myxoz.life.dbwrapper.events.WriteEventDetailsDao
+import com.myxoz.life.dbwrapper.locations.LocationEntity
 import com.myxoz.life.dbwrapper.locations.ReadLocationsDao
 import com.myxoz.life.dbwrapper.locations.WriteLocationsDao
 import com.myxoz.life.dbwrapper.people.PersonEntity
@@ -40,26 +43,10 @@ import com.myxoz.life.dbwrapper.people.ProfilePictureStored
 import com.myxoz.life.dbwrapper.people.ReadPeopleDao
 import com.myxoz.life.dbwrapper.people.SocialsEntity
 import com.myxoz.life.dbwrapper.people.WritePeopleDao
+import com.myxoz.life.dbwrapper.todos.ReadTodosDao
+import com.myxoz.life.dbwrapper.todos.TodoEntity
+import com.myxoz.life.dbwrapper.todos.WriteTodosDao
 
-const val currVer = 37
-val migration = object : Migration(currVer-1, currVer) {
-    override fun migrate(db: SupportSQLiteDatabase) {
-        // Create the new dayscreentime table
-        //db.execSQL("ALTER TABLE people ADD COLUMN birthday INTEGER")
-        db.execSQL(
-            """
-            CREATE TABLE IF NOT EXISTS timewasteplatform (
-                event_id INTEGER NOT NULL,
-                timewasteplatform INTEGER NOT NULL,
-                duration_ms INTEGER NOT NULL,
-                PRIMARY KEY(event_id, timewasteplatform)
-            )
-            """.trimIndent()
-        )
-        //db.execSQL("UPDATE people SET home = (SELECT location.id FROM location WHERE location.homeof = people.id) WHERE EXISTS (SELECT 1 FROM location WHERE location.homeof = people.id)")
-        //db.execSQL("ALTER TABLE location DROP COLUMN homeof")
-    }
-}
 @Database(
     entities = [
         PersonEntity::class,
@@ -87,11 +74,14 @@ val migration = object : Migration(currVer-1, currVer) {
         WorkEntity::class,
         ManualTransactionEntity::class,
         TimewasteEntity::class,
-        TimewastePlatformEntity::class
+        TimewastePlatformEntity::class,
+        TodoEntity::class
     ],
-    version = currVer,
+    version = DatabaseMigrator.VERSION,
     exportSchema = true
 ) abstract class AppDatabase : RoomDatabase() {
+    abstract fun readTodosDao(): ReadTodosDao
+    abstract fun writeTodosDao(): WriteTodosDao
     abstract fun readEventsDetailsDao(): ReadEventDetailsDao
     abstract fun writeEventDetailsDao(): WriteEventDetailsDao
 
@@ -124,7 +114,9 @@ object DatabaseProvider {
                 context.applicationContext,
                 AppDatabase::class.java,
                 "database.db"
-            ).addMigrations(migration).build()
+            )
+                .applyAllMigrations()
+                .build()
             INSTANCE = instance
             instance
         }
@@ -133,10 +125,9 @@ object DatabaseProvider {
 /**
  * 1. Create new Dao and Entity (copy from [com.myxoz.life.dbwrapper])
  * 2. Add entity to [AppDatabase] and dao (above)
- * 3. Create [migration] (INTEGER/STRING (NOT NULL)) and increase [currVer]
+ * 3. Create  [DatabaseMigrator.applyAllMigrations] (INTEGER (long/bool)/TEXT (string) (NOT NULL)) and increase [DatabaseMigrator.VERSION]
  * 4. Relaunch on devices to apply changed
- * 5. Add dao to API e.x. after [Daos]
- * 6. Add to CleanupDao [DatabaseCleanupDao.clearAllExceptPersistent]
+ * 5. Add to CleanupDao [DatabaseCleanupDao.clearAllExceptPersistent]
  *
  * Guide to create new calendar:
  * 6. Create the color scheme for the new EventType in [com.myxoz.life.ui.theme.OldColors.Calendar]
@@ -154,8 +145,9 @@ object DatabaseProvider {
  * 18. Add event to the fetch event section (FEEV) and also to the if statement checking fetching calendars (FETT)
  *
  * Guide to create new Syncable:
+ * 6. Add dao to API e.x. after [Daos] add to [com.myxoz.life.api.API.ReadSyncableDaos] and [com.myxoz.life.api.API.WriteSyncableDaos]
  * 7. Create a new Syncable: Syncable in [com.myxoz.life.api]
- * 8. Add to [com.myxoz.life.api.Syncable.SpecialSyncablesIds] and then [com.myxoz.life.api.API] overwrite and get
+ * 8. Add to [com.myxoz.life.api.Syncable.SpecialSyncablesIds] and then [com.myxoz.life.api.API.overwriteByJson] overwrite and get
  * 9. Add to [com.myxoz.life.api.Syncable.from] (only when also syncable)
  * 10. Go to serverside ( sshvim myxoz:~/myxoz.de/life/_api.php )
  * 11. Add to delete from db (only when also syncable) (SRMDB)
