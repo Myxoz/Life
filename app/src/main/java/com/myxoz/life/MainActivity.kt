@@ -58,8 +58,9 @@ import com.myxoz.life.screens.options.DebugScreen
 import com.myxoz.life.screens.options.InformationComposable
 import com.myxoz.life.screens.options.MenuComposable
 import com.myxoz.life.screens.options.MoreComposable
-import com.myxoz.life.screens.options.SettingsComposable
-import com.myxoz.life.screens.options.SettingsPermissionComposable
+import com.myxoz.life.screens.options.settings.PreferenceComposable
+import com.myxoz.life.screens.options.settings.SettingsComposable
+import com.myxoz.life.screens.options.settings.SettingsPermissionComposable
 import com.myxoz.life.screens.person.Contacts
 import com.myxoz.life.screens.person.SocialGraph
 import com.myxoz.life.screens.person.displayperson.PhotoPicker
@@ -362,6 +363,9 @@ class MainActivity : ComponentActivity() {
                             }
                             composable(NavPath.Menu.More.Settings.PERMISSIONS) {
                                 SettingsPermissionComposable(calendarViewModel)
+                            }
+                            composable(NavPath.Menu.More.Settings.PREFERENCES) {
+                                PreferenceComposable()
                             }
                 }
                 LaunchedEffect(Unit) {

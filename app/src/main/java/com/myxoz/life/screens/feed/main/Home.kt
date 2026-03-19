@@ -24,7 +24,7 @@ import kotlinx.coroutines.withContext
 fun HomeComposable(calendarViewModel: CalendarViewModel, inspectedEventViewModel: InspectedEventViewModel){
     val settings = LocalSettings.current
     LaunchedEffect(Unit) {
-        calendarViewModel.resync()
+        if(settings.features.syncWithServer.has.value) calendarViewModel.resync()
         calendarViewModel.refetchAlarmClockTs()
         withContext(Dispatchers.IO) {
             calendarViewModel.requestAutoDetectedEventStart(settings)

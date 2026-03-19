@@ -18,17 +18,22 @@ import androidx.core.content.ContextCompat
 import androidx.core.content.edit
 import androidx.core.net.toUri
 import com.myxoz.life.android.notifications.NotificationReaderService
+import com.myxoz.life.utils.SharedPrefsUtils.get
+import com.myxoz.life.utils.SharedPrefsUtils.put
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import kotlin.coroutines.EmptyCoroutineContext
+import kotlin.reflect.KClass
 
 
-class Settings(val prefs: SharedPreferences, context: Context, activity: Activity) {
+class Settings(prefs: SharedPreferences, context: Context, activity: Activity) {
     val permissions = Permissions(prefs,context, activity)
     val features = Features(prefs, this@Settings.permissions)
+    val preferences = Preferences(prefs)
     class Features(val prefs: SharedPreferences, permissions: Permissions){
         /** ADD TO [all]!!! */
         val autoDetectCalls = Feature(
@@ -302,6 +307,27 @@ class Settings(val prefs: SharedPreferences, context: Context, activity: Activit
             }
 
             fun checkEnabled() = has.value && check()
+        }
+    }
+    class Preferences(prefs: SharedPreferences) {
+        val displayedDaysOptions = Preference(DISPLAYED_DAYS_OPTIONS, prefs, Int::class, 0b10101110)
+        class Preference<T: Any>(
+            val spk: String,
+            val prefs: SharedPreferences,
+            val clazz: KClass<T>,
+            val defaultValue: T
+        ) {
+            private val _flow: MutableStateFlow<T> = MutableStateFlow(prefs.get(spk, clazz) ?: defaultValue)
+            val flow: StateFlow<T> = _flow
+            fun put(new: T){
+                _flow.value = new
+                prefs.edit {
+                    put(spk, new, clazz)
+                }
+            }
+        }
+        companion object {
+            const val DISPLAYED_DAYS_OPTIONS = "displayed_days_options"
         }
     }
     companion object {

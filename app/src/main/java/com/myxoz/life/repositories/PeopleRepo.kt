@@ -8,7 +8,7 @@ import com.myxoz.life.dbwrapper.WaitingSyncDao
 import com.myxoz.life.repositories.utils.VersionedCache
 import com.myxoz.life.repositories.utils.VersionedDayedCache
 import com.myxoz.life.repositories.utils.VersionedDayedCache.Companion.updateDayedCacheFromTo
-import com.myxoz.life.screens.options.ME_ID
+import com.myxoz.life.screens.options.settings.ME_ID
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow

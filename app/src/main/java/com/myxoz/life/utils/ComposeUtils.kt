@@ -38,6 +38,7 @@ import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.content.edit
+import com.myxoz.life.utils.SharedPrefsUtils.put
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.FlowPreview
@@ -50,6 +51,7 @@ import kotlin.math.atan2
 import kotlin.math.cos
 import kotlin.math.hypot
 import kotlin.math.sin
+import kotlin.reflect.KClass
 
 @Composable
 fun Modifier.rippleClick(enabled: Boolean=true, run: ()->Unit): Modifier = this.clickable( remember { MutableInteractionSource() }, ripple(), onClick = run, enabled = enabled)
@@ -78,7 +80,6 @@ data class Ref<T>(var value: T)
 @Composable
 fun <T> MutableStateFlow<T>.collectAsMutableState(): MutableState<T> {
     val state = this.collectAsState()
-
     return remember(this) {
         object : MutableState<T> {
             override var value: T
@@ -109,36 +110,41 @@ fun <T> MutableStateFlow<T?>.collectAsMutableNonNullState(defValue: T): MutableS
         }
     }
 }
+
 @OptIn(FlowPreview::class)
-fun Flow<Long?>.syncLongToPrefs(
+fun <T: Any> Flow<T>.syncToPrefs(
     scope: CoroutineScope,
     prefs: SharedPreferences,
     key: String,
+    type: KClass<T>,
     debounceMs: Long = 200
 ) {
     scope.launch(Dispatchers.IO) {
-        this@syncLongToPrefs
+        this@syncToPrefs
             .debounce(debounceMs)
             .collect { value ->
                 prefs.edit{
-                    putLong(key, value ?: return@edit)
+                    put(key, value, type)
                 }
             }
     }
 }
+
 @OptIn(FlowPreview::class)
-fun Flow<String?>.syncStringToPrefs(
+fun <T: Any> Flow<T?>.syncNullableToPrefs(
     scope: CoroutineScope,
     prefs: SharedPreferences,
     key: String,
+    type: KClass<T>,
     debounceMs: Long = 200
 ) {
     scope.launch(Dispatchers.IO) {
-        this@syncStringToPrefs
+        this@syncNullableToPrefs
             .debounce(debounceMs)
             .collect { value ->
+                value ?: return@collect
                 prefs.edit{
-                    putString(key, value)
+                    put(key, value, type)
                 }
             }
     }

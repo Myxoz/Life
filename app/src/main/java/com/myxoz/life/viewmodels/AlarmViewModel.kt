@@ -19,8 +19,8 @@ import com.myxoz.life.api.syncables.SyncedEvent
 import com.myxoz.life.repositories.AppRepositories
 import com.myxoz.life.repositories.utils.subscribeToColdFlow
 import com.myxoz.life.screens.alarm.AlarmReceiver
-import com.myxoz.life.utils.syncLongToPrefs
-import com.myxoz.life.utils.syncStringToPrefs
+import com.myxoz.life.utils.syncNullableToPrefs
+import com.myxoz.life.utils.syncToPrefs
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.flow
@@ -40,11 +40,11 @@ class AlarmViewModel(val repos: AppRepositories): ViewModel() {
         }
     }
     val alarmSound = MutableStateFlow(AlarmSound.fromPrefs(repos.prefs)).apply {
-        map { it?.toJson() }.syncStringToPrefs(viewModelScope, repos.prefs, "alarmSound")
+        map { it?.toJson() }.syncNullableToPrefs(viewModelScope, repos.prefs, "alarmSound", String::class)
     }
     val nextEvent = MutableStateFlow<SyncedEvent?>(null)
     val minutesToGetReady = MutableStateFlow(repos.prefs.getLong("minutesToGetReady", 30L)).apply {
-        syncLongToPrefs(viewModelScope, repos.prefs, "minutesToGetReady")
+        syncToPrefs(viewModelScope, repos.prefs, "minutesToGetReady", Long::class)
     }
     val minuteFlow = flow {
         emit(System.currentTimeMillis())

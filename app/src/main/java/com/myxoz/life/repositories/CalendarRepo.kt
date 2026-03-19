@@ -73,7 +73,7 @@ class CalendarRepo(
         if (old != null && new != null && old.proposed.start == new.proposed.start && old.proposed.end == new.proposed.end) {
             cache.updateKeysWith(new.proposed.getAllStrechedDays(zone)) { list ->
                 list.toMutableList().apply {
-                    val index = indexOf(old)
+                    val index = indexOfFirst { it.id == new.id }
                     if (index != -1) {
                         set(index, new)
                     }

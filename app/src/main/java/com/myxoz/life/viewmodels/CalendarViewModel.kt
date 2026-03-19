@@ -30,6 +30,7 @@ import com.myxoz.life.screens.feed.dayoverview.getMonthByCalendarMonth
 import com.myxoz.life.screens.feed.instantevents.InstantEvent
 import com.myxoz.life.screens.feed.main.SegmentedEvent
 import com.myxoz.life.screens.feed.search.SearchField
+import com.myxoz.life.utils.syncToPrefs
 import com.myxoz.life.utils.toLocalDate
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.delay
@@ -65,7 +66,9 @@ class CalendarViewModel(
     )
     val lastInsertedSteps = repos.stepRepo.lastInsertedSteps
     val lastAPIResponse = MutableStateFlow<API.SyncingResponse?>(null)
-    val dayAmount = MutableStateFlow(repos.prefs.getInt("displayed_days", 2))
+    val dayAmount = MutableStateFlow(repos.prefs.getInt("displayed_days", 2)).apply {
+        syncToPrefs(viewModelScope, repos.prefs, "displayed_days", Int::class)
+    }
     val minuteFlow = flow {
         emit(System.currentTimeMillis())
         while (true){
@@ -76,9 +79,6 @@ class CalendarViewModel(
     suspend fun resync() = repos.api.resync().also { lastAPIResponse.value = it }
     init {
         viewModelScope.launch {
-            viewModelScope.launch {
-                dayAmount.collect { repos.prefs.edit { putInt("displayed_days", it) } }
-            }
             viewModelScope.launch {
                 snapshotFlow { lazyListState.firstVisibleItemIndex }.collect {
                     val day = days.value.getOrNull(it) ?: return@collect

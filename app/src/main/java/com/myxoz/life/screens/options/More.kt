@@ -12,6 +12,7 @@ import com.myxoz.life.R
 import com.myxoz.life.Theme
 import com.myxoz.life.screens.NavPath
 import com.myxoz.life.screens.options.SubOption.Companion.RenderSubOptions
+import com.myxoz.life.screens.options.settings.ME_ID
 
 @Composable
 fun MoreComposable(){

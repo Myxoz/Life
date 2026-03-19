@@ -5,6 +5,8 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
@@ -38,10 +40,12 @@ import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardCapitalization
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.times
 import com.myxoz.life.LocalNavController
 import com.myxoz.life.LocalScreens
+import com.myxoz.life.LocalSettings
 import com.myxoz.life.R
 import com.myxoz.life.Theme
 import com.myxoz.life.events.additionals.EventType
@@ -50,6 +54,8 @@ import com.myxoz.life.screens.NavPath
 import com.myxoz.life.ui.theme.FontSize
 import com.myxoz.life.ui.theme.TypoStyle
 import com.myxoz.life.utils.MaterialShapes
+import com.myxoz.life.utils.collectAsMutableState
+import com.myxoz.life.utils.combinedRippleClick
 import com.myxoz.life.utils.rippleClick
 import com.myxoz.life.utils.toDp
 import com.myxoz.life.utils.toShape
@@ -62,14 +68,13 @@ fun LifeBottomBar(calendarViewModel: CalendarViewModel){
         Modifier
             .padding(vertical = 7.dp, horizontal = 10.dp)
             .fillMaxWidth()
+            .height(IntrinsicSize.Min)
         ,
         verticalAlignment = Alignment.CenterVertically
     ) {
         val search = calendarViewModel.search
         val mode by search.mode.collectAsState()
         val inputedValue by search.textInputValue.collectAsState()
-        val setWidth by calendarViewModel.dayAmount.collectAsState()
-        val width by animateFloatAsState(setWidth.toFloat())
         val rowHeight = FontSize.LARGE.size.toDp() + 20.dp
         val profileViewModel = LocalScreens.current.profileInfoModel
         val allPeople by profileViewModel.getAlPeopleFlow.collectAsState()
@@ -82,25 +87,7 @@ fun LifeBottomBar(calendarViewModel: CalendarViewModel){
         val allLocationsMap = remember(allLocations) {
             allPeople.groupBy { it.id }.mapValues { it.value.first() }
         }
-        Row(
-            Modifier
-                .clip(CircleShape)
-                .size(rowHeight)
-                .padding(7.dp)
-                .rippleClick {
-                    calendarViewModel.dayAmount.value = setWidth % 4 + 1
-                }
-        ) {
-            repeat(4){
-                val widthPerElem = (FontSize.LARGE.size.toDp() + 6.dp)/width
-                Box(Modifier
-                    .fillMaxHeight()
-                    .width(widthPerElem)
-                    .padding(horizontal = 1.dp)
-                    .background(Theme.primary, CircleShape)
-                )
-            }
-        }
+        DayAmountSelector(calendarViewModel, rowHeight)
         Spacer(Modifier.width(7.dp))
         val focusManager = LocalFocusManager.current
         var hasFocus by remember { mutableStateOf(false) }
@@ -306,6 +293,57 @@ fun LifeBottomBar(calendarViewModel: CalendarViewModel){
                 }
         ) {
             Icon(painterResource(R.drawable.menu), "Life", Modifier.fillMaxSize(), Theme.onPrimary)
+        }
+    }
+}
+
+@Composable
+private fun DayAmountSelector(calendarViewModel: CalendarViewModel, rowHeight: Dp) {
+    val settings = LocalSettings.current
+    val displayingElements by settings.preferences.displayedDaysOptions.flow.collectAsState()
+    var setWidth by calendarViewModel.dayAmount.collectAsMutableState()
+    val width by animateFloatAsState(setWidth.toFloat())
+    val realSize = rowHeight - 8.dp
+    val maxBit = 31 - displayingElements.countLeadingZeroBits()
+    val minBit = displayingElements.countTrailingZeroBits()
+    Column(
+        Modifier
+            .size(realSize)
+            .combinedRippleClick({
+                if (displayingElements == 0) return@combinedRippleClick // No bit set
+                setWidth = if (minBit <= setWidth)
+                    31 - displayingElements.and((1.shl(setWidth) - 1)).countLeadingZeroBits()
+                else
+                    maxBit
+            }) {
+                if (displayingElements == 0) return@combinedRippleClick // No bit set
+                setWidth = if (maxBit > setWidth)
+                    displayingElements.and((1.shl(setWidth + 1) - 1).inv()).countTrailingZeroBits()
+                    // Yes I like Rust, why did you ask?
+                else
+                    minBit
+            }
+    ) {
+        repeat(4) { outerRow ->
+            val weight by animateFloatAsState(if(width >= outerRow * 4) 1000f else 1f)
+            Row(
+                Modifier
+                    .weight(weight)
+                    .padding(vertical = 1.dp)
+            ) {
+                val elementsInRow = if(width >= 4*outerRow.plus(1)) 4f else if(width >= outerRow*4) width % 4 else 1f
+                if(elementsInRow != 0f) {
+                    repeat(4){
+                        val widthPerElem = realSize/elementsInRow
+                        Box(Modifier
+                            .fillMaxHeight()
+                            .width(widthPerElem)
+                            .padding(horizontal = 1.dp)
+                            .background(Theme.primary, CircleShape)
+                        )
+                    }
+                }
+            }
         }
     }
 }

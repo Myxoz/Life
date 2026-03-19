@@ -8,7 +8,7 @@ import com.myxoz.life.dbwrapper.events.EventEntity
 import com.myxoz.life.dbwrapper.people.PersonEntity
 import com.myxoz.life.events.additionals.EventType
 import com.myxoz.life.repositories.AppRepositories
-import com.myxoz.life.screens.options.ME_ID
+import com.myxoz.life.screens.options.settings.ME_ID
 import com.myxoz.life.screens.person.GraphEdge
 import com.myxoz.life.screens.person.SocialGraphNode
 import com.myxoz.life.utils.diagrams.PieChart

@@ -464,7 +464,7 @@ fun NextEventInformation(alarmViewModel: AlarmViewModel, nextEvent: SyncedEvent,
         RenderEventPreview(nextEvent, screens, profileInfoModel)
         Text("Um ${nextEvent.proposed.start.formatDayTime(calendar)} in", style = TypoStyle(Theme.secondary, FontSize.MEDIUM))
         val animatedTime = remember { Animatable(0f) }
-        LaunchedEffect(currentTime) {
+        LaunchedEffect(currentTime, nextEvent.proposed.start) {
             animatedTime.animateTo((nextEvent.proposed.start - currentTime).toFloat(), chartBasedAnimation)
         }
         Text(animatedTime.value.toLong().formatMsToDuration(true), style = TypoStyle(Theme.primary, FontSize.XXLARGE, FontFamily.Display))

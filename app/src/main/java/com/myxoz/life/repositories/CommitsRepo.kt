@@ -4,6 +4,7 @@ import com.myxoz.life.api.API
 import com.myxoz.life.api.syncables.CommitSyncable
 import com.myxoz.life.repositories.utils.VersionedCache
 import com.myxoz.life.repositories.utils.VersionedDayedCache
+import com.myxoz.life.repositories.utils.VersionedDayedCache.Companion.updateDayedCacheFromTo
 import com.myxoz.life.utils.atEndAsMillis
 import com.myxoz.life.utils.atStartAsMillis
 import com.myxoz.life.utils.toLocalDate
@@ -49,19 +50,12 @@ class CommitsRepo(
                 _repos.overwrite(new.toRepoKey(), new)
                 // We got a new commit which is more recent than the last one. Replace!
         }
-        if (old?.commitDate != null) {
-            val commitDate = old.commitDate.toLocalDate(zone)
-            cache.updateWith(commitDate) {
-                it.filterNot { commit ->
-                    commit.commitSha == old.commitSha
-                }
-            }
-            if (new.commitDate != null) {
-                val commitDate = new.commitDate.toLocalDate(zone)
-                cache.updateWith(commitDate){ list ->
-                    list + new
-                }
-            }
+        cache.updateDayedCacheFromTo(
+            old?.commitDate?.toLocalDate(zone),
+            new.commitDate?.toLocalDate(zone),
+            new,
+        ) {
+            it.commitSha == new.commitSha
         }
     }
     fun getCommitsForDay(date: LocalDate) = _commits.getDayFlowFor(appScope, date)

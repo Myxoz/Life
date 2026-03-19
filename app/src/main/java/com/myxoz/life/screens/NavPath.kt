@@ -56,6 +56,7 @@ object NavPath {
             const val DEBUG = "$MORE/debug"
             object Settings {
                 const val PERMISSIONS = "$SETTINGS/permissions"
+                const val PREFERENCES = "$SETTINGS/preferences"
             }
         }
         object Todo {
