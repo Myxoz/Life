@@ -139,8 +139,6 @@ abstract class ProposedEvent(start: Long, end: Long, val type: EventType, val us
 
     open fun ignoreProposed(prefs: SharedPreferences) {/* no-op */}
     abstract fun getInvalidReason(): String?
-    fun overlaps(other: DefinedDurationEvent): Boolean = start < other.end && end > other.start
-
     fun getAllStrechedDays(zone: ZoneId): List<LocalDate> {
         val startDate = Instant.ofEpochSecond(start/1000).atZone(zone).toLocalDate()
         val endDate = Instant.ofEpochSecond(end/1000).atZone(zone).toLocalDate()

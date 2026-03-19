@@ -14,7 +14,7 @@ import com.myxoz.life.events.additionals.TimewastePlatform
 import com.myxoz.life.events.additionals.TitleEvent
 import com.myxoz.life.events.additionals.Vehicle
 import com.myxoz.life.screens.NavPath
-import com.myxoz.life.screens.feed.main.SegmentedEvent
+import com.myxoz.life.screens.feed.main.PrerenderedEvent
 import com.myxoz.life.viewmodels.CalendarViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 
@@ -41,7 +41,7 @@ class SearchField {
         textInputValue.value = text?.takeIf { it.isNotEmpty()  }
         if(old != textInputValue.value) wasUpdated()
     }
-    fun isSearched(calendarViewModel: CalendarViewModel, event: SegmentedEvent): Boolean {
+    fun isSearched(calendarViewModel: CalendarViewModel, event: PrerenderedEvent): Boolean {
         val proposed = event.event.proposed
         if(mode.value == SearchMode.Text) {
             val text = textInputValue.value?.lowercase() ?: return true

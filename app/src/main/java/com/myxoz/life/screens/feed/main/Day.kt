@@ -216,9 +216,9 @@ private fun RenderEvents(
     val segments by calendarViewModel.getSegmentedEvents(date).collectAsState()
     val screens = LocalScreens.current
     for(segmentedEvent in segments) {
-        if(isEditing && segmentedEvent.event.id == editedEvent.id) continue
+        if(isEditing && segmentedEvent.key == editedEvent.id) continue
         val haptic = LocalHapticFeedback.current
-        segmentedEvent.Render(
+        segmentedEvent.value.Render(
             calendarViewModel,
             oneHourDp,
             instantEventSize,
@@ -230,10 +230,11 @@ private fun RenderEvents(
                 haptic.performHapticFeedback(HapticFeedbackType.LongPress)
                 inspectedEventViewModel.setEditing(true)
                 inspectedEventViewModel.setInspectedEventTo(
-                    segmentedEvent.event
+                    segmentedEvent.value.event
                 )
-            }) {
-            inspectedEventViewModel.setInspectedEventTo(segmentedEvent.event)
+            }
+        ) {
+            inspectedEventViewModel.setInspectedEventTo(segmentedEvent.value.event)
             screens.gotoEventDetails()
         }
     }

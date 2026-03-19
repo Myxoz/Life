@@ -5,6 +5,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
@@ -23,51 +24,63 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.myxoz.life.api.syncables.SyncedEvent
+import com.myxoz.life.events.ProposedEvent
 import com.myxoz.life.events.additionals.DefinedDurationEvent
 import com.myxoz.life.events.additionals.EventType
 import com.myxoz.life.events.additionals.PeopleEvent
 import com.myxoz.life.screens.feed.instantevents.InstantEvent
 import com.myxoz.life.viewmodels.CalendarViewModel
+import java.util.LinkedList
 
 
-data class SegmentedEvent(
+data class PrerenderedEvent(
     val event: SyncedEvent,
-    val isFullWidth: Boolean,
-    val isLeft: Boolean,
-    val hasContent: Boolean,
-    val segmentStart: Long,
-    val segmentEnd: Long
-): DefinedDurationEvent(segmentStart, segmentEnd) {
-    val nextToPeople = mutableSetOf<Long>()
+    val segments: List<Segment>,
+    val nextToPeople: Set<Long>
+) {
     @OptIn(ExperimentalFoundationApi::class)
     @Composable
     fun Render(calendarViewModel: CalendarViewModel, oneHour: Dp, bankingSizeDp: Dp, startOfDay: Long, endOfDay: Long, width: Dp, isClickEnabled: Boolean, editEvent: ()->Unit, openEventDetails: ()->Unit){
         val lastUpdated by calendarViewModel.search.lastUpdated.collectAsState()
         var isSearched by remember { mutableStateOf(true) }
         LaunchedEffect(lastUpdated) {
-            isSearched = calendarViewModel.search.isSearched(calendarViewModel, this@SegmentedEvent)
+            isSearched = calendarViewModel.search.isSearched(calendarViewModel, this@PrerenderedEvent)
         }
         Box(
             Modifier
-                .padding(
-                    top = getTopPadding(oneHour, startOfDay),
-                    start = if(!isLeft) width-bankingSizeDp else 0.dp
-                )
-                .height(getHeightDp(oneHour, startOfDay, endOfDay))
-                .width(if(isFullWidth) width else if(isLeft) width-bankingSizeDp else bankingSizeDp)
-                .alpha(if(isSearched) 1f else 0.3f)
-                .clip(RoundedCornerShape(10.dp))
-                .combinedClickable(remember { MutableInteractionSource() }, ripple(), isClickEnabled, onClick = openEventDetails, onLongClick = editEvent)
-                .background(event.proposed.getBackgroundBrush(), RoundedCornerShape(10.dp))
+                .fillMaxSize()
+                .alpha(if (isSearched) 1f else 0.3f)
         ) {
-            if(hasContent)
-                with(event.proposed) {
-                    RenderContent(oneHour, startOfDay, endOfDay, !isLeft, this@SegmentedEvent.getBlockHeight(startOfDay, endOfDay))
+            for (segment in segments) {
+                Box(
+                    Modifier
+                        .padding(
+                            top = segment.getTopPadding(oneHour, startOfDay),
+                            start = if (!segment.isLeft) width - bankingSizeDp else 0.dp
+                        )
+                        .height(segment.getHeightDp(oneHour, startOfDay, endOfDay))
+                        .width(if (segment.isFullWidth) width else if (segment.isLeft) width - bankingSizeDp else bankingSizeDp)
+                        .clip(RoundedCornerShape(10.dp))
+                        .combinedClickable(
+                            remember { MutableInteractionSource() },
+                            ripple(),
+                            isClickEnabled,
+                            onClick = openEventDetails,
+                            onLongClick = editEvent
+                        )
+                        .background(event.proposed.getBackgroundBrush(), RoundedCornerShape(10.dp))
+                ) {
+                    if(segment.hasContent) {
+                        with(event.proposed) {
+                            RenderContent(oneHour, startOfDay, endOfDay, !segment.isLeft, segment.getBlockHeight(startOfDay, endOfDay))
+                        }
+                    }
                 }
+            }
         }
     }
     companion object {
-        fun getSegmentedEvents(events: List<SyncedEvent>, instantEntries: List<InstantEvent.InstantEventGroup>, instantEventDisplaySize: Long): List<SegmentedEvent> {
+        fun getPrerenderedEvents(events: List<SyncedEvent>, instantEntries: List<InstantEvent.InstantEventGroup>, instantEventDisplaySize: Long): Map<Long, PrerenderedEvent> {
             val order = arrayOf(
                 EventType.Timewaste,
                 EventType.DigSoc,
@@ -79,85 +92,143 @@ data class SegmentedEvent(
                 EventType.Travel,
                 EventType.Work,
             )
-            val modifyable = mutableListOf<SegmentedEvent>()
+            // Complexity reasons instead of using modifyable.entries / values
+            // All will just  be the first iteration and fill spots will use something different from all
+            val all = LinkedList<Pair<SyncedEvent, PrerenderedEventBuilder.SegmentBuilder>>()
             for (type in order) {
                 for(event in events.filter { it.proposed.type == type }){
-                    var canBeFullWidth = true
-                    modifyable.forEachIndexed { i, it ->
-                        if(event.proposed.overlaps(it.event.proposed)) {
-                            canBeFullWidth = false
-                            modifyable[i] = it.copy(isFullWidth = false, isLeft = false)
-                        }
+                    val overlapping = all.filter { it.first.proposed.overlaps(event.proposed) }
+                    for (prerenderedEvent in overlapping) {
+                        prerenderedEvent.second.isFullWidth = false
+                        prerenderedEvent.second.isLeft = false
                     }
-                    modifyable.add(SegmentedEvent(event, canBeFullWidth, true, hasContent = true, event.proposed.start, event.proposed.end))
+                    val segment = PrerenderedEventBuilder.SegmentBuilder(
+                        overlapping.isEmpty(),
+                        true,
+                        true,
+                        event.proposed.start,
+                        event.proposed.end
+                    )
+                    all.add(event to segment)
                 }
             }
             for(event in instantEntries) {
-                modifyable.forEachIndexed { i, it ->
-                    if(it.event.proposed.overlaps(
-                            DefinedDurationEvent(
-                                event.start - instantEventDisplaySize / 2,
-                                event.end + instantEventDisplaySize / 2
-                            )
-                        )) {
-                        modifyable[i] = it.copy(isFullWidth = false)  // Does not set left or right align
+                val instantEventAsDDEvent = DefinedDurationEvent(
+                    event.start - instantEventDisplaySize / 2,
+                    event.end + instantEventDisplaySize / 2
+                )
+                all.forEach {
+                    if(it.first.proposed.overlaps(instantEventAsDDEvent)) {
+                        it.second.isFullWidth = false
+                        // Does not set left or right align
                     }
                 }
             }
+            // Until here the segments are only one element
             // Now iterate the list and try to fill spots
-            for(seg in modifyable.filter { !it.isLeft }){
-                val ev = seg.event.proposed
-                val overlappingEvents = modifyable.filter { it.event.proposed.overlaps(ev) }.toMutableList()
-                // Including self
-                val overlappList = (overlappingEvents.mapNotNull {
-                    if(it.start >= ev.start) it to true else null
-                } + overlappingEvents.mapNotNull {
-                    if(it.end <= ev.end) it to false else null
-                }).sortedBy { if(it.second) it.first.start else it.first.end }
-                val parted = mutableListOf<Pair<Long, Long>>()
-                var start = ev.start
-                var overlapAmount = overlappingEvents.filter { it.start < ev.start }.size
-                for(ov in overlappList) {
-                    if(overlapAmount == 1) {
-                        parted.add(start to if(ov.second) ov.first.start else ov.first.end)
-                    }
-                    overlapAmount += if(ov.second) 1 else -1
-                    if(overlapAmount == 1) {
-                        start = if(ov.second) ov.first.start else ov.first.end
-                    }
-                }
-                val parts = parted.filter { it.second != it.first }.toMutableList()
-                if(parts.isNotEmpty()){
-                    modifyable.remove(seg)
-                    val longest = parts.sortedByDescending { it.second - it.first }[0]  // Cant be null
-                    parts.remove(longest)
-                    modifyable.add(
-                        seg.copy(isFullWidth = true,  isLeft = true, hasContent = true, segmentStart = longest.first, segmentEnd = longest.second)
+            val segmentedMap = mutableMapOf<Long, PrerenderedEventBuilder>()
+            val peopleEvents = mutableListOf<PeopleEvent>()
+            for (event in all) {
+                if (event.second.isLeft) {
+                    segmentedMap[event.first.id] = PrerenderedEventBuilder(
+                        event.first,
+                        listOf(event.second)
                     )
-                    for(part in parts){
-                        if(part.first < seg.event.proposed.end) modifyable.add(
-                            seg.copy(isFullWidth = true,  isLeft = true, hasContent = false, segmentStart = part.first, segmentEnd = part.second)
+                } else {
+                    // Everything that is just a bar at the right
+                    val proposed = event.first.proposed
+                    if (proposed is PeopleEvent) {
+                        peopleEvents.add(proposed)
+                    }
+                    val ev = event.second
+                    val overlappingEvents =
+                        all.mapNotNull { if (it.second.overlaps(ev)) it.second else null }
+                    // Including self
+                    val overlappList = (overlappingEvents.mapNotNull {
+                        if (it.start >= ev.start) it to true else null
+                    } + overlappingEvents.mapNotNull {
+                        if (it.end <= ev.end) it to false else null
+                    }).sortedBy { if (it.second) it.first.start else it.first.end }
+                    val parted = mutableListOf<Pair<Long, Long>>()
+                    var start = ev.start
+                    var overlapAmount = overlappingEvents.filter { it.start < ev.start }.size
+                    for (ov in overlappList) {
+                        if (overlapAmount == 1) {
+                            parted.add(start to if (ov.second) ov.first.start else ov.first.end)
+                        }
+                        overlapAmount += if (ov.second) 1 else -1
+                        if (overlapAmount == 1) {
+                            start = if (ov.second) ov.first.start else ov.first.end
+                        }
+                    }
+                    val parts = parted.filter { it.second != it.first }
+                    if (parts.isNotEmpty()) {
+                        val longest =
+                            parts.sortedByDescending { it.second - it.first }[0]  // Cant be null
+                        val listBuilding = mutableListOf<PrerenderedEventBuilder.SegmentBuilder>()
+                        for (part in parts) {
+                            if (part.first < event.second.end) listBuilding.add(
+                                PrerenderedEventBuilder.SegmentBuilder(
+                                    isFullWidth = true,
+                                    isLeft = true,
+                                    hasContent = part == longest,
+                                    segmentStart = part.first,
+                                    segmentEnd = part.second
+                                )
+                            )
+                        }
+                        ev.hasContent = false
+                        listBuilding.add(
+                            ev
+                        ) // Right no content full time event add last for it to be lowest
+                        segmentedMap[event.first.id] = PrerenderedEventBuilder(
+                            event.first,
+                            listBuilding
+                        )
+                    } else {
+                        segmentedMap[event.first.id] = PrerenderedEventBuilder(
+                            event.first,
+                            listOf(ev)
                         )
                     }
-                    modifyable.add(seg.copy(
-                        hasContent = false,
-                        isLeft = false,
-                        isFullWidth = false
-                    )) // Right no content full time event add last for it to be lowest
                 }
             }
-            val list = modifyable.reversed() // So higher prio events are rendered above lower ones
-            val peopleEvents = modifyable.mapNotNull {
-                @Suppress("IfThenToSafeAccess")
-                if (it.event.proposed is PeopleEvent) { it.event.proposed } else null
-            }
-            list.forEach { ev ->
+            segmentedMap.forEach { (_, ev) ->
                 if(ev.event.proposed !is PeopleEvent)
                     peopleEvents
-                        .filter { it.overlaps(ev) }
+                        .filter { (it as? ProposedEvent)?.overlaps(ev.event.proposed) ?: false }
                         .forEach { ev.nextToPeople.addAll(it.people) }
             }
-            return list
+            return segmentedMap.mapValues {
+                it.value.asPrerenderedEvent()
+            }
+        }
+    }
+    data class Segment(
+        val isFullWidth: Boolean,
+        val isLeft: Boolean,
+        val hasContent: Boolean,
+        val segmentStart: Long,
+        val segmentEnd: Long
+    ): DefinedDurationEvent(segmentStart, segmentEnd)
+    private data class PrerenderedEventBuilder(
+        var event: SyncedEvent,
+        var segments: List<SegmentBuilder>,
+    ) {
+        val nextToPeople = mutableSetOf<Long>()
+        fun asPrerenderedEvent(): PrerenderedEvent = PrerenderedEvent(
+            event,
+            segments.map(SegmentBuilder::asSegment),
+            nextToPeople
+        )
+        data class SegmentBuilder(
+            var isFullWidth: Boolean,
+            var isLeft: Boolean,
+            var hasContent: Boolean,
+            var segmentStart: Long,
+            var segmentEnd: Long
+        ): DefinedDurationEvent(segmentStart, segmentEnd) {
+            fun asSegment(): Segment = Segment(isFullWidth, isLeft, hasContent, segmentStart, segmentEnd)
         }
     }
 }

@@ -177,7 +177,7 @@ fun CalendarTimeline(calendarViewModel: CalendarViewModel, today: LocalDate, eac
                             calendarViewModel.days.value = listOf(today)
                         } else {
                             coroutineScope.launch {
-                                listState.animateScrollToItem(index)
+                                listState.scrollToItem(index)
                             }
                         }
                     }

@@ -28,7 +28,7 @@ import com.myxoz.life.repositories.utils.StateFlowCache
 import com.myxoz.life.repositories.utils.subscribeToColdFlow
 import com.myxoz.life.screens.feed.dayoverview.getMonthByCalendarMonth
 import com.myxoz.life.screens.feed.instantevents.InstantEvent
-import com.myxoz.life.screens.feed.main.SegmentedEvent
+import com.myxoz.life.screens.feed.main.PrerenderedEvent
 import com.myxoz.life.screens.feed.search.SearchField
 import com.myxoz.life.utils.syncToPrefs
 import com.myxoz.life.utils.toLocalDate
@@ -113,10 +113,10 @@ class CalendarViewModel(
                 preloadDay(newDay)
             }
         }
-        repeat(10){
+        repeat(dayAmount.value * 3){
             insertDay(current.minusDays(it.toLong()+1), true)
         }
-        repeat(10){
+        repeat(dayAmount.value * 3){
             insertDay(current.plusDays(it.toLong()+1), false)
         }
         currentMonth.value = getMonthByCalendarMonth(current.monthValue-1)
@@ -145,12 +145,12 @@ class CalendarViewModel(
     suspend fun testSign() = repos.api.testSign()
     fun getBase64Public() = repos.api.getBase64Public()
     fun requireAllPeople() = repos.peopleRepo.requireAllPeople()
-    val segmentedEventsCache = StateFlowCache<LocalDate, List<SegmentedEvent>>{ date ->
-        repos.aggregators.calendarAggregator.getSegmentedEvents(date).subscribeToColdFlow(viewModelScope, listOf())
+    val prerenderedEventCache = StateFlowCache<LocalDate, Map<Long, PrerenderedEvent>>{ date ->
+        repos.aggregators.calendarAggregator.getPrerenderedEvents(date).subscribeToColdFlow(viewModelScope, mapOf())
     }
     fun preloadDay(date: LocalDate){
         viewModelScope.launch {
-            val flow = segmentedEventsCache.get(date)
+            val flow = prerenderedEventCache.get(date)
             if (flow.value.isEmpty()) {
                 flow.first() // We collect the first value to warm up the flow and allow instant
                 // collecttion as soon as we scroll to it, precaching
@@ -158,7 +158,7 @@ class CalendarViewModel(
             repos.daySummaryRepo.prefetchDay(date)
         }
     }
-    fun getSegmentedEvents(date: LocalDate) = segmentedEventsCache.get(date)
+    fun getSegmentedEvents(date: LocalDate) = prerenderedEventCache.get(date)
     val instantEventsForDayCache = StateFlowCache<LocalDate, List<InstantEvent.InstantEventGroup>>{ date ->
         repos.aggregators.calendarAggregator.getInstantEventsForDay(date).subscribeToColdFlow(viewModelScope, listOf())
     }

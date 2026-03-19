@@ -9,7 +9,7 @@ import com.myxoz.life.repositories.AppRepositories
 import com.myxoz.life.repositories.BankingRepo
 import com.myxoz.life.screens.feed.instantevents.InstantEvent
 import com.myxoz.life.screens.feed.instantevents.InstantEvent.Companion.INSTANTEVENTSIZE
-import com.myxoz.life.screens.feed.main.SegmentedEvent
+import com.myxoz.life.screens.feed.main.PrerenderedEvent
 import com.myxoz.life.utils.AndroidUtils.sendWithBal
 import com.myxoz.life.utils.def
 import kotlinx.coroutines.flow.combine
@@ -51,11 +51,11 @@ class CalendarAggregator(
         }
         return groups.map { InstantEvent.InstantEventGroup(it) }
     }
-    fun getSegmentedEvents(it: LocalDate) = combine(
+    fun getPrerenderedEvents(it: LocalDate) = combine(
         repos.calendarRepo.eventsForDay(it),
         getInstantEventsForDay(it),
     ) { events, instantEvents ->
-        SegmentedEvent.getSegmentedEvents(
+        PrerenderedEvent.getPrerenderedEvents(
             events?.data.def(listOf()),
             instantEvents,
             (INSTANTEVENTSIZE * 3600L).toLong() * 1000L
