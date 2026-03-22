@@ -62,7 +62,8 @@ fun RenderTagAndTitleBar(tags: List<TagLike>, title: String?, oneHourDp: Dp, blo
                 optimalScaling = (actualWidth.toFloat() / width).coerceIn(.5f, 1f)
             }
         }
-        if(tags.isNotEmpty()) {
+        val displayTags = tags.filter { it!=EventTag.S }
+        if(displayTags.isNotEmpty()) {
             Row(
                 Modifier
                     .padding(start = startPadding)
@@ -78,7 +79,7 @@ fun RenderTagAndTitleBar(tags: List<TagLike>, title: String?, oneHourDp: Dp, blo
                     },
                 horizontalArrangement = Arrangement.spacedBy(1.dp),
             ) {
-                tags.filter { it!=EventTag.S }.forEach {
+                displayTags.forEach {
                     Icon(
                         painterResource(it.drawable),
                         null,

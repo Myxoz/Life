@@ -830,7 +830,7 @@ fun TagsBar(ev: List<EventTag>, updateEvent: (List<EventTag>)->Unit){
         InputField(null, "Tags", onImeAction = {
             return@InputField if(search!=null) {
                 when (search) {
-                    "xkwreS".removeRange(1..3).reversed() -> selectedTags.add(EventTag.S)
+                    "xkwreS".removeRange(1..3).reversed() -> { selectedTags.add(EventTag.S); updateEvent(selectedTags) }
                     else -> leftItems.getOrNull(0)?.apply { selectedTags.add(this); updateEvent(selectedTags) }
                 }
                 ImeActionClicked(false, clearField = true)

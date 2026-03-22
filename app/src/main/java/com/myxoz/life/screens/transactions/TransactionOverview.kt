@@ -2,6 +2,7 @@ package com.myxoz.life.screens.transactions
 
 import android.icu.util.Calendar
 import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.AnimationVector1D
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.spring
 import androidx.compose.foundation.ExperimentalFoundationApi
@@ -87,7 +88,7 @@ import java.time.LocalDate
 import java.time.ZoneId
 
 @Composable
-fun TransactionOverview(largeDataCache: LargeDataCache, transactionViewModel: TransactionViewModel){
+fun TransactionOverview(largeDataCache: LargeDataCache, transactionViewModel: TransactionViewModel) {
     val nav = LocalNavController.current
     val transactionAtHand by transactionViewModel.inspectedTransaction.collectAsState()
     val transaction = transactionAtHand ?: return
@@ -403,6 +404,7 @@ fun BankCard(
 ) {
     val animatedOffsetX = remember { Animatable(0f) }
     val animatedOffsetY = remember { Animatable(0f) }
+    val scale = remember { Animatable(1f) }
     var displaysIban by remember { mutableStateOf(true) }
     val decodedPeople by transactionViewModel.getPeopleWithIbanLike(fromIBAN).collectAsState()
 
@@ -418,6 +420,8 @@ fun BankCard(
                 this.cameraDistance = 12f * density
                 this.translationX = animatedOffsetX.value * 0.1f
                 this.translationY = animatedOffsetY.value * 0.1f
+                this.scaleX = scale.value
+                this.scaleY = scale.value
             }
             .zIndex(1f)
             .shadow(10.dp, RoundedCornerShape(10))
@@ -438,24 +442,20 @@ fun BankCard(
             .padding(vertical = 15.dp, horizontal = 20.dp)
             .pointerInput(Unit) {
                 val end =  {
-                    coroutineScope.launch {
-                        animatedOffsetX.animateTo(
-                            0f,
-                            spring(
-                                dampingRatio = Spring.DampingRatioMediumBouncy,
-                                stiffness = Spring.StiffnessLow
+                    fun animateTo(animatable: Animatable<Float, AnimationVector1D>, to: Float) {
+                        coroutineScope.launch {
+                            animatable.animateTo(
+                                to,
+                                spring(
+                                    dampingRatio = Spring.DampingRatioMediumBouncy,
+                                    stiffness = Spring.StiffnessLow
+                                )
                             )
-                        )
+                        }
                     }
-                    coroutineScope.launch {
-                        animatedOffsetY.animateTo(
-                            0f,
-                            spring(
-                                dampingRatio = Spring.DampingRatioMediumBouncy,
-                                stiffness = Spring.StiffnessLow
-                            )
-                        )
-                    }
+                    animateTo(animatedOffsetY, 0f)
+                    animateTo(animatedOffsetX, 0f)
+                    animateTo(scale, 1f)
                 }
                 detectDragGestures(
                     onDragEnd = {
@@ -469,6 +469,12 @@ fun BankCard(
                         coroutineScope.launch {
                             animatedOffsetX.snapTo(animatedOffsetX.value + dragAmount.x*.6f)
                             animatedOffsetY.snapTo(animatedOffsetY.value + dragAmount.y*.6f)
+                        }
+                        coroutineScope.launch {
+                            scale.animateTo(0.9f, spring(
+                                dampingRatio = Spring.DampingRatioMediumBouncy,
+                                stiffness = Spring.StiffnessVeryLow
+                            ))
                         }
                     }
                 )
