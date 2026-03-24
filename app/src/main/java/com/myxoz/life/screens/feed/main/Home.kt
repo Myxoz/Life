@@ -16,6 +16,7 @@ import com.myxoz.life.screens.feed.search.LifeBottomBar
 import com.myxoz.life.utils.windowPadding
 import com.myxoz.life.viewmodels.CalendarViewModel
 import com.myxoz.life.viewmodels.InspectedEventViewModel
+import com.myxoz.life.viewmodels.Settings
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
@@ -24,7 +25,7 @@ import kotlinx.coroutines.withContext
 fun HomeComposable(calendarViewModel: CalendarViewModel, inspectedEventViewModel: InspectedEventViewModel){
     val settings = LocalSettings.current
     LaunchedEffect(Unit) {
-        if(settings.features.syncWithServer.has.value) calendarViewModel.resync()
+        if(settings.hasAssured(Settings.Feature.SyncWithServer)) calendarViewModel.resync()
         calendarViewModel.refetchAlarmClockTs()
         withContext(Dispatchers.IO) {
             calendarViewModel.requestAutoDetectedEventStart(settings)

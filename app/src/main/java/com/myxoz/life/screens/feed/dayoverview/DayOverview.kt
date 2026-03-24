@@ -66,6 +66,7 @@ import com.myxoz.life.utils.rippleClick
 import com.myxoz.life.utils.toShape
 import com.myxoz.life.utils.windowPadding
 import com.myxoz.life.viewmodels.DayOverviewViewModel
+import com.myxoz.life.viewmodels.Settings
 import java.time.LocalDate
 import java.time.temporal.ChronoUnit
 
@@ -83,7 +84,7 @@ fun DayOverviewComposable(date: LocalDate, dayOverviewViewModel: DayOverviewView
         "${getWeekDayByInt(date.dayOfWeek.value - 1)} ${date.dayOfMonth}.${date.month.value}.${date.year}"
     }
     val screenTime by dayOverviewViewModel.getScreentime(date).collectAsStateWithLifecycle(0L)
-    val showSteps by settings.features.stepCounting.has.collectAsState()
+    val showSteps by settings.has(Settings.Feature.StepCounting).collectAsState()
     val innerPadding = windowPadding
     Box(
         Modifier
@@ -116,7 +117,7 @@ fun DayOverviewComposable(date: LocalDate, dayOverviewViewModel: DayOverviewView
             }
             if(birthdays.isNotEmpty()) BirthdayBlock(birthdays,date, dayOverviewViewModel)
             if(showSteps) DisplayStepsBlock(steps)
-            val screentime by settings.features.screentime.has.collectAsState()
+            val screentime by settings.has(Settings.Feature.ScreenTime).collectAsState()
             val nav = LocalNavController.current
             if(screentime) DisplayTimeBlock(screenTime) {
                 nav.navigate(NavPath.DayOverview.SCREENTIME.with(date.toEpochDay()))

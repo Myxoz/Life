@@ -104,7 +104,7 @@ class MainActivity : ComponentActivity() {
     private val repositories by lazy {
         (application as MainApplication).repositories
     }
-    private lateinit var settings: Settings
+    private lateinit var settings: Settings.CompositionSettings
     private val factory by lazy{
         MainViewModelFactory(
             (application as MainApplication).repositories,
@@ -141,9 +141,9 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         instance = this
         prefs = getSharedPreferences(localClassName, MODE_PRIVATE)
-        settings = Settings(prefs, applicationContext, this)
+        settings = Settings.CompositionSettings(repositories.permissionChecker, this)
         CoroutineScope(Dispatchers.IO).launch {
-            if(settings.features.addNewPerson.hasAssured())
+            if(settings.hasAssured(Settings.Feature.AddNewPerson))
                 contacsViewModel.requestRefetchDeviceContacts()
             calendarViewModel.requireAllPeople()
             largeDataCache.preloadAll(applicationContext)
@@ -185,12 +185,11 @@ class MainActivity : ComponentActivity() {
                             }
                         }
                     }
-                    // Ignore for now TODO
                     // Routine checks
-//                    if(!settings.features.stepCounting.has.value){
-//                        db.proposedSteps.clearAll() // Not recording is expensive, we just discard all proposedSteps each time
-                        // 26.1.2026 There must be a better solution for this TODO
-//                    }
+                    // if(!settings.features.stepCounting.has.value){
+                    //  db.proposedSteps.clearAll() // Not recording is expensive, we just discard all proposedSteps each time
+                    // 26.1.2026 There must be a better solution for this
+                    // No way! We actually did it 25.03.2026. Reach for the stars, everything will fix itself eventually.
                 }
                 val navigationTransitionSpec: FiniteAnimationSpec<Float> = remember {
                     tween(250)

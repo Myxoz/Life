@@ -19,7 +19,6 @@ import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
-import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -58,7 +57,6 @@ import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.node.Ref
-import androidx.compose.ui.platform.LocalClipboard
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.LocalWindowInfo
@@ -84,16 +82,17 @@ import com.myxoz.life.api.syncables.PersonSyncable
 import com.myxoz.life.screens.NavPath
 import com.myxoz.life.screens.feed.fullscreenevent.getId
 import com.myxoz.life.ui.Chip
+import com.myxoz.life.ui.holdToCopy
 import com.myxoz.life.ui.theme.FontSize
 import com.myxoz.life.ui.theme.TypoStyle
 import com.myxoz.life.utils.AndroidUtils
 import com.myxoz.life.utils.PhoneNumberParser
-import com.myxoz.life.utils.copy
 import com.myxoz.life.utils.rippleClick
 import com.myxoz.life.utils.toDp
 import com.myxoz.life.utils.toPx
 import com.myxoz.life.viewmodels.LargeDataCache
 import com.myxoz.life.viewmodels.ProfileInfoModel
+import com.myxoz.life.viewmodels.Settings
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.launch
@@ -207,7 +206,7 @@ fun ProfileInfo(largeDataCache: LargeDataCache, profileInfoModel: ProfileInfoMod
                     val fullyFormatedNumber = formatedPhone?.censorLast(censoredPlaces, " •")
                     val settings = LocalSettings.current
                     val savedInContacts by (inspectedPerson?.phoneNumber?.let { phone ->
-                        if(settings.features.addNewPerson.hasAssured()) profileInfoModel.getSavedInContacts(phone) else null
+                        if(settings.hasAssured(Settings.Feature.AddNewPerson)) profileInfoModel.getSavedInContacts(phone) else null
                     } ?: MutableStateFlow(null)).collectAsState()
                     val subtext = if (!isExtended) null else inspectedPerson?.phoneNumber?.let { phoneParser?.getPhoneInfo(it) }
                     Row(
@@ -523,7 +522,7 @@ fun ProfileInfo(largeDataCache: LargeDataCache, profileInfoModel: ProfileInfoMod
                 horizontalArrangement = Arrangement.spacedBy(5.dp)
             ) {
                 val phoneNumber = inspectedPerson?.phoneNumber
-                val features = LocalSettings.current.features
+                val settings = LocalSettings.current
                 val context = LocalContext.current
                 AnimatedVisibility(
                     !isEditing,
@@ -554,7 +553,7 @@ fun ProfileInfo(largeDataCache: LargeDataCache, profileInfoModel: ProfileInfoMod
                         }
                         ClickableIcon(R.drawable.phone, "Call") {
                             val number = ("tel:" + (phoneNumber ?: return@ClickableIcon)).toUri()
-                            val intent = Intent(if(features.callFromLife.hasAssured()) Intent.ACTION_CALL else Intent.ACTION_DIAL)
+                            val intent = Intent(if(settings.hasAssured(Settings.Feature.CallFromLife)) Intent.ACTION_CALL else Intent.ACTION_DIAL)
                             intent.setData(number)
                             intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
                             context.startActivity(intent)
@@ -737,15 +736,10 @@ fun ListEditingField(isEditing: Boolean, displayText: String, subtext: String?, 
             }
         )
     } else {
-        val clipboard = LocalClipboard.current
-        val coroutineScope = rememberCoroutineScope()
         Text(
             displayText,
-            modifier = Modifier.combinedClickable(null, null, onLongClick = {
-                if(displayText.isNotBlank() && displayText!="???") coroutineScope.launch {
-                    clipboard.copy(displayText)
-                }
-            }){},
+            modifier = Modifier
+                .holdToCopy(displayText.takeIf { it.isNotBlank() && it != "???" }),
             style = TypoStyle(Theme.primary, FontSize.LARGE),
             maxLines = 1,
             overflow = TextOverflow.Ellipsis

@@ -36,12 +36,14 @@ import com.myxoz.life.api.Syncable
 import com.myxoz.life.dbwrapper.Daos
 import com.myxoz.life.repositories.AppRepositories
 import com.myxoz.life.repositories.MainApplication
+import com.myxoz.life.ui.holdToCopy
 import com.myxoz.life.ui.theme.FontColor
 import com.myxoz.life.ui.theme.FontSize
 import com.myxoz.life.ui.theme.OldColors
 import com.myxoz.life.ui.theme.TypoStyleOld
 import com.myxoz.life.utils.formatTimeStamp
 import com.myxoz.life.viewmodels.AlarmViewModel
+import com.myxoz.life.viewmodels.Settings
 import kotlinx.coroutines.launch
 import java.io.File
 
@@ -64,7 +66,7 @@ fun DebugScreen(
             val coroutineScope = rememberCoroutineScope()
             val prefs = remember { context.getSharedPreferences("steps", MODE_PRIVATE) }
             val sprefs = remember { context.getSharedPreferences("MainActivity", MODE_PRIVATE) }
-            val features = LocalSettings.current.features
+            val settings = LocalSettings.current
             var lastSavedSteps by remember { mutableLongStateOf(prefs.getLong("saved_steps", 0L)) }
             var stepsAtMidnight by remember {
                 mutableLongStateOf(
@@ -172,15 +174,17 @@ fun DebugScreen(
                 style = TypoStyleOld(FontColor.PRIMARY, FontSize.MEDIUM)
             )
             val calendar = remember { Calendar.getInstance() }
-            stepLog.map{ it.split(";") }.sortedByDescending { it[3].toLong() }.forEach {
-                Text(
-                    "From ${it[0]} to ${it[1]} at ${it[2]} (${it[2].toLong().formatTimeStamp(calendar)})",
-                    style = TypoStyleOld(FontColor.PRIMARY, FontSize.MEDIUM)
-                )
-            }
+            val displayLog = stepLog.map{ it.split(";") }.sortedByDescending { it[2].toLong() }.joinToString("\n") {"From ${it[0]} to ${it[1]} at ${it[2]} (${it[2].toLong().formatTimeStamp(calendar)})" }
+            Text(
+                displayLog,
+                Modifier
+                    .holdToCopy(displayLog, coroutineScope)
+                ,
+                style = TypoStyleOld(FontColor.PRIMARY, FontSize.MEDIUM)
+            )
             val steps by repos.stepRepo.debugGetRawSteps().collectAsState()
             Text("Steps live: $steps", style = TypoStyleOld(FontColor.PRIMARY, FontSize.MEDIUM))
-            if(features.autoDetectCalls.hasAssured()){
+            if(settings.hasAssured(Settings.Feature.AutoDetectCalls)){
                 CallLogDumpDebug()
             }
         }
@@ -221,7 +225,6 @@ fun CallLogDumpDebug() {
                 val geocodedLocation = it.getString(it.getColumnIndexOrThrow(CallLog.Calls.GEOCODED_LOCATION))
                 val dataUsage = it.getLong(it.getColumnIndexOrThrow(CallLog.Calls.DATA_USAGE))
                 val transcription = it.getString(it.getColumnIndexOrThrow(CallLog.Calls.TRANSCRIPTION))
-                val missedReason = it.getInt(it.getColumnIndexOrThrow(CallLog.Calls.MISSED_REASON))
                 if (duration == 0L) continue
                 if (number.isNullOrBlank()) continue
                 calendar.timeInMillis = date
@@ -244,7 +247,6 @@ fun CallLogDumpDebug() {
     Via: $viaNumber
     Post Dial: $postDial
     Data Usage: $dataUsage
-    Missed Reason: $missedReason
     Transcription: $transcription
     --------------------------------
     """.trimIndent()

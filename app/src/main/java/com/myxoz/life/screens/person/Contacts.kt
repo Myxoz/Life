@@ -77,6 +77,7 @@ import com.myxoz.life.utils.toPx
 import com.myxoz.life.utils.toShape
 import com.myxoz.life.utils.windowPadding
 import com.myxoz.life.viewmodels.ContactsViewModel
+import com.myxoz.life.viewmodels.Settings
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -113,7 +114,7 @@ fun Contacts(contactsViewModel: ContactsViewModel){
             }
             var favoriteIds by contactsViewModel.favoriteIds.collectAsMutableState()
             LaunchedEffect(Unit) {
-                if(settings.features.addNewPerson.hasAssured()) withContext(Dispatchers.IO){
+                if(settings.hasAssured(Settings.Feature.AddNewPerson)) withContext(Dispatchers.IO){
                      contactsViewModel.requestRefetchDeviceContacts()
                 }
             }
@@ -191,7 +192,7 @@ fun Contacts(contactsViewModel: ContactsViewModel){
                                             if (offsetX.value > dragThreshold && contact.phoneNumber != null) {
                                                 val number = ("tel:" + contact.phoneNumber).toUri()
                                                 val intent =
-                                                    Intent(if (settings.features.callFromLife.hasAssured()) Intent.ACTION_CALL else Intent.ACTION_DIAL)
+                                                    Intent(if (settings.hasAssured(Settings.Feature.CallFromLife)) Intent.ACTION_CALL else Intent.ACTION_DIAL)
                                                 intent.setData(number)
                                                 intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
                                                 context.startActivity(intent)

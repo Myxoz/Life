@@ -60,7 +60,7 @@ fun PreferenceComposable() {
 }
 
 @Composable
-private fun DayDisplaySelector(settings: Settings){
+private fun DayDisplaySelector(settings: Settings.CompositionSettings){
     val displayedDaysOption by settings.preferences.displayedDaysOptions.flow.collectAsState()
     Text("Mögliche Tagauswahl", style = TypoStyle(Theme.primary, FontSize.LARGE))
     Row(

@@ -8,7 +8,6 @@ import androidx.compose.animation.core.spring
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -47,7 +46,6 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
-import androidx.compose.ui.platform.LocalClipboard
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -65,6 +63,7 @@ import com.myxoz.life.screens.NavPath
 import com.myxoz.life.screens.feed.dayoverview.edgeToEdgeGradient
 import com.myxoz.life.ui.ActionBar
 import com.myxoz.life.ui.SCREENMAXWIDTH
+import com.myxoz.life.ui.holdToCopy
 import com.myxoz.life.ui.rememberAsymmetricalVerticalCornerRadius
 import com.myxoz.life.ui.setMaxTabletWidth
 import com.myxoz.life.ui.theme.FontColor
@@ -74,7 +73,6 @@ import com.myxoz.life.ui.theme.OldColors
 import com.myxoz.life.ui.theme.TypoStyle
 import com.myxoz.life.ui.theme.TypoStyleOld
 import com.myxoz.life.utils.collectAsMutableState
-import com.myxoz.life.utils.copy
 import com.myxoz.life.utils.formatDayTime
 import com.myxoz.life.utils.formatTimeStamp
 import com.myxoz.life.utils.rippleClick
@@ -518,19 +516,14 @@ fun BankCard(
                 )
             }
             if(displaysIban){
-                val clipboard = LocalClipboard.current
-                val coroutineScope = rememberCoroutineScope()
                 if(fromIBAN.isNotBlank())
                     Text(
                         fromIBAN.uppercase().chunked(4).joinToString(" "),
                         style = TypoStyle(Theme.secondary, FontSize.MEDIUM),
-                        modifier = Modifier.combinedClickable(null, null, onLongClick = {
-                            coroutineScope.launch {
-                                clipboard.copy(fromIBAN)
+                        modifier = Modifier
+                            .holdToCopy(fromIBAN) {
+                                if(largeDataCache!=null && fromIBAN.startsWith("DE")) displaysIban=!displaysIban
                             }
-                        }){
-                            if(largeDataCache!=null && fromIBAN.startsWith("DE")) displaysIban=!displaysIban
-                        }
                     )
             } else {
                 val allBanks = largeDataCache?.bankMap ?: mapOf()

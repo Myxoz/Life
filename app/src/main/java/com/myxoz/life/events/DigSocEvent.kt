@@ -84,7 +84,7 @@ class DigSocEvent(
         .put("mapping", JSONArray().apply { digSocEntries.forEach { put(it.timedTagLikeToJson()) } })
 
     override fun copyWithTimes(start: Long, end: Long, uss: Boolean, usl: Boolean) = DigSocEvent(start, end, uss, usl, digSocEntries, title, people)
-    override fun ignoreProposed(prefs: SharedPreferences) = ingoreAutoDetectable(this, AutoDetectCall.SPK, prefs)
+    override fun ignoreProposed(prefs: SharedPreferences) = ingoreAutoDetectable(this, AutoDetectCall.SPK, prefs, true)
     override fun getInvalidReason(): String? =
         if(digSocEntries.isEmpty())
             "Wähle mindestens eine Platform aus"

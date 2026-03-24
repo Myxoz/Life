@@ -156,7 +156,7 @@ class CalendarRepo(
         _proposedEventsDayed.overwriteAll(dayMap.map { it.key to it.value })
     }
 
-    fun fetchAutoDetectEvents(settings: Settings) = appScope.launch {
+    fun fetchAutoDetectEvents(settings: Settings.CompositionSettings) = appScope.launch {
         updateProposedEvents(
             AutoDetect.autoDetectEvents(context, settings, readSyncableDaos.peopleDao)
         )

@@ -73,17 +73,22 @@ fun SettingsPermissionComposable(calendarViewModel: CalendarViewModel) {
             Spacer(Modifier.height(innerPadding.calculateTopPadding() + 10.dp))
             Text("Berechtigungen", style = TypoStyle(Theme.secondary, FontSize.MEDIUM), modifier = Modifier.fillMaxWidth())
             Spacer(Modifier.height(10.dp))
+            val coroutineScope = rememberCoroutineScope()
             Column(
                 Modifier
                     .background(Theme.surfaceContainer, RoundedCornerShape(30.dp))
                 ,
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                settings.permissions.all.forEachIndexed { i, c ->
+                Settings.Permission.entries.forEachIndexed { i, c ->
                     if(i != 0){
                         HorizontalDivider(Modifier.padding(horizontal = 20.dp), color = Theme.outlineVariant)
                     }
-                    PermissionComposable(c) { c.set(it) }
+                    PermissionComposable(settings, c) {
+                        coroutineScope.launch {
+                            settings.set(c, it)
+                        }
+                    }
                 }
             }
             Spacer(Modifier.height(20.dp))
@@ -94,21 +99,23 @@ fun SettingsPermissionComposable(calendarViewModel: CalendarViewModel) {
                     .background(Theme.surfaceContainer, RoundedCornerShape(30.dp)),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                settings.features.all.forEach {
-                    FeatureItem(it) { c-> it.set(c) }
+                Settings.Feature.entries.forEach {
+                    if(it == Settings.Feature.SyncWithServer) return@forEach
+                    FeatureItem(settings, it) { newVal ->
+                        settings.set(it, newVal)
+                    }
                     HorizontalDivider(Modifier.padding(horizontal = 15.dp), color = Theme.outlineVariant)
                 }
                 HorizontalDivider(Modifier.padding(horizontal = 15.dp), color = Theme.outlineVariant)
-                val coroutineScope = rememberCoroutineScope()
                 val context = LocalContext.current
                 val clipboard = LocalClipboard.current
-                FeatureItem(settings.features.syncWithServer) {
+                FeatureItem(settings, Settings.Feature.SyncWithServer) {
                     coroutineScope.launch {
                         if(it){
                             val check = calendarViewModel.testSign()
                             if(check != null) {
                                 Toast.makeText(context, "Verifiziert", Toast.LENGTH_SHORT).show()
-                                settings.features.syncWithServer.set(true)
+                                settings.set(Settings.Feature.SyncWithServer, true)
                             } else {
                                 Toast.makeText(context, check, Toast.LENGTH_LONG).show()
                                 coroutineScope.launch {
@@ -116,7 +123,7 @@ fun SettingsPermissionComposable(calendarViewModel: CalendarViewModel) {
                                 }
                             }
                         } else {
-                            settings.features.syncWithServer.set(false)
+                            settings.set(Settings.Feature.SyncWithServer, false)
                         }
                     }
                 }
@@ -126,11 +133,10 @@ fun SettingsPermissionComposable(calendarViewModel: CalendarViewModel) {
     }
 }
 
-
 @Composable
-fun PermissionComposable(permission: Settings.Permissions.Permission, toggle: (new: Boolean)->Unit) {
-    val state by permission.has.collectAsState()
-    val isUseless by permission.useless.collectAsState()
+fun PermissionComposable(settings: Settings.CompositionSettings, permission: Settings.Permission, toggle: (new: Boolean)->Unit) {
+    val state by settings.has(permission).collectAsState()
+    val isUseless by remember { settings.isUseless(permission) }.collectAsState(false)
     Row(
         Modifier
             .clip(CircleShape)
@@ -142,20 +148,21 @@ fun PermissionComposable(permission: Settings.Permissions.Permission, toggle: (n
         ,
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Text(permission.name, Modifier.weight(1f), style = TypoStyle(if(!isUseless) Theme.secondary else Theme.tertiary, FontSize.LARGE))
+        Text(permission.displayName, Modifier.weight(1f), style = TypoStyle(if(!isUseless) Theme.secondary else Theme.tertiary, FontSize.LARGE))
         Switch(state, {
             toggle(it)
         }, colors = switchColors())
     }
 }
+
 @Composable
-fun FeatureItem(feature: Settings.Features.Feature, setTo: (Boolean)->Unit) {
-    val state by feature.has.collectAsState()
-    val isEnablable by remember{combine(flows = feature.reliesOn.map { it.has }){ flowResults ->
-        flowResults.all { it } //  This is scuffed, I admit it
+fun FeatureItem(settings: Settings.CompositionSettings, feature: Settings.Feature, setTo: (Boolean)->Unit) {
+    val state by settings.has(feature).collectAsState()
+    val isEnablable by remember{combine(flows = feature.reliesOn.map { settings.has(it) }){ flowResults ->
+        flowResults.all { it } //  This is scuffed, I admit it. 2 mo later: But it works.
     }}.collectAsState(false)
     LaunchedEffect(Unit) {
-        if(!feature.hasAssured()) feature.set(false)
+        if(!settings.hasAssured(feature)) settings.set(feature, false)
         // Disables the feature if it's relied on permissions aren't granted, could else lead to undisablable features
     }
     Column(
@@ -165,7 +172,7 @@ fun FeatureItem(feature: Settings.Features.Feature, setTo: (Boolean)->Unit) {
         Row(
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Text(feature.name, Modifier.weight(1f), style = TypoStyle(Theme.primary, FontSize.LARGE))
+            Text(feature.displayName, Modifier.weight(1f), style = TypoStyle(Theme.primary, FontSize.LARGE))
             Switch(
                 state,
                 { setTo(!state) },
@@ -181,12 +188,12 @@ fun FeatureItem(feature: Settings.Features.Feature, setTo: (Boolean)->Unit) {
                 horizontalArrangement = Arrangement.spacedBy(5.dp)
             ) {
                 feature.reliesOn.forEach {
-                    val has by it.has.collectAsState()
+                    val has by settings.has(it).collectAsState()
                     Row(
                         Modifier
                             .clip(CircleShape)
                             .rippleClick{
-                                if(!has) it.set(true)
+                                if(!has) setTo(true)
                             }
                             .background(if(has) OldColors.Permissions.GRANTED else OldColors.Permissions.REVOKED)
                             .padding(horizontal = 10.dp, vertical = 3.dp),
@@ -194,7 +201,7 @@ fun FeatureItem(feature: Settings.Features.Feature, setTo: (Boolean)->Unit) {
                         horizontalArrangement = Arrangement.spacedBy(5.dp)
                     ) {
                         Icon(painterResource(if(has) R.drawable.tick else R.drawable.close), "Needs", Modifier.size(FontSize.SMALL.size.value.dp*.8f), Theme.onPrimary)
-                        Text(it.name, style = TypoStyle(Theme.onPrimary, FontSize.SMALL))
+                        Text(it.displayName, style = TypoStyle(Theme.onPrimary, FontSize.SMALL))
                     }
                 }
             }

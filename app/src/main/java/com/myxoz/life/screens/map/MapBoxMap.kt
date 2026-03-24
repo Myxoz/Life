@@ -46,6 +46,7 @@ import com.myxoz.life.R
 import com.myxoz.life.Theme
 import com.myxoz.life.ui.theme.OldColors
 import com.myxoz.life.viewmodels.MapViewModel
+import com.myxoz.life.viewmodels.Settings
 import kotlinx.coroutines.launch
 import kotlin.math.asin
 import kotlin.math.atan2
@@ -113,8 +114,8 @@ fun MapBoxMap(mapViewModel: MapViewModel, innerPadding: PaddingValues){
             )
         }
     ) {
-        val features = LocalSettings.current
-        val isLocationEnabled by features.features.mapBoxLocation.has.collectAsState()
+        val settings = LocalSettings.current
+        val isLocationEnabled by settings.has(Settings.Feature.MapBoxLocation).collectAsState()
         MapEffect(isLocationEnabled) {
             it.location.enabled = isLocationEnabled
             it.location.pulsingEnabled = isLocationEnabled

@@ -61,7 +61,7 @@ class SyncedEvent(
                 json.getId(),
                 json.getString("created").toLong(),
                 json.getLongOrNull("edited"),
-               ProposedEvent.getProposedEventByJson(json)
+               ProposedEvent.fromJSON(json)
             )
         fun getSemanticNullValueEvent() = SyncedEvent(-1L, 0L, null, EmptyEvent(0L, 0L, false, usl = false))
     }

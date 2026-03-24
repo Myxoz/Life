@@ -168,7 +168,7 @@ abstract class ProposedEvent(start: Long, end: Long, val type: EventType, val us
                 EventType.Timewaste.id -> TimewasteEvent.from(db, event)
                 else -> null
             }
-        fun getProposedEventByJson(json: JSONObject): ProposedEvent {
+        fun fromJSON(json: JSONObject): ProposedEvent {
             val start = json.getLong("start")
             val end = json.getLong("end")
             val uss = json.getBoolean("uss")

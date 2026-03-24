@@ -4,6 +4,7 @@ import android.app.Application
 import com.myxoz.life.api.API
 import com.myxoz.life.dbwrapper.Daos
 import com.myxoz.life.dbwrapper.DatabaseProvider
+import com.myxoz.life.viewmodels.Settings
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -35,6 +36,7 @@ class MainApplication: Application() {
             db.writeTodosDao
         )
         val mainPrefs = applicationContext.getSharedPreferences(SPK, MODE_PRIVATE)
+        val settingsPrefs = applicationContext.getSharedPreferences(SETTINGS_SPK, MODE_PRIVATE)
         val appScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
         val bankingRepo = BankingRepo(
             readSyncableDaos.bankingDao,
@@ -118,10 +120,12 @@ class MainApplication: Application() {
             ),
             readSyncableDaos,
             mainPrefs,
+            Settings.Permission.PermissionChecker(settingsPrefs, applicationContext),
             applicationContext
         )
     }
     companion object {
         const val SPK = "MainActivity"
+        const val SETTINGS_SPK = "settings"
     }
 }

@@ -102,6 +102,7 @@ import com.myxoz.life.utils.toPx
 import com.myxoz.life.utils.windowPadding
 import com.myxoz.life.viewmodels.AlarmViewModel
 import com.myxoz.life.viewmodels.ProfileInfoModel
+import com.myxoz.life.viewmodels.Settings
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -213,7 +214,7 @@ fun AlarmScreen(alarmViewModel: AlarmViewModel){
         }
         Spacer(Modifier.height(10.dp))
         val settings = LocalSettings.current
-        val hasAlarmsPermission by settings.features.lifeAlarmClock.has.collectAsState()
+        val hasAlarmsPermission by settings.has(Settings.Feature.LifeAlarmClock).collectAsState()
         val nextScheduledTs by alarmViewModel.nextScheduled.collectAsState()
         val alarmIsSet = nextScheduledTs > System.currentTimeMillis()
         Box(
@@ -223,10 +224,10 @@ fun AlarmScreen(alarmViewModel: AlarmViewModel){
                 .background(if(!hasAlarmsPermission) Theme.primary else if(!alarmIsSet) Theme.primary else Theme.secondary, CircleShape)
                 .clip(CircleShape)
                 .rippleClick{
-                    if(!settings.features.lifeAlarmClock.hasAssured()){
+                    if(!settings.hasAssured(Settings.Feature.LifeAlarmClock)){
                         nav.navigate(NavPath.Menu.More.Settings.PERMISSIONS)
                     } else if(!alarmIsSet) {
-                        alarmViewModel.setAlarm(settings, nextEvent.proposed.start)
+                        alarmViewModel.setAlarm(nextEvent.proposed.start)
                     } else {
                         alarmViewModel.removeAlarm()
                     }

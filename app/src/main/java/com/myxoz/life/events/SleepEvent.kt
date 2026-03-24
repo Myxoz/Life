@@ -68,7 +68,7 @@ class SleepEvent(start: Long, end: Long, uss: Boolean, usl: Boolean): ProposedEv
     override suspend fun eraseEventSpecificsFromDB(db: WriteEventDetailsDao, id: Long) = Unit
     override fun addEventSpecifics(jsonObject: JSONObject): JSONObject = jsonObject // No specific parts
     override fun copyWithTimes(start: Long, end: Long, uss: Boolean, usl: Boolean) = SleepEvent(start, end, uss, usl)
-    override fun ignoreProposed(prefs: SharedPreferences) = ingoreAutoDetectable(this, AutoDetectSleep.SPK, prefs)
+    override fun ignoreProposed(prefs: SharedPreferences) = ingoreAutoDetectable(this, AutoDetectSleep.SPK, prefs, false)
 
     override fun getInvalidReason(): String? = null // Sleep cant be invalid
 

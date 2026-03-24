@@ -50,13 +50,14 @@ import com.myxoz.life.utils.formatMsToDuration
 import com.myxoz.life.utils.rippleClick
 import com.myxoz.life.utils.toShape
 import com.myxoz.life.viewmodels.CalendarViewModel
+import com.myxoz.life.viewmodels.Settings
 import java.time.LocalDate
 
 @Composable
 fun DayTopBar(
     calendarViewModel: CalendarViewModel,
     date: LocalDate,
-){
+) {
     val settings = LocalSettings.current
     val screens = LocalScreens.current
     Column(
@@ -132,8 +133,8 @@ fun DayTopBar(
                     Theme.secondary
                 )
             }
-            val screentimePermission by settings.features.screentime.has.collectAsState()
-            val stepsPermission by settings.features.stepCounting.has.collectAsState()
+            val screentimePermission by settings.has(Settings.Feature.ScreenTime).collectAsState()
+            val stepsPermission by settings.has(Settings.Feature.StepCounting).collectAsState()
             val listenedScreentime by calendarViewModel.getScreentime(date).collectAsStateWithLifecycle(0L)
 
             if (screentimePermission && (isToday || daysSummaries!=null)) {

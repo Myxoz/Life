@@ -27,3 +27,10 @@ inline fun JSONArray.forEach(function: (Any) -> Unit) {
         function(this.get(item))
     }
 }
+inline fun <T> JSONArray.asList(map: JSONArray.(Int) -> T): List<T> {
+    val list = mutableListOf<T>()
+    for (item in 0..<length()) {
+        list.add(map(item))
+    }
+    return list
+}

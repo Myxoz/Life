@@ -13,6 +13,7 @@ import androidx.compose.animation.core.tween
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.gestures.detectVerticalDragGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -49,6 +50,7 @@ import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.Layout
 import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.platform.LocalClipboard
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalWindowInfo
 import androidx.compose.ui.res.painterResource
@@ -64,9 +66,11 @@ import com.myxoz.life.ui.theme.FontSize
 import com.myxoz.life.utils.MaterialShapes
 import com.myxoz.life.utils.collectAsMutableState
 import com.myxoz.life.utils.combinedRippleClick
+import com.myxoz.life.utils.copy
 import com.myxoz.life.utils.rippleClick
 import com.myxoz.life.utils.toDp
 import com.myxoz.life.utils.toShape
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.launch
 import kotlin.math.pow
@@ -493,4 +497,16 @@ fun LifeProgressIndicator(modifier: Modifier, color: Color){
             color
         )
     }
+}
+
+@Composable
+fun Modifier.holdToCopy(text: String?, coroutineScope: CoroutineScope? = null, click: ()->Unit = {}): Modifier {
+    val clipboard = LocalClipboard.current
+    val coroutineScope = coroutineScope ?: rememberCoroutineScope()
+    return this.combinedClickable(null, null, onLongClick = {
+        if(text == null) return@combinedClickable
+        coroutineScope.launch {
+            clipboard.copy(text)
+        }
+    }, onClick = click)
 }

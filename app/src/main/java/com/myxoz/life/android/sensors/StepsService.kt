@@ -17,20 +17,30 @@ import com.myxoz.life.R
 import com.myxoz.life.repositories.MainApplication
 import com.myxoz.life.repositories.StepRepo
 import com.myxoz.life.screens.NavPath
+import com.myxoz.life.viewmodels.Settings
 
 class StepsService : Service(), SensorEventListener {
     private lateinit var sensorManager: SensorManager
     private lateinit var stepSensor: Sensor
     private lateinit var repository: StepRepo
+    private lateinit var permissionChecker: Settings.Permission.PermissionChecker
 
     override fun onCreate() {
         super.onCreate()
-        repository = (applicationContext as MainApplication).repositories.stepRepo
+        val appRepo = (applicationContext as MainApplication).repositories
+        repository = appRepo.stepRepo
+        permissionChecker = appRepo.permissionChecker
+        if(!Settings.Feature.StepCounting.hasAssured(permissionChecker)) return stopSelf()
         sensorManager = getSystemService(SENSOR_SERVICE) as SensorManager
         stepSensor = sensorManager.getDefaultSensor(Sensor.TYPE_STEP_COUNTER)!!
 
         sensorManager.registerListener(this, stepSensor, SensorManager.SENSOR_DELAY_NORMAL)
-        startForeground(1, createNotification())
+        try {
+            startForeground(1, createNotification())
+        } catch (_: SecurityException) {
+            stopSelf()
+            return
+        }
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int = START_STICKY
@@ -72,8 +82,10 @@ class StepsService : Service(), SensorEventListener {
     }
 
     override fun onDestroy() {
+        if (::sensorManager.isInitialized) {
+            sensorManager.unregisterListener(this)
+        }
         super.onDestroy()
-        sensorManager.unregisterListener(this)
     }
     override fun onBind(intent: Intent?): IBinder? = null
 }

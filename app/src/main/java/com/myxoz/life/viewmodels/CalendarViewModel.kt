@@ -141,7 +141,7 @@ class CalendarViewModel(
     }
     fun getProposedEventsAt(date: LocalDate) = getProposedEventsAtCache.get(date)
     fun saveProposedEvent(event: ProposedEvent) = repos.calendarRepo.saveProposedNotYetSyncedEvent(event)
-    fun requestAutoDetectedEventStart(settings: Settings) = repos.calendarRepo.fetchAutoDetectEvents(settings)
+    fun requestAutoDetectedEventStart(settings: Settings.CompositionSettings) = repos.calendarRepo.fetchAutoDetectEvents(settings)
     suspend fun testSign() = repos.api.testSign()
     fun getBase64Public() = repos.api.getBase64Public()
     fun requireAllPeople() = repos.peopleRepo.requireAllPeople()

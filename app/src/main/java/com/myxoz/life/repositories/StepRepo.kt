@@ -51,8 +51,12 @@ class StepRepo(
             // Reboot (or random sensor reset FUCK OEMs)
             // Fuck Samsung again because they sometimes seam to remove a small amount of steps and don't fully reset the sensor,
             // I will log this and TODO look at the logs and understand how the sensor works
-            // Logs: Max Div: 1
-            // From 30681 to 30680 at 1773570464845 (15.03.2006 11:27:44)
+            // Logs: Max Dif: 1
+            /*
+From 10823 to 10822 at 1774192727221 (22.03.2026 16:18:47)
+From 49160 to 0 at 1774050986159 (21.03.2026 00:56:26)
+From 30681 to 30680 at 1773570464845 (15.03.2026 11:27:44)
+            */
             if(totalSensorSteps < lastSavedSteps){
                 stepsPrefs.edit {
                     val stepLog = (stepsPrefs.getStringSet("step_reset_log",setOf()) ?: setOf())

@@ -18,164 +18,142 @@ import androidx.core.content.ContextCompat
 import androidx.core.content.edit
 import androidx.core.net.toUri
 import com.myxoz.life.android.notifications.NotificationReaderService
+import com.myxoz.life.android.sensors.StepsService
 import com.myxoz.life.utils.SharedPrefsUtils.get
 import com.myxoz.life.utils.SharedPrefsUtils.put
-import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.launch
-import kotlin.coroutines.EmptyCoroutineContext
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.update
 import kotlin.reflect.KClass
 
 
-class Settings(prefs: SharedPreferences, context: Context, activity: Activity) {
-    val permissions = Permissions(prefs,context, activity)
-    val features = Features(prefs, this@Settings.permissions)
-    val preferences = Preferences(prefs)
-    class Features(val prefs: SharedPreferences, permissions: Permissions){
-        /** ADD TO [all]!!! */
-        val autoDetectCalls = Feature(
-            AUTO_DETECT_CALLS,
+object Settings {
+    enum class Feature(val spk: String, val displayName: String, val description: String, val reliesOn: List<Permission>, val onEnable: (Permission.PermissionChanger.() -> Unit)? = null) {
+        AutoDetectCalls(
+            "autodetectcalls",
             "Anruferfassung",
             "Automatische Vorschläge für Anrufe im Kalender basierend auf deinen vergangenen Telefonaten",
-            listOf(permissions.readCallLogs),
-            prefs
-        )
-        val mapBoxLocation = Feature(
-            MAPBOX_LOCATION,
+            listOf(Permission.ReadCallLogs),
+        ),
+        AutoDetectWhatsAppCalls(
+            "autodetectwhatsappcalls",
+            "WhatsApp-Anruferfassung",
+            "Wie ${AutoDetectCalls.displayName}, aber für auch WhatsApp. Diese Einstellung fängt nur die Anruf Benachrichtigungen von \"WhatsApp\" (com.whatsapp) ab. Wenn diese App nicht installiert ist, ist diese Option funktionslos.",
+            listOf(Permission.ReadNotifications),
+        ),
+        AutoDetectSleep(
+            "autodetectsleep",
+            "Schlafenszeiterfassung",
+            "Automatische Vorschläge für Schlafenszeiten im Kalender basierend auf Nutzungszeiten",
+            listOf(Permission.UsageStats),
+        ),
+        MapBoxLocation(
+            "mapbox_location",
             "MapBox Standort",
             "Zeige den aktuellen Standort in MapBox an",
-            listOf(permissions.location),
-            prefs
-        )
-        val stepCounting = Feature(
-            STEP_COUNTING,
+            listOf(Permission.Location),
+        ),
+        StepCounting(
+            "step_counting",
             "Schritterfassung",
             "Schritterfassung im Kalenderfeed, als auch in der Tageszusammenfassung, braucht eine " +
                     "Vordergrundbenachrichtigung, um zu funktionieren, deaktiviere wenn dann die Benachrichtigungskategorie, aber nicht generell Benachrichtigungen",
-            listOf(permissions.physicalActivity, permissions.postNotifications),
-            prefs
-        )
-        val callFromLife = Feature(
-            CALL_FROM_LIFE,
+            listOf(Permission.PhysicalActivity, Permission.Notifications),
+            {
+                Service.StepCounting.rerun(this)
+            },
+        ),
+        ScreenTime(
+            "screentime",
+            "Bildschirmzeiterfassung",
+            "Zum erfassen der Bildschirmzeit im Kalenderfeed, auf der Tagesübersichtsseite und bei der Tageszusammenfassung",
+            listOf(Permission.UsageStats),
+        ),
+        CallFromLife(
+            "callfromlife",
             "Anrufe aus Life",
             "Anrufe können direkt aus der App ausgeführt werden, andernfalls" +
                     " wird man in die Telefonapp mit eingetippter Nummer weitergeleitet",
-            listOf(permissions.phone),
-            prefs
-        )
-        val syncWithServer = Feature(
-            SYNCWITHSERVER,
-            "Serversync",
-            "Syncronisiert alle Daten mit dem Server, nur für meine private Nutzung",
-            listOf(permissions.internet),
-            prefs
-        )
-        val screentime = Feature(
-            SCREENTIME,
-            "Bildschirmzeiterfassung",
-            "Zum erfassen der Bildschirmzeit im Kalenderfeed, auf der Tagesübersichtsseite und bei der Tageszusammenfassung",
-            listOf(permissions.usageStats),
-            prefs
-        )
-        val autoDetectSleep = Feature(
-            AUTODETECTSLEEP,
-            "Schlafenszeiterfassung",
-            "Automatische Vorschläge für Schlafenszeiten im Kalender basierend auf Nutzungszeiten",
-            listOf(permissions.usageStats),
-            prefs,
-        )
-        val addNewPerson = Feature(
-            ADDNEWPERSON,
+            listOf(Permission.Phone),
+        ),
+        AddNewPerson(
+            "addnewperson",
             "Kontaktvorschläge",
             "In den Kontakten werden über den Life Kontakten zusätzliche Kontakte deines Handys angezigt, " +
                     "zudem wird erkannt, ob Life Kontakte in den Telefonkontakten gespeichert sind und ein Vorschlag zum Einspeichern auf der Profilseite gemacht",
-            listOf(permissions.contacts),
-            prefs
-        )
-        val readPaymentNotifications = Feature(
-            READPAYMENTNOTIFICATIONS,
+            listOf(Permission.Contacts),
+        ),
+        ReadPaymentNotifications(
+            "readpaymentnotifications",
             "Bargeldlose Bezahlungen im Feed anzeigen",
             "Diese Einstellung fängt nur die Benachrichtigungen von \"Digitales Bezahlen\" (de.fiduciagad.android.wlwallet) ab. Wenn diese App nicht installiert ist, ist diese Option funktionslos",
-            listOf(permissions.readNotifications),
-            prefs
-        )
-        val lifeAlarmClock = Feature(
-            LIFEALARMCLOCK,
+            listOf(Permission.ReadNotifications),
+        ),
+        LifeAlarmClock(
+            "lifealarmclock",
             "Wecker",
-            "Ermöglicht es Wecker zum Aufstehen zu stellen. Dafür muss einerseits ein exakter Alarm gestellt werden (${permissions.alarms.name}) als auch eine Vollbildbenachrichtigung (${permissions.postNotifications.name}) zu dem  Zeitpunkt versendet werden.",
-            listOf(permissions.alarms, permissions.postNotifications),
-            prefs
-        )
-        val all = arrayOf(mapBoxLocation, stepCounting, callFromLife, screentime, autoDetectSleep, addNewPerson, readPaymentNotifications, autoDetectCalls, lifeAlarmClock)
-        // NO syncWithServer
-        class Feature(val spk: String, val name: String, val description: String, val reliesOn: List<Permissions.Permission>, val prefs: SharedPreferences) {
-            private val _flow = MutableStateFlow(prefs.getBoolean(spk, false))
-            val has = _flow.asStateFlow()
-            /** It's enough to call this once, taking permission away is not possible while the app is running. This will restart the application. */
-            fun hasAssured() = has.value && reliesOn.all { it.checkEnabled() }
-            init {
-                if(_flow.value){
-                    reliesOn.forEach {
-                        it.changeFeature(true, this)
-                    }
-                }
-            }
-            fun set(new: Boolean){
-                _flow.value = new
-                prefs.edit { putBoolean(spk, new) }
-                reliesOn.forEach {
-                    it.changeFeature(new, this)
-                }
-//                combine(flows = features.map { it.has })
-            }
-        }
+            "Ermöglicht es Wecker zum Aufstehen zu stellen. Dafür muss einerseits ein exakter Alarm gestellt werden (${Permission.AlarmAndTimers.displayName}) als auch eine Vollbildbenachrichtigung (${Permission.Notifications.displayName}) zu dem  Zeitpunkt versendet werden.",
+            listOf(Permission.AlarmAndTimers, Permission.Notifications),
+        ),
+        SyncWithServer(
+            "syncwithserver",
+            "Serversync",
+            "Syncronisiert alle Daten mit dem Server, nur für meine private Nutzung",
+            listOf(Permission.Internet),
+        );
+        fun isEnabled(permissionChecker: Permission.PermissionChecker) = permissionChecker.prefs.getBoolean(spk, false)
+        fun hasAssured(permissionChecker: Permission.PermissionChangerInterface) = reliesOn.all { it.check(permissionChecker) }
     }
-    class Permissions(val prefs: SharedPreferences, val context: Context, val activity: Activity) {
-        /** Add to [all] */
-        val location = Permission(context,"Standort",{
+    enum class Permission(
+        val displayName: String,
+        val check: PermissionChangerInterface.()-> Boolean,
+        val onDisable: PermissionChanger.()->Unit,
+        val onEnable: PermissionChanger.()->Unit,
+        val onEnabled: (PermissionChanger.()->Unit)? = null
+    ) {
+        Location("Standort",{
             ContextCompat.checkSelfPermission(context, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED
         }, {
             openAppInfo()
-        }){
+        },{
             ActivityCompat.requestPermissions(
                 activity,
                 arrayOf(Manifest.permission.ACCESS_FINE_LOCATION),
                 112
             )
-        }
-        val readCallLogs = Permission(context,"Anrufliste",{
+        }),
+        ReadCallLogs("Anrufliste",{
             ContextCompat.checkSelfPermission(context, Manifest.permission.READ_CALL_LOG) == PackageManager.PERMISSION_GRANTED
         }, {
             openAppInfo()
-        }){
+        },{
             ActivityCompat.requestPermissions(
                 activity,
                 arrayOf(Manifest.permission.READ_CALL_LOG),
                 112
             )
-        }
-        val physicalActivity = Permission(context,"Physische Aktivität",{
+        }),
+        PhysicalActivity("Physische Aktivität",{
             ContextCompat.checkSelfPermission(context, Manifest.permission.ACTIVITY_RECOGNITION) == PackageManager.PERMISSION_GRANTED
         }, {
             openAppInfo()
-        }){
+        },{
             ActivityCompat.requestPermissions(
                 activity,
                 arrayOf(Manifest.permission.ACTIVITY_RECOGNITION),
                 112
             )
-        }
-        val internet = Permission(context, "Internet", {
-            prefs.getBoolean(INTERNET, false)
+        }),
+        Internet("Internet", {
+            prefs.getBoolean("internet", false)
         }, {
-            prefs.edit { putBoolean(INTERNET, false) }
-        }){
-            prefs.edit { putBoolean(INTERNET, true) }
-        }
-        val readNotifications = Permission(context,"Benachrichtigungen lesen", {
+            prefs.edit { putBoolean("internet", false) }
+        },{
+            prefs.edit { putBoolean("internet", true) }
+        }),
+        ReadNotifications("Benachrichtigungen lesen", {
             val nm = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
             val component = ComponentName(context, NotificationReaderService::class.java)
             nm.isNotificationListenerAccessGranted(component)
@@ -183,12 +161,12 @@ class Settings(prefs: SharedPreferences, context: Context, activity: Activity) {
             context.startActivity(
                 Intent(Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
             )
-        }){
+        },{
             context.startActivity(
                 Intent(Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
             )
-        }
-        val usageStats = Permission(context,"Nutzungszeiten", {
+        }),
+        UsageStats("Nutzungszeiten", {
             val appOps = context.getSystemService(Context.APP_OPS_SERVICE) as AppOpsManager
             val mode = appOps.checkOpNoThrow(AppOpsManager.OPSTR_GET_USAGE_STATS, android.os.Process.myUid(), context.packageName)
             if(mode == AppOpsManager.MODE_DEFAULT) {
@@ -202,36 +180,36 @@ class Settings(prefs: SharedPreferences, context: Context, activity: Activity) {
                     .setData("package:${context.packageName}".toUri())
                     .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
             )
-        }){
+        },{
             context.startActivity(
                 Intent(Settings.ACTION_USAGE_ACCESS_SETTINGS)
                     .setData("package:${context.packageName}".toUri())
                     .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
             )
-        }
-        val contacts = Permission(context, "Kontake", {
+        }),
+        Contacts("Kontake", {
             ContextCompat.checkSelfPermission(context, Manifest.permission.READ_CONTACTS) == PackageManager.PERMISSION_GRANTED
         }, {
             openAppInfo()
-        }){
+        },{
             ActivityCompat.requestPermissions(
                 activity,
                 arrayOf(Manifest.permission.READ_CONTACTS),
                 112
             )
-        }
-        val phone = Permission(context, "Telefon", {
+        }),
+        Phone("Telefon", {
             ContextCompat.checkSelfPermission(context, Manifest.permission.CALL_PHONE) == PackageManager.PERMISSION_GRANTED
         }, {
             openAppInfo()
-        }){
+        },{
             ActivityCompat.requestPermissions(
                 activity,
                 arrayOf(Manifest.permission.CALL_PHONE),
                 112
             )
-        }
-        val postNotifications = Permission(context, "Benachrichtigungen", {
+        }),
+        Notifications("Benachrichtigungen", {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
                 ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) == PackageManager.PERMISSION_GRANTED
             } else {
@@ -239,7 +217,7 @@ class Settings(prefs: SharedPreferences, context: Context, activity: Activity) {
             }
         }, {
             openAppInfo()
-        }){
+        },{
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
                 ActivityCompat.requestPermissions(
                     activity,
@@ -247,46 +225,26 @@ class Settings(prefs: SharedPreferences, context: Context, activity: Activity) {
                     112
                 )
             }
-        }
-        val alarms = Permission(context, "Wecker & Erinnerungen", {
-            val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as AlarmManager
+        }),
+        AlarmAndTimers("Wecker & Erinnerungen", {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as AlarmManager
                 alarmManager.canScheduleExactAlarms()
             } else {
                 true // Automatically granted before Android 12
             }
         }, {
             openAppInfo()
-        }) {
+        },{
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
                 val intent = Intent(Settings.ACTION_REQUEST_SCHEDULE_EXACT_ALARM).apply {
                     data = Uri.fromParts("package", context.packageName, null)
                 }
                 activity.startActivity(intent)
             }
-        }
-        val all = arrayOf(location, usageStats, internet, phone, contacts, physicalActivity, postNotifications, readNotifications, readCallLogs, alarms)
-        class Permission(val context: Context, val name: String, val check: Permission.()-> Boolean, val onDisable: Permission.()->Unit, val onEnable: Permission.()->Unit){
-            private val _flow = MutableStateFlow(check())
-            val has = _flow.asStateFlow()
-            private val subscribedFeatures = mutableListOf<Features.Feature>()
-            private val _isUseless = MutableStateFlow(true)
-            val useless = _isUseless.asStateFlow()
-            fun changeFeature(active: Boolean, feature: Features.Feature){
-                if(active) subscribedFeatures.add(feature) else subscribedFeatures.remove(feature)
-                _isUseless.value = subscribedFeatures.isEmpty()
-            }
-            fun set(new: Boolean){
-                if(new){
-                    onEnable()
-                } else {
-                    onDisable()
-                    subscribedFeatures.forEach { it.set(false) }
-                }
-                checkAsync(new){
-                    _flow.value = check()
-                }
-            }
+        });
+        class PermissionChecker(override val prefs: SharedPreferences, override val context: Context): PermissionChangerInterface
+        class PermissionChanger(override val prefs: SharedPreferences, override val context: Context, val activity: Activity): PermissionChangerInterface {
             fun openAppInfo(){
                 val intent = Intent()
                 intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
@@ -294,53 +252,107 @@ class Settings(prefs: SharedPreferences, context: Context, activity: Activity) {
                 intent.data = Uri.fromParts("package", context.packageName, null)
                 context.startActivity(intent)
             }
-            fun checkAsync(expect: Boolean, onSuccess: ()-> Unit){
-                CoroutineScope(EmptyCoroutineContext).launch {
-                    while (true){
-                        if (check() == expect){
-                            onSuccess()
-                            break
-                        }
-                        delay(200)
+        }
+        interface PermissionChangerInterface{
+           val prefs: SharedPreferences
+           val context: Context
+        }
+    }
+    enum class Service(val rerun: Permission.PermissionChanger.()->Unit) {
+        StepCounting({
+            if(Feature.StepCounting.hasAssured(this))
+            ContextCompat.startForegroundService(context, Intent(context, StepsService::class.java))
+        }),
+    }
+    class CompositionSettings(val permissionChecker: Permission.PermissionChecker, val activity: Activity) {
+        private val features = mutableMapOf<Feature, MutableStateFlow<Boolean>>()
+        private val changeContext = Permission.PermissionChanger(permissionChecker.prefs, permissionChecker.context, activity)
+        private val permissions = mutableMapOf<Permission, MutableStateFlow<Boolean>>()
+        private val dependencies = mutableMapOf<Permission, MutableStateFlow<Set<Feature>>>()
+        val preferences = Preferences(permissionChecker.prefs)
+        fun has(feature: Feature): MutableStateFlow<Boolean> {
+            val cachedFeature = features[feature]
+            if(cachedFeature != null) return cachedFeature
+            val stored = permissionChecker.prefs.getBoolean(feature.spk, false)
+            updateDependency(feature, stored)
+            return features.getOrPut(feature) { MutableStateFlow(stored) }
+        }
+
+        fun has(permission: Permission): MutableStateFlow<Boolean> {
+            val cachedPermission = permissions[permission]
+            if(cachedPermission != null) return cachedPermission
+            return permissions.getOrPut(permission) {
+                MutableStateFlow(permission.check(permissionChecker))
+            }
+        }
+
+        fun hasAssured(feature: Feature) =
+            has(feature).value && feature.hasAssured(permissionChecker)
+
+        fun hasAssured(permission: Permission) = permission.check(permissionChecker)
+
+        fun set(feature: Feature, newVal: Boolean) {
+            has(feature).update { newVal }
+            updateDependency(feature, newVal)
+            if(newVal) feature.onEnable?.invoke(changeContext)
+            permissionChecker.prefs.edit { putBoolean(feature.spk, newVal) }
+        }
+
+        suspend fun set(permission: Permission, newVal: Boolean) {
+            if(newVal) {
+                permission.onEnable(changeContext)
+            } else {
+                permission.onDisable(changeContext)
+                Feature.entries.forEach {
+                    if(permission in it.reliesOn) set(it, false)
+                }
+            }
+            checkAsync(permission, newVal){
+                has(permission).value = newVal
+                permission.onEnabled?.invoke(changeContext)
+            }
+        }
+
+        private fun getDependencies(permission: Permission) =
+            dependencies.getOrPut(permission) { MutableStateFlow(setOf()) }
+
+        private fun updateDependency(feature: Feature, active: Boolean) {
+            feature.reliesOn.forEach {
+                if(active) getDependencies(it).value += feature else getDependencies(it).value -= feature
+            }
+        }
+
+        /* Cache this value */
+        fun isUseless(permission: Permission) = getDependencies(permission).map { it.isEmpty() }
+        private suspend fun checkAsync(permission: Permission, expect: Boolean, onSuccess: ()-> Unit){
+            while (true){
+                if (permission.check(permissionChecker) == expect){
+                    onSuccess()
+                    break
+                }
+                delay(200)
+            }
+        }
+        class Preferences(prefs: SharedPreferences) {
+            val displayedDaysOptions = Preference(DISPLAYED_DAYS_OPTIONS, prefs, Int::class, 0b10101110)
+            class Preference<T: Any>(
+                val spk: String,
+                val prefs: SharedPreferences,
+                val clazz: KClass<T>,
+                val defaultValue: T
+            ) {
+                private val _flow: MutableStateFlow<T> = MutableStateFlow(prefs.get(spk, clazz) ?: defaultValue)
+                val flow: StateFlow<T> = _flow
+                fun put(new: T){
+                    _flow.value = new
+                    prefs.edit {
+                        put(spk, new, clazz)
                     }
                 }
             }
-
-            fun checkEnabled() = has.value && check()
-        }
-    }
-    class Preferences(prefs: SharedPreferences) {
-        val displayedDaysOptions = Preference(DISPLAYED_DAYS_OPTIONS, prefs, Int::class, 0b10101110)
-        class Preference<T: Any>(
-            val spk: String,
-            val prefs: SharedPreferences,
-            val clazz: KClass<T>,
-            val defaultValue: T
-        ) {
-            private val _flow: MutableStateFlow<T> = MutableStateFlow(prefs.get(spk, clazz) ?: defaultValue)
-            val flow: StateFlow<T> = _flow
-            fun put(new: T){
-                _flow.value = new
-                prefs.edit {
-                    put(spk, new, clazz)
-                }
+            companion object {
+                const val DISPLAYED_DAYS_OPTIONS = "displayed_days_options"
             }
         }
-        companion object {
-            const val DISPLAYED_DAYS_OPTIONS = "displayed_days_options"
-        }
-    }
-    companion object {
-        const val STEP_COUNTING = "step_counting"
-        const val AUTO_DETECT_CALLS = "autodetectcalls"
-        const val MAPBOX_LOCATION = "mapbox_location"
-        const val SYNCWITHSERVER = "syncwithserver"
-        const val SCREENTIME = "screentime"
-        const val READPAYMENTNOTIFICATIONS = "readpaymentnotifications"
-        const val LIFEALARMCLOCK = "lifealarmclock"
-        const val AUTODETECTSLEEP = "autodetectsleep"
-        const val ADDNEWPERSON = "addnewperson"
-        const val INTERNET = "internet"
-        const val CALL_FROM_LIFE = "callfromlife"
     }
 }

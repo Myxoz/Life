@@ -58,6 +58,7 @@ import com.myxoz.life.utils.formatMsToDuration
 import com.myxoz.life.utils.rippleClick
 import com.myxoz.life.viewmodels.CalendarViewModel
 import com.myxoz.life.viewmodels.InspectedEventViewModel
+import com.myxoz.life.viewmodels.Settings
 import kotlinx.coroutines.launch
 import java.time.Instant
 import java.time.LocalDate
@@ -96,8 +97,8 @@ fun DaySummaryPopUp(calendarViewModel: CalendarViewModel, inspectedEventViewMode
             style = TypoStyle(Theme.primary, FontSize.MEDIUM)
         )
         val settings = LocalSettings.current
-        val screenTimeEnabled by settings.features.screentime.has.collectAsState()
-        val stepCountEnabled by settings.features.stepCounting.has.collectAsState()
+        val screenTimeEnabled by settings.has(Settings.Feature.ScreenTime).collectAsState()
+        val stepCountEnabled by settings.has(Settings.Feature.StepCounting).collectAsState()
         if(screenTimeEnabled || stepCountEnabled)
             Column(
                 Modifier

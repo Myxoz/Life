@@ -10,7 +10,7 @@ import com.myxoz.life.viewmodels.Settings
 val LocalNavController = staticCompositionLocalOf<NavController> {
     error("No NavController provided")
 }
-val LocalSettings = staticCompositionLocalOf<Settings> {
+val LocalSettings = staticCompositionLocalOf<Settings.CompositionSettings> {
     error("No Settings provided")
 }
 val LocalScreens = staticCompositionLocalOf<LocalScreensProvider> {

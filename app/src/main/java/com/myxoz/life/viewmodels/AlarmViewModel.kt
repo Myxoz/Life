@@ -59,8 +59,7 @@ class AlarmViewModel(val repos: AppRepositories): ViewModel() {
         nextScheduled.value = repos.prefs.getLong("nextAlarmTs", -1L)
         nextEvent.value = repos.calendarRepo.getNextEventAfter(System.currentTimeMillis())
     }
-    fun setAlarm(settings: Settings, eventTs: Long){
-        if(!settings.features.lifeAlarmClock.hasAssured()) return
+    fun setAlarm(eventTs: Long){
         val alarmTs = eventTs - minutesToGetReady.value * 1000L * 60
         setAlarm(alarmTs, repos.context)
         nextScheduled.value = alarmTs

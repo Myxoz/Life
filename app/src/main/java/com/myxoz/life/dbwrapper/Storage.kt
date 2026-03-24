@@ -134,7 +134,7 @@ object DatabaseProvider {
  * 7. Create new [com.myxoz.life.events.additionals.EventType]
  * 8. Create event renderer and EventClass by copying a file from [com.myxoz.life.events]
  * 9. Add to [com.myxoz.life.events.ProposedEvent.from]
- * 10. Add to when in [com.myxoz.life.events.ProposedEvent.getProposedEventByJson]
+ * 10. Add to when in [com.myxoz.life.events.ProposedEvent.fromJSON]
  * 11. Add to [com.myxoz.life.api.API.overwriteByJson] AEFL
  * 12. Add to modify/add screen [com.myxoz.life.screens.feed.fullscreenevent.ModifyEvent] CalendarChip and to the content renderer
  * 13. Add to display screen [com.myxoz.life.screens.feed.fullscreenevent.DisplayEvent]

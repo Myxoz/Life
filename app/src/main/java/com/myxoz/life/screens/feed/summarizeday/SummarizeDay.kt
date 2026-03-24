@@ -70,6 +70,7 @@ import com.myxoz.life.ui.theme.TypoStyleOld
 import com.myxoz.life.utils.diagrams.PieChart
 import com.myxoz.life.utils.rippleClick
 import com.myxoz.life.viewmodels.DayOverviewViewModel
+import com.myxoz.life.viewmodels.Settings
 import java.time.LocalDate
 import java.time.ZoneId
 import kotlin.math.abs
@@ -388,8 +389,8 @@ fun SummarizeDay(dayOverviewViewModel: DayOverviewViewModel) {
                             recordedHappyness,
                             recordedStress,
                             recordedSuccessfulness,
-                            if(settings.features.stepCounting.hasAssured()) dayOverviewViewModel.lastInsertedSteps.value.toInt() else 0,
-                            if(settings.features.stepCounting.hasAssured()) getUsageDataBetween(
+                            if(settings.hasAssured(Settings.Feature.StepCounting)) dayOverviewViewModel.lastInsertedSteps.value else 0,
+                            if(settings.hasAssured(Settings.Feature.ScreenTime)) getUsageDataBetween(
                                 context,
                                 day.atStartOfDay(zone).toEpochSecond() * 1000L,
                                 day.plusDays(1).atStartOfDay(zone).toEpochSecond() * 1000L
