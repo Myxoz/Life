@@ -4,7 +4,10 @@ import android.content.Context.MODE_PRIVATE
 import android.icu.util.Calendar
 import android.provider.CallLog
 import androidx.activity.compose.LocalActivity
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
@@ -12,6 +15,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
+import androidx.compose.material3.Icon
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -27,10 +31,13 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import androidx.core.content.edit
 import com.myxoz.life.LocalSettings
 import com.myxoz.life.MainActivity
+import com.myxoz.life.R
+import com.myxoz.life.Theme
 import com.myxoz.life.api.API
 import com.myxoz.life.api.Syncable
 import com.myxoz.life.dbwrapper.Daos
@@ -184,8 +191,42 @@ fun DebugScreen(
             )
             val steps by repos.stepRepo.debugGetRawSteps().collectAsState()
             Text("Steps live: $steps", style = TypoStyleOld(FontColor.PRIMARY, FontSize.MEDIUM))
-            if(settings.hasAssured(Settings.Feature.AutoDetectCalls)){
-                CallLogDumpDebug()
+            var renderCallLogs by remember { mutableStateOf(false) }
+            Button({renderCallLogs = true}) {
+                Text("Render call logs")
+            }
+            if(renderCallLogs) {
+                if(settings.hasAssured(Settings.Feature.AutoDetectCalls)){
+                    CallLogDumpDebug()
+                }
+            }
+            val allSharedPreferences = remember { File(context.dataDir, "shared_prefs").list() }
+            println(allSharedPreferences)
+            allSharedPreferences?.forEach {
+                val pref = remember { context.getSharedPreferences(it.removeSuffix(".xml"), MODE_PRIVATE) }
+                Spacer(Modifier.height(10.dp))
+                Text(it, color = Theme.primary)
+                Column (
+                    Modifier.background(Theme.surface)
+                ) {
+                    pref.all.forEach { (key, any) ->
+                        Row {
+                            Text(key, color = Theme.primary)
+                            Text(any.toString(), Modifier.weight(1f), color = Theme.primary)
+                            Icon(
+                                painterResource(R.drawable.delete),
+                                "delete",
+                                Modifier
+                                    .clickable{
+                                        pref.edit {
+                                            remove(key)
+                                        }
+                                    }
+                                ,
+                                Theme.primary)
+                        }
+                    }
+                }
             }
         }
     }

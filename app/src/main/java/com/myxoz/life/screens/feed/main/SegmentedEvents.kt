@@ -82,9 +82,9 @@ data class PrerenderedEvent(
     companion object {
         fun getPrerenderedEvents(events: List<SyncedEvent>, instantEntries: List<InstantEvent.InstantEventGroup>, instantEventDisplaySize: Long): Map<Long, PrerenderedEvent> {
             val order = arrayOf(
-                EventType.Timewaste,
                 EventType.DigSoc,
                 EventType.Social,
+                EventType.Timewaste,
                 EventType.Sleep,
                 EventType.Spont,
                 EventType.Hobby,
@@ -93,7 +93,7 @@ data class PrerenderedEvent(
                 EventType.Work,
             )
             // Complexity reasons instead of using modifyable.entries / values
-            // All will just  be the first iteration and fill spots will use something different from all
+            // All will just be the first iteration and fill spots will use something different from all
             val all = LinkedList<Pair<SyncedEvent, PrerenderedEventBuilder.SegmentBuilder>>()
             for (type in order) {
                 for(event in events.filter { it.proposed.type == type }){

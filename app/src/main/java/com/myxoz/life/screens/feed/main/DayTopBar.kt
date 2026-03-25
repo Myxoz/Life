@@ -137,7 +137,7 @@ fun DayTopBar(
             val stepsPermission by settings.has(Settings.Feature.StepCounting).collectAsState()
             val listenedScreentime by calendarViewModel.getScreentime(date).collectAsStateWithLifecycle(0L)
 
-            if (screentimePermission && (isToday || daysSummaries!=null)) {
+            if ((screentimePermission && isToday) || (daysSummaries!=null && daysSummaries?.screenTimeMs != 0)) {
                 DayPill(
                     painterResource(R.drawable.screentime),
                     listenedScreentime.formatMsToDuration(true),
@@ -147,7 +147,7 @@ fun DayTopBar(
             }
             val steps by calendarViewModel.steps.collectAsState()
             val displayedSteps = (if(isToday) steps else daysSummaries?.steps?.toLong()).def(0L)
-            if (stepsPermission && (daysSummaries != null || isToday)) {
+            if ((stepsPermission && isToday) || (daysSummaries != null && daysSummaries?.steps != 0)) {
                 DayPill(
                     painterResource(R.drawable.shoe),
                     displayedSteps.toString(),
