@@ -57,7 +57,7 @@ class AlarmViewModel(val repos: AppRepositories): ViewModel() {
         // This is a bit of a Band-Aid fix, this will refresh the nextAlarmTs on screen opening,
         // this might be problematic due to snooze not notifying the viewmodel
         nextScheduled.value = repos.prefs.getLong("nextAlarmTs", -1L)
-        nextEvent.value = repos.calendarRepo.getNextEventAfter(System.currentTimeMillis())
+        nextEvent.value = repos.calendarRepo.getNonSleepEventAfter(System.currentTimeMillis())
     }
     fun setAlarm(eventTs: Long){
         val alarmTs = eventTs - minutesToGetReady.value * 1000L * 60

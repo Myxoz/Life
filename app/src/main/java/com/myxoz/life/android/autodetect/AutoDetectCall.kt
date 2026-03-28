@@ -8,6 +8,7 @@ import com.myxoz.life.events.DigSocEvent
 import com.myxoz.life.events.ProposedEvent
 import com.myxoz.life.events.additionals.DigSocPlatform
 import com.myxoz.life.events.additionals.TimedTagLikeContainer
+import com.myxoz.life.utils.PhoneNumberParser
 import com.myxoz.life.utils.roundToNearest15Min
 
 object AutoDetectCall {
@@ -69,7 +70,12 @@ object AutoDetectCall {
                         TimedTagLikeContainer(DigSocPlatform.Anruf, it.duration*1000L)
                     ),
                     "Anruf",
-                    allPeople.mapNotNull { person -> if(person.phoneNumber == it.number) person.id else null } // TODO NORMALIZE PHONE
+                    allPeople.mapNotNull { person ->
+                        if(PhoneNumberParser.areEqual(person.phoneNumber ?: return@mapNotNull null, it.number))
+                            person.id
+                        else
+                            null
+                    }
                 )
             }
     }

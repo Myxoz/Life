@@ -94,7 +94,7 @@ class NotificationReaderService : NotificationListenerService() {
                                 (extras.get(Notification.EXTRA_PEOPLE_LIST) as? ArrayList<*> ?: return@edit)
                                     .forEach {
                                             person -> if (person !is Person) return@forEach; allPeople.find {
-                                        it.phoneNumber == (person.uri?.removePrefix("tel:") ?: return@find false)
+                                         it.matchesWhatsAppNumber((person.uri?.removePrefix("tel:") ?: return@find false))
                                     }?.let { put(it.id) }
                                     }
                                 })

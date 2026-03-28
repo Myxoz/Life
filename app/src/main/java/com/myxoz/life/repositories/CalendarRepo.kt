@@ -167,10 +167,10 @@ class CalendarRepo(
         return Duration.between(now, tomorrow).toMillis()
     }
 
-    suspend fun getNextEventAfter(ts: Long): SyncedEvent?{
+    suspend fun getNonSleepEventAfter(ts: Long): SyncedEvent?{
         return SyncedEvent.from(
             readSyncableDaos.eventDetailsDao,
-            readSyncableDaos.eventDetailsDao.getEventAfter(ts) ?: return null
+            readSyncableDaos.eventDetailsDao.getNonSleepEventAfter(ts) ?: return null
         )
     }
 }

@@ -14,6 +14,7 @@ import com.myxoz.life.dbwrapper.people.ReadPeopleDao
 import com.myxoz.life.dbwrapper.people.SocialsEntity
 import com.myxoz.life.screens.feed.fullscreenevent.getId
 import com.myxoz.life.utils.AndroidUtils
+import com.myxoz.life.utils.PhoneNumberParser
 import com.myxoz.life.utils.getLongOrNull
 import com.myxoz.life.utils.getStringOrNull
 import com.myxoz.life.utils.jsonObjArray
@@ -80,6 +81,12 @@ class PersonSyncable(
             }
         )
 
+    fun matchesWhatsAppNumber(phoneNumber: String): Boolean {
+        val whatsapp = socials.find { it.platform == Platform.WhatsApp && it.handle != Platform.WhatsApp.fullName }
+        if(whatsapp != null) return PhoneNumberParser.areEqual(whatsapp.handle, phoneNumber)
+        return PhoneNumberParser.areEqual(this.phoneNumber ?: return false, phoneNumber)
+    }
+
     companion object : ServerSyncableCompanion<PersonSyncable> {
         override fun fromJSON(json: JSONObject): PersonSyncable {
             val id = json.getId()
@@ -141,7 +148,7 @@ class PersonSyncable(
                     intent(
                         ComponentName("com.whatsapp", "com.whatsapp.Conversation"),
                         listOf(
-                            "jid" to (handle.takeIf { it != "WhatsApp" } ?: phoneNumber ?: "").replace(
+                            "jid" to (handle.takeIf { it != WhatsApp.fullName } ?: phoneNumber ?: "").replace(
                                 "\\D".toRegex(),
                                 ""
                             ) + "@s.whatsapp.net"
@@ -246,4 +253,3 @@ class PersonSyncable(
             socials.sortedByDescending { it.platform.priority }
     }
 }
-

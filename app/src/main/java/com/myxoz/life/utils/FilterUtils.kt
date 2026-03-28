@@ -58,3 +58,5 @@ fun <T> List<T>.filteredWith(
         )
         .map { it.first }
 }
+
+fun String.matchesNormalized(query: String) = normalizeForSearch().contains(query.normalizeForSearch())

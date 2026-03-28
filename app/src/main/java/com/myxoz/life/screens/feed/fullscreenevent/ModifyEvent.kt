@@ -121,6 +121,7 @@ import com.myxoz.life.utils.formatMinutesToVisual
 import com.myxoz.life.utils.formatMsToDuration
 import com.myxoz.life.utils.formatTimeStamp
 import com.myxoz.life.utils.matchInstrinsicHeight
+import com.myxoz.life.utils.matchesNormalized
 import com.myxoz.life.utils.nullIfEmpty
 import com.myxoz.life.utils.rippleClick
 import com.myxoz.life.utils.toDp
@@ -818,7 +819,7 @@ fun TagsBar(ev: List<EventTag>, updateEvent: (List<EventTag>)->Unit){
                             modifier = Modifier.height(tagsHeight),
                             tint = Theme.onSecondaryContainer,
                         )
-                        val displayString = if(it.displayName.lowercase().contains(search?.lowercase()?:""))
+                        val displayString = if(it.displayName.matchesNormalized(search?:""))
                             it.displayName
                         else
                             "${it.displayName} (${it.queryString.filteredWith(search?:"\na", {""}){ l -> l}.firstOrNull() ?:"NULL"})"
