@@ -1,14 +1,17 @@
 package com.myxoz.life.viewmodels
 
 import android.graphics.Bitmap
+import androidx.compose.foundation.lazy.LazyListState
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.navigation.NavController
 import com.myxoz.life.api.syncables.LocationSyncable
 import com.myxoz.life.api.syncables.PersonSyncable
 import com.myxoz.life.api.syncables.SyncedEvent
+import com.myxoz.life.api.syncables.TransactionSplitSyncable
 import com.myxoz.life.repositories.AppRepositories
 import com.myxoz.life.repositories.utils.StateFlowCache
+import com.myxoz.life.repositories.utils.Versioned
 import com.myxoz.life.repositories.utils.VersionedCache
 import com.myxoz.life.repositories.utils.subscribeToColdFlow
 import com.myxoz.life.screens.NavPath
@@ -31,6 +34,11 @@ class ProfileInfoModel(val repos: AppRepositories): ViewModel(){
         repos.aggregators.peopleAggregator.getNextInteraction(it).subscribeToColdFlow(viewModelScope, null)
     }
     fun nextInteractionFlow(personId: Long) = nextInteractionFlowCache.get(personId)
+
+    private val debtFlowCache = StateFlowCache<Long, Versioned<List<TransactionSplitSyncable>>?> {
+        repos.bankingRepo.getDebtFor(it).subscribeToColdFlow(viewModelScope, null)
+    }
+    fun debtFlow(personId: Long) = debtFlowCache.get(personId)
 
     private val getPersonFlowCache = StateFlowCache<Long, PersonSyncable?>{
         repos.peopleRepo.getPerson(it).map { it?.data }.subscribeToColdFlow(viewModelScope, null)
@@ -127,6 +135,7 @@ class ProfileInfoModel(val repos: AppRepositories): ViewModel(){
     }
     fun getProfilePicture(personId: Long) = profilePictureCache.get(personId)
 
+    var debtListState = LazyListState()
     companion object {
         fun formatTime(duration: Long): String{
             val future = duration > 0

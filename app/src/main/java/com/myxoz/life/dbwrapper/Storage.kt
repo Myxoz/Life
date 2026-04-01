@@ -9,6 +9,8 @@ import com.myxoz.life.dbwrapper.banking.BankingEntity
 import com.myxoz.life.dbwrapper.banking.BankingSidecarEntity
 import com.myxoz.life.dbwrapper.banking.ManualTransactionEntity
 import com.myxoz.life.dbwrapper.banking.ReadBankingDao
+import com.myxoz.life.dbwrapper.banking.TransactionSplitEntity
+import com.myxoz.life.dbwrapper.banking.TransactionSplitPartEntity
 import com.myxoz.life.dbwrapper.banking.WriteBankingDao
 import com.myxoz.life.dbwrapper.commits.CommitEntity
 import com.myxoz.life.dbwrapper.commits.ReadCommitsDao
@@ -75,7 +77,9 @@ import com.myxoz.life.dbwrapper.todos.WriteTodosDao
         ManualTransactionEntity::class,
         TimewasteEntity::class,
         TimewastePlatformEntity::class,
-        TodoEntity::class
+        TodoEntity::class,
+        TransactionSplitEntity::class,
+        TransactionSplitPartEntity::class,
     ],
     version = DatabaseMigrator.VERSION,
     exportSchema = true

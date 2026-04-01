@@ -1,5 +1,7 @@
 package com.myxoz.life.repositories.utils
 
+import androidx.compose.runtime.Immutable
+import androidx.compose.runtime.Stable
 import com.myxoz.life.repositories.utils.Versioned.Companion.nextOrInit
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.Flow
@@ -10,6 +12,9 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import java.time.LocalDate
 
+/* Asuming a competent coder */
+@Stable
+@Immutable
 data class Versioned<T>(val version: Long, val data: T) {
     val nextVersion: Long get () = version+1
     fun next(data: T): Versioned<T> = Versioned(nextVersion, data)
@@ -17,6 +22,12 @@ data class Versioned<T>(val version: Long, val data: T) {
     companion object {
         fun <T> Versioned<T>?.nextOrInit(data: T): Versioned<T> = Versioned(this?.nextVersion ?: 0, data)
     }
+
+    /* This simplifies comparison, but requires a competent coder, as we should only ever compare instances provided by the same cache */
+    override fun equals(other: Any?) = other is Versioned<*> && other.version == version
+
+    /* Asuming a competent coder */
+    override fun hashCode() = version.toInt()
 }
 
 val <T> T.newVer: Versioned<T>
@@ -176,6 +187,32 @@ class VersionedDayedCache<K, V, L>(
             }
             if(to != null && new != null){
                 updateWith(to) { it + new }
+            }
+        }
+        suspend fun <K, V> VersionedCache<K, List<V>>.updateListCache(old: Set<K>?, new: Set<K>?, value: V?, isElem: (V) -> Boolean){
+            if(old != null && new != null && value != null) {
+                // Shortcut
+                val realNew = new - old
+                val removeFrom = old - new
+                updateKeysWith(realNew.toList()) {
+                    it + value
+                }
+                updateKeysWith(removeFrom.toList()) {
+                    it.filterNot(isElem)
+                }
+                return
+            }
+            if(old != null) {
+                updateKeysWith(old.toList()) {
+                    it.filterNot(isElem)
+                }
+                return
+            }
+            if(new != null && value != null) {
+                updateKeysWith(new.toList()) {
+                    it + value
+                }
+                return
             }
         }
     }

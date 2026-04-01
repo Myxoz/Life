@@ -78,6 +78,12 @@ interface DatabaseCleanupDao {
     @Query("DELETE FROM todos")
     suspend fun clearTodos()
 
+    @Query("DELETE FROM transaction_split")
+    suspend fun clearTransactionSplit()
+
+    @Query("DELETE FROM transaction_split")
+    suspend fun clearTransactionSplitParts()
+
     @Transaction
     suspend fun clearAllExceptPersistent() {
         clearWork()
@@ -104,5 +110,7 @@ interface DatabaseCleanupDao {
         clearTimewaste()
         clearTimewastePlatform()
         clearTodos()
+        clearTransactionSplit()
+        clearTransactionSplitParts()
     }
 }

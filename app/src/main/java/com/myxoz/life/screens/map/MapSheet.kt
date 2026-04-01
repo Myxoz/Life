@@ -3,11 +3,6 @@ package com.myxoz.life.screens.map
 import android.widget.Toast
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
-import androidx.compose.animation.scaleIn
-import androidx.compose.animation.scaleOut
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
@@ -22,7 +17,6 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
@@ -47,9 +41,7 @@ import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.Matrix
 import androidx.compose.ui.graphics.SolidColor
-import androidx.compose.ui.graphics.asComposePath
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
@@ -64,8 +56,6 @@ import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.times
-import androidx.graphics.shapes.Morph
-import androidx.graphics.shapes.toPath
 import androidx.lifecycle.viewModelScope
 import com.mapbox.geojson.Point
 import com.mapbox.maps.CameraOptions
@@ -78,18 +68,16 @@ import com.myxoz.life.screens.NavPath
 import com.myxoz.life.screens.person.displayperson.ListEditingField
 import com.myxoz.life.screens.person.displayperson.ListEntry
 import com.myxoz.life.screens.person.displayperson.navigateForResult
+import com.myxoz.life.ui.EditToTickAndDiscard
 import com.myxoz.life.ui.ThreeStateBottomSheet
 import com.myxoz.life.ui.theme.FontFamily
 import com.myxoz.life.ui.theme.FontSize
 import com.myxoz.life.ui.theme.OldColors
 import com.myxoz.life.ui.theme.TypoStyle
-import com.myxoz.life.utils.MaterialShapes
 import com.myxoz.life.utils.def
 import com.myxoz.life.utils.filteredWith
 import com.myxoz.life.utils.rippleClick
 import com.myxoz.life.utils.toDp
-import com.myxoz.life.utils.toShape
-import com.myxoz.life.utils.transformed
 import com.myxoz.life.viewmodels.MapViewModel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.drop
@@ -186,23 +174,27 @@ fun MapSheet(mapViewModel: MapViewModel, innerPadding: PaddingValues){
                         },
                         singleLine = true,
                     )
-                    val morph = remember {
-                        Morph(
-                            MaterialShapes.Cookie12Sided,
-                            MaterialShapes.Ghostish.transformed(Matrix().apply { rotateZ(90f) })
-                        )
-                    }
-                    val editingAnimationProgress by animateFloatAsState(if(isEditing) 1f else 0f)
-                    val path = remember(editingAnimationProgress) {
-                        morph.toPath(editingAnimationProgress).asComposePath()
-                    }
-                    val shape = path.toShape()
-                    Box(
-                        Modifier.width(iconSize+10.dp + editingAnimationProgress*(iconSize+10.dp)),
-                        contentAlignment = Alignment.CenterEnd
-                    ) {
-                        val discardShape = MaterialShapes.Ghostish.transformed(Matrix().apply { rotateZ(-90f) }).toShape()
-                        fun discard(){
+                    EditToTickAndDiscard(
+                        isEditing,
+                        iconSize,
+                        { if(loc == null && !isEditing) R.drawable.add else R.drawable.edit },
+                        10.dp,
+                        {
+                            if(loc == null) return@EditToTickAndDiscard
+                            val reason = mapViewModel.parseLocation(loc.id)
+                            if(reason.second!=null) {
+                                Toast.makeText(context, reason.second, Toast.LENGTH_LONG).show()
+                                return@EditToTickAndDiscard
+                            }
+                            coroutineScope.launch {
+                                mapViewModel.saveAndSync(
+                                    (reason.first?:return@launch)
+                                )
+                                mapViewModel.isEditing.value = false
+                                mapViewModel.setSheetLocation(reason.first)
+                            }
+                        },
+                        {
                             if((loc?.id ?: -1) < 1) { // Discard unsynced location
                                 mapViewModel.decodedLocation.value = loc
                                 mapViewModel.setSheetLocation(null)
@@ -213,79 +205,17 @@ fun MapSheet(mapViewModel: MapViewModel, innerPadding: PaddingValues){
                             mapViewModel.selectCoordsOnMap.value = false
                             mapViewModel.isEditing.value = false
                         }
-                        BackHandler(isEditing){
-                            discard()
-                        }
-                        Box(
-                            Modifier
-                                .offset(x = -editingAnimationProgress*(iconSize+10.dp))
-                                .alpha(editingAnimationProgress)
-                                .size(iconSize+10.dp)
-                                .background(Theme.secondaryContainer, discardShape)
-                                .clip(discardShape)
-                                .rippleClick{
-                                    discard()
-                                }
-                                .padding(10.dp)
-                        ) {
-                            Icon(painterResource(R.drawable.close), "Discard", Modifier.fillMaxSize(), Theme.onSecondaryContainer)
-                        }
-                        Box(
-                            Modifier
-                                .size(iconSize+10.dp)
-                                .background(Theme.primaryContainer, shape)
-                                .clip(shape)
-                                .rippleClick{
-                                    if(loc == null) { // Add new Location enter edit
-                                        mapViewModel.setSheetLocation(decodedLocation)
-                                        mapViewModel.decodedLocation.value = null
-                                        mapViewModel.isEditing.value = true
-                                        mapViewModel.setInputValuesByLocation(decodedLocation?:return@rippleClick)
-                                    } else {
-                                        if(!isEditing) { // Edit known location
-                                            mapViewModel.setInputValuesByLocation(loc)
-                                            mapViewModel.setSheetLocation(loc)
-                                            mapViewModel.decodedLocation.value = null
-                                            mapViewModel.isEditing.value = true
-                                        } else { // Save already edited location
-                                            val reason = mapViewModel.parseLocation(loc.id)
-                                            if(reason.second!=null) {
-                                                Toast.makeText(context, reason.second, Toast.LENGTH_LONG).show()
-                                                return@rippleClick
-                                            }
-                                            coroutineScope.launch {
-                                                mapViewModel.saveAndSync(
-                                                    (reason.first?:return@launch)
-                                                )
-                                                mapViewModel.isEditing.value = false
-                                                mapViewModel.setSheetLocation(reason.first)
-                                            }
-                                        }
-                                    }
-                                }
-                                .padding(10.dp)
-                        ) {
-                            androidx.compose.animation.AnimatedVisibility(
-                                loc == null,
-                                enter = scaleIn() + fadeIn(),
-                                exit = scaleOut() + fadeOut(),
-                            ) {
-                                Icon(painterResource(R.drawable.add), "Add", Modifier.fillMaxSize(), Theme.onSecondaryContainer)
-                            }
-                            androidx.compose.animation.AnimatedVisibility(
-                                loc != null && !isEditing,
-                                enter = scaleIn() + fadeIn(),
-                                exit = scaleOut() + fadeOut(),
-                            ) {
-                                Icon(painterResource(R.drawable.edit), "Edit", Modifier.fillMaxSize(), Theme.onSecondaryContainer)
-                            }
-                            androidx.compose.animation.AnimatedVisibility(
-                                loc != null && isEditing,
-                                enter = scaleIn() + fadeIn(),
-                                exit = scaleOut() + fadeOut(),
-                            ) {
-                                Icon(painterResource(R.drawable.tick), "Save", Modifier.fillMaxSize(), Theme.onSecondaryContainer)
-                            }
+                    ) {
+                        if(loc == null) { // Add new Location enter edit
+                            mapViewModel.setSheetLocation(decodedLocation)
+                            mapViewModel.decodedLocation.value = null
+                            mapViewModel.isEditing.value = true
+                            mapViewModel.setInputValuesByLocation(decodedLocation?:return@EditToTickAndDiscard)
+                        } else { // Edit known location
+                            mapViewModel.setInputValuesByLocation(loc)
+                            mapViewModel.setSheetLocation(loc)
+                            mapViewModel.decodedLocation.value = null
+                            mapViewModel.isEditing.value = true
                         }
                     }
                 }

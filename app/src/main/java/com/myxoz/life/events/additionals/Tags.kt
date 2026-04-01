@@ -25,7 +25,7 @@ enum class EventTag(override val id: Int, override val displayName: String, val 
     Clean(15, "Putzen", listOf("Saugen", "Schrubben", "Fegen", "Feudeln", "Wischen"), R.drawable.clean),
     Cook(16, "Kochen", listOf("Schneiden", "Mixen", "Zubereiten"), R.drawable.cook),
     Sport(17, "Sport", listOf("Gym", "Kraft", "Workout"), R.drawable.sport),
-    Talking(18, "Reden", listOf("Labern", "Yappen", "Tea", "Quatschen", "Konversation", "Convo"), R.drawable.talking),
+    Talking(18, "Reden", listOf("Labern", "Yappen", "Tea", "Quatschen", "Konversation", "Convo"), R.drawable.talk),
     Stroll(19, "Spazieren", listOf("Laufen", "Gehen"), R.drawable.walk),
     Read(20, "Lesen", listOf("Buch"), R.drawable.read),
     ;

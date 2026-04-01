@@ -1,6 +1,7 @@
 package com.myxoz.life.ui
 
 import android.annotation.SuppressLint
+import androidx.activity.compose.BackHandler
 import androidx.activity.compose.PredictiveBackHandler
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.LinearEasing
@@ -10,6 +11,10 @@ import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.scaleIn
+import androidx.compose.animation.scaleOut
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -26,8 +31,10 @@ import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -39,13 +46,16 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawWithCache
 import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Matrix
 import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.graphics.asComposePath
 import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.Layout
@@ -59,6 +69,8 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.min
 import androidx.compose.ui.unit.times
+import androidx.graphics.shapes.Morph
+import androidx.graphics.shapes.toPath
 import com.myxoz.life.R
 import com.myxoz.life.Theme
 import com.myxoz.life.screens.feed.fullscreenevent.InputField
@@ -70,6 +82,7 @@ import com.myxoz.life.utils.copy
 import com.myxoz.life.utils.rippleClick
 import com.myxoz.life.utils.toDp
 import com.myxoz.life.utils.toShape
+import com.myxoz.life.utils.transformed
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.launch
@@ -509,4 +522,77 @@ fun Modifier.holdToCopy(text: String?, coroutineScope: CoroutineScope? = null, c
             clipboard.copy(text)
         }
     }, onClick = click)
+}
+
+@Composable
+fun EditToTickAndDiscard(
+    isEditing: Boolean,
+    iconSize: Dp,
+    editIcon: ()->Int = {R.drawable.edit},
+    padding: Dp = 10.dp,
+    save: () -> Unit,
+    discard: () -> Unit,
+    edit: () -> Unit
+){
+    val editingAnimationProgress by animateFloatAsState(if(isEditing) 1f else 0f)
+    Box(
+        Modifier.width(iconSize+padding + editingAnimationProgress*(iconSize+padding)),
+        contentAlignment = Alignment.CenterEnd
+    ) {
+        val discardShape = remember {
+            MaterialShapes.Ghostish.transformed(Matrix().apply { rotateZ(-90f) })
+        }.toShape()
+        val morph = remember {
+            Morph(
+                MaterialShapes.Cookie12Sided,
+                MaterialShapes.Ghostish.transformed(Matrix().apply { rotateZ(90f) })
+            )
+        }
+        val path = remember(editingAnimationProgress) {
+            morph.toPath(editingAnimationProgress).asComposePath()
+        }
+        val shape = path.toShape()
+        Box(
+            Modifier
+                .offset(x = -editingAnimationProgress*(iconSize+padding))
+                .alpha(editingAnimationProgress)
+                .size(iconSize+padding)
+                .background(Theme.secondaryContainer, discardShape)
+                .clip(discardShape)
+                .rippleClick{
+                    discard()
+                }
+                .padding(padding)
+        ) {
+            Icon(painterResource(R.drawable.close), "Discard", Modifier.fillMaxSize(), Theme.onSecondaryContainer)
+        }
+        Box(
+            Modifier
+                .size(iconSize+padding)
+                .background(Theme.primaryContainer, shape)
+                .clip(shape)
+                .rippleClick{
+                    if(!isEditing) edit() else save()
+                }
+                .padding(padding)
+        ) {
+            androidx.compose.animation.AnimatedVisibility(
+                !isEditing,
+                enter = scaleIn() + fadeIn(),
+                exit = scaleOut() + fadeOut(),
+            ) {
+                Icon(painterResource(editIcon()), "Edit", Modifier.fillMaxSize(), Theme.onSecondaryContainer)
+            }
+            androidx.compose.animation.AnimatedVisibility(
+                isEditing,
+                enter = scaleIn() + fadeIn(),
+                exit = scaleOut() + fadeOut(),
+            ) {
+                Icon(painterResource(R.drawable.tick), "Save", Modifier.fillMaxSize(), Theme.onSecondaryContainer)
+            }
+        }
+    }
+    BackHandler(isEditing){
+        discard()
+    }
 }

@@ -259,3 +259,4 @@ fun Modifier.angledGradientBackground(colors: List<Color>, degrees: Float) = thi
 
 // Overwrite default height to 0.dp so while messuring this appears as 0.dp and gets streched later. Remember this trick.
 fun Modifier.matchInstrinsicHeight() = this.fillMaxHeight().height(0.dp)
+fun Modifier.matchInstrinsicHeight(percent: Float) = this.fillMaxHeight(percent).height(0.dp)

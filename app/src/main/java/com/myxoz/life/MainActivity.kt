@@ -62,10 +62,10 @@ import com.myxoz.life.screens.options.settings.PreferenceComposable
 import com.myxoz.life.screens.options.settings.SettingsComposable
 import com.myxoz.life.screens.options.settings.SettingsPermissionComposable
 import com.myxoz.life.screens.person.Contacts
+import com.myxoz.life.screens.person.FullScreenDebt
 import com.myxoz.life.screens.person.SocialGraph
 import com.myxoz.life.screens.person.displayperson.PhotoPicker
 import com.myxoz.life.screens.person.displayperson.ProfileFullScreen
-import com.myxoz.life.screens.pick.PickExistingLocation
 import com.myxoz.life.screens.todo.FullScreenTodo
 import com.myxoz.life.screens.transactions.MyCard
 import com.myxoz.life.screens.transactions.TransactionFeed
@@ -164,6 +164,7 @@ class MainActivity : ComponentActivity() {
                     calendarViewModel,
                     socialGraphViewModel,
                     inspectedEventViewModel,
+                    contacsViewModel,
                     mapViewModel,
                     transactionViewModel,
                     instantEventsViewModel,
@@ -231,9 +232,6 @@ class MainActivity : ComponentActivity() {
                     }
 
                         //  ---------- FEED -> Location ----------
-                        composable(NavPath.Pick.LOCATION) {
-                            PickExistingLocation(mapViewModel)
-                        }
                         composable(NavPath.MODIFY_LOCATION) {
                             ModifyLocation(locationEditingViewModel)
                         }
@@ -328,6 +326,12 @@ class MainActivity : ComponentActivity() {
                         )){
                             val personId = it.arguments?.getLong(NavPath.Menu.Contacts.DISPLAY_PERSON.parameterName) ?: return@composable
                             ProfileFullScreen(personId, photoPicker, largeDataCache, profileInfoModel)
+                        }
+                        composable(NavPath.Menu.Contacts.DEBT_DISPLAY.asTemplate, arguments = listOf(
+                            navArgument(NavPath.Menu.Contacts.DEBT_DISPLAY.parameterName) { type = NavType.LongType }
+                        )){
+                            val personId = it.arguments?.getLong(NavPath.Menu.Contacts.DEBT_DISPLAY.parameterName) ?: return@composable
+                            FullScreenDebt(profileInfoModel, transactionViewModel, personId)
                         }
 
                         //  ---------- Menu -> Alarm ----------

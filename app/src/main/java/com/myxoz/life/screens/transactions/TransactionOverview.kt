@@ -1,6 +1,7 @@
 package com.myxoz.life.screens.transactions
 
 import android.icu.util.Calendar
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.AnimationVector1D
 import androidx.compose.animation.core.Spring
@@ -26,12 +27,15 @@ import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -56,12 +60,15 @@ import com.myxoz.life.LocalNavController
 import com.myxoz.life.LocalScreens
 import com.myxoz.life.R
 import com.myxoz.life.Theme
+import com.myxoz.life.api.syncables.ManualTransactionSyncable
+import com.myxoz.life.api.syncables.TransactionSplitSyncable
 import com.myxoz.life.dbwrapper.banking.formatCents
 import com.myxoz.life.repositories.BankingRepo
 import com.myxoz.life.repositories.BankingRepo.BankingDisplayEntity.Companion.finalDailyBalance
 import com.myxoz.life.screens.NavPath
 import com.myxoz.life.screens.feed.dayoverview.edgeToEdgeGradient
 import com.myxoz.life.ui.ActionBar
+import com.myxoz.life.ui.EditToTickAndDiscard
 import com.myxoz.life.ui.SCREENMAXWIDTH
 import com.myxoz.life.ui.holdToCopy
 import com.myxoz.life.ui.rememberAsymmetricalVerticalCornerRadius
@@ -75,6 +82,7 @@ import com.myxoz.life.ui.theme.TypoStyleOld
 import com.myxoz.life.utils.collectAsMutableState
 import com.myxoz.life.utils.formatDayTime
 import com.myxoz.life.utils.formatTimeStamp
+import com.myxoz.life.utils.matchInstrinsicHeight
 import com.myxoz.life.utils.rippleClick
 import com.myxoz.life.utils.toDp
 import com.myxoz.life.utils.windowPadding
@@ -84,6 +92,7 @@ import kotlinx.coroutines.launch
 import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneId
+import kotlin.math.abs
 
 @Composable
 fun TransactionOverview(largeDataCache: LargeDataCache, transactionViewModel: TransactionViewModel) {
@@ -186,6 +195,8 @@ fun TransactionOverview(largeDataCache: LargeDataCache, transactionViewModel: Tr
                     Spacer(Modifier)
                     TransactionEntry("Verwendungszweck", transaction.purpose)
                 }
+                Spacer(Modifier)
+                PaymentSplit(transactionViewModel, transaction)
                 // Uncomment when you need the weights
 //            val props by produceState<DoubleArray?>(null) {
 //                    val entity = transaction.entity
@@ -295,7 +306,7 @@ fun TransactionList(date: LocalDate, transactitonFeedModel: TransactionViewModel
             .edgeToEdgeGradient(Theme.background, innerPadding)
             .fillMaxSize()
         ,
-        verticalArrangement = Arrangement.spacedBy(5.dp, Alignment.Bottom),
+        verticalArrangement = Arrangement.Bottom,
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         Spacer(Modifier.height(innerPadding.calculateTopPadding()))
@@ -312,7 +323,7 @@ fun TransactionList(date: LocalDate, transactitonFeedModel: TransactionViewModel
 }
 
 @Composable
-fun BankingEntryComposable(entry: BankingRepo.BankingDisplayEntity, isFirst: Boolean, isLast: Boolean){
+fun BankingEntryComposable(entry: BankingRepo.BankingDisplayEntity, isFirst: Boolean, isLast: Boolean) {
     val calendar = remember { Calendar.getInstance() }
     val screens = LocalScreens.current
     Column(
@@ -532,6 +543,174 @@ fun BankCard(
                     style = TypoStyleOld(FontColor.SECONDARY, FontSize.MEDIUM),
                     modifier = Modifier.clickable(null, null){if(largeDataCache!=null) displaysIban=!displaysIban}
                 )
+            }
+        }
+    }
+}
+@Composable
+private fun PaymentSplit(transactionViewModel: TransactionViewModel, transaction: BankingRepo.BankingDisplayEntity) {
+    Column(
+        Modifier
+            .fillMaxWidth(),
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        var isEditing by transactionViewModel.isEditingSplit.collectAsMutableState()
+        var editingSplits by transactionViewModel.editingSplit.collectAsMutableState()
+        val splits by transactionViewModel.getSplit(transaction).collectAsState()
+        val displaySplit = if(isEditing) editingSplits else splits
+        val coroutineScope = rememberCoroutineScope()
+        val screens = LocalScreens.current
+        fun startEditingIfNotStarted(init: List<TransactionSplitSyncable.Companion.Part> = listOf()){
+            if(isEditing) return
+            isEditing = true
+            editingSplits = splits ?: TransactionSplitSyncable(
+                -1L,
+                transaction.key.first,
+                transaction.key.second,
+                init
+            )
+        }
+        val mePart = remember(transaction, displaySplit) {
+           transaction.amount - (displaySplit?.parts?.sumOf { it.amount } ?: 0)
+        }
+        Row(
+            Modifier
+                .fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text("Aufteilung (${if(transaction.amount <= 0) "Schuldet mir" else "Schulde ich"})", style = TypoStyle(Theme.primary, FontSize.LARGE))
+            EditToTickAndDiscard(
+                isEditing,
+                FontSize.LARGE.size.toDp() + 5.dp,
+                { R.drawable.edit },
+                10.dp,
+                {
+                    coroutineScope.launch {
+                        if(editingSplits.parts.isEmpty()) {
+                            if (editingSplits.isSynced())
+                                transactionViewModel.deleteSplit(editingSplits)
+                        } else {
+                            transactionViewModel.saveAndSyncSplit(editingSplits)
+                        }
+                        isEditing = false
+                    }
+                },
+                {
+                    isEditing = false
+                }
+            ) {
+                startEditingIfNotStarted()
+            }
+        }
+        Spacer(Modifier.height(10.dp))
+        Column(
+            Modifier
+                .fillMaxWidth(),
+            verticalArrangement = Arrangement.spacedBy(5.dp)
+        ) {
+            displaySplit?.parts?.forEachIndexed { index, part ->
+                key(part.person) {
+                    Row(
+                        Modifier
+                            .fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        val person by transactionViewModel.getPerson(part.person).collectAsState(null)
+                        Row(
+                            Modifier
+                                .height(IntrinsicSize.Min)
+                            ,
+                            verticalAlignment = Alignment.CenterVertically,
+                        ) {
+                            AnimatedVisibility(isEditing) {
+                                Icon(painterResource(R.drawable.close), "Remove", Modifier.padding(end = 10.dp).matchInstrinsicHeight(.5f).rippleClick{
+                                    editingSplits = editingSplits.copy(parts = editingSplits.parts.toMutableList().apply {
+                                        removeAt(index)
+                                    })
+                                }, Theme.secondary)
+                            }
+                            Text(
+                                person?.name ?: "Lädt...",
+                                Modifier
+                                    .clip(CircleShape)
+                                    .rippleClick{
+                                        screens.openPersonDetails(part.person)
+                                    }
+                                ,
+                                style = TypoStyle(Theme.secondary, FontSize.MEDIUM)
+                            )
+                        }
+                        var enteredText by remember { mutableStateOf(abs(part.amount).toString()) }
+                        if(isEditing) {
+                            BasicTextField(
+                                enteredText,
+                                {
+                                    enteredText = it.trimStart('0')
+                                    editingSplits = editingSplits.copy(
+                                        parts = editingSplits.parts.toMutableList().apply {
+                                            set(index, part.copy(amount = (if(transaction.amount < 0) -1 else 1) * (it.toIntOrNull() ?: 0)))
+                                        }
+                                    )
+                                },
+                                textStyle = TypoStyle(Theme.secondary, FontSize.MEDIUM).copy(textAlign = TextAlign.End),
+                                singleLine = true,
+                                visualTransformation = remember {
+                                    ManualTransactionSyncable.MoneyBasedVisualTransformation()
+                                }
+                            )
+                        } else {
+                            Text(
+                                ManualTransactionSyncable.MoneyBasedVisualTransformation.toTransformed(abs(part.amount).toString()),
+                                style = TypoStyle(Theme.secondary, FontSize.MEDIUM).copy(textAlign = TextAlign.End)
+                            )
+                        }
+                    }
+                }
+            }
+        }
+        Spacer(Modifier.height(10.dp))
+        AnimatedVisibility(isEditing) {
+            Box(
+                Modifier
+                    .clip(CircleShape)
+                    .background(Theme.primaryContainer)
+                    .rippleClick {
+                        screens.getPerson{
+                            val split = transactionViewModel.editingSplit
+                            split.value = split.value.copy(
+                                parts = split.value.parts.toMutableList().apply {
+                                    if(it != null) add(TransactionSplitSyncable.Companion.Part(it, if(split.value.parts.isEmpty()) transaction.amount else 0))
+                                }
+                            )
+                        }
+                    }
+                    .padding(horizontal = 10.dp, vertical = 5.dp)
+            ) {
+                Text("+ Auswählen", style = TypoStyle(Theme.onPrimaryContainer, FontSize.MEDIUM))
+            }
+        }
+        Spacer(Modifier.height(10.dp))
+        if(!displaySplit?.parts.isNullOrEmpty()) {
+            HorizontalDivider(color = Theme.outlineVariant)
+            Spacer(Modifier.height(10.dp))
+            Row(
+                Modifier
+                    .fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Row(
+                    Modifier
+                        .height(IntrinsicSize.Min),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(10.dp)
+                ) {
+                    Icon(painterResource(R.drawable.arrow_right), "Results", Modifier.matchInstrinsicHeight(), Theme.secondary)
+                    Text("Ich", style = TypoStyle(Theme.secondary, FontSize.MEDIUM))
+                }
+                Text(mePart.formatCents(), style = TypoStyle(Theme.secondary, FontSize.MEDIUM))
             }
         }
     }

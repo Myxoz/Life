@@ -67,7 +67,6 @@ class InspectedEventViewModel(val repos: AppRepositories): ViewModel() {
 
     fun setEditedSyncableTo(editedSyncable: Syncable.FeedInstantEventSyncable){
         _isEditing.value = true
-        _event.value = SyncedEvent.getSemanticNullValueEvent()
         _editedSyncable.value = editedSyncable
     }
 

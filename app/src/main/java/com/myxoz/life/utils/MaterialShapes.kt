@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 /*
-Myxoz modified file to copy from compose 1.5.0-alpha, as he is to incompetent to set up alpha versions, will be removed after compose switches to 1.5.0. This is not his code.
+Myxoz modified file to copy from compose 1.5.0-alpha, as he is too incompetent to set up alpha versions, will be removed after compose switches to 1.5.0. This is not his code.
  */
 
 package com.myxoz.life.utils

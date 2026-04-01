@@ -15,6 +15,7 @@ import com.myxoz.life.api.syncables.PersonSyncable
 import com.myxoz.life.api.syncables.ProfilePictureSyncable
 import com.myxoz.life.api.syncables.SyncedEvent
 import com.myxoz.life.api.syncables.TodoSyncable
+import com.myxoz.life.api.syncables.TransactionSplitSyncable
 import com.myxoz.life.dbwrapper.Daos
 import com.myxoz.life.dbwrapper.WaitingSyncDao
 import com.myxoz.life.dbwrapper.banking.ReadBankingDao
@@ -112,7 +113,7 @@ class API(
             val resJson = JSONObject(response)
             resJson
                 .getJSONArray("msg")
-                .forEach { Log.i(LOGTAG,"Server reported msg: $it") }
+                .forEach { Log.w(LOGTAG,"Server reported msg: $it") }
             resJson.getJSONArray("entries").jsonObjArray.forEach {
                 waitingSyncDao.deleteWaitingSync(it.getId(), it.getInt("type"))
             }
@@ -261,6 +262,10 @@ class API(
             Syncable.SpecialSyncablesIds.TODOS -> {
                 val todo = TodoSyncable.overwriteDBByJson(writeSyncableDaos, json)
                 todoRepo.updateCachedTodo(todo)
+            }
+            Syncable.SpecialSyncablesIds.TRANSACTIONSPLIT -> {
+                val split = TransactionSplitSyncable.overwriteDBByJson(writeSyncableDaos, json)
+                bankingRepo.updateCachedSplit(split)
             }
 
             else -> {

@@ -844,7 +844,7 @@ fun TagsBar(ev: List<EventTag>, updateEvent: (List<EventTag>)->Unit){
     }
 }
 data class ImeActionClicked(val unfocusField: Boolean, val clearField: Boolean)
-/** Gets the "id"-key of an json object without redicolous rounding errors */
+/** Gets the "id"-key of a JSON object without ridiculous rounding errors */
 fun JSONObject.getId() = getString("id").toLong()
 
 @Composable

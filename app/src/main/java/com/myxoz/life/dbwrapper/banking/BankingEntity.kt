@@ -67,4 +67,4 @@ data class BankingEntity(
     fun isWirelessPayment() = card && transfer
 }
 
-fun Int.formatCents(euroSign: Boolean=true) = "${if(this<0) "-" else "+"}${abs(this)/100},${(abs(this)%100).toString().padStart(2, '0')}${if(euroSign) "€" else ""}"
+fun Int.formatCents(euroSign: Boolean=true, showSign: Boolean = true) = "${if(!showSign) "" else if(this<0) "-" else "+"}${abs(this)/100},${(abs(this)%100).toString().padStart(2, '0')}${if(euroSign) "€" else ""}"

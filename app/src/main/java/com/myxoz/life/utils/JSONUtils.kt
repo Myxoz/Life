@@ -5,8 +5,8 @@ import org.json.JSONObject
 
 fun JSONObject.getServerBoolean(name: String): Boolean {
     val value = getStringOrNull(name) ?: return false
-    if(value == "1") return true;
-    if(value.lowercase() == "true") return true;
+    if(value == "1") return true
+    if(value.lowercase() == "true") return true
     return false
 }
 fun JSONObject.getStringOrNull(name: String): String? = if(isNull(name)) null else getString(name)

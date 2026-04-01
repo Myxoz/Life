@@ -118,4 +118,22 @@ WHERE b.purpose_date IS NOT NULL
 
     @Query("SELECT * FROM manual_transactions WHERE id = :id")
     suspend fun getManualTransaction(id: Long): ManualTransactionEntity?
+
+    @Query("SELECT * FROM transaction_split WHERE (remote_id IS NOT NULL AND remote_id = :remoteId) OR (syncable_id IS NOT NULL AND syncable_id = :syncableId) LIMIT 1")
+    suspend fun getTransactionSplit(remoteId: String?, syncableId: Long?): TransactionSplitEntity?
+
+    @Query("SELECT * FROM transaction_split_part WHERE person = :person")
+    suspend fun getTransactionSplitsByPerson(person: Long): List<TransactionSplitPartEntity>
+
+    @Query("SELECT * FROM transaction_split WHERE id IN (:splits)")
+    suspend fun getAllSplits(splits: List<Long>): List<TransactionSplitEntity>
+
+    @Query("SELECT * FROM transaction_split_part WHERE id IN (:splits)")
+    suspend fun getAllSplitParts(splits: List<Long>): List<TransactionSplitPartEntity>
+
+    @Query("SELECT * FROM transaction_split WHERE id = :id LIMIT 1")
+    suspend fun getTransactionSplit(id: Long): TransactionSplitEntity?
+
+    @Query("SELECT * FROM transaction_split_part WHERE id = :id")
+    suspend fun getTransactionSplitParts(id: Long): List<TransactionSplitPartEntity>
 }

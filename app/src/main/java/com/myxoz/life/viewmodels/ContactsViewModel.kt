@@ -12,6 +12,7 @@ import kotlinx.coroutines.flow.toSet
 import kotlinx.coroutines.launch
 
 class ContactsViewModel(private val repos: AppRepositories): ViewModel() {
+    val selectMode = MutableStateFlow(false)
     val favoriteIds = MutableStateFlow(
         (repos.prefs.getStringSet("favorite_people", setOf())  ?: setOf()).mapNotNull { it.toLongOrNull() }
     )

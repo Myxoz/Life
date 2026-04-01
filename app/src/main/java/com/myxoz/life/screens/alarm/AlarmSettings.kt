@@ -88,6 +88,7 @@ import com.myxoz.life.ui.setMaxTabletWidth
 import com.myxoz.life.ui.theme.FontFamily
 import com.myxoz.life.ui.theme.FontSize
 import com.myxoz.life.ui.theme.TypoStyle
+import com.myxoz.life.utils.atEndAsMillis
 import com.myxoz.life.utils.atStartAsMillis
 import com.myxoz.life.utils.collectAsMutableState
 import com.myxoz.life.utils.diagrams.chartBasedAnimation
@@ -123,7 +124,7 @@ fun AlarmScreen(alarmViewModel: AlarmViewModel){
             .padding(windowPadding)
         ,
         horizontalAlignment = Alignment.CenterHorizontally
-    ){
+    ) {
         val nav = LocalNavController.current
         val rawNextEvent by alarmViewModel.nextEvent.collectAsState()
         val nextEvent = rawNextEvent
@@ -327,7 +328,7 @@ fun RenderClockVisual(alarmViewModel: AlarmViewModel, eventStart: Long) {
     val zone = remember { ZoneId.systemDefault() }
 
     // Yes this can be 23 or 25, maybe I'll fix this later TODO optional
-    val hoursInDay = 24
+    val hoursInDay = ((now.toLocalDate(zone).atEndAsMillis(zone) - now.toLocalDate(zone).atStartAsMillis(zone)) / (3600 * 1000)).toInt()
     val anglesInDay = (hoursInDay*1000f*3600/360f)
     val nowAngle = remember(now) { (now - now.toLocalDate(zone).atStartAsMillis(zone)) / anglesInDay - 90f }
 

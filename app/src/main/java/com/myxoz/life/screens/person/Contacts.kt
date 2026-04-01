@@ -5,6 +5,7 @@ import android.content.Intent
 import android.net.Uri
 import android.provider.ContactsContract
 import android.widget.Toast
+import androidx.activity.compose.BackHandler
 import androidx.compose.animation.core.Animatable
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -127,6 +128,10 @@ fun Contacts(contactsViewModel: ContactsViewModel){
                 derivedStateOf {
                     deviceContacts.filteredWith(search, { it.fullName ?: "" }) { it.name }
                 }
+            }
+            val selectMode by contactsViewModel.selectMode.collectAsState()
+            BackHandler(selectMode) {
+                screens.returnContact(null)
             }
             LazyColumn(
                 Modifier
@@ -252,6 +257,10 @@ fun Contacts(contactsViewModel: ContactsViewModel){
                                         .fillMaxWidth()
                                         .rippleClick {
                                             if (contact.id != -1L) {
+                                                if(selectMode) {
+                                                    screens.returnContact(contact.id)
+                                                    return@rippleClick
+                                                }
                                                 screens.openPersonDetails(contact.id)
                                             } else {
                                                 // Open existing contact by number

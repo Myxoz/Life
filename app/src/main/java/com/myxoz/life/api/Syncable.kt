@@ -12,6 +12,7 @@ import com.myxoz.life.api.syncables.PersonSyncable
 import com.myxoz.life.api.syncables.ProfilePictureSyncable
 import com.myxoz.life.api.syncables.SyncedEvent
 import com.myxoz.life.api.syncables.TodoSyncable
+import com.myxoz.life.api.syncables.TransactionSplitSyncable
 import com.myxoz.life.dbwrapper.WaitingSyncDao
 import com.myxoz.life.dbwrapper.WaitingSyncEntity
 import com.myxoz.life.repositories.AppRepositories
@@ -120,6 +121,18 @@ abstract class Syncable(
                     TodoSyncable.fromEntity(dbEntry)
                 }
 
+                SpecialSyncablesIds.TRANSACTIONSPLIT -> {
+                    val dbEntry = readSyncableDaos.bankingDao.getTransactionSplit(entry.id) ?: return null
+                    TransactionSplitSyncable(
+                        entry.id,
+                        dbEntry.syncableId,
+                        dbEntry.remoteId,
+                        readSyncableDaos.bankingDao.getTransactionSplitParts(entry.id).map(
+                            TransactionSplitSyncable.Companion.Part::from
+                        )
+                    )
+                }
+
                 else -> {
                     val dbEntry =  readSyncableDaos.eventDetailsDao.getEvent(entry.id)
                     if (dbEntry == null) {
@@ -153,6 +166,7 @@ abstract class Syncable(
         const val COMMITS = 56
         const val MANUALTRANSACTION = 57
         const val TODOS = 58
+        const val TRANSACTIONSPLIT = 59
     }
     interface DatedSyncable<T>: SyncableContract {
         val timestamp: Long

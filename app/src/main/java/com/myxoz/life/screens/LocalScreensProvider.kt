@@ -1,5 +1,6 @@
 package com.myxoz.life.screens
 
+import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.MotionDurationScale
 import androidx.lifecycle.viewModelScope
@@ -14,8 +15,10 @@ import com.myxoz.life.repositories.BankingRepo
 import com.myxoz.life.screens.feed.instantevents.InstantEvent
 import com.myxoz.life.screens.feed.search.SearchField
 import com.myxoz.life.screens.map.EARTH_R
+import com.myxoz.life.screens.person.displayperson.navigateForResult
 import com.myxoz.life.utils.def
 import com.myxoz.life.viewmodels.CalendarViewModel
+import com.myxoz.life.viewmodels.ContactsViewModel
 import com.myxoz.life.viewmodels.InspectedEventViewModel
 import com.myxoz.life.viewmodels.InstantEventsViewModel
 import com.myxoz.life.viewmodels.LocationEditingViewModel
@@ -37,6 +40,7 @@ class LocalScreensProvider(
     private val calendarViewModel: CalendarViewModel,
     private val socialGraphViewModel: SocialGraphViewModel,
     private val inspectedEventViewModel: InspectedEventViewModel,
+    private val contactsViewModel: ContactsViewModel,
     val mapViewModel: MapViewModel,
     private val transactionViewModel: TransactionViewModel,
     private val instantEventsViewModel: InstantEventsViewModel,
@@ -141,5 +145,27 @@ class LocalScreensProvider(
 
     fun fullScreenTodo(todo: TodoSyncable) {
         nav.navigate(NavPath.Menu.Todo.DETAILS.with(todo.id))
+    }
+    fun getPerson(onResolve: (Long?)->Unit){
+        contactsViewModel.selectMode.value = true
+        nav.navigateForResult(
+            NavPath.Menu.CONTACTS,
+            "person",
+            onComplete = { it: Long? ->
+                onResolve(it)
+                contactsViewModel.selectMode.value = false
+            }
+        )
+    }
+
+    fun returnContact(id: Long?) {
+        nav.previousBackStackEntry?.savedStateHandle?.set("person", id)
+        contactsViewModel.selectMode.value = false
+        nav.popBackStack()
+    }
+
+    fun openDebt(personId: Long) {
+        nav.navigate(NavPath.Menu.Contacts.DEBT_DISPLAY.with(personId))
+        profileInfoModel.debtListState = LazyListState()
     }
 }

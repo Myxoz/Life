@@ -35,7 +35,8 @@ object NavPath {
         const val TRANSACTION_FEED = "$MENU/transaction_feed"
         const val CONTACTS = "$MENU/contacts"
         object Contacts {
-            val DISPLAY_PERSON = SingleParamaterizedPath("personId",) { "display_person/$it" }
+            val DISPLAY_PERSON = SingleParamaterizedPath("personId") { "display_person/$it" }
+            val DEBT_DISPLAY = SingleParamaterizedPath("personId") { "display_person/$it/debt" }
         }
         const val SOCIAL_GRAPH = "$MENU/social_graph"
         const val ALARM = "$MENU/alarm"

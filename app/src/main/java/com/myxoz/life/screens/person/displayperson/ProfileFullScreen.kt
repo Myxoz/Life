@@ -67,6 +67,7 @@ import androidx.compose.ui.unit.times
 import com.myxoz.life.LocalScreens
 import com.myxoz.life.R
 import com.myxoz.life.Theme
+import com.myxoz.life.dbwrapper.banking.formatCents
 import com.myxoz.life.events.DigSocEvent
 import com.myxoz.life.events.additionals.EventType
 import com.myxoz.life.ui.ActionBar
@@ -76,6 +77,7 @@ import com.myxoz.life.ui.theme.FontSize
 import com.myxoz.life.ui.theme.TypoStyle
 import com.myxoz.life.utils.diagrams.PieChart
 import com.myxoz.life.utils.formatMsToDuration
+import com.myxoz.life.utils.formatPercent
 import com.myxoz.life.utils.rippleClick
 import com.myxoz.life.utils.toDp
 import com.myxoz.life.utils.windowPadding
@@ -94,7 +96,7 @@ fun ProfileFullScreen(
     photoPicker: PhotoPicker,
     largeDataCache: LargeDataCache,
     profileInfoModel: ProfileInfoModel
-){
+) {
     val screens = LocalScreens.current
     val coroutineScope = rememberCoroutineScope()
     var isPickingBirthDay by remember { mutableStateOf(false) }
@@ -188,6 +190,20 @@ fun ProfileFullScreen(
                                 }
                             }
                         }
+                        if(nextInteractionDisplay!=null){
+                            FlowRowItem(
+                                "Nächste Interaktion",
+                                nextInteraction?.let { if(it.proposed is DigSocEvent) it.proposed.digSocEntries.maxByOrNull { c -> c.durationMs }?.type?.drawable else null } ?: R.drawable.met,
+                                nextInteractionDisplay
+                            ) {
+                                coroutineScope.launch {
+                                    nextInteraction?.let {
+                                        screens.openFullScreenEvent(it)
+                                    }
+                                }
+                            }
+                        }
+                        DebtDisplay(profileInfoModel, personId)
                     }
                 }
                 Column(
@@ -377,9 +393,10 @@ fun ProfileFullScreen(
         }
     }
 }
+
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
-private fun FlowRowScope.FlowRowItem(title: String, icon: Int, text: String, onClick: ()->Unit){
+private fun FlowRowScope.FlowRowItem(title: String, icon: Int, text: String, onClick: ()->Unit) {
     Column(
         Modifier
             .weight(1f)
@@ -401,6 +418,27 @@ private fun FlowRowScope.FlowRowItem(title: String, icon: Int, text: String, onC
         }
     }
 }
+@Composable
+private fun FlowRowScope.DebtDisplay(viewModel: ProfileInfoModel, personId: Long) {
+    val debts by viewModel.debtFlow(personId).collectAsState()
+    val debt = debts ?: return
+    val total = remember(debt.version) {
+        debt.data.sumOf { snyc ->
+            snyc.parts.find { it.person == personId }?.amount ?: 0
+        }
+    }
+    val screens = LocalScreens.current
+    if(debt.data.isNotEmpty()){
+        FlowRowItem(
+            if(total > 0) "Schulde ich" else if(total < 0) "Schuldet mir" else "Sind quit",
+            R.drawable.cash,
+            total.formatCents(showSign = false)
+        ) {
+            screens.openDebt(personId)
+        }
+    }
+}
+
 @Composable
 fun UnmodalBottomSheet(isVisible: Boolean, close: ()->Unit, content: @Composable ()->Unit){
     AnimatedVisibility(
@@ -467,6 +505,7 @@ fun UnmodalBottomSheet(isVisible: Boolean, close: ()->Unit, content: @Composable
         }
     }
 }
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun datePickerColors() = DatePickerDefaults.colors(
@@ -499,6 +538,7 @@ fun datePickerColors() = DatePickerDefaults.colors(
         focusedSupportingTextColor = Theme.primary,
     ),
 )
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun switchColors(
@@ -546,6 +586,7 @@ fun switchColors(
     disabledUncheckedBorderColor =
         Theme.onSurface.copy(alpha = 0.12f),
 )
+
 @Composable
 fun ButtonGroup(list: Array<String>, width: Dp, selectedItem: MutableStateFlow<Int>, onClick: (Int) -> Unit){
     Box(
@@ -592,4 +633,3 @@ fun ButtonGroup(list: Array<String>, width: Dp, selectedItem: MutableStateFlow<I
         }
     }
 }
-fun Double.formatPercent(precision: Int): String = "${(this*100).toInt()}.${(this*100).toString().substringAfter(".").padStart(precision, '0').substring(0, precision)}%"
