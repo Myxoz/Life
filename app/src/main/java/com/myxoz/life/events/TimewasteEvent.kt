@@ -4,7 +4,6 @@ import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.unit.Dp
 import com.myxoz.life.dbwrapper.events.EventEntity
-import com.myxoz.life.dbwrapper.events.ReadEventDetailsDao
 import com.myxoz.life.dbwrapper.events.TimewasteEntity
 import com.myxoz.life.dbwrapper.events.TimewastePlatformEntity
 import com.myxoz.life.dbwrapper.events.WriteEventDetailsDao
@@ -80,17 +79,15 @@ class TimewasteEvent(
                 },
                 json.getString("title")
         )
-        suspend fun from(db: ReadEventDetailsDao, event: EventEntity): TimewasteEvent? {
-            val timewasteEntity = db.getTimewaste(event.id) ?: return null
-            return TimewasteEvent(
-                event.start,
-                event.end,
-                event.uss,
-                event.usl,
-                db.getTimewastePlatformsById(event.id)
-                    .mapNotNull { TimedTagLikeContainer(TimewastePlatform.getById(it.timewastePlatform)?:return@mapNotNull null, it.durationMs) },
-                timewasteEntity.title?:""
-            )
-        }
+        fun from(event: EventEntity, pec: TimewasteEntity, platforms: List<TimewastePlatformEntity>?) = TimewasteEvent(
+            event.start,
+            event.end,
+            event.uss,
+            event.usl,
+            platforms?.mapNotNull {
+                TimedTagLikeContainer(TimewastePlatform.getById(it.timewastePlatform)?:return@mapNotNull null, it.durationMs)
+            } ?: listOf(),
+            pec.title ?: ""
+        )
     }
 }

@@ -107,13 +107,13 @@ fun DayOverviewComposable(date: LocalDate, dayOverviewViewModel: DayOverviewView
                 ),
                 modifier = Modifier.padding(top = innerPadding.calculateTopPadding() + 10.dp, bottom = 10.dp)
             )
-            FeelingsBlock(summary?.happyness, summary?.stress, summary?.successfulness)
+            FeelingsBlock(summary?.value?.happyness, summary?.value?.stress, summary?.value?.successfulness)
             Spacer(Modifier)
             val steps = if(isToday) {
                 val step by dayOverviewViewModel.getAllSteps.collectAsState()
                 step
             } else {
-                summary?.steps?.toLong()
+                summary?.value?.steps?.toLong()
             }
             if(birthdays.isNotEmpty()) BirthdayBlock(birthdays,date, dayOverviewViewModel)
             if(showSteps) DisplayStepsBlock(steps)

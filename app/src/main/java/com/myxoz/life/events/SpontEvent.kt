@@ -4,7 +4,6 @@ import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.unit.Dp
 import com.myxoz.life.dbwrapper.events.EventEntity
-import com.myxoz.life.dbwrapper.events.ReadEventDetailsDao
 import com.myxoz.life.dbwrapper.events.SpontEntity
 import com.myxoz.life.dbwrapper.events.WriteEventDetailsDao
 import com.myxoz.life.events.additionals.EventTag
@@ -64,14 +63,13 @@ class SpontEvent(
             start, end, uss, usl, json.getTagsFromJson(),
             json.getString("title")
         )
-        suspend fun from(db: ReadEventDetailsDao, event: EventEntity) = SpontEvent(
+        fun from(event: EventEntity, pec: SpontEntity, tags: List<EventTag>?) = SpontEvent(
             event.start,
             event.end,
             event.uss,
             event.usl,
-            db.getTagsByEventId(event.id)
-                .mapNotNull { EventTag.getTagById(it) },
-            db.getSpont(event.id)?.title ?: ""
+            tags ?: listOf(),
+            pec.title
         )
     }
 }

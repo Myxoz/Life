@@ -116,7 +116,7 @@ class CommitSyncable(
             )
         }
         suspend fun fromDB(db: ReadCommitsDao, sha: String): CommitSyncable {
-            val entity = db.getBySha(sha)?:throw Error("Tried to get unknown commit. This is usupported. Check where you have the sha from.")
+            val entity = db.getBySha(sha) ?: throw Error("Tried to get unknown commit. This is usupported. Check where you have the sha from.")
             return from(entity)
         }
         fun from(entity: CommitEntity) = CommitSyncable(

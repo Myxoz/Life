@@ -25,14 +25,15 @@ import kotlinx.coroutines.flow.combine
 @Composable
 fun FullScreenDebt(viewModel: ProfileInfoModel, transactionViewModel: TransactionViewModel, person: Long) {
     val debtFlow by viewModel.debtFlow(person).collectAsState()
-    val transactions = debtFlow?.data ?: emptyList()
-    val resolvedTransactions by produceState(emptyList(), debtFlow?.version) {
+    val transactions = debtFlow ?: emptyList()
+    val resolvedTransactions by produceState(emptyList()) {
         if (transactions.isEmpty()) {
             value = emptyList()
             return@produceState
         }
         val flows = transactions.map { syncable ->
-            transactionViewModel.getTransaction(syncable.key)
+            val flow = transactionViewModel.getTransaction(syncable.key)
+            flow
         }
 
         combine(flows) { array ->

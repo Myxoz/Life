@@ -10,9 +10,8 @@ import com.myxoz.life.api.syncables.PersonSyncable
 import com.myxoz.life.api.syncables.SyncedEvent
 import com.myxoz.life.api.syncables.TransactionSplitSyncable
 import com.myxoz.life.repositories.AppRepositories
+import com.myxoz.life.repositories.utils.PerformantCache
 import com.myxoz.life.repositories.utils.StateFlowCache
-import com.myxoz.life.repositories.utils.Versioned
-import com.myxoz.life.repositories.utils.VersionedCache
 import com.myxoz.life.repositories.utils.subscribeToColdFlow
 import com.myxoz.life.screens.NavPath
 import com.myxoz.life.utils.diagrams.PieChart
@@ -21,7 +20,6 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flatMapLatest
-import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 
 class ProfileInfoModel(val repos: AppRepositories): ViewModel(){
@@ -35,18 +33,18 @@ class ProfileInfoModel(val repos: AppRepositories): ViewModel(){
     }
     fun nextInteractionFlow(personId: Long) = nextInteractionFlowCache.get(personId)
 
-    private val debtFlowCache = StateFlowCache<Long, Versioned<List<TransactionSplitSyncable>>?> {
-        repos.bankingRepo.getDebtFor(it).subscribeToColdFlow(viewModelScope, null)
+    private val debtFlowCache = StateFlowCache<Long, List<TransactionSplitSyncable>?> { person ->
+        repos.bankingRepo.getDebtFor(person).subscribeToColdFlow(viewModelScope, null)
     }
     fun debtFlow(personId: Long) = debtFlowCache.get(personId)
 
     private val getPersonFlowCache = StateFlowCache<Long, PersonSyncable?>{
-        repos.peopleRepo.getPerson(it).map { it?.data }.subscribeToColdFlow(viewModelScope, null)
+        repos.peopleRepo.getPerson(it).subscribeToColdFlow(viewModelScope, null)
     }
     fun getPerson(personId: Long) = getPersonFlowCache.get(personId)
 
     private val getPeopleFlowCache = StateFlowCache<List<Long>, List<PersonSyncable>>{
-        repos.peopleRepo.getPeople(it).map { l -> l.mapNotNull { it?.data } }.subscribeToColdFlow(viewModelScope, listOf())
+        repos.peopleRepo.getPeople(it).subscribeToColdFlow(viewModelScope, listOf())
     }
     fun getPeople(personIds: List<Long>) = getPeopleFlowCache.get(personIds)
 
@@ -54,24 +52,22 @@ class ProfileInfoModel(val repos: AppRepositories): ViewModel(){
 
     private val getLocationByIdFLowCache = StateFlowCache<Long?, LocationSyncable?>{
         if(it == null || it == 0L) return@StateFlowCache MutableStateFlow(null)
-        repos.locationRepo.getLocationById(it).map { it?.data }.subscribeToColdFlow(viewModelScope, null)
+        repos.locationRepo.getLocationById(it).subscribeToColdFlow(viewModelScope, null)
     }
     fun getLocationById(locationId: Long?) = getLocationByIdFLowCache.get(locationId)
 
     fun getCachedLocation(locationId: Long?) = (if(locationId != null) repos.locationRepo.getCachedLocation(locationId) else null)
-    private val _editingPerson = VersionedCache<Long, PersonSyncable>(
-        {
-            repos.peopleRepo.getCurrentPersonNotAsFlow(it).data
-        }
-    )
+    private val _editingPerson = PerformantCache<Long, PersonSyncable>(viewModelScope) {
+        repos.peopleRepo.getCurrentPersonNotAsFlow(it)
+    }
     private val editingPersonFlowCache = StateFlowCache<Long, PersonSyncable?>{
-        _editingPerson.flowByKey(viewModelScope, it).map{ it?.data }.subscribeToColdFlow(viewModelScope, null)
+        _editingPerson.flowByKey(it).subscribeToColdFlow(viewModelScope, null)
     }
     fun getEditingPerson(personId: Long) = editingPersonFlowCache.get(personId)
     fun edit(personId: Long, editWith: (PersonSyncable)->PersonSyncable) {
         _isEditing.value = true
         viewModelScope.launch {
-            val cached = _editingPerson.get(personId).data
+            val cached = _editingPerson.getValue(personId)
             val new = editWith(cached)
             platformInputs.value = new.socials.map { it.asString() }
             _editingPerson.overwrite(personId, new)
@@ -79,10 +75,10 @@ class ProfileInfoModel(val repos: AppRepositories): ViewModel(){
     }
     suspend fun discardChanges(personId: Long){
         _isEditing.value = false
-        _editingPerson.overwrite(personId, repos.peopleRepo.getCurrentPersonNotAsFlow(personId).data)
+        _editingPerson.overwrite(personId, repos.peopleRepo.getCurrentPersonNotAsFlow(personId))
     }
     suspend fun saveAndStageChanges(personId: Long) {
-        val asEdited = _editingPerson.get(personId).data
+        val asEdited = _editingPerson.getValue(personId)
         val editedPerson = asEdited.copy(
             iban = asEdited.iban?.takeIf { it.length > 4 }?.replace(" ", ""),
             socials = PersonSyncable.getOrderedSocials(platformInputs.value.mapNotNull {
@@ -103,7 +99,7 @@ class ProfileInfoModel(val repos: AppRepositories): ViewModel(){
     }
     fun getInspectedPerson(personId: Long) = inspectedPersonCache.get(personId)
     private val savedInContactsCache = StateFlowCache<String, Boolean?>{
-        repos.contactRepo.isSavedInContacts(it).map { it?.data }.subscribeToColdFlow(viewModelScope, null)
+        repos.contactRepo.isSavedInContacts(it).subscribeToColdFlow(viewModelScope, null)
     }
     fun getSavedInContacts(phoneNumber: String) = savedInContactsCache.get(phoneNumber)
     suspend fun getSavedInContactsNOW(phoneNumber: String) = repos.contactRepo.isSavedInContactsNOW(phoneNumber)

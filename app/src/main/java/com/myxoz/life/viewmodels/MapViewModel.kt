@@ -13,7 +13,6 @@ import com.myxoz.life.repositories.utils.subscribeToColdFlow
 import com.myxoz.life.ui.ThreeStateBottomSheetState
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.map
 
 class MapViewModel(private val repos: AppRepositories): ViewModel() {
     private val _sheetLocation = MutableStateFlow<LocationSyncable?>(null)
@@ -90,9 +89,7 @@ class MapViewModel(private val repos: AppRepositories): ViewModel() {
         coordsInput.value = newLocation?.let { "%.6f, %.6f".format(it.lat, it.longitude) }
         selectedCoordinates.value = newLocation?.let { Point.fromLngLat(it.longitude, it.lat) }
     }
-    val getAllLocations = repos.locationRepo.getAllLocations.map {
-        locations -> locations.map { it.data }
-    }.subscribeToColdFlow(viewModelScope, listOf())
+    val getAllLocations = repos.locationRepo.getAllLocations.subscribeToColdFlow(viewModelScope, listOf())
     suspend fun queryByCoordinate(lat: Double, long: Double) = repos.locationRepo.queryByCoordinate(lat, long)
     suspend fun saveAndSync(location: LocationSyncable) = repos.locationRepo.updateAndStage(location)
 }

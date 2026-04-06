@@ -190,19 +190,6 @@ fun ProfileFullScreen(
                                 }
                             }
                         }
-                        if(nextInteractionDisplay!=null){
-                            FlowRowItem(
-                                "Nächste Interaktion",
-                                nextInteraction?.let { if(it.proposed is DigSocEvent) it.proposed.digSocEntries.maxByOrNull { c -> c.durationMs }?.type?.drawable else null } ?: R.drawable.met,
-                                nextInteractionDisplay
-                            ) {
-                                coroutineScope.launch {
-                                    nextInteraction?.let {
-                                        screens.openFullScreenEvent(it)
-                                    }
-                                }
-                            }
-                        }
                         DebtDisplay(profileInfoModel, personId)
                     }
                 }
@@ -422,13 +409,13 @@ private fun FlowRowScope.FlowRowItem(title: String, icon: Int, text: String, onC
 private fun FlowRowScope.DebtDisplay(viewModel: ProfileInfoModel, personId: Long) {
     val debts by viewModel.debtFlow(personId).collectAsState()
     val debt = debts ?: return
-    val total = remember(debt.version) {
-        debt.data.sumOf { snyc ->
+    val total = remember(debt) {
+        debt.sumOf { snyc ->
             snyc.parts.find { it.person == personId }?.amount ?: 0
         }
     }
     val screens = LocalScreens.current
-    if(debt.data.isNotEmpty()){
+    if(debt.isNotEmpty()){
         FlowRowItem(
             if(total > 0) "Schulde ich" else if(total < 0) "Schuldet mir" else "Sind quit",
             R.drawable.cash,

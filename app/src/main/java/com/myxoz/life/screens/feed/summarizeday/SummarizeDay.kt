@@ -177,8 +177,8 @@ fun SummarizeDay(dayOverviewViewModel: DayOverviewViewModel) {
                     LaunchedEffect(Unit) {
                         val last3Days = dayOverviewViewModel.getLastNDaysAsNonFlow(3)
                         val last30Days = dayOverviewViewModel.getLastNDaysAsNonFlow(30)
-                        val average3Days = last3Days.mapNotNull { it?.happyness ?: return@mapNotNull null}.average().takeIf { !it.isNaN() } ?: 0.0
-                        val average30Days = last30Days.mapNotNull { it?.happyness ?: return@mapNotNull null }.average().takeIf { !it.isNaN() } ?: 0.0
+                        val average3Days = last3Days.mapNotNull { it?.value?.happyness ?: return@mapNotNull null}.average().takeIf { !it.isNaN() } ?: 0.0
+                        val average30Days = last30Days.mapNotNull { it?.value?.happyness ?: return@mapNotNull null }.average().takeIf { !it.isNaN() } ?: 0.0
                         last3DaysSetter = average3Days.toFloat()
                         last30DaysSetter = average30Days.toFloat()
                         liffySubText = when (average3Days - average30Days) {
@@ -207,8 +207,8 @@ fun SummarizeDay(dayOverviewViewModel: DayOverviewViewModel) {
                     LaunchedEffect(Unit) {
                         val last3Days = dayOverviewViewModel.getLastNDaysAsNonFlow(3)
                         val last30Days = dayOverviewViewModel.getLastNDaysAsNonFlow(30)
-                        val average3Days = last3Days.mapNotNull { it?.stress ?: return@mapNotNull null}.average().takeIf { !it.isNaN() } ?: 0.0
-                        val average30Days = last30Days.mapNotNull { it?.stress ?: return@mapNotNull null }.average().takeIf { !it.isNaN() } ?: 0.0
+                        val average3Days = last3Days.mapNotNull { it?.value?.stress ?: return@mapNotNull null}.average().takeIf { !it.isNaN() } ?: 0.0
+                        val average30Days = last30Days.mapNotNull { it?.value?.stress ?: return@mapNotNull null }.average().takeIf { !it.isNaN() } ?: 0.0
                         last3DaysSetter = average3Days.toFloat()
                         last30DaysSetter = average30Days.toFloat()
                         liffySubText = when (average3Days - average30Days) {
@@ -237,8 +237,8 @@ fun SummarizeDay(dayOverviewViewModel: DayOverviewViewModel) {
                     LaunchedEffect(Unit) {
                         val last3Days = dayOverviewViewModel.getLastNDaysAsNonFlow(3)
                         val last30Days = dayOverviewViewModel.getLastNDaysAsNonFlow(30)
-                        val average3Days = last3Days.mapNotNull { it?.successfulness ?: return@mapNotNull null}.average().takeIf { !it.isNaN() } ?: 0.0
-                        val average30Days = last30Days.mapNotNull { it?.successfulness ?: return@mapNotNull null }.average().takeIf { !it.isNaN() } ?: 0.0
+                        val average3Days = last3Days.mapNotNull { it?.value?.successfulness ?: return@mapNotNull null}.average().takeIf { !it.isNaN() } ?: 0.0
+                        val average30Days = last30Days.mapNotNull { it?.value?.successfulness ?: return@mapNotNull null }.average().takeIf { !it.isNaN() } ?: 0.0
                         last3DaysSetter = average3Days.toFloat()
                         last30DaysSetter = average30Days.toFloat()
                         liffySubText = when (average3Days - average30Days) {
@@ -389,7 +389,7 @@ fun SummarizeDay(dayOverviewViewModel: DayOverviewViewModel) {
                             recordedHappyness,
                             recordedStress,
                             recordedSuccessfulness,
-                            if(settings.hasAssured(Settings.Feature.StepCounting)) dayOverviewViewModel.lastInsertedSteps.value else 0,
+                            if(settings.hasAssured(Settings.Feature.StepCounting)) dayOverviewViewModel.getStepsFor(day)?.value ?: 0 else 0,
                             if(settings.hasAssured(Settings.Feature.ScreenTime)) getUsageDataBetween(
                                 context,
                                 day.atStartOfDay(zone).toEpochSecond() * 1000L,

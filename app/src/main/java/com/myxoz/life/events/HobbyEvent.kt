@@ -5,7 +5,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.unit.Dp
 import com.myxoz.life.dbwrapper.events.EventEntity
 import com.myxoz.life.dbwrapper.events.HobbyEntiy
-import com.myxoz.life.dbwrapper.events.ReadEventDetailsDao
 import com.myxoz.life.dbwrapper.events.WriteEventDetailsDao
 import com.myxoz.life.events.additionals.DetailsEvent
 import com.myxoz.life.events.additionals.EventTag
@@ -77,18 +76,14 @@ class HobbyEvent(
         fun fromJson(json: JSONObject, start: Long, end: Long, uss: Boolean, usl: Boolean) = HobbyEvent(
             start, end, uss, usl, json.getTagsFromJson(), json.getString("title"), json.getStringOrNull("details")?.ifEmpty { null }
         )
-        suspend fun from(db: ReadEventDetailsDao, event: EventEntity): HobbyEvent? {
-            val hobbyEntity = db.getHobby(event.id) ?: return null
-            return HobbyEvent(
-                event.start,
-                event.end,
-                event.uss,
-                event.usl,
-                db.getTagsByEventId(event.id)
-                    .mapNotNull { EventTag.getTagById(it) },
-                hobbyEntity.title,
-                hobbyEntity.details
-            )
-        }
+        fun from(event: EventEntity, pec: HobbyEntiy, tags: List<EventTag>?) = HobbyEvent(
+            event.start,
+            event.end,
+            event.uss,
+            event.usl,
+            tags ?: listOf(),
+            pec.title,
+            pec.details
+        )
     }
 }

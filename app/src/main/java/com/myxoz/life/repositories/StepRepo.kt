@@ -4,10 +4,13 @@ import android.content.SharedPreferences
 import androidx.core.content.edit
 import com.myxoz.life.dbwrapper.days.ProposedStepsDao
 import com.myxoz.life.dbwrapper.days.ProposedStepsEntity
+import com.myxoz.life.repositories.utils.Cached
+import com.myxoz.life.repositories.utils.Cached.Companion.cached
+import com.myxoz.life.repositories.utils.PerformantCache
+import com.myxoz.life.repositories.utils.PerformantCache.Companion.overwrite
 import com.myxoz.life.repositories.utils.subscribeToColdFlow
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.launch
 import java.time.LocalDate
@@ -19,20 +22,23 @@ class StepRepo(
 ) {
     private val _steps = MutableStateFlow(0L)
     private var lastSavedSteps = stepsPrefs.getLong("saved_steps", 0L)
-    private val _lastInsertedSteps = MutableStateFlow(0)
-    val lastInsertedSteps: StateFlow<Int> = _lastInsertedSteps
+    private val insertedSteps = PerformantCache<Long, Cached<Int>>(appScope) {
+        dao.getStepsByDay(it)?.steps.cached
+    }
+    fun getStepsFor(day: LocalDate) = insertedSteps.flowByKey(day.toEpochDay())
+    fun getStepsCached(day: LocalDate) = insertedSteps.getCached(day.toEpochDay())
     private val stepsAtMidnight = MutableStateFlow(stepsPrefs.getLong("steps_at_midnight", 0L))
-    private var lastDateSaved = stepsPrefs.getLong("last_steps_date", 0L)
+    private var lastDateSaved = stepsPrefs.getLong("last_steps_date", LocalDate.now().minusDays(1).toEpochDay())
     val steps = _steps.combine(stepsAtMidnight){ steps, atMidnight ->  steps - atMidnight }
         .subscribeToColdFlow(appScope, _steps.value - stepsAtMidnight.value)
-    init {
-    }
     /** Inserts steps as the last date where steps were saved */
     private suspend fun resetStepsAsOldDay(totalSteps: Long? = null, midnightSteps: Long? = null) {
         val today = LocalDate.now().toEpochDay()
         val stepsToInsert = (lastSavedSteps - stepsAtMidnight.value).coerceAtLeast(0).toInt()
+        insertedSteps.overwrite(lastDateSaved, stepsToInsert)
         dao.insertSteps(ProposedStepsEntity(lastDateSaved, stepsToInsert))
-        _lastInsertedSteps.value = stepsToInsert
+
+        // ----------
 
         lastDateSaved = today
         stepsAtMidnight.value = midnightSteps ?: totalSteps ?: lastSavedSteps
@@ -45,14 +51,23 @@ class StepRepo(
         }
         _steps.value = lastSavedSteps
     }
+    fun insertYesterdayIfNeeded(today: LocalDate){
+        if(lastDateSaved == today.minusDays(1).toEpochDay()) {
+            appScope.launch {
+                resetStepsAsOldDay(lastSavedSteps)
+            }
+        }
+    }
     fun updateSteps(totalSensorSteps: Long){
         appScope.launch {
             val today = LocalDate.now().toEpochDay()
             // Reboot (or random sensor reset FUCK OEMs)
             // Fuck Samsung again because they sometimes seam to remove a small amount of steps and don't fully reset the sensor,
             // I will log this and TODO look at the logs and understand how the sensor works
-            // Logs: Max Dif: 1
+            // Logs: Max Dif: 1      Yes but just WHYYYY?
             /*
+From 50215 to 0 at 1775167712939 (03.04.2026 00:08:32)
+From 46309 to 46308 at 1775135661976 (02.04.2026 15:14:21)
 From 10823 to 10822 at 1774192727221 (22.03.2026 16:18:47)
 From 49160 to 0 at 1774050986159 (21.03.2026 00:56:26)
 From 30681 to 30680 at 1773570464845 (15.03.2026 11:27:44)
@@ -100,9 +115,4 @@ From 30681 to 30680 at 1773570464845 (15.03.2026 11:27:44)
         }
     }
     fun debugGetRawSteps() = _steps
-    init {
-        appScope.launch {
-            _lastInsertedSteps.value = dao.getStepsByDay(LocalDate.now().minusDays(1).toEpochDay())?.steps ?: 0
-        }
-    }
 }

@@ -33,7 +33,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.times
 import com.myxoz.life.LocalScreens
 import com.myxoz.life.dbwrapper.events.EventEntity
-import com.myxoz.life.dbwrapper.events.ReadEventDetailsDao
 import com.myxoz.life.dbwrapper.events.TravelEntity
 import com.myxoz.life.dbwrapper.events.VehicleEntity
 import com.myxoz.life.dbwrapper.events.WriteEventDetailsDao
@@ -233,20 +232,14 @@ class TravelEvent(
                 }
             )
 
-        suspend fun from(db: ReadEventDetailsDao, event: EventEntity): TravelEvent? {
-            val ev = db.getTavel(event.id)?:return null
-            val ve = db.getVehicles(event.id)
-            return TravelEvent(
-                event.start,
-                event.end,
-                event.uss,
-                event.usl,
-                ev.from,
-                ev.to,
-                ve.mapNotNull { TimedTagLikeContainer(
-                    Vehicle.getById(it.type)?:return@mapNotNull null, it.durationMs.toLong()
-                )}
-            )
-        }
+        fun from(event: EventEntity, pec: TravelEntity, vehicles: List<VehicleEntity>?) = TravelEvent(
+            event.start,
+            event.end,
+            event.uss,
+            event.usl,
+            pec.from,
+            pec.to,
+            vehicles?.mapNotNull { TimedTagLikeContainer(Vehicle.getById(it.type)?:return@mapNotNull null, it.durationMs.toLong())} ?: listOf()
+        )
     }
 }

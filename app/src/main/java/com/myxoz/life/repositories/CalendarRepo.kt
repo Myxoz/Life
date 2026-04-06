@@ -4,6 +4,7 @@ import android.app.AlarmManager
 import android.content.Context
 import android.content.Context.MODE_PRIVATE
 import android.content.SharedPreferences
+import com.myxoz.life.aggregator.PeopleAggregator
 import com.myxoz.life.android.autodetect.AutoDetect
 import com.myxoz.life.api.API
 import com.myxoz.life.api.syncables.DeleteEntry
@@ -12,10 +13,15 @@ import com.myxoz.life.dbwrapper.WaitingSyncDao
 import com.myxoz.life.dbwrapper.WaitingSyncEntity
 import com.myxoz.life.events.ProposedEvent
 import com.myxoz.life.events.additionals.PeopleEvent
-import com.myxoz.life.repositories.utils.Versioned
-import com.myxoz.life.repositories.utils.VersionedCache
-import com.myxoz.life.repositories.utils.VersionedDayedCache
-import com.myxoz.life.repositories.utils.VersionedDayedCache.Companion.updateDayedCacheFromTo
+import com.myxoz.life.repositories.utils.Cached
+import com.myxoz.life.repositories.utils.Cached.Companion.cached
+import com.myxoz.life.repositories.utils.PerformantCache
+import com.myxoz.life.repositories.utils.PerformantInterlockedCache
+import com.myxoz.life.repositories.utils.PerformantInterlockedCache.Companion.loadDays
+import com.myxoz.life.repositories.utils.PerformantInterlockedCache.Companion.overwrite
+import com.myxoz.life.repositories.utils.PerformantInterlockedCache.Companion.remove
+import com.myxoz.life.utils.atEndAsMillis
+import com.myxoz.life.utils.atStartAsMillis
 import com.myxoz.life.viewmodels.Settings
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.currentCoroutineContext
@@ -52,62 +58,54 @@ class CalendarRepo(
             emit(LocalDate.now())
         }
     }
-    private val interactedWithPersonCache = VersionedCache<Long, Int>({0})
-    fun interactedWithPerson(person: Long) = interactedWithPersonCache.flowByKey(appScope, person)
+    private val interactedWithPersonCache = PerformantCache<Long, PeopleAggregator.NeverEqual>(appScope){
+        PeopleAggregator.NeverEqual()
+    }
+    fun interactedWithPerson(person: Long) = interactedWithPersonCache.flowByKey(person)
     val interactedWithAnyPerson = interactedWithPersonCache.allValuesFlow
-    private val _cachedEvents = VersionedDayedCache<Long, SyncedEvent?, SyncedEvent>(
+    private val _cachedEvents = PerformantInterlockedCache.dayedCached(
+        appScope,
+        {
+            it.value?.proposed?.getAllStrechedDays(zone) ?: emptyList()
+        },
+        { first, other ->
+            first.value?.id == other.id
+        },
         { id ->
             SyncedEvent.from(
-                readSyncableDaos.eventDetailsDao,
-                readSyncableDaos.eventDetailsDao.getEvent(id) ?: return@VersionedDayedCache null
-            )
+                ProposedEvent.PreparedEventContent.prepareContentFor(id, readSyncableDaos.eventDetailsDao)
+                    ?: return@dayedCached Cached.Null
+            ).cached
         },
-        { date, cache ->
+        { from, to ->
             val events = readSyncableDaos.eventDetailsDao.getEventsBetween(
-                date.atStartOfDay(zone).toInstant().toEpochMilli(),
-                date.plusDays(1).atStartOfDay(zone).toInstant().toEpochMilli()
-            ).mapNotNull { SyncedEvent.from(readSyncableDaos.eventDetailsDao, it)}
-            cache.overwriteAll(events.map { it.id to it });
-        }
-    ) { cache, _, old, new ->
-        if (old != null && new != null && old.proposed.start == new.proposed.start && old.proposed.end == new.proposed.end) {
-            cache.updateKeysWith(new.proposed.getAllStrechedDays(zone)) { list ->
-                list.toMutableList().apply {
-                    val index = indexOfFirst { it.id == new.id }
-                    if (index != -1) {
-                        set(index, new)
-                    }
-                }
-            }
-            return@VersionedDayedCache // This is a shortcut route, if we have no changes in times, daycache only needs to update once
-        }
-        cache.updateDayedCacheFromTo(
-            old?.proposed?.getAllStrechedDays(zone),
-            new?.proposed?.getAllStrechedDays(zone),
-            new,
-        ) { old?.id == it.id }
-        if (new?.proposed is PeopleEvent) {
-            interactedWithPersonCache.updateKeysWith(
-                new.proposed.people
-            ) {
-                it + 1
-            }
+                from.atStartAsMillis(zone),
+                to.atEndAsMillis(zone)
+            )
+            val preparedEventContent = ProposedEvent.PreparedEventContent.prepareContentFor(events, readSyncableDaos.eventDetailsDao)
+            preparedEventContent.map{ it.event.id to SyncedEvent.from(it).cached }
+        },
+    ) { _, raw ->
+        val new = raw.value
+        if(new?.proposed is PeopleEvent) {
+            interactedWithPersonCache.overwriteAll(new.proposed.people.map { it to PeopleAggregator.NeverEqual() })
         }
     }
-    fun eventsForDay(date: LocalDate): Flow<Versioned<List<SyncedEvent>>?> {
-        return _cachedEvents.getDayFlowFor(appScope, date)
+    fun eventsForDay(date: LocalDate): Flow<List<SyncedEvent>?> {
+        return _cachedEvents.getInterlockedFlowFor(date)
     }
-    suspend fun deleteSyncedEventFromCache(id: Long) {
-        _cachedEvents.cache.overwrite(id, null)
+    suspend fun prefetchDays(from: LocalDate, to: LocalDate) = _cachedEvents.loadDays(from, to)
+    fun deleteSyncedEventFromCache(id: Long) {
+        _cachedEvents.remove(id)
     }
     suspend fun removeSyncedEvent(event: SyncedEvent) {
         DeleteEntry.requestSyncDelete(waitingSyncDao, event)
         event.proposed.eraseFromDB(writeSyncableDaos.eventDetailsDao, event.id)
-        _cachedEvents.cache.overwrite(event.id, null)
+        _cachedEvents.remove(event.id)
     }
     suspend fun updateOrCreateSyncedEvent(event: SyncedEvent) {
         val ev = if (event.isSynced()) { // Edited
-            val old = _cachedEvents.cache.get(event.id).data // This should be cached
+            val old = _cachedEvents.getContent(event.id).value // This should be cached
             old?.proposed?.eraseFromDB(writeSyncableDaos.eventDetailsDao, event.id)
             event.copy(edited = System.currentTimeMillis())
         } else {
@@ -115,20 +113,19 @@ class CalendarRepo(
         }
         ev.saveToDB(writeSyncableDaos)
         waitingSyncDao.insertWaitingSync(WaitingSyncEntity(ev.id, ev.calendarId, System.currentTimeMillis()))
-        _cachedEvents.cache.overwrite(ev.id, ev)
+        _cachedEvents.overwrite(ev.id, ev)
     }
-    suspend fun updateSyncedEventCached(event: SyncedEvent) {
-        _cachedEvents.cache.overwrite(event.id, event)
+    fun updateSyncedEventCached(event: SyncedEvent) {
+        _cachedEvents.overwrite(event.id, event)
     }
     private val initalProposedEvents = MutableStateFlow<List<ProposedEvent>>(listOf())
-    private val _proposedEventsDayed = VersionedCache<LocalDate, List<ProposedEvent>>(
-        { key ->
-            initalProposedEvents.first().filter { key in it.getAllStrechedDays(zone)  }
-        }
-    )
-    fun getProposedEventsAt(date: LocalDate) = _proposedEventsDayed.flowByKey(appScope, date)
+    private val _proposedEventsDayed = PerformantCache<LocalDate, List<ProposedEvent>>(appScope) { key ->
+        initalProposedEvents.first().filter { key in it.getAllStrechedDays(zone) }
+    }
+
+    fun getProposedEventsAt(date: LocalDate) = _proposedEventsDayed.flowByKey(date)
     suspend fun removeProposedEvent(event: ProposedEvent){
-        _proposedEventsDayed.updateKeysWith(event.getAllStrechedDays(zone)) { list ->
+        _proposedEventsDayed.updateAll(event.getAllStrechedDays(zone)) { list ->
             list.filterNot { it == event }
         }
         event.ignoreProposed(autoDetectPrefs)
@@ -136,7 +133,7 @@ class CalendarRepo(
     fun saveProposedNotYetSyncedEvent(event: ProposedEvent) {
         appScope.launch {
             val syncedEvent = SyncedEvent(
-                0,
+                -1,
                 System.currentTimeMillis(),
                 null,
                 event
@@ -145,7 +142,7 @@ class CalendarRepo(
             event.ignoreProposed(autoDetectPrefs)
         }
     }
-    private suspend fun updateProposedEvents(list: List<ProposedEvent>){
+    private fun updateProposedEvents(list: List<ProposedEvent>){
         val dayMap = mutableMapOf<LocalDate, MutableList<ProposedEvent>>()
         list.forEach { event ->
             event.getAllStrechedDays(zone).forEach { date ->
@@ -169,8 +166,10 @@ class CalendarRepo(
 
     suspend fun getNonSleepEventAfter(ts: Long): SyncedEvent?{
         return SyncedEvent.from(
-            readSyncableDaos.eventDetailsDao,
-            readSyncableDaos.eventDetailsDao.getNonSleepEventAfter(ts) ?: return null
+            ProposedEvent.PreparedEventContent.prepareContentFor(
+                readSyncableDaos.eventDetailsDao.getNonSleepEventAfter(ts) ?: return null,
+                readSyncableDaos.eventDetailsDao
+            ) ?: return null
         )
     }
 }

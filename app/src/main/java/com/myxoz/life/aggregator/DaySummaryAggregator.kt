@@ -29,7 +29,7 @@ class DaySummaryAggregator(
         val total = mutableMapOf<EventType, Long>()
         val startOfDay = date.atStartAsMillis(zone)
         val endOfDay = date.atEndAsMillis(zone)
-        val events = rawEvents?.data ?: return@map mapOf()
+        val events = rawEvents ?: return@map mapOf()
         events.forEach {
             val duration = it.proposed.end.coerceAtMost(endOfDay) - it.proposed.start.coerceAtLeast(startOfDay)
             total[it.proposed.type] = total[it.proposed.type]?.plus(duration) ?: duration
@@ -63,7 +63,8 @@ class DaySummaryAggregator(
     @OptIn(ExperimentalCoroutinesApi::class)
     private val getScreentimeForDayFlow = FlowCache<LocalDate, Long>{ date ->
         repos.daySummaryRepo.getDaySummary(date).flatMapLatest { summary ->
-            if(summary?.data != null) return@flatMapLatest MutableStateFlow(summary.data.screenTimeMs.toLong())
+            val summary = summary?.value
+            if(summary != null) return@flatMapLatest MutableStateFlow(summary.screenTimeMs.toLong())
             return@flatMapLatest getLifeScreenTime.get(date).map { entry -> entry.sumOf { it.duration } }
         }
     }

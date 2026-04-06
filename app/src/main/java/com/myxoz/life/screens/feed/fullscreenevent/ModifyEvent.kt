@@ -612,8 +612,8 @@ fun ModifyEvent(viewModel: InspectedEventViewModel){
                 DigSocEvent(
                     event.start, event.end, event.uss, event.usl,
                     listOf(),
-                    if (event is TitleEvent) (event as TitleEvent).title else "",
-                    if (event is PeopleEvent) (event as PeopleEvent).people else listOf(),
+                    if (event is TitleEvent) event.title else "",
+                    if (event is PeopleEvent) event.people else listOf(),
                 )
             )
         }
@@ -624,9 +624,9 @@ fun ModifyEvent(viewModel: InspectedEventViewModel){
             setEventTo(
                 WorkEvent(
                     event.start, event.end, event.uss, event.usl,
-                    if (event is TagEvent) ((event as TagEvent).eventTags) else listOf(),
-                    if (event is TitleEvent) (event as TitleEvent).title else "",
-                    if (event is DetailsEvent) (event as DetailsEvent).details else ""
+                    if (event is TagEvent) event.eventTags else listOf(),
+                    if (event is TitleEvent) event.title else "",
+                    if (event is DetailsEvent) event.details else ""
                 )
             )
         }

@@ -3,7 +3,7 @@ package com.myxoz.life.repositories
 import com.myxoz.life.api.API
 import com.myxoz.life.api.syncables.LocationSyncable
 import com.myxoz.life.dbwrapper.WaitingSyncDao
-import com.myxoz.life.repositories.utils.VersionedCache
+import com.myxoz.life.repositories.utils.PerformantCache
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
@@ -21,17 +21,15 @@ class LocationRepo(
 ) {
     val readLocationsDao = readSyncableDaos.locationsDao
     var fetchedAllLocations = false
-    private val _cache = VersionedCache<Long, LocationSyncable>(
-        {
-            LocationSyncable.from(
-                readLocationsDao.getLocationById(it).let { locationEntity ->
-                    if(locationEntity == null)
-                        throw Error("Location Syncable was fetched with an unknown id: $it. This is unsuported behavior. Check how you get the Location id.")
-                    locationEntity
-                }
-            )
-        }
-    )
+    private val _cache = PerformantCache<Long, LocationSyncable>(appScope) {
+        LocationSyncable.from(
+            readLocationsDao.getLocationById(it).let { locationEntity ->
+                if(locationEntity == null)
+                    throw Error("Location Syncable was fetched with an unknown id: $it. This is unsuported behavior. Check how you get the Location id.")
+                locationEntity
+            }
+        )
+    }
     suspend fun update(location: LocationSyncable){
         _cache.overwrite(location.id, location)
     }
@@ -40,7 +38,7 @@ class LocationRepo(
         update(location)
         location.addToWaitingSyncDao(waitingSyncDao)
     }
-    fun getLocationById(id: Long) = _cache.flowByKey(appScope, id)
+    fun getLocationById(id: Long) = _cache.flowByKey(id)
     suspend fun requestFetchAllLocations(){
         if(fetchedAllLocations) return
         fetchedAllLocations = true
@@ -51,7 +49,7 @@ class LocationRepo(
     val getAllLocations = _cache.allValuesFlow
     suspend fun queryByCoordinate(targetLat: Double, targetLon: Double): LocationSyncable? {
         requestFetchAllLocations()
-        val allLocations = _cache.allValuesFlow.first().map { it.data }
+        val allLocations = _cache.allValuesFlow.first()
 
         return allLocations
             .mapNotNull { entity ->
@@ -79,7 +77,7 @@ class LocationRepo(
 
         return R * c
     }
-    fun getCachedLocation(locationid: Long) = _cache.getCached(locationid)?.data
+    fun getCachedLocation(locationid: Long) = _cache.getCached(locationid)
     init {
         appScope.launch {
             _cache.overwriteAll(

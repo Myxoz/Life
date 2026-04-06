@@ -5,10 +5,10 @@ import com.myxoz.life.api.API
 import com.myxoz.life.api.syncables.PersonSyncable
 import com.myxoz.life.api.syncables.ProfilePictureSyncable
 import com.myxoz.life.dbwrapper.WaitingSyncDao
-import com.myxoz.life.repositories.utils.VersionedCache
-import com.myxoz.life.repositories.utils.VersionedDayedCache
-import com.myxoz.life.repositories.utils.VersionedDayedCache.Companion.updateDayedCacheFromTo
+import com.myxoz.life.repositories.utils.PerformantCache
+import com.myxoz.life.repositories.utils.PerformantInterlockedCache
 import com.myxoz.life.screens.options.settings.ME_ID
+import com.myxoz.life.utils.daysUntil
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -30,7 +30,12 @@ class PeopleRepo(
     private val readPeopleDao = readSyncableDaos.peopleDao
     private val _meFlow = MutableStateFlow<PersonSyncable?>(null)
     val meFlow: StateFlow<PersonSyncable?> = _meFlow
-    private val _cachedPeople = VersionedDayedCache(
+    private val _cachedPeople = PerformantInterlockedCache.dayedSame(
+        appScope,
+        {
+            it.birthday?.let { birthday -> LocalDate.ofEpochDay(birthday).allFutureBirthdays() } ?: emptyList()
+        },
+        { first, other -> first.id == other.id },
         { id ->
             PersonSyncable.from(
                 readPeopleDao, readPeopleDao.getPersonById(id).let { entity ->
@@ -40,26 +45,23 @@ class PeopleRepo(
                 }
             )
         },
-        { date, cache ->
-            val allBirthdayed = readSyncableDaos.peopleDao.getPeopleWithBirthdayAt(date).map { entry ->
-                PersonSyncable.from(readPeopleDao, entry)
+        { from, to ->
+            from.daysUntil(to).flatMap { date ->
+                readSyncableDaos.peopleDao.getPeopleWithBirthdayAt(date).map { entry ->
+                    entry.id to PersonSyncable.from(readPeopleDao, entry)
+                }
             }
-            cache.overwriteAll(allBirthdayed.map { it.id to it })
         }
-    ) { cache, _, old, new ->
+    ) { _, new ->
         if(new.id == ME_ID) _meFlow.update { new }
-        val from = old?.birthday?.let { LocalDate.ofEpochDay(it).allFutureBirthdays() }
-        val to = new.birthday?.let { LocalDate.ofEpochDay(it).allFutureBirthdays() }
-        cache.updateDayedCacheFromTo(from, to, new){ person -> person.id == new.id }
     }
-    fun getPerson(personId: Long) = _cachedPeople.cache.flowByKey(appScope, personId)
-    fun getPeople(personIds: List<Long>) = _cachedPeople.cache.flowByKeys(appScope, personIds)
-    suspend fun getCurrentPersonNotAsFlow(personId: Long) = _cachedPeople.cache.get(personId)
-    private val _pps = VersionedCache<Long, ProfilePictureSyncable>(
-        {
-            ProfilePictureSyncable.getSyncable(it, context, readPeopleDao)
-        }
-    )
+    fun getPerson(personId: Long) = _cachedPeople.flowFor(personId)
+    fun getPeople(personIds: List<Long>) = _cachedPeople.flowsFor(personIds)
+    suspend fun getCurrentPersonNotAsFlow(personId: Long) = _cachedPeople.getContent(personId)
+    private val _pps = PerformantCache<Long, ProfilePictureSyncable>(appScope) {
+        ProfilePictureSyncable.getSyncable(it, context, readPeopleDao)
+    }
+
     suspend fun updatePP(new: ProfilePictureSyncable) = _pps.overwrite(new.id, new)
     suspend fun updatePP(personId: Long, base64: String?) {
         val new = ProfilePictureSyncable(personId, base64)
@@ -67,9 +69,9 @@ class PeopleRepo(
         _pps.overwrite(personId, new)
         new.addToWaitingSyncDao(waitingSyncDao)
     }
-    fun getProfilePicture(id: Long) = _pps.flowByKey(appScope, id)
-    suspend fun updateCacheOnly(person: PersonSyncable) {
-        _cachedPeople.cache.overwrite(person.id, person)
+    fun getProfilePicture(id: Long) = _pps.flowByKey(id)
+    fun updateCacheOnly(person: PersonSyncable) {
+        _cachedPeople.overwrite(person.id, person)
     }
     suspend fun updateAndStageSync(person: PersonSyncable) {
         person.updateAndStageSync(writeSyncableDaos, waitingSyncDao)
@@ -77,15 +79,15 @@ class PeopleRepo(
     }
     fun getPeopleWithIbanLike(iban: String): Flow<List<PersonSyncable>> {
         requireAllPeople()
-        return _cachedPeople.cache.allValuesFlow.map { people ->
-            people.filter { it.data.iban == iban }.map { it.data }
+        return _cachedPeople.allValuesFlow.map { people ->
+            people.filter { it.iban == iban }
         }
     }
     fun getAllPeople(): Flow<List<PersonSyncable>> {
         requireAllPeople()
-        return _cachedPeople.cache.allMergedFlow
+        return _cachedPeople.allValuesFlow
     }
-    fun getPeopleWithBirthdayAt(date: LocalDate) = _cachedPeople.getDayFlowFor(appScope, date).map { it?.data }
+    fun getPeopleWithBirthdayAt(date: LocalDate) = _cachedPeople.getInterlockedFlowFor(date)
     fun LocalDate.allFutureBirthdays(maxAge: Int = 130): List<LocalDate> {
         // Lets hope the life expectancy doesnt raise more than this /halfjoke
         val monthDay = MonthDay.from(this)
@@ -100,14 +102,14 @@ class PeopleRepo(
         requestedAllPeople = true
         appScope.launch {
             // We mark this before loading to avoid race conditions
-            _cachedPeople.markAllDaysAsLoaded()
+            _cachedPeople.markAllEntriesAsLoaded()
 
-            _cachedPeople.cache.overwriteAll(
+            _cachedPeople.overwriteAll(
                 readPeopleDao.getAllPeople().map {
                     it.id to PersonSyncable.from(readPeopleDao,it)
                 }
             )
         }
     }
-    fun getCachedPeopleById(ids: List<Long>) = ids.mapNotNull { _cachedPeople.cache.getCached(it)?.data }
+    fun getCachedPeopleById(ids: List<Long>) = ids.mapNotNull { _cachedPeople.getCachedContent(it) }
 }

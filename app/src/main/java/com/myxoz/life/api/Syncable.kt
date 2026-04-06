@@ -15,6 +15,7 @@ import com.myxoz.life.api.syncables.TodoSyncable
 import com.myxoz.life.api.syncables.TransactionSplitSyncable
 import com.myxoz.life.dbwrapper.WaitingSyncDao
 import com.myxoz.life.dbwrapper.WaitingSyncEntity
+import com.myxoz.life.events.ProposedEvent
 import com.myxoz.life.repositories.AppRepositories
 import com.myxoz.life.screens.feed.instantevents.InstantEvent
 import org.json.JSONObject
@@ -142,7 +143,11 @@ abstract class Syncable(
                         )
                         return null
                     }
-                    val dbEvent = SyncedEvent.from(readSyncableDaos.eventDetailsDao, dbEntry)
+                    val dbEvent = SyncedEvent.from(
+                        ProposedEvent.PreparedEventContent.prepareContentFor(
+                            dbEntry, readSyncableDaos.eventDetailsDao
+                        ) ?: return null
+                    )
                     if (dbEvent == null) {
                         Log.w(
                             "API",

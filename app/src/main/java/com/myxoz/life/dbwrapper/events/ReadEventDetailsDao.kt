@@ -91,4 +91,45 @@ interface ReadEventDetailsDao {
 
     @Query("SELECT * FROM people_mapping WHERE event_id = :id")
     suspend fun getPeopleMappingsByEventId(id: Long): List<PeopleMappingEntity>
+
+
+    // Chunked
+    @Query("SELECT * FROM tags WHERE id IN (:events)")
+    suspend fun getAllTagsFor(events: List<Long>): List<TagsEntity>
+
+    @Query("SELECT * FROM spont WHERE id IN (:events)")
+    suspend fun getAllSpontFor(events: List<Long>): List<SpontEntity>
+
+    @Query("SELECT * FROM hobby WHERE id IN (:events)")
+    suspend fun getAllHobbyFor(events: List<Long>): List<HobbyEntiy>
+
+    @Query("SELECT * FROM learn WHERE id IN (:events)")
+    suspend fun getAllLearnFor(events: List<Long>): List<LearnEntity>
+
+    @Query("SELECT * FROM social WHERE id IN (:events)")
+    suspend fun getAllSocialFor(events: List<Long>): List<SocialEntity>
+
+    @Query("SELECT * FROM travel WHERE id IN (:events)")
+    suspend fun getAllTravelFor(events: List<Long>): List<TravelEntity>
+
+    @Query("SELECT * FROM digsoc WHERE id IN (:events)")
+    suspend fun getAllDigSocFor(events: List<Long>): List<DigSocEntity>
+
+    @Query("SELECT * FROM work WHERE id IN (:events)")
+    suspend fun getAllWorkFor(events: List<Long>): List<WorkEntity>
+
+    @Query("SELECT * FROM timewaste WHERE id IN (:events)")
+    suspend fun getAllTimewasteFor(events: List<Long>): List<TimewasteEntity>
+
+    @Query("SELECT * FROM people_mapping WHERE event_id IN (:events)")
+    suspend fun getAllPeopleFor(events: List<Long>): List<PeopleMappingEntity>
+
+    @Query("SELECT * FROM vehicle WHERE id IN (:events)")
+    suspend fun getAllVehiclesFor(events: List<Long>): List<VehicleEntity>
+
+    @Query("SELECT * FROM digsocmapping WHERE event_id IN (:events)")
+    suspend fun getAllDigSocMappingFor(events: List<Long>): List<DigSocMappingEntity>
+
+    @Query("SELECT * FROM timewasteplatform WHERE event_id IN (:events)")
+    suspend fun getAllTimewastePlatformsFor(events: List<Long>): List<TimewastePlatformEntity>
 }

@@ -21,7 +21,6 @@ import com.myxoz.life.R
 import com.myxoz.life.android.autodetect.AutoDetect
 import com.myxoz.life.android.autodetect.AutoDetectSleep
 import com.myxoz.life.dbwrapper.events.EventEntity
-import com.myxoz.life.dbwrapper.events.ReadEventDetailsDao
 import com.myxoz.life.dbwrapper.events.WriteEventDetailsDao
 import com.myxoz.life.events.additionals.EventType
 import com.myxoz.life.ui.theme.OldColors
@@ -76,6 +75,6 @@ class SleepEvent(start: Long, end: Long, uss: Boolean, usl: Boolean): ProposedEv
         fun fromJson(json: JSONObject, start: Long, end: Long, uss: Boolean, usl: Boolean): ProposedEvent = SleepEvent(
             start, end, uss, usl
         )
-        fun from(db: ReadEventDetailsDao, event: EventEntity) = SleepEvent(event.start, event.end, event.uss, event.usl)
+        fun from(pec: EventEntity) = SleepEvent(pec.start, pec.end, pec.uss, pec.usl)
     }
 }

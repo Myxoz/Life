@@ -3,8 +3,6 @@ package com.myxoz.life.api.syncables
 import com.myxoz.life.api.API
 import com.myxoz.life.api.ServerSyncableCompanion
 import com.myxoz.life.api.Syncable
-import com.myxoz.life.dbwrapper.events.EventEntity
-import com.myxoz.life.dbwrapper.events.ReadEventDetailsDao
 import com.myxoz.life.events.EmptyEvent
 import com.myxoz.life.events.ProposedEvent
 import com.myxoz.life.screens.feed.fullscreenevent.getId
@@ -47,12 +45,12 @@ class SyncedEvent(
     override fun getInvalidReason(): String? = proposed.getInvalidReason()
 
     companion object : ServerSyncableCompanion<SyncedEvent> {
-        suspend fun from(db: ReadEventDetailsDao, event: EventEntity): SyncedEvent? {
+        fun from(preparedEventContent: ProposedEvent.PreparedEventContent): SyncedEvent? {
             return SyncedEvent(
-                event.id,
-                event.created,
-                event.edited,
-                ProposedEvent.from(db, event) ?: return null
+                preparedEventContent.event.id,
+                preparedEventContent.event.created,
+                preparedEventContent.event.edited,
+                ProposedEvent.from(preparedEventContent) ?: return null
             )
         }
 

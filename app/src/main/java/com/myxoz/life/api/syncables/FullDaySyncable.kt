@@ -44,7 +44,7 @@ class FullDaySyncable(
     override suspend fun saveToDB(db: API.WriteSyncableDaos) {
         db.daysDao.insertDay(
             DaysEntity(
-                id.toInt(),
+                id,
                 screenTimeMs,
                 steps,
                 happyness,
@@ -81,9 +81,7 @@ class FullDaySyncable(
             )
         }
 
-        suspend fun fromDB(db: API.ReadSyncableDaos, id: Long): FullDaySyncable? {
-            val day = db.daysDao.getDay(id)?:return null
-            val topApps = db.daysDao.getScreenTimesByDay(id)
+        fun fromEntity(id: Long, day: DaysEntity, topApps: List<DayScreenTimeEntity>): FullDaySyncable {
             return FullDaySyncable(
                 day.happyness,
                 day.stress,
@@ -93,6 +91,11 @@ class FullDaySyncable(
                 topApps,
                 id
             )
+        }
+        suspend fun fromDB(db: API.ReadSyncableDaos, id: Long): FullDaySyncable? {
+            val topApps = db.daysDao.getScreenTimesByDay(id)
+            val day = db.daysDao.getDay(id)?:return null
+            return fromEntity(id, day, topApps)
         }
     }
 }

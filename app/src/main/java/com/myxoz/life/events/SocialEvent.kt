@@ -17,7 +17,6 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.myxoz.life.LocalScreens
 import com.myxoz.life.dbwrapper.events.EventEntity
-import com.myxoz.life.dbwrapper.events.ReadEventDetailsDao
 import com.myxoz.life.dbwrapper.events.SocialEntity
 import com.myxoz.life.dbwrapper.events.WriteEventDetailsDao
 import com.myxoz.life.events.additionals.EventTag
@@ -127,18 +126,15 @@ class SocialEvent(
         fun fromJson(json: JSONObject, start: Long, end: Long, uss: Boolean, usl: Boolean) =
             SocialEvent(start, end, uss, usl, json.getTagsFromJson(), json.getString("title"), getPeopleFromJson(json), json.getBoolean("more")
         )
-        suspend fun from(db: ReadEventDetailsDao, event: EventEntity): SocialEvent? {
-            val socialEntity = db.getSocial(event.id) ?: return null
-            return SocialEvent(
-                event.start,
-                event.end,
-                event.uss,
-                event.usl,
-                db.getTagsByEventId(event.id).mapNotNull { EventTag.getTagById(it) },
-                socialEntity.title,
-                db.getPeopleMappingsByEventId(event.id).map { it.personId },
-                socialEntity.more
-            )
-        }
+        fun from(event: EventEntity, pec: SocialEntity, people: List<Long>?, tags: List<EventTag>?): SocialEvent = SocialEvent(
+            event.start,
+            event.end,
+            event.uss,
+            event.usl,
+            tags ?: listOf(),
+            pec.title,
+            people ?: listOf(),
+            pec.more
+        )
     }
 }

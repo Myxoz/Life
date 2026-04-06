@@ -42,6 +42,7 @@ import com.myxoz.life.LocalNavController
 import com.myxoz.life.LocalSettings
 import com.myxoz.life.R
 import com.myxoz.life.Theme
+import com.myxoz.life.repositories.utils.Cached
 import com.myxoz.life.screens.NavPath
 import com.myxoz.life.screens.feed.summarizeday.LiffyFace
 import com.myxoz.life.screens.options.getUsageDataBetween
@@ -74,7 +75,7 @@ fun DaySummaryPopUp(calendarViewModel: CalendarViewModel, inspectedEventViewMode
         val currentRoute = currentBackStackEntry?.destination?.route
         if (currentRoute == NavPath.HOME) {
             calendarViewModel.yesterdaySummaryAdded.collect {
-                showDayPopup = (it == null) && !inspectedEventViewModel.isEditing.value
+                showDayPopup = (it == Cached.Null) && !inspectedEventViewModel.isEditing.value
             }
         }
     }
@@ -108,13 +109,13 @@ fun DaySummaryPopUp(calendarViewModel: CalendarViewModel, inspectedEventViewMode
             ) {
                 val context = LocalContext.current
                 if(stepCountEnabled) {
-                    val steps by calendarViewModel.lastInsertedSteps.collectAsState()
+                    val steps by calendarViewModel.getStepsFor(day).collectAsState()
                     Text(
                         "Schritte",
                         style = TypoStyle(Theme.primary, FontSize.SMALL)
                     )
                     Text(
-                        steps.toString(),
+                        steps?.value.def(0).toString(),
                         style = TypoStyle(
                             Theme.secondary,
                             FontSize.XLARGE,

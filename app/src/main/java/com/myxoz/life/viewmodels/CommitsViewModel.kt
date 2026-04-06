@@ -10,7 +10,7 @@ import kotlinx.coroutines.flow.map
 
 class CommitsViewModel(private val repos: AppRepositories): ViewModel() {
     private val commitCache = StateFlowCache<String, CommitSyncable?>{ sha ->
-        repos.commitsRepo.getCommit(sha).map { it?.data }.subscribeToColdFlow(viewModelScope, null)
+        repos.commitsRepo.getCommit(sha).subscribeToColdFlow(viewModelScope, null)
     }
     fun getCommit(sha: String) = commitCache.get(sha)
 

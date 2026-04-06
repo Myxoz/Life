@@ -12,3 +12,15 @@ fun LocalDate.atStartAsMillis(zone: ZoneId): Long =
 
 fun LocalDate.atEndAsMillis(zone: ZoneId): Long =
     this.plusDays(1).atStartAsMillis(zone)
+
+fun LocalDate.daysUntil(other: LocalDate): List<LocalDate> {
+    if(this == other) return listOf(this)
+    val dates = mutableListOf<LocalDate>()
+    var current = this
+
+    while (!current.isAfter(other)) {
+        dates.add(current)
+        current = current.plusDays(1)
+    }
+    return dates
+}

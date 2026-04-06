@@ -27,13 +27,13 @@ class CalendarAggregator(
         val nextAlarmEvent = listOfNotNull(
             nextAlarm?.let { alarmToInstantEvent(it) }
         )
-        val commits = commits?.data.def(listOf()).mapNotNull {
+        val commits = commits.def(listOf()).mapNotNull {
             commitToInstantEvent(it)
         }
         val transactions = transactions.def(listOf()).mapNotNull {
             bankEntryAsInstantEvent(it)
         }
-        val todos = todos?.data.def(listOf()).map {
+        val todos = todos.def(listOf()).map {
             it.asInstantEvent()
         }
         createGroupedInstantEvents(commits + transactions + nextAlarmEvent + todos)
@@ -51,12 +51,12 @@ class CalendarAggregator(
         }
         return groups.map { InstantEvent.InstantEventGroup(it) }
     }
-    fun getPrerenderedEvents(it: LocalDate) = combine(
-        repos.calendarRepo.eventsForDay(it),
-        getInstantEventsForDay(it),
+    fun getPrerenderedEvents(date: LocalDate) = combine(
+        repos.calendarRepo.eventsForDay(date),
+        getInstantEventsForDay(date),
     ) { events, instantEvents ->
         PrerenderedEvent.getPrerenderedEvents(
-            events?.data.def(listOf()),
+            events.def(listOf()),
             instantEvents,
             (INSTANTEVENTSIZE * 3600L).toLong() * 1000L
         )
@@ -97,6 +97,5 @@ class CalendarAggregator(
             ) {
                 alarm.showIntent?.sendWithBal()
             }
-
     }
 }

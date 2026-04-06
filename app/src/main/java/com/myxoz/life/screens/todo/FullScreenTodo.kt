@@ -30,7 +30,7 @@ fun FullScreenTodo(id: Long, todoViewModel: TodoViewModel){
             .padding(windowPadding)
     ) {
         val rawTodo by todoViewModel.getTodo(id).collectAsState()
-        val todo = rawTodo ?: return@Column
+        val todo = rawTodo?.value ?: return@Column
         Text(todo.short, style = TypoStyle(Theme.primary, FontSize.MEDIUM))
         Text(todo.details.orEmpty(), style = TypoStyle(Theme.primary, FontSize.MEDIUM))
         val screens = LocalScreens.current

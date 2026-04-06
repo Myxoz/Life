@@ -290,6 +290,7 @@ private fun BoxScope.RenderProposedEvents(
 ) {
     val collectedProposedEvents by calendarViewModel.getProposedEventsAt(date).collectAsState()
     val coroutineScope = rememberCoroutineScope()
+    if (collectedProposedEvents == null) return
     for(event in collectedProposedEvents) {
         Box(Modifier
             .fillMaxHeight()

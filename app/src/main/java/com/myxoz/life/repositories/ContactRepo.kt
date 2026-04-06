@@ -3,8 +3,7 @@ package com.myxoz.life.repositories
 import android.content.Context
 import com.myxoz.life.android.contacts.AndroidContacts
 import com.myxoz.life.api.syncables.PersonSyncable
-import com.myxoz.life.repositories.utils.Versioned
-import com.myxoz.life.repositories.utils.VersionedCache
+import com.myxoz.life.repositories.utils.PerformantCache
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
@@ -17,11 +16,7 @@ class ContactRepo(
     private val context: Context,
     private val appScope: CoroutineScope
 ) {
-    private val _savedInContacts = VersionedCache<String, Boolean>(
-        {
-            false
-        }
-    )
+    private val _savedInContacts = PerformantCache<String, Boolean>(appScope) {false}
     private val _allContacts = MutableStateFlow<List<PersonSyncable>>(listOf())
     val allContacts: StateFlow<List<PersonSyncable>> = _allContacts
 
@@ -29,18 +24,18 @@ class ContactRepo(
         val isInContacts = withContext(Dispatchers.IO) {
             AndroidContacts.contactExists(context, phone)
         }
-        if(isInContacts != _savedInContacts.getCached(phone)?.data) {
+        if(isInContacts != _savedInContacts.getCached(phone)) {
             _savedInContacts.overwrite(phone, isInContacts)
         }
         return isInContacts
     }
-    fun isSavedInContacts(phoneNumber: String): Flow<Versioned<Boolean>?> {
+    fun isSavedInContacts(phoneNumber: String): Flow<Boolean?> {
         appScope.launch {
             withContext(Dispatchers.IO) {
                 updateIsSavedInContacts(phoneNumber)
             }
         }
-        return _savedInContacts.flowByKey(appScope, phoneNumber)
+        return _savedInContacts.flowByKey(phoneNumber)
     }
     suspend fun isSavedInContactsNOW(phone: String) = updateIsSavedInContacts(phone)
     fun refetchDeviceContacts(){

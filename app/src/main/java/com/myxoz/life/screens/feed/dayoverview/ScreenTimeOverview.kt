@@ -74,7 +74,7 @@ fun ScreenTimeOverview(date: LocalDate, dayOverviewViewModel: DayOverviewViewMod
     val displayedEntries by if(showsMore) {
         dayOverviewViewModel.getScreentimeLive(date)
     } else {
-        remember(daySummary) { MutableStateFlow(daySummary?.topApps?.sortedByDescending { it.duration }?:listOf()) }
+        remember(daySummary) { MutableStateFlow(daySummary?.value?.topApps?.sortedByDescending { it.duration }?:listOf()) }
         // Thats how you ductape stuff
     }.collectAsStateWithLifecycle(listOf())
     val accumulatedTime by dayOverviewViewModel.getScreentime(date).collectAsStateWithLifecycle(0L)

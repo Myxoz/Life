@@ -2,9 +2,8 @@ package com.myxoz.life.repositories
 
 import com.myxoz.life.api.API
 import com.myxoz.life.api.syncables.CommitSyncable
-import com.myxoz.life.repositories.utils.VersionedCache
-import com.myxoz.life.repositories.utils.VersionedDayedCache
-import com.myxoz.life.repositories.utils.VersionedDayedCache.Companion.updateDayedCacheFromTo
+import com.myxoz.life.repositories.utils.PerformantCache
+import com.myxoz.life.repositories.utils.PerformantInterlockedCache
 import com.myxoz.life.utils.atEndAsMillis
 import com.myxoz.life.utils.atStartAsMillis
 import com.myxoz.life.utils.toLocalDate
@@ -19,55 +18,51 @@ class CommitsRepo(
     private val appScope: CoroutineScope
 ) {
     private val zone = ZoneId.systemDefault()
-    private val _repos = VersionedCache<String, CommitSyncable>(
-        {
-            throw Error("Why tf was this called? If this errors you really did a lot wrong. Fetching a repo by key eventhough we dont even know the Repo, props")
-        }
-    )
-    val getAllRepos = _repos.allValuesFlow.map{ it.map { repo -> repo.data }.sortedByDescending { repo -> repo.commitDate ?: 0L } }
+    private val _repos = PerformantCache<String, CommitSyncable>(appScope) {
+        error("Why tf was this called? If this errors you really did a lot wrong. Fetching a repo by key eventhough we dont even know the Repo, props. Ah and btw, you attempted to fetch $it.")
+    }
+    val getAllRepos = _repos.allValuesFlow.map{ it.sortedByDescending { repo -> repo.commitDate ?: 0L } }
 
-    private val _commits = VersionedDayedCache<String, CommitSyncable, CommitSyncable>(
-        { sha ->
-            CommitSyncable.fromDB(readSyncableDaos.commitsDao, sha)
+    private val _commits = PerformantInterlockedCache.dayedSame<String, CommitSyncable>(
+        appScope,
+        {
+            listOfNotNull(it.commitDate?.toLocalDate(zone))
         },
-        { date, cache ->
-            val allCommits = readSyncableDaos.commitsDao.getCommitsForDay(
-                date.atStartAsMillis(zone),
-                date.atEndAsMillis(zone),
+        { first, other -> first.commitSha == other.commitSha },
+        { key  ->
+            CommitSyncable.fromDB(readSyncableDaos.commitsDao, key)
+        },
+        {from, to ->
+            readSyncableDaos.commitsDao.getCommitsForDay(
+                from.atStartAsMillis(zone),
+                to.atEndAsMillis(zone),
             ).map { entity ->
-                CommitSyncable.from(entity)
+                entity.commitSha to CommitSyncable.from(entity)
             }
-            cache.overwriteAll(allCommits.map { it.commitSha to it })
         }
-    ) { cache, _, old, new ->
-        // We do not expect a Github sha to double, else they would have
+    ) { key, new ->
+        // We do not expect a GitHub sha to double, else they would have
         // a big problem and the app would just need to be restarted
-        if (!_repos.hasKey(new.toRepoKey())) { // We got a commit for a brand new repo
+        if (!_repos.hasCached(new.toRepoKey())) { // We got a commit for a brand-new repo
             _repos.overwrite(new.toRepoKey(), new) // Make this commit represent the repo
         } else {
-            val old = _repos.get(new.toRepoKey())
-            if((old.data.commitDate ?: 0L) < (new.commitDate ?: 0L))
+            val old = _repos.getCached(new.toRepoKey()) ?: return@dayedSame
+            if((old.commitDate ?: 0L) < (new.commitDate ?: 0L))
                 _repos.overwrite(new.toRepoKey(), new)
                 // We got a new commit which is more recent than the last one. Replace!
         }
-        cache.updateDayedCacheFromTo(
-            old?.commitDate?.toLocalDate(zone),
-            new.commitDate?.toLocalDate(zone),
-            new,
-        ) {
-            it.commitSha == new.commitSha
-        }
     }
-    fun getCommitsForDay(date: LocalDate) = _commits.getDayFlowFor(appScope, date)
+    fun getCommitsForDay(date: LocalDate) = _commits.getInterlockedFlowFor(date)
 
-    fun getAllCommitsFor(repoName: String) = _commits.cache.allValuesFlow.map { commit -> commit.filter { it.data.repoName == repoName }.map { it.data } }
-    suspend fun updateCommit(commitSyncable: CommitSyncable) {
-        _commits.cache.overwrite(commitSyncable.commitSha, commitSyncable)
+    fun getAllCommitsFor(repoName: String) = _commits.allValuesFlow.map { commit -> commit.filter { it.repoName == repoName } }
+    fun updateCommit(commitSyncable: CommitSyncable) {
+        _commits.overwrite(commitSyncable.commitSha, commitSyncable)
     }
-    fun getCommit(sha: String) = _commits.cache.flowByKey(appScope, sha)
+    fun getCommit(sha: String) = _commits.flowFor(sha)
     init {
         appScope.launch {
-            _commits.cache.overwriteAll(
+            _commits.markAllEntriesAsLoaded()
+            _commits.overwriteAll(
                 readSyncableDaos.commitsDao.getAllCommitsEver().map {
                     it.commitSha to CommitSyncable.from(it)
                 }

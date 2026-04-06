@@ -6,6 +6,7 @@ import com.myxoz.life.api.syncables.ProfilePictureSyncable
 import com.myxoz.life.api.syncables.SyncedEvent
 import com.myxoz.life.dbwrapper.events.EventEntity
 import com.myxoz.life.dbwrapper.people.PersonEntity
+import com.myxoz.life.events.ProposedEvent
 import com.myxoz.life.events.additionals.EventType
 import com.myxoz.life.repositories.AppRepositories
 import com.myxoz.life.screens.options.settings.ME_ID
@@ -13,7 +14,9 @@ import com.myxoz.life.screens.person.GraphEdge
 import com.myxoz.life.screens.person.SocialGraphNode
 import com.myxoz.life.utils.diagrams.PieChart
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.mapLatest
 import kotlinx.coroutines.withContext
 import kotlin.math.cos
 import kotlin.math.sin
@@ -21,16 +24,22 @@ import kotlin.math.sin
 class PeopleAggregator(
     private val repos: AppRepositories
 ) {
-    fun getLastInteraction(personId: Long) = repos.calendarRepo.interactedWithPerson(personId).map {
+    @OptIn(ExperimentalCoroutinesApi::class)
+    fun getLastInteraction(personId: Long) = repos.calendarRepo.interactedWithPerson(personId).mapLatest {
         SyncedEvent.from(
-            repos.readSyncableDaos.eventDetailsDao,
-            repos.readSyncableDaos.peopleDao.getLastInteractionByPerson(personId, System.currentTimeMillis()) ?: return@map null
+            ProposedEvent.PreparedEventContent.prepareContentFor(
+                repos.readSyncableDaos.peopleDao.getLastInteractionByPerson(personId, System.currentTimeMillis()) ?: return@mapLatest null,
+                repos.readSyncableDaos.eventDetailsDao
+            ) ?: return@mapLatest null
         )
     }
-    fun getNextInteraction(personId: Long) = repos.calendarRepo.interactedWithPerson(personId).map {
+    @OptIn(ExperimentalCoroutinesApi::class)
+    fun getNextInteraction(personId: Long) = repos.calendarRepo.interactedWithPerson(personId).mapLatest {
         SyncedEvent.from(
-            repos.readSyncableDaos.eventDetailsDao,
-            repos.readSyncableDaos.peopleDao.getNextInteractionByPerson(personId, System.currentTimeMillis()) ?: return@map null
+            ProposedEvent.PreparedEventContent.prepareContentFor(
+                repos.readSyncableDaos.peopleDao.getNextInteractionByPerson(personId, System.currentTimeMillis()) ?: return@mapLatest null,
+                repos.readSyncableDaos.eventDetailsDao
+            ) ?: return@mapLatest null
         )
     }
     private fun mergeIntervals(intervals: List<Pair<Long, Long>>): List<Pair<Long, Long>> {
@@ -175,7 +184,11 @@ class PeopleAggregator(
         }
     fun getProfilePicture(person: Long) = repos.peopleRepo.getProfilePicture(person).map { person ->
         ProfilePictureSyncable.base64ToBitmap(
-            person?.data?.bitmapBase64 ?: return@map null
+            person?.bitmapBase64 ?: return@map null
         )
+    }
+    class NeverEqual{
+        override fun equals(other: Any?) = false
+        override fun hashCode() = System.identityHashCode(this)
     }
 }

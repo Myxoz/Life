@@ -5,7 +5,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.unit.Dp
 import com.myxoz.life.dbwrapper.events.EventEntity
 import com.myxoz.life.dbwrapper.events.LearnEntity
-import com.myxoz.life.dbwrapper.events.ReadEventDetailsDao
 import com.myxoz.life.dbwrapper.events.WriteEventDetailsDao
 import com.myxoz.life.events.additionals.DetailsEvent
 import com.myxoz.life.events.additionals.EventTag
@@ -77,18 +76,14 @@ class LearnEvent(
         fun fromJson(json: JSONObject, start: Long, end: Long, uss: Boolean, usl: Boolean) = LearnEvent(
             start, end, uss, usl, json.getTagsFromJson(), json.getString("title"), json.getStringOrNull("details")
         )
-        suspend fun from(db: ReadEventDetailsDao, event: EventEntity): LearnEvent? {
-            val learnEntity = db.getLearn(event.id) ?: return null
-            return LearnEvent(
-                event.start,
-                event.end,
-                event.uss,
-                event.usl,
-                db.getTagsByEventId(event.id)
-                    .mapNotNull { EventTag.getTagById(it) },
-                learnEntity.title,
-                learnEntity.details
-            )
-        }
+        fun from(event: EventEntity, pec: LearnEntity, tags: List<EventTag>?) = LearnEvent(
+            event.start,
+            event.end,
+            event.uss,
+            event.usl,
+            tags ?: listOf(),
+            pec.title,
+            pec.details
+        )
     }
 }

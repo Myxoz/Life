@@ -9,6 +9,7 @@ import com.myxoz.life.dbwrapper.banking.ReadBankingDao
 import com.myxoz.life.repositories.AppRepositories
 import com.myxoz.life.repositories.BankingDisplayEntityKey
 import com.myxoz.life.repositories.BankingRepo
+import com.myxoz.life.repositories.utils.Cached
 import com.myxoz.life.repositories.utils.StateFlowCache
 import com.myxoz.life.repositories.utils.subscribeToColdFlow
 import com.myxoz.life.utils.syncToPrefs
@@ -16,7 +17,6 @@ import com.myxoz.life.utils.toLocalDate
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.flatMapLatest
-import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import java.time.LocalDate
 import java.time.ZoneId
@@ -36,20 +36,20 @@ class TransactionViewModel(private val repos: AppRepositories): ViewModel() {
 
     val isEditingSplit = MutableStateFlow(false)
     val lazyListState = LazyListState()
-    val orderedAllTransactionFlow = repos.bankingRepo.sortedAllFlow.subscribeToColdFlow(viewModelScope, mapOf())
+    val orderedAllTransactionFlow = repos.bankingRepo.sortedAllFlow.subscribeToColdFlow(viewModelScope, listOf())
 
     val lastFetchedDay = MutableStateFlow<LocalDate>(LocalDate.now().plusDays(1))
 
     fun onLastVisibleIndexChanged(lastVisibleIndex: Int) {
         val zone = ZoneId.systemDefault()
-        val flat = orderedAllTransactionFlow.value.flatMap { it.value.map { it.timestamp.toLocalDate(zone) } + listOf(it.key) }
+        val flat = orderedAllTransactionFlow.value.flatMap { it.second.map { it.timestamp.toLocalDate(zone) } + listOf(it.first) }
         val currentMostRecentDay = flat.firstOrNull() ?: LocalDate.now()
         var difference = flat.size - lastVisibleIndex
         viewModelScope.launch {
             while (difference < 20 || currentMostRecentDay < lastFetchedDay.value) { // At least 20 transaction
-                val next = lastFetchedDay.value.minusDays(1)
+                val next = lastFetchedDay.value.minusDays(20)
                 if (next < repos.bankingRepo.earliestTransaction.value) return@launch
-                val forDay = repos.bankingRepo.getCachedOrCache(next)
+                val forDay = repos.bankingRepo.prepareBeween(next, lastFetchedDay.value)
                 difference += forDay
                 lastFetchedDay.value = next
             }
@@ -66,8 +66,8 @@ class TransactionViewModel(private val repos: AppRepositories): ViewModel() {
         repos.peopleRepo.getPeopleWithIbanLike(it).subscribeToColdFlow(viewModelScope, listOf())
     }
     fun getPeopleWithIbanLike(iban: String) = peopleWithIbanLikeCached.get(iban)
-    private val editingSplitCache = StateFlowCache<BankingDisplayEntityKey, TransactionSplitSyncable?>{
-        repos.bankingRepo.getSplitFlow(it).map { it?.data }.subscribeToColdFlow(viewModelScope, null)
+    private val editingSplitCache = StateFlowCache<BankingDisplayEntityKey, Cached<TransactionSplitSyncable>?>{
+        repos.bankingRepo.getSplitFlow(it).subscribeToColdFlow(viewModelScope, null)
     }
     val editingSplit = MutableStateFlow(TransactionSplitSyncable(-1L, null, null, listOf()))
     fun getSplit(transaction: BankingRepo.BankingDisplayEntity) = editingSplitCache.get(transaction.key)
@@ -77,12 +77,12 @@ class TransactionViewModel(private val repos: AppRepositories): ViewModel() {
     }
 
     private val _peopleCache = StateFlowCache<Long, PersonSyncable?>({
-        repos.peopleRepo.getPerson(it).map { it?.data }.subscribeToColdFlow(viewModelScope, null)
+        repos.peopleRepo.getPerson(it).subscribeToColdFlow(viewModelScope, null)
     })
     fun getPerson(person: Long) = _peopleCache.get(person)
 
     private val _transactionFlowCache = StateFlowCache<BankingDisplayEntityKey, BankingRepo.BankingDisplayEntity?>{
-        repos.bankingRepo.getTransaction(it).map { it?.data }.subscribeToColdFlow(viewModelScope, null)
+        repos.bankingRepo.getTransaction(it).subscribeToColdFlow(viewModelScope, null)
     }
     fun getTransaction(key: BankingDisplayEntityKey) = _transactionFlowCache.get(key)
 

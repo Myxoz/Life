@@ -24,21 +24,23 @@ import com.myxoz.life.api.syncables.FullDaySyncable
 import com.myxoz.life.api.syncables.PersonSyncable
 import com.myxoz.life.events.ProposedEvent
 import com.myxoz.life.repositories.AppRepositories
+import com.myxoz.life.repositories.utils.Cached
 import com.myxoz.life.repositories.utils.StateFlowCache
 import com.myxoz.life.repositories.utils.subscribeToColdFlow
 import com.myxoz.life.screens.feed.dayoverview.getMonthByCalendarMonth
 import com.myxoz.life.screens.feed.instantevents.InstantEvent
 import com.myxoz.life.screens.feed.main.PrerenderedEvent
 import com.myxoz.life.screens.feed.search.SearchField
+import com.myxoz.life.utils.daysUntil
 import com.myxoz.life.utils.syncToPrefs
 import com.myxoz.life.utils.toLocalDate
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.flatMapConcat
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import java.time.LocalDate
 import java.time.ZoneId
@@ -50,7 +52,7 @@ class CalendarViewModel(
     val isSelectDayVisible = MutableStateFlow(false)
     val search = SearchField()
     @OptIn(ExperimentalCoroutinesApi::class)
-    val yesterdaySummaryAdded = repos.calendarRepo.todayFlow.flatMapLatest {
+    val yesterdaySummaryAdded = repos.calendarRepo.todayFlow.flatMapConcat {
         getDaySummary(it.minusDays(1))
     }
     val todayFlow = repos.calendarRepo.todayFlow.subscribeToColdFlow(viewModelScope, LocalDate.now())
@@ -64,7 +66,10 @@ class CalendarViewModel(
         exponentialDecay(3f),
         spring(stiffness = Spring.StiffnessMediumLow)
     )
-    val lastInsertedSteps = repos.stepRepo.lastInsertedSteps
+    private val stepFlowCache = StateFlowCache<LocalDate, Cached<Int>?>{
+        repos.stepRepo.getStepsFor(it).subscribeToColdFlow(viewModelScope, null)
+    }
+    fun getStepsFor(it: LocalDate) = stepFlowCache.get(it)
     val lastAPIResponse = MutableStateFlow<API.SyncingResponse?>(null)
     val dayAmount = MutableStateFlow(repos.prefs.getInt("displayed_days", 2)).apply {
         syncToPrefs(viewModelScope, repos.prefs, "displayed_days", Int::class)
@@ -79,13 +84,12 @@ class CalendarViewModel(
     suspend fun resync() = repos.api.resync().also { lastAPIResponse.value = it }
     init {
         viewModelScope.launch {
-            viewModelScope.launch {
-                snapshotFlow { lazyListState.firstVisibleItemIndex }.collect {
-                    val day = days.value.getOrNull(it) ?: return@collect
-                    repos.prefs.edit { putLong("visible_date", day.toEpochDay()) }
-                }
+            snapshotFlow { lazyListState.firstVisibleItemIndex }.collect {
+                val day = days.value.getOrNull(it) ?: return@collect
+                repos.prefs.edit { putLong("visible_date", day.toEpochDay()) }
             }
-
+        }
+        viewModelScope.launch {
             // Init and scroll logic
             val date = LocalDate.ofEpochDay(
                 repos.prefs.getLong("visible_date", LocalDate.now().toEpochDay())
@@ -99,25 +103,49 @@ class CalendarViewModel(
                     onDayScrolled(index)
                 }
         }
-    }
-
-    private fun onDayScrolled(index: Int) {
-        val current = days.value[index]
-        fun insertDay(newDay: LocalDate, front: Boolean){
-            if(!days.value.contains(newDay)) {
-                if(front) {
-                    days.value = listOf(newDay) + days.value
-                } else {
-                    days.value += newDay
-                }
-                preloadDay(newDay)
+        viewModelScope.launch {
+            repos.calendarRepo.todayFlow.collect {
+                repos.stepRepo.insertYesterdayIfNeeded(it)
             }
         }
-        repeat(dayAmount.value * 3){
-            insertDay(current.minusDays(it.toLong()+1), true)
+    }
+
+    private suspend fun onDayScrolled(index: Int) {
+        val current = days.value[index]
+        val startOfRange = current.minusDays(dayAmount.value * 3L)
+        val endOfRange = current.plusDays(dayAmount.value * 3L)
+        val between = startOfRange.daysUntil(endOfRange)
+
+        days.update { days ->
+            (days + between).distinct().sorted()
         }
-        repeat(dayAmount.value * 3){
-            insertDay(current.plusDays(it.toLong()+1), false)
+
+        val snap = days.value
+        var earliestMissing: LocalDate? = null
+        var lastWasMissing = false
+        suspend fun prefetch(from: LocalDate, to: LocalDate){
+            repos.calendarRepo.prefetchDays(from, to)
+            repos.bankingRepo.prepareBeween(from, to)
+            repos.daySummaryRepo.prefetchDay(from, to)
+        }
+
+        for (day in between) {
+            if (day !in snap) {
+                if (!lastWasMissing) {
+                    earliestMissing = day
+                }
+                lastWasMissing = true
+            } else {
+                if (lastWasMissing && earliestMissing != null) {
+                    prefetch(earliestMissing, day.minusDays(1))
+                    earliestMissing = null
+                }
+                lastWasMissing = false
+            }
+        }
+
+        if (lastWasMissing && earliestMissing != null) {
+            repos.calendarRepo.prefetchDays(earliestMissing, endOfRange)
         }
         currentMonth.value = getMonthByCalendarMonth(current.monthValue-1)
         currentYear.value = current.year
@@ -128,16 +156,16 @@ class CalendarViewModel(
         days.value = listOf(selectedDay)
     }
 
-    private val daySummaryFlowCache = StateFlowCache<LocalDate, FullDaySyncable?> {
-        repos.daySummaryRepo.getDaySummary(it).map { it?.data }.subscribeToColdFlow(viewModelScope, null)
+    private val daySummaryFlowCache = StateFlowCache<LocalDate, Cached<FullDaySyncable>?> {
+        repos.daySummaryRepo.getDaySummary(it).subscribeToColdFlow(viewModelScope, null)
     }
     fun getDaySummary(date: LocalDate) = daySummaryFlowCache.get(date)
     private val birthDayAtCached = StateFlowCache<LocalDate, List<PersonSyncable>>{
         repos.peopleRepo.getPeopleWithBirthdayAt(it).map { it?:listOf() }.subscribeToColdFlow(viewModelScope, listOf())
     }
     fun getPeopleWithBirthdayAt(date: LocalDate) = birthDayAtCached.get(date)
-    private val getProposedEventsAtCache = StateFlowCache<LocalDate, List<ProposedEvent>>{
-        repos.calendarRepo.getProposedEventsAt(it).map { it?.data ?: listOf() }.subscribeToColdFlow(viewModelScope, listOf())
+    private val getProposedEventsAtCache = StateFlowCache<LocalDate, List<ProposedEvent>?>{
+        repos.calendarRepo.getProposedEventsAt(it).subscribeToColdFlow(viewModelScope, listOf())
     }
     fun getProposedEventsAt(date: LocalDate) = getProposedEventsAtCache.get(date)
     fun saveProposedEvent(event: ProposedEvent) = repos.calendarRepo.saveProposedNotYetSyncedEvent(event)
@@ -145,18 +173,8 @@ class CalendarViewModel(
     suspend fun testSign() = repos.api.testSign()
     fun getBase64Public() = repos.api.getBase64Public()
     fun requireAllPeople() = repos.peopleRepo.requireAllPeople()
-    val prerenderedEventCache = StateFlowCache<LocalDate, Map<Long, PrerenderedEvent>>{ date ->
+    private val prerenderedEventCache = StateFlowCache<LocalDate, Map<Long, PrerenderedEvent>>{ date ->
         repos.aggregators.calendarAggregator.getPrerenderedEvents(date).subscribeToColdFlow(viewModelScope, mapOf())
-    }
-    fun preloadDay(date: LocalDate){
-        viewModelScope.launch {
-            val flow = prerenderedEventCache.get(date)
-            if (flow.value.isEmpty()) {
-                flow.first() // We collect the first value to warm up the flow and allow instant
-                // collecttion as soon as we scroll to it, precaching
-            }
-            repos.daySummaryRepo.prefetchDay(date)
-        }
     }
     fun getSegmentedEvents(date: LocalDate) = prerenderedEventCache.get(date)
     val instantEventsForDayCache = StateFlowCache<LocalDate, List<InstantEvent.InstantEventGroup>>{ date ->

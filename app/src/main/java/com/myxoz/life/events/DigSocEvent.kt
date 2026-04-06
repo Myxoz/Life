@@ -12,7 +12,6 @@ import com.myxoz.life.android.autodetect.AutoDetectCall
 import com.myxoz.life.dbwrapper.events.DigSocEntity
 import com.myxoz.life.dbwrapper.events.DigSocMappingEntity
 import com.myxoz.life.dbwrapper.events.EventEntity
-import com.myxoz.life.dbwrapper.events.ReadEventDetailsDao
 import com.myxoz.life.dbwrapper.events.WriteEventDetailsDao
 import com.myxoz.life.events.additionals.DigSocPlatform
 import com.myxoz.life.events.additionals.EventType
@@ -103,18 +102,14 @@ class DigSocEvent(
                 json.getString("title"),
                 getPeopleFromJson(json)
         )
-        suspend fun from(db: ReadEventDetailsDao, event: EventEntity): DigSocEvent? {
-            val socialEntity = db.getDigSoc(event.id) ?: return null
-            return DigSocEvent(
-                event.start,
-                event.end,
-                event.uss,
-                event.usl,
-                db.getDigSocMappingByEventId(event.id)
-                    .mapNotNull { TimedTagLikeContainer(DigSocPlatform.getById(it.app)?:return@mapNotNull null, it.durationMs) },
-                socialEntity.title,
-                db.getPeopleMappingsByEventId(event.id).map { it.personId }
-            )
-        }
+        fun from(event: EventEntity, pec: DigSocEntity, digSoc: List<DigSocMappingEntity>?, people: List<Long>?) = DigSocEvent(
+            event.start,
+            event.end,
+            event.uss,
+            event.usl,
+            digSoc?.mapNotNull { TimedTagLikeContainer(DigSocPlatform.getById(it.app)?:return@mapNotNull null, it.durationMs) } ?: listOf(),
+            pec.title,
+            people ?: listOf()
+        )
     }
 }

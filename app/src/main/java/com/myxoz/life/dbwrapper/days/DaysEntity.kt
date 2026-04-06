@@ -7,7 +7,7 @@ import androidx.room.PrimaryKey
 @Entity(tableName = "days")
 data class DaysEntity(
     @PrimaryKey(autoGenerate = false) // we’ll provide our own id
-    @ColumnInfo(name = "date") val id: Int,
+    @ColumnInfo(name = "date") val id: Long,
 
     @ColumnInfo(name = "screen_time_ms") val screenTimeMs: Int,
 

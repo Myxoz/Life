@@ -547,6 +547,7 @@ fun BankCard(
         }
     }
 }
+
 @Composable
 private fun PaymentSplit(transactionViewModel: TransactionViewModel, transaction: BankingRepo.BankingDisplayEntity) {
     Column(
@@ -557,13 +558,13 @@ private fun PaymentSplit(transactionViewModel: TransactionViewModel, transaction
         var isEditing by transactionViewModel.isEditingSplit.collectAsMutableState()
         var editingSplits by transactionViewModel.editingSplit.collectAsMutableState()
         val splits by transactionViewModel.getSplit(transaction).collectAsState()
-        val displaySplit = if(isEditing) editingSplits else splits
+        val displaySplit = if(isEditing) editingSplits else splits?.value
         val coroutineScope = rememberCoroutineScope()
         val screens = LocalScreens.current
         fun startEditingIfNotStarted(init: List<TransactionSplitSyncable.Companion.Part> = listOf()){
             if(isEditing) return
             isEditing = true
-            editingSplits = splits ?: TransactionSplitSyncable(
+            editingSplits = splits?.value ?: TransactionSplitSyncable(
                 -1L,
                 transaction.key.first,
                 transaction.key.second,

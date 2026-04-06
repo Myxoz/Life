@@ -201,7 +201,6 @@ fun DebugScreen(
                 }
             }
             val allSharedPreferences = remember { File(context.dataDir, "shared_prefs").list() }
-            println(allSharedPreferences)
             allSharedPreferences?.forEach {
                 val pref = remember { context.getSharedPreferences(it.removeSuffix(".xml"), MODE_PRIVATE) }
                 Spacer(Modifier.height(10.dp))
