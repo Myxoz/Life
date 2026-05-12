@@ -6,7 +6,6 @@ import com.myxoz.life.api.syncables.TodoSyncable
 import com.myxoz.life.dbwrapper.WaitingSyncDao
 import com.myxoz.life.dbwrapper.todos.ReadTodosDao
 import com.myxoz.life.repositories.utils.Cached
-import com.myxoz.life.repositories.utils.Cached.Companion.cached
 import com.myxoz.life.repositories.utils.PerformantInterlockedCache
 import com.myxoz.life.repositories.utils.PerformantInterlockedCache.Companion.remove
 import com.myxoz.life.utils.atEndAsMillis
@@ -23,12 +22,13 @@ class TodoRepo(
     private val waitingSyncDao: WaitingSyncDao
 ) {
     val zone: ZoneId = ZoneId.systemDefault()
-    private val _cache = PerformantInterlockedCache.dayedCached<Long, TodoSyncable>(
+    private val _cache = PerformantInterlockedCache.dayedCached(
         appScope,
+        { first, other -> first.value?.id == other.id },
         {
             listOfNotNull(it.value?.timestamp?.toLocalDate(zone))
         },
-        { first, other -> first.value?.id == other.id },
+        { it.id },
         { id ->
             Cached.Value(
                 TodoSyncable.fromEntity(
@@ -40,7 +40,7 @@ class TodoRepo(
             readTodosDao.getTodosBetween(
                 start.atStartAsMillis(zone),
                 end.atEndAsMillis(zone),
-            ).map { it.id to TodoSyncable.fromEntity(it).cached }
+            ).map { TodoSyncable.fromEntity(it) }
         },
     )
     fun getTodosForDay(date: LocalDate) = _cache.getInterlockedFlowFor(date)

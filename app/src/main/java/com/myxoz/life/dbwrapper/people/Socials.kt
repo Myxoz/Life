@@ -1,7 +1,6 @@
 package com.myxoz.life.dbwrapper.people
 
 import androidx.room.ColumnInfo
-import androidx.room.Dao
 import androidx.room.Entity
 
 @Entity(tableName = "socials", primaryKeys = ["person_id", "platform", "handle"])

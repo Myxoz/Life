@@ -23,7 +23,7 @@ enum class EventType(val id: Int, val colors: EventColors, val selectedColor: Co
     fun isDetailsEvent() = this in arrayOf(Hobby, Learn, Work)
     fun isPeopleEvent() = this in arrayOf(DigSoc, Social)
     companion object {
-        val order = arrayOf(Sleep, Spont, Hobby, Learn, Travel, Social, DigSoc, Work, Timewaste);
+        val order = arrayOf(Sleep, Spont, Hobby, Learn, Travel, Social, DigSoc, Work, Timewaste)
         fun getById(id: Int): EventType? = EventType.entries.firstOrNull { it.id == id }.apply { if(this==null) Log.w("Calendar","Couldnt find calendar with id $id in EventType.getById") }
     }
 }

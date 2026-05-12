@@ -1,7 +1,7 @@
 package com.myxoz.life.repositories.utils
 
 import com.myxoz.life.repositories.utils.Cached.Companion.cached
-import com.myxoz.life.utils.daysUntil
+import com.myxoz.life.utils.datesThrough
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Deferred
@@ -9,54 +9,43 @@ import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.mapNotNull
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import java.time.LocalDate
 import java.util.concurrent.ConcurrentHashMap
 
-class PerformantCache<K: Any, V: Any>(
-    val fetchScope: CoroutineScope,
-    val fetchKey: suspend (key: K) -> V
+open class PerformantCache<K: Any, V: Any>(
+    private val fetchScope: CoroutineScope,
+    private val fetchKey: suspend (key: K) -> V
 ) {
-    private val currentlyFetching = ConcurrentHashMap<K, Deferred<V>>()
-    private val internalValueMap = ConcurrentHashMap<K, V>()
+    protected val currentlyFetching = ConcurrentHashMap<K, Deferred<V>>()
+    protected val internalValueMap = ConcurrentHashMap<K, V>()
     private val flow = MutableStateFlow<Map<K, V>>(emptyMap())
     val content: Flow<Map<K, V>> = flow
     private fun needsFetching(key: K) = !hasCached(key) && !currentlyFetching.containsKey(key)
-    private suspend fun fetchForKeyAndCommit(key: K): V {
-        val fetched = getDeferred(key).await()
-        internalValueMap[key] = fetched
-        cleanUpDefered(key)
-        commitMap()
-        return fetched
-    }
-    @Suppress("DeferredResultUnused")
-    private fun cleanUpDefered(key: K) {
-        currentlyFetching.remove(key)
-    }
     private suspend fun getCachedOrFetch(key: K): V{
         val cached = internalValueMap[key]
         if(cached != null) return cached
-        val cachedDeferred = currentlyFetching[key]
-        if(cachedDeferred != null) return cachedDeferred.await()
-        return getDeferred(key).await()
+        return currentlyFetching.computeIfAbsent(key) {
+            getDeferred(it)
+        }.await()
     }
     private suspend fun getCachedOrFetchAndCommit(key: K): V{
         val writeToMap = needsFetching(key)
         val new = getCachedOrFetch(key)
-        if(writeToMap) {
-            internalValueMap[key] = new
-            cleanUpDefered(key)
-            commitMap()
-        }
+        if(writeToMap) commitMap()
         return new
     }
     private fun getDeferred(key: K): Deferred<V> {
         val completable = CompletableDeferred<V>()
-        currentlyFetching[key] = completable
         fetchScope.launch {
             val fetched = fetchKey(key)
+            internalValueMap[key] = fetched
             completable.complete(fetched)
+
+            @Suppress("DeferredResultUnused")
+            currentlyFetching.remove(key)
         }
         return completable
     }
@@ -79,7 +68,6 @@ class PerformantCache<K: Any, V: Any>(
                 .awaitAll()
                 .zip(remainingKeys)
                 .forEach {
-                    cleanUpDefered(it.second)
                     valueMap[it.second] = it.first
                 }
         }
@@ -94,14 +82,13 @@ class PerformantCache<K: Any, V: Any>(
                     .map { getDeferred(it) }
                     .awaitAll()
             )
-        internalValueMap += new
-        needFetching.forEach { key -> cleanUpDefered(key) }
         commitMap()
         return new
     }
     fun assureIsFetchingOrCached(key: K){
         if(needsFetching(key)) fetchScope.launch {
-            fetchForKeyAndCommit(key)
+            getDeferred(key).await()
+            commitMap()
         }
     }
 
@@ -111,13 +98,12 @@ class PerformantCache<K: Any, V: Any>(
         }
     }
 
-    private fun commitMap(){
+    protected fun commitMap(){
         flow.update { internalValueMap.toMap() }
     }
     suspend fun update(key: K, runWith: (V)->V) {
         val old = getCachedOrFetch(key)
         internalValueMap[key] = runWith(old)
-        cleanUpDefered(key)
         commitMap()
     }
     suspend fun updateAll(keys: List<K>, runWith: (V)->V) {
@@ -126,7 +112,7 @@ class PerformantCache<K: Any, V: Any>(
         commitMap()
     }
     fun overwrite(key: K, value: V) {
-        internalValueMap += key to value
+        internalValueMap[key] = value
         commitMap()
     }
     fun hasCached(key: K) = internalValueMap.containsKey(key)
@@ -143,7 +129,6 @@ class PerformantCache<K: Any, V: Any>(
         }
     }
     val allValuesFlow = content.map { it.values.toList() }
-
     fun flowsByKey(keys: List<K>): Flow<List<V>> {
         assureIsFetchingOrCachedAll(keys)
         return content.map { map ->
@@ -158,47 +143,117 @@ class PerformantCache<K: Any, V: Any>(
     }
 }
 
-class PerformantInterlockedCache<K: Any, I: Any, V: Any, L: Any> private constructor(
+class RangedPerformantCache<K: Any, V: Any>(
     private val fetchScope: CoroutineScope,
-    private val toInterlockedRange: (element: V) -> List<I>,
+    private val fetchKey: suspend (key: K) -> V,
+    private val rangeToKeys: (from: K, to: K) -> List<K>,
+    private val nativeFetchRange: suspend (from: K, to: K) -> List<V>,
+    private val keyBy: (V) -> K
+): PerformantCache<K, V>(fetchScope, fetchKey){
+    suspend fun fetchRange(from: K, to: K): List<V> {
+        val between = rangeToKeys(from, to).toSet()
+        // All days already cached
+        if(between.all { internalValueMap.containsKey(it) }) return between
+            .mapNotNull { getCached(it) }
+        val defered = between.associateWith { CompletableDeferred<V>() }
+        currentlyFetching += defered
+
+        val fetchedRange = nativeFetchRange(from, to)
+        val ranged = fetchedRange.associateBy { keyBy(it) }
+        ranged.forEach { (interlocked, elements) ->
+            defered[interlocked]?.complete(elements)
+        }
+
+        internalValueMap += ranged
+        commitMap()
+        defered.keys.forEach {
+            @Suppress("DeferredResultUnused")
+            currentlyFetching.remove(it)
+        }
+        return fetchedRange
+    }
+    fun flowByRange(from: K, to: K): Flow<List<V>> {
+        fetchScope.launch {
+            fetchRange(from, to)
+        }
+        val between = rangeToKeys(from, to).toSet()
+        return content.mapNotNull { map ->
+            buildList {
+                val set = mutableSetOf<K>()
+                for (key in between) {
+                    // Return if caches are not ready yet
+                    val item = map[key] ?: return@mapNotNull null
+                    if(set.add(key)) {
+                        add(item)
+                    }
+                }
+            }
+        }
+    }
+}
+
+
+// TODO Consider replacing the isEquals with a keyBy == keyBy call
+open class PerformantInterlockedCache<K: Any, I: Any, V: Any, L: Any>(
+    private val fetchScope: CoroutineScope,
     private val isEqual: (first: V, other: L) -> Boolean,
-    private val fetchSingle: suspend (K) -> V,
-    private val fetchRangeNative: suspend (from: I, to: I) -> List<Pair<K, V>>,
+    private val toInterlockedRange: (element: V) -> List<I>,
+    private val keyBy: (item: L) -> K,
+    private val fetchSingleContent: suspend (K) -> V,
+    private val fetchSingle: suspend (I) -> List<L>,
     private val converter: (L) -> V,
     private val toListItem: (V) -> L?,
     private val update: ((key: K, new: V) -> Unit)? = null,
 ) {
-    private val itemCache = PerformantCache<K, V>(fetchScope){ fetchSingle(it) }
-    private val interlockedContent = ConcurrentHashMap<I, List<L>>()
+    protected val itemCache = PerformantCache(fetchScope, fetchSingleContent)
+    protected val interlockedContent = ConcurrentHashMap<I, List<L>>()
     private val flow = MutableStateFlow<Map<I, List<L>>>(emptyMap())
-    private val isFetching = ConcurrentHashMap.newKeySet<I>()
-    private fun commitMap(){
+    protected val currentlyFetching = ConcurrentHashMap<I, Deferred<List<L>>>()
+    protected fun commitMap(){
         flow.update { interlockedContent.toMap() }
     }
-    private var allLoaded = false
+    protected var allLoaded = false
     /** Calling this function will mark all entries as loaded.
-     *  There will be no more calls to [fetchRange].
+     *  There will be no more calls to [fetchSingle].
      *  This is the same as saying: The whole database-table is uploaded to the repo. No more requests need to be made.
      *  This is an advanced call only to be used if all entries of a database where fetched.
      **/
     fun markAllEntriesAsLoaded(){
         allLoaded = true
     }
-    suspend fun fetchRange(from: I, to: I): List<L> {
-        val fetched = fetchRangeNative(from, to)
-        itemCache.overwriteAll(fetched)
-        return fetched.mapNotNull { toListItem(it.second) ?: return@mapNotNull null }
-    }
-    suspend fun fetchOrGetInterlocked(interlocked: I): List<L> {
-        if(!interlockedContent.containsKey(interlocked)) {
-            if (allLoaded) {
-                interlockedContent[interlocked] = listOf()
-            } else {
-                interlockedContent[interlocked] = fetchRange(interlocked, interlocked)
+    protected fun getDeferred(key: I): Deferred<List<L>> {
+        return currentlyFetching.computeIfAbsent(key) {
+            val completable = CompletableDeferred<List<L>>()
+            fetchScope.launch {
+                val fetched = fetchSingle(key)
+                interlockedContent[key] = fetched
+                itemCache.overwriteAll(
+                    fetched.map { keyBy(it) to converter(it) }
+                )
+                completable.complete(fetched)
+
+                @Suppress("DeferredResultUnused")
+                currentlyFetching.remove(key)
             }
-            commitMap()
+            completable
         }
-        return interlockedContent.getValue(interlocked)
+    }
+
+    suspend fun fetchOrGetInterlocked(interlocked: I): List<L> {
+        val cached = interlockedContent[interlocked]
+        if(cached != null) return cached
+        if (allLoaded) {
+            interlockedContent[interlocked] = listOf()
+            commitMap()
+            return listOf()
+        } else {
+            val alreadyFetching = currentlyFetching.containsKey(interlocked)
+            val result = getDeferred(interlocked).await()
+            if(!alreadyFetching) {
+                commitMap()
+            }
+            return result
+        }
     }
     private fun requireInterlocked(interlocked: I) {
         if(!interlockedContent.containsKey(interlocked)) {
@@ -206,9 +261,10 @@ class PerformantInterlockedCache<K: Any, I: Any, V: Any, L: Any> private constru
                 interlockedContent[interlocked] = listOf()
                 commitMap()
             } else {
-                if (!isFetching.add(interlocked)) return
+                // Already a fetching process going on
+                if(currentlyFetching.containsKey(interlocked)) return
                 fetchScope.launch {
-                    interlockedContent[interlocked] = fetchRange(interlocked, interlocked)
+                    getDeferred(interlocked).await()
                     commitMap()
                 }
             }
@@ -218,25 +274,28 @@ class PerformantInterlockedCache<K: Any, I: Any, V: Any, L: Any> private constru
         requireInterlocked(interlocked)
         return flow.map { it[interlocked] }
     }
-    private fun getCached(interlocked: I) = interlockedContent[interlocked]
+    protected fun getCached(interlocked: I) = interlockedContent[interlocked]
     private fun overwriteSingleNoCommit(key: K, value: V) {
         val oldItem = itemCache.getCached(key)
         val oldInterlocked = if(oldItem != null) toInterlockedRange(oldItem).toSet() else emptySet()
         val newInterlocked = toInterlockedRange(value).toSet()
         val asListItem = toListItem(value)
-        // ("$key ($value): $oldItem -> $value ($asListItem). ${oldInterlocked - newInterlocked} -> ${newInterlocked - oldInterlocked} (FROM $oldInterlocked; TO $newInterlocked)")
+        // println("$key ($value): $oldItem -> $value ($asListItem). ${oldInterlocked - newInterlocked} -> ${newInterlocked - oldInterlocked} (FROM $oldInterlocked; TO $newInterlocked)")
         if(oldInterlocked == newInterlocked) {
             // Just update the item
             for (interlocked in newInterlocked) {
                 val old = getCached(interlocked) ?: continue
                 interlockedContent[interlocked] = old.mapNotNull { if(isEqual(value, it)) asListItem else it }
             }
+            update?.invoke(key, value)
             return
         }
         if(asListItem != null) {
             val addedTo = newInterlocked - oldInterlocked
             for (date in addedTo) {
-                val old = getCached(date) ?: continue
+                // This was a bug: Writing into unloaded parts should be a noop / would poison cache normally
+                // But if allLoaded this is required because the cache will never be populated in another way
+                val old = getCached(date) ?: if(allLoaded) listOf() else continue
                 if(old.any { isEqual(value, it) }) {
                     // Is already added -> Map
                     interlockedContent[date] = old.map { if(isEqual(value, it)) asListItem else it }
@@ -275,28 +334,6 @@ class PerformantInterlockedCache<K: Any, I: Any, V: Any, L: Any> private constru
     fun getCachedContent(key: K) = itemCache.getCached(key)
 
     companion object {
-        suspend fun <K: Any, V: Any, L: Any> PerformantInterlockedCache<K, LocalDate, V, L>.loadDays(from: LocalDate, to: LocalDate): Map<LocalDate, List<L>> {
-            if(allLoaded) return mapOf()
-            val between = from.daysUntil(to)
-
-            // All days already cached
-            if(between.all { interlockedContent.containsKey(it) }) {
-                return between.associateWith {
-                    interlockedContent.getValue(it)
-                }
-            }
-
-            val dayed = mutableMapOf<LocalDate, MutableList<L>>()
-            fetchRange(from, to).forEach { elem ->
-                toInterlockedRange(converter(elem)).forEach { date ->
-                    val old = dayed.getOrPut(date) { mutableListOf() }
-                    old += elem
-                }
-            }
-            interlockedContent += dayed
-            commitMap()
-            return dayed
-        }
         fun <K: Any, I: Any, V: Any> PerformantInterlockedCache<K, I, Cached<V>, V>.overwrite(key: K, value: V) {
             overwrite(key, value.cached)
         }
@@ -305,72 +342,135 @@ class PerformantInterlockedCache<K: Any, I: Any, V: Any, L: Any> private constru
         }
         fun <K: Any, V: Any> dayedSame(
             fetchScope: CoroutineScope,
-            toDateRange: (element: V) -> List<LocalDate>,
             isEqual: (first: V, other: V) -> Boolean,
-            fetchSingle: suspend (K) -> V,
-            fetchDays: suspend (from: LocalDate, to: LocalDate) -> List<Pair<K, V>>,
-            update: ((key: K, new: V) -> Unit)? = null
-        ) = PerformantInterlockedCache(
+            toInterlockedRange: (element: V) -> List<LocalDate>,
+            keyBy: (item: V) -> K,
+            fetchSingleContent: suspend (K) -> V,
+            nativeFetchRange: suspend (from: LocalDate, to: LocalDate) -> List<V>,
+            update: ((key: K, new: V) -> Unit)? = null,
+        ) = RangeInterlockedCache(
             fetchScope,
-            toDateRange,
             isEqual,
-            fetchSingle,
-            fetchDays,
+            toInterlockedRange,
+            keyBy,
+            { from, to -> from.datesThrough(to) },
+            fetchSingleContent,
+            nativeFetchRange,
             { it },
             { it },
             update
         )
         fun <K: Any, V: Any> dayedCached(
             fetchScope: CoroutineScope,
-            toDateRange: (element: Cached<V>) -> List<LocalDate>,
             isEqual: (first: Cached<V>, other: V) -> Boolean,
-            fetchSingle: suspend (K) -> Cached<V>,
-            fetchDays: suspend (from: LocalDate, to: LocalDate) -> List<Pair<K, Cached<V>>>,
+            toInterlockedRange: (element: Cached<V>) -> List<LocalDate>,
+            keyBy: (item: V) -> K,
+            fetchSingleContent: suspend (K) -> Cached<V>,
+            nativeFetchRange: suspend (from: LocalDate, to: LocalDate) -> List<V>,
             update: ((key: K, new: Cached<V>) -> Unit)? = null
-        ) = PerformantInterlockedCache<K, LocalDate, Cached<V>, V>(
+        ) = RangeInterlockedCache<K, LocalDate, Cached<V>, V>(
             fetchScope,
-            toDateRange,
             isEqual,
-            fetchSingle,
-            fetchDays,
+            toInterlockedRange,
+            keyBy,
+            { from, to -> from.datesThrough(to) },
+            fetchSingleContent,
+            nativeFetchRange,
             { it.cached },
             { it.value },
             update
         )
-        fun <K: Any, I: Any, V: Any> same(
+        fun <K: Any, I: Any, V: Any> cachedNonRange(
             fetchScope: CoroutineScope,
-            toInterlockedRange: (element: V) -> List<I>,
-            isEqual: (first: V, other: V) -> Boolean,
-            fetchSingle: suspend (K) -> V,
-            fetchDays: suspend (from: I, to: I) -> List<Pair<K, V>>,
-            update: ((key: K, new: V) -> Unit)? = null
-        ) = PerformantInterlockedCache(
-            fetchScope,
-            toInterlockedRange,
-            isEqual,
-            fetchSingle,
-            fetchDays,
-            { it },
-            { it },
-            update
-        )
-        fun <K: Any, I: Any, V: Any> cached(
-            fetchScope: CoroutineScope,
+            isEqual: (first: Cached<V>, other: V) -> Boolean,
             toInterlockedRange: (element: Cached<V>) -> List<I>,
-            isEqual: (first: Cached<V>, other: V) -> Boolean,
-            fetchSingle: suspend (K) -> Cached<V>,
-            fetchDays: suspend (from: I, to: I) -> List<Pair<K, Cached<V>>>,
+            keyBy: (item: V) -> K,
+            fetchSingleContent: suspend (K) -> Cached<V>,
+            fetchSingle: suspend (key: I) -> List<V>,
             update: ((key: K, new: Cached<V>) -> Unit)? = null
         ) = PerformantInterlockedCache(
             fetchScope,
-            toInterlockedRange,
             isEqual,
+            toInterlockedRange,
+            keyBy,
+            fetchSingleContent,
             fetchSingle,
-            fetchDays,
             { it.cached },
             { it.value },
             update
         )
+    }
+}
+
+class RangeInterlockedCache<K: Any, I: Any, V: Any, L: Any>(
+    private val fetchScope: CoroutineScope,
+    private val isEqual: (first: V, other: L) -> Boolean,
+    private val toInterlockedRange: (element: V) -> List<I>,
+    private val keyBy: (item: L) -> K,
+    private val rangeToKeys: (from: I, to: I) -> List<I>,
+    private val fetchSingleContent: suspend (K) -> V,
+    private val nativeFetchRange: suspend (from: I, to: I) -> List<L>,
+    private val converter: (L) -> V,
+    private val toListItem: (V) -> L?,
+    private val update: ((key: K, new: V) -> Unit)? = null,
+): PerformantInterlockedCache<K, I, V, L>(
+    fetchScope, isEqual, toInterlockedRange, keyBy, fetchSingleContent, {nativeFetchRange(it, it)}, converter, toListItem, update
+) {
+    suspend fun fetchRange(from: I, to: I): List<L> {
+        val between = rangeToKeys(from, to).toSet()
+        // All days marked as loaded / All days already cached
+        if(allLoaded || between.all { interlockedContent.containsKey(it) }) return between
+            .flatMap {
+                getCached(it) ?: listOf()
+            }
+            .distinctBy(keyBy)
+        val defered = between.associateWith { CompletableDeferred<List<L>>() }
+        currentlyFetching += defered
+
+        val fetchedRange = nativeFetchRange(from, to)
+        val ranged = between.associateWith { mutableListOf<L>() }
+        fetchedRange.forEach { elem ->
+            toInterlockedRange(converter(elem)).forEach { interlocked ->
+                ranged[interlocked]?.add(elem)
+            }
+        }
+        itemCache.overwriteAll(
+            fetchedRange.map {
+                elem -> keyBy(elem) to converter(elem)
+            }
+        )
+        ranged.forEach { (interlocked, elements) ->
+            defered[interlocked]?.complete(elements)
+        }
+
+
+        interlockedContent += ranged
+        commitMap()
+        defered.keys.forEach {
+            @Suppress("DeferredResultUnused")
+            currentlyFetching.remove(it)
+
+        }
+        return fetchedRange
+    }
+    fun flowByRange(from: I, to: I): Flow<List<L>> {
+        fetchScope.launch {
+            fetchRange(from, to)
+        }
+        val between = rangeToKeys(from, to).toSet()
+        return everythingFlow.mapNotNull { map ->
+            val set = mutableSetOf<K>()
+            buildList {
+                for (key in between) {
+                    // Return if caches are not ready yet
+                    (map[key] ?: return@mapNotNull null).forEach {
+                        if(set.add(keyBy(it))) {
+                            add(it)
+                        }
+                    }
+                }
+            }
+        }
     }
 }
 

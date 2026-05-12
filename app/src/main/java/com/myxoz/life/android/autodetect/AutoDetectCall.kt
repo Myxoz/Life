@@ -1,11 +1,13 @@
 package com.myxoz.life.android.autodetect
 
 import android.content.Context
+import android.content.SharedPreferences
 import android.provider.CallLog
+import androidx.core.content.edit
 import com.myxoz.life.api.syncables.PersonSyncable
 import com.myxoz.life.dbwrapper.people.ReadPeopleDao
 import com.myxoz.life.events.DigSocEvent
-import com.myxoz.life.events.ProposedEvent
+import com.myxoz.life.events.RawEvent
 import com.myxoz.life.events.additionals.DigSocPlatform
 import com.myxoz.life.events.additionals.TimedTagLikeContainer
 import com.myxoz.life.utils.PhoneNumberParser
@@ -14,14 +16,15 @@ import com.myxoz.life.utils.roundToNearest15Min
 object AutoDetectCall {
     const val SPK = "declined_calls"
     private data class Call(val start: Long, val duration: Long, val number: String)
-    suspend fun getSessions(context: Context, readPeopleDao: ReadPeopleDao): List<ProposedEvent>{
+    suspend fun getSessions(prefs: SharedPreferences, context: Context, readPeopleDao: ReadPeopleDao): List<RawEvent>{
+        val lookAfter = prefs.getLong(SPK+"_after", 0L)
         val resolver = context.contentResolver
         val cursor = resolver.query(
             // Can't throw, permission assured in AutoDetect.kt
             CallLog.Calls.CONTENT_URI,
             null,
-            null,
-            null,
+            if (lookAfter > 0) "${CallLog.Calls.DATE} > ?" else null,
+            if (lookAfter > 0) arrayOf(lookAfter.toString()) else null,
             "${CallLog.Calls.DATE} DESC"
         )
         val allPeople = readPeopleDao.getAllPeople().map { PersonSyncable.from(readPeopleDao, it) }
@@ -39,9 +42,10 @@ object AutoDetectCall {
                 } catch (_: Exception){}
             }
         }
-        return allSessions
+        val callSessions = allSessions
             // Grouping to filter out composed call (7m normal, 1m video, 20m normal, 28m super) -> 28m super
             .groupBy { it.start }
+            .asSequence()
             .map { v ->
                 v.value.maxBy { it.duration }
             }
@@ -78,5 +82,11 @@ object AutoDetectCall {
                     }
                 )
             }
+        allSessions.lastOrNull()?.let {
+            prefs.edit {
+                putLong(SPK + "_after", it.start + 1000)
+            }
+        }
+        return callSessions
     }
 }

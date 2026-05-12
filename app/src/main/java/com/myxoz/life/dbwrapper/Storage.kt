@@ -37,6 +37,9 @@ import com.myxoz.life.dbwrapper.events.TravelEntity
 import com.myxoz.life.dbwrapper.events.VehicleEntity
 import com.myxoz.life.dbwrapper.events.WorkEntity
 import com.myxoz.life.dbwrapper.events.WriteEventDetailsDao
+import com.myxoz.life.dbwrapper.extension.ExtensionEntity
+import com.myxoz.life.dbwrapper.extension.ReadExtensionDao
+import com.myxoz.life.dbwrapper.extension.WriteExtensionDao
 import com.myxoz.life.dbwrapper.locations.LocationEntity
 import com.myxoz.life.dbwrapper.locations.ReadLocationsDao
 import com.myxoz.life.dbwrapper.locations.WriteLocationsDao
@@ -80,10 +83,13 @@ import com.myxoz.life.dbwrapper.todos.WriteTodosDao
         TodoEntity::class,
         TransactionSplitEntity::class,
         TransactionSplitPartEntity::class,
+        ExtensionEntity::class,
     ],
     version = DatabaseMigrator.VERSION,
     exportSchema = true
 ) abstract class AppDatabase : RoomDatabase() {
+    abstract fun readExtensionDao(): ReadExtensionDao
+    abstract fun writeExtensionDao(): WriteExtensionDao
     abstract fun readTodosDao(): ReadTodosDao
     abstract fun writeTodosDao(): WriteTodosDao
     abstract fun readEventsDetailsDao(): ReadEventDetailsDao
@@ -137,8 +143,8 @@ object DatabaseProvider {
  * 6. Create the color scheme for the new EventType in [com.myxoz.life.ui.theme.OldColors.Calendar]
  * 7. Create new [com.myxoz.life.events.additionals.EventType]
  * 8. Create event renderer and EventClass by copying a file from [com.myxoz.life.events]
- * 9. Add to [com.myxoz.life.events.ProposedEvent.from]
- * 10. Add to when in [com.myxoz.life.events.ProposedEvent.fromJSON]
+ * 9. Add to [com.myxoz.life.events.RawEvent.from]
+ * 10. Add to when in [com.myxoz.life.events.RawEvent.fromJSON]
  * 11. Add to [com.myxoz.life.api.API.overwriteByJson] AEFL
  * 12. Add to modify/add screen [com.myxoz.life.screens.feed.fullscreenevent.ModifyEvent] CalendarChip and to the content renderer
  * 13. Add to display screen [com.myxoz.life.screens.feed.fullscreenevent.DisplayEvent]

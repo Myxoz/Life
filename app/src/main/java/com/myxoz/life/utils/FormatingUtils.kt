@@ -19,7 +19,7 @@ fun Long.roundToNearest15Min(): Long {
 }
 fun Long.formatMinutesToVisual() = if(this == 0L) "" else "${if(this >= 60) this / 60 else ""}${if(this >= 60) (this%60).toInt().padStart(2,'0') else this%60}"
 
-fun Int?.plural(s: String) = if(this == 1) "" else s
+inline fun Int?.plural(s: String) = if(this == 1) "" else s
 operator fun Int.plus(other: Boolean) = this + (if(other) 1 else 0)
 operator fun Boolean.plus(other: Boolean) = if(this && other) 2 else if(this || other) 1 else 0
 inline fun <T> T?.def(value: T) = this ?: value
@@ -31,6 +31,7 @@ fun Int.formatMToDistance(): String =
     }
 
 fun Long.formatMsToDuration(ignoreSeconds: Boolean=false): String {
+    if(this == 0L) return if(ignoreSeconds) "0m" else "0s"
     val t = this/1000
     val h = (t/3600)
     val m = (t/60)%60

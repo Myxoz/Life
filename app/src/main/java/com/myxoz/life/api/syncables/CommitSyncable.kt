@@ -8,6 +8,7 @@ import com.myxoz.life.dbwrapper.commits.CommitEntity
 import com.myxoz.life.dbwrapper.commits.ReadCommitsDao
 import com.myxoz.life.utils.getIntOrNull
 import com.myxoz.life.utils.getLongOrNull
+import com.myxoz.life.utils.getSafeLong
 import com.myxoz.life.utils.getStringOrNull
 import com.myxoz.life.utils.jsonObjArray
 import org.json.JSONArray
@@ -98,7 +99,7 @@ class CommitSyncable(
             val filesChanged = json.getIntOrNull("files_changed")
             val filesJson = json.getStringOrNull("files_json")
             val commitUrl = json.getStringOrNull("commit_url")
-            val updated = json.getString("updated").toLong()
+            val updated = json.getSafeLong("updated")
             return CommitSyncable(
                 repoOwner,
                 repoName,

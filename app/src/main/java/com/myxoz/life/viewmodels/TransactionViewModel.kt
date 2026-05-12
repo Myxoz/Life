@@ -16,7 +16,7 @@ import com.myxoz.life.utils.syncToPrefs
 import com.myxoz.life.utils.toLocalDate
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.flatMapConcat
 import kotlinx.coroutines.launch
 import java.time.LocalDate
 import java.time.ZoneId
@@ -88,8 +88,9 @@ class TransactionViewModel(private val repos: AppRepositories): ViewModel() {
 
     val getSelf = repos.peopleRepo.meFlow
     @OptIn(ExperimentalCoroutinesApi::class)
-    val lastTransactions = repos.bankingRepo.lastTransactionDay.flatMapLatest { date ->
-        repos.bankingRepo.getSortedTransactionsAt(date)
+    val lastTransactions = repos.bankingRepo.lastTransactionDay.flatMapConcat { date ->
+        // Surely banks will be able to process payments in a wekk of time
+        repos.bankingRepo.getBankTransactionsBetweenAt(date.minusDays(7), date )
     }.subscribeToColdFlow(viewModelScope, listOf())
     val inspectedTransaction = MutableStateFlow<BankingRepo.BankingDisplayEntity?>(null)
     init {

@@ -1,6 +1,7 @@
 package com.myxoz.life.ui.theme
 
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.compositeOver
 
 object OldColors {
     val GITHUB  = Color(0xFFE2E9E4)
@@ -31,6 +32,12 @@ object OldColors {
     object Transactions {
         val MINUS = Color(0xFFFF8080)
         val PLUS = Color(0xFF80FF80)
+    }
+    object Streaks {
+        val MAIN = Color(0xFFE24A22)
+        val NOT_YET_REACHED = Color(0xFFB36B59)
+        val BURNED = Color(0xFF000000)
+        val ENDED = Color(0xFF48403D)
     }
     object Commits {
         val DELETION = Color(0xFFFF8080)
@@ -155,3 +162,5 @@ interface EventColors {
     val bg: Color
     val secondary: Color
 }
+fun Color.invert() = Color(1-this.red, 1-this.green, 1-this.blue, this.alpha)
+fun Color.makeContrasty(to: Color) = to.invert().copy(alpha = .2f).compositeOver(this)

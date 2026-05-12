@@ -15,7 +15,7 @@ import java.time.ZoneId
 
 class CommitsRepo(
     private val readSyncableDaos: API.ReadSyncableDaos,
-    private val appScope: CoroutineScope
+    appScope: CoroutineScope
 ) {
     private val zone = ZoneId.systemDefault()
     private val _repos = PerformantCache<String, CommitSyncable>(appScope) {
@@ -23,12 +23,13 @@ class CommitsRepo(
     }
     val getAllRepos = _repos.allValuesFlow.map{ it.sortedByDescending { repo -> repo.commitDate ?: 0L } }
 
-    private val _commits = PerformantInterlockedCache.dayedSame<String, CommitSyncable>(
+    private val _commits = PerformantInterlockedCache.dayedSame(
         appScope,
+        { first, other -> first.commitSha == other.commitSha },
         {
             listOfNotNull(it.commitDate?.toLocalDate(zone))
         },
-        { first, other -> first.commitSha == other.commitSha },
+        { it.commitSha },
         { key  ->
             CommitSyncable.fromDB(readSyncableDaos.commitsDao, key)
         },
@@ -36,11 +37,9 @@ class CommitsRepo(
             readSyncableDaos.commitsDao.getCommitsForDay(
                 from.atStartAsMillis(zone),
                 to.atEndAsMillis(zone),
-            ).map { entity ->
-                entity.commitSha to CommitSyncable.from(entity)
-            }
+            ).map { entity -> CommitSyncable.from(entity) }
         }
-    ) { key, new ->
+    ) { _, new ->
         // We do not expect a GitHub sha to double, else they would have
         // a big problem and the app would just need to be restarted
         if (!_repos.hasCached(new.toRepoKey())) { // We got a commit for a brand-new repo

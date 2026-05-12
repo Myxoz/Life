@@ -1,6 +1,5 @@
 package com.myxoz.life.events
 
-import android.content.SharedPreferences
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.Row
@@ -19,7 +18,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.times
 import com.myxoz.life.R
 import com.myxoz.life.android.autodetect.AutoDetect
-import com.myxoz.life.android.autodetect.AutoDetectSleep
 import com.myxoz.life.dbwrapper.events.EventEntity
 import com.myxoz.life.dbwrapper.events.WriteEventDetailsDao
 import com.myxoz.life.events.additionals.EventType
@@ -27,7 +25,7 @@ import com.myxoz.life.ui.theme.OldColors
 import com.myxoz.life.utils.toSp
 import org.json.JSONObject
 
-class SleepEvent(start: Long, end: Long, uss: Boolean, usl: Boolean): ProposedEvent(start, end, EventType.Sleep, uss, usl), AutoDetect.AutoDetectEvent {
+class SleepEvent(start: Long, end: Long, uss: Boolean, usl: Boolean): RawEvent(start, end, EventType.Sleep, uss, usl), AutoDetect.AutoDetectEvent {
     override suspend fun saveEventSpecifics(writeEventDetailsDao: WriteEventDetailsDao, id: Long): Boolean = true
 
     @Composable
@@ -67,12 +65,11 @@ class SleepEvent(start: Long, end: Long, uss: Boolean, usl: Boolean): ProposedEv
     override suspend fun eraseEventSpecificsFromDB(db: WriteEventDetailsDao, id: Long) = Unit
     override fun addEventSpecifics(jsonObject: JSONObject): JSONObject = jsonObject // No specific parts
     override fun copyWithTimes(start: Long, end: Long, uss: Boolean, usl: Boolean) = SleepEvent(start, end, uss, usl)
-    override fun ignoreProposed(prefs: SharedPreferences) = ingoreAutoDetectable(this, AutoDetectSleep.SPK, prefs, false)
 
     override fun getInvalidReason(): String? = null // Sleep cant be invalid
 
     companion object {
-        fun fromJson(json: JSONObject, start: Long, end: Long, uss: Boolean, usl: Boolean): ProposedEvent = SleepEvent(
+        fun fromJson(json: JSONObject, start: Long, end: Long, uss: Boolean, usl: Boolean): RawEvent = SleepEvent(
             start, end, uss, usl
         )
         fun from(pec: EventEntity) = SleepEvent(pec.start, pec.end, pec.uss, pec.usl)

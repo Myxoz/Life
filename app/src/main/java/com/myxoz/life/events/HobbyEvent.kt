@@ -24,7 +24,7 @@ class HobbyEvent(
     override val eventTags: List<EventTag>,
     override val title: String,
     override val details: String?
-): ProposedEvent(start, end, EventType.Hobby, uss, usl), TagEvent, TitleEvent, DetailsEvent
+): RawEvent(start, end, EventType.Hobby, uss, usl), TagEvent, TitleEvent, DetailsEvent
 {
     override suspend fun saveEventSpecifics(writeEventDetailsDao: WriteEventDetailsDao, id: Long): Boolean {
         storeTags(writeEventDetailsDao, id)

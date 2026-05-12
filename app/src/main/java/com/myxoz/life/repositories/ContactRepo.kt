@@ -17,8 +17,8 @@ class ContactRepo(
     private val appScope: CoroutineScope
 ) {
     private val _savedInContacts = PerformantCache<String, Boolean>(appScope) {false}
-    private val _allContacts = MutableStateFlow<List<PersonSyncable>>(listOf())
-    val allContacts: StateFlow<List<PersonSyncable>> = _allContacts
+    private val _allSortedContacts = MutableStateFlow<List<PersonSyncable>>(listOf())
+    val allSortedContacts: StateFlow<List<PersonSyncable>> = _allSortedContacts
 
     suspend fun updateIsSavedInContacts(phone: String): Boolean {
         val isInContacts = withContext(Dispatchers.IO) {
@@ -42,7 +42,7 @@ class ContactRepo(
         appScope.launch {
             withContext(Dispatchers.IO){
                 val savedContacts = AndroidContacts.getAllContacts(context)
-                _allContacts.value = savedContacts
+                _allSortedContacts.value = savedContacts.sortedBy { it.name }
                 _savedInContacts.overwriteAll(
                     savedContacts.mapNotNull { (it.phoneNumber ?: return@mapNotNull null) to true }
                 )

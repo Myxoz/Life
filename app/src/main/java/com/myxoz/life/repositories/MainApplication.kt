@@ -2,6 +2,7 @@ package com.myxoz.life.repositories
 
 import android.app.Application
 import com.myxoz.life.api.API
+import com.myxoz.life.api.UpdateHooks
 import com.myxoz.life.dbwrapper.Daos
 import com.myxoz.life.dbwrapper.DatabaseProvider
 import com.myxoz.life.viewmodels.Settings
@@ -24,7 +25,8 @@ class MainApplication: Application() {
             db.readDaysDao,
             db.readBankingDao,
             db.readCommitsDao,
-            db.readTodosDao
+            db.readTodosDao,
+            db.readExtensionDao
         )
         val writeSyncableDaos = API.WriteSyncableDaos(
             db.writeEventDetailsDao,
@@ -33,7 +35,8 @@ class MainApplication: Application() {
             db.writeDaysDao,
             db.writeBankingDao,
             db.writeCommitsDao,
-            db.writeTodosDao
+            db.writeTodosDao,
+            db.writeExtensionDao
         )
         val mainPrefs = applicationContext.getSharedPreferences(SPK, MODE_PRIVATE)
         val settingsPrefs = applicationContext.getSharedPreferences(SETTINGS_SPK, MODE_PRIVATE)
@@ -41,7 +44,6 @@ class MainApplication: Application() {
         val bankingRepo = BankingRepo(
             readSyncableDaos.bankingDao,
             writeSyncableDaos,
-            mainPrefs,
             appScope,
             db.waitingSync,
         )
@@ -91,8 +93,24 @@ class MainApplication: Application() {
             appScope,
             db.waitingSync
         )
-        val stepRepo = StepRepo(db.proposedSteps, applicationContext.getSharedPreferences("steps", MODE_PRIVATE), appScope)
+        val extensionRepo = ExtensionRepo(
+            appScope,
+            readSyncableDaos.extensionDao,
+            writeSyncableDaos.extensionDao,
+            writeSyncableDaos,
+            db.waitingSync
+        )
+        val stepRepo = StepRepo(
+            db.proposedSteps,
+            applicationContext.getSharedPreferences("steps", MODE_PRIVATE),
+            appScope
+        )
+        val hooks = UpdateHooks(
+            calendarRepo,
+            extensionRepo
+        )
         repositories = AppRepositories(
+            hooks,
             calendarRepo,
             daySummaryRepo,
             stepRepo,
@@ -103,7 +121,9 @@ class MainApplication: Application() {
             locationRepo,
             aiPredictionRepo,
             todosRepo,
+            extensionRepo,
             API(
+                hooks,
                 calendarRepo,
                 daySummaryRepo,
                 peopleRepo,
@@ -111,6 +131,7 @@ class MainApplication: Application() {
                 locationRepo,
                 commitsRepo,
                 todosRepo,
+                extensionRepo,
                 db.waitingSync,
                 readSyncableDaos,
                 writeSyncableDaos,
@@ -121,7 +142,8 @@ class MainApplication: Application() {
             readSyncableDaos,
             mainPrefs,
             Settings.Permission.PermissionChecker(settingsPrefs, applicationContext),
-            applicationContext
+            applicationContext,
+            appScope
         )
     }
     companion object {

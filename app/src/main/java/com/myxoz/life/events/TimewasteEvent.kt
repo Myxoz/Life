@@ -23,7 +23,7 @@ class TimewasteEvent(
     usl: Boolean,
     val timewastePlatforms: List<TimedTagLikeContainer<TimewastePlatform>>,
     override val title: String,
-): ProposedEvent(start, end, EventType.Timewaste, uss, usl), TitleEvent
+): RawEvent(start, end, EventType.Timewaste, uss, usl), TitleEvent
 {
     override suspend fun saveEventSpecifics(writeEventDetailsDao: WriteEventDetailsDao, id: Long): Boolean {
         writeEventDetailsDao.insertTimewaste(

@@ -262,7 +262,7 @@ class TopThreeSocialContacts(val people: List<Pair<PersonSyncable, Long>>, conte
             Reveal(step >= 4) { SubtleLine("These hold a special place in your heart") }
             Spacer(Modifier.height(20.dp))
             val conf = LocalWindowInfo.current.containerDpSize
-            val screenDim = androidx.compose.ui.unit.min(conf.width, conf.height)
+            val screenDim = min(conf.width, conf.height)
             val pbSize = screenDim * .9f
             Box(
                 Modifier

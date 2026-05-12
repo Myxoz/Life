@@ -19,6 +19,6 @@ val LocalScreens = staticCompositionLocalOf<LocalScreensProvider> {
 val LocalColors = staticCompositionLocalOf<ColorScheme> {
     error("No color scheme provided")
 }
-val Theme: ColorScheme
+inline val Theme: ColorScheme
     @Composable
     inline get() = LocalColors.current

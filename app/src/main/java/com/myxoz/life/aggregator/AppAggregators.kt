@@ -8,4 +8,5 @@ class AppAggregators(
     val peopleAggregator = PeopleAggregator(repos)
     val daySummaryAggregator = DaySummaryAggregator(repos)
     val calendarAggregator = CalendarAggregator(repos)
+    val streakAggregator = StreakAggregator(repos)
 }

@@ -1,11 +1,12 @@
 package com.myxoz.life.api.syncables
 
+import com.myxoz.life.api.API
 import com.myxoz.life.api.ServerSyncable
 import com.myxoz.life.api.ServerSyncableCompanion
 import com.myxoz.life.api.Syncable
 import com.myxoz.life.dbwrapper.banking.BankingEntity
 import com.myxoz.life.dbwrapper.banking.ReadBankingDao
-import com.myxoz.life.api.API
+import com.myxoz.life.utils.getSafeLong
 import org.json.JSONObject
 
 class BankingSyncable(
@@ -30,14 +31,14 @@ class BankingSyncable(
                     json.getString("amount_cents").toInt(),
                     json.getString("currency"),
                     json.getString("booking_time"),
-                    json.getString("value_date").toLong(),
+                    json.getSafeLong("value_date"),
                     json.getString("from_name"),
                     json.getString("from_iban"),
                     json.getString("from_bic"),
                     json.getString("purpose"),
-                    json.getString("saldo_after_cents").toLong(),
+                    json.getSafeLong("saldo_after_cents"),
                     json.getString("purpose_date").toLongOrNull(),
-                    json.getString("last_update").toLong()
+                    json.getSafeLong("last_update")
                 )
             )
     }

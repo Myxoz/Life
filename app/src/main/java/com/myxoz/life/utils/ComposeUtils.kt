@@ -2,6 +2,7 @@ package com.myxoz.life.utils
 
 import android.content.ClipData
 import android.content.SharedPreferences
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
@@ -26,8 +27,11 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Outline
 import androidx.compose.ui.graphics.Paint
 import androidx.compose.ui.graphics.Shape
+import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.graphics.drawscope.DrawScope
+import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.drawscope.drawIntoCanvas
-import androidx.compose.ui.graphics.drawscope.translate
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.ClipEntry
 import androidx.compose.ui.platform.Clipboard
@@ -50,6 +54,7 @@ import kotlin.math.PI
 import kotlin.math.atan2
 import kotlin.math.cos
 import kotlin.math.hypot
+import kotlin.math.max
 import kotlin.math.sin
 import kotlin.reflect.KClass
 
@@ -158,6 +163,7 @@ suspend fun Clipboard.copy(text: String) {
     setClipEntry(ClipEntry(ClipData.newPlainText(text, text)))
 }
 
+
 fun Modifier.boxShadow(
     color: Color = Color.Black,
     alpha: Float = 1f,
@@ -166,65 +172,59 @@ fun Modifier.boxShadow(
     offsetX: Dp = 0.dp,
     offsetY: Dp = 0.dp,
     shape: Shape
-) = this.drawBehind {
+): Modifier = this
+    .graphicsLayer { clip = false } // essential for shadow blur
+    .drawBehind {
+        val blurPx = blur.toPx()
+        val spreadPx = spread.toPx()
+        val offsetXPx = offsetX.toPx()
+        val offsetYPx = offsetY.toPx()
 
-    val blurPx = blur.toPx()
-    val spreadPx = spread.toPx()
-    val offsetXPx = offsetX.toPx()
-    val offsetYPx = offsetY.toPx()
-
-    val outline = shape.createOutline(size, layoutDirection, this)
-
-    drawIntoCanvas { canvas ->
-
-        val paint = Paint()
-        val frameworkPaint = paint.asFrameworkPaint()
-
-        frameworkPaint.color = color.copy(alpha = alpha).toArgb()
-        frameworkPaint.setShadowLayer(
-            blurPx,
-            offsetXPx,
-            offsetYPx,
-            frameworkPaint.color
-        )
-
+        // Create outline from shape with spread applied (scale the outline)
         val spreadSize = Size(
             size.width + spreadPx * 2,
             size.height + spreadPx * 2
         )
+        val spreadOutline = if (spreadPx != 0f) {
+            // Scale the original shape to the spread size
+            shape.createOutline(spreadSize, layoutDirection, this)
+        } else {
+            shape.createOutline(size, layoutDirection, this)
+        }
 
-        translate(-spreadPx, -spreadPx) {
+        val paint = Paint().apply {
+            asFrameworkPaint().apply {
+                // Transparent fill – only the shadow will be visible
+                this.color = Color.Transparent.toArgb()
+                setShadowLayer(blurPx, offsetXPx, offsetYPx, color.copy(alpha = alpha).toArgb())
+            }
+        }
 
-            when (outline) {
-                is Outline.Rectangle -> {
-                    canvas.drawRect(
-                        0f,
-                        0f,
-                        spreadSize.width,
-                        spreadSize.height,
-                        paint
-                    )
-                }
-
-                is Outline.Rounded -> {
+        drawIntoCanvas { canvas ->
+            canvas.save()
+            if (spreadPx != 0f) {
+                // Translate to keep the spread shape centered
+                canvas.translate(-spreadPx, -spreadPx)
+            }
+            when (spreadOutline) {
+                is Outline.Rectangle -> canvas.drawRect(spreadOutline.rect, paint)
+                is Outline.Rounded ->  {
+                    val r = spreadOutline.roundRect
                     canvas.drawRoundRect(
-                        left = 0f,
-                        top = 0f,
-                        right = spreadSize.width,
-                        bottom = spreadSize.height,
-                        radiusX = outline.roundRect.topLeftCornerRadius.x,
-                        radiusY = outline.roundRect.topLeftCornerRadius.y,
+                        left = r.left,
+                        top = r.top,
+                        right = r.right,
+                        bottom = r.bottom,
+                        radiusX = r.topLeftCornerRadius.x,
+                        radiusY = r.topLeftCornerRadius.y,
                         paint = paint
                     )
                 }
-
-                is Outline.Generic -> {
-                    canvas.drawPath(outline.path, paint)
-                }
+                is Outline.Generic -> canvas.drawPath(spreadOutline.path, paint)
             }
+            canvas.restore()
         }
     }
-}
 // Fuck AI we use StackOverflow here:
 // https://stackoverflow.com/questions/68218714/angled-gradient-background-in-jetpack-compose#68219962
 fun Modifier.angledGradientBackground(colors: List<Color>, degrees: Float) = this.drawBehind {
@@ -259,4 +259,68 @@ fun Modifier.angledGradientBackground(colors: List<Color>, degrees: Float) = thi
 
 // Overwrite default height to 0.dp so while messuring this appears as 0.dp and gets streched later. Remember this trick.
 fun Modifier.matchInstrinsicHeight() = this.fillMaxHeight().height(0.dp)
-fun Modifier.matchInstrinsicHeight(percent: Float) = this.fillMaxHeight(percent).height(0.dp)
+fun Modifier.matchInstrinsicHeight(fraction: Float) = this.fillMaxHeight(fraction).height(0.dp)
+
+// Fully Vibe-Coded... Famous last words. Man, can ChatGPT not just do its job?
+@Composable
+fun LayeredCircularProgressIndicator(
+    progress: Float,
+    modifier: Modifier = Modifier,
+    color: Color,
+    trackColor: Color,
+    strokeWidth: Dp,
+    trackStrokeWidth: Dp,
+) {
+    val coercedProgress = progress.coerceIn(0f, 1f)
+
+    val density = LocalDensity.current
+    val stroke = with(density) {
+        Stroke(width = strokeWidth.toPx(), cap = StrokeCap.Round)
+    }
+    val trackStroke = with(density) {
+        Stroke(width = trackStrokeWidth.toPx(), cap = StrokeCap.Round)
+    }
+
+    Canvas(modifier) {
+        val startAngle = 270f
+        val sweep = coercedProgress * 360f
+        val maxRadius = max(stroke.width, trackStroke.width)
+
+        drawCircularArc(
+            maxRadius - trackStroke.width,
+            0f,
+            360f,
+            trackColor,
+            trackStroke
+        )
+
+        drawCircularArc(
+            maxRadius - stroke.width,
+            startAngle,
+            sweep,
+            color,
+            stroke
+        )
+    }
+}
+
+private fun DrawScope.drawCircularArc(
+    paddingToBounds: Float,
+    startAngle: Float,
+    sweep: Float,
+    color: Color,
+    stroke: Stroke,
+) {
+    val diameterOffset = stroke.width / 2
+    val arcSize = size.minDimension - 2 * diameterOffset
+
+    drawArc(
+        color = color,
+        startAngle = startAngle,
+        sweepAngle = sweep,
+        useCenter = false,
+        topLeft = Offset(diameterOffset + paddingToBounds / 2, diameterOffset + paddingToBounds / 2),
+        size = Size(arcSize - paddingToBounds, arcSize - paddingToBounds),
+        style = stroke
+    )
+}

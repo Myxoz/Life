@@ -67,7 +67,7 @@ val sidebarWidth = 40.dp
 @Composable
 fun CalendarComposable(calendarViewModel: CalendarViewModel, inspectedEventViewModel: InspectedEventViewModel) {
     val conf = LocalWindowInfo.current.containerDpSize
-    val today by calendarViewModel.todayFlow.collectAsState()
+    val today by calendarViewModel.todayFlow.collectAsState(LocalDate.now())
     val isEditing by inspectedEventViewModel.isEditing.collectAsState()
     val displayedDays by calendarViewModel.dayAmount.collectAsState()
     val eachDayWidthGoal = (conf.width.value-sidebarWidth.value+1)/displayedDays.toFloat()

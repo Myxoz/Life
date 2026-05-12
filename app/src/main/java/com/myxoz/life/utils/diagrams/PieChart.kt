@@ -26,7 +26,7 @@ import kotlinx.coroutines.launch
 
 val chartBasedAnimation = tween<Float>(durationMillis = 1000, easing = FastOutSlowInEasing)
 val chartBasedLongAnimation = tween<Long>(durationMillis = 1000, easing = FastOutSlowInEasing)
-class PieChart(){
+class PieChart{
     val components = MutableStateFlow<Map<String, PieChartPart>>(mapOf())
     fun update(newComponents: Map<String, PieChartPart>) {
         val mutComponents = components.value.mapValues { PieChartPart(it.value.color, 0.0) }.toMutableMap()

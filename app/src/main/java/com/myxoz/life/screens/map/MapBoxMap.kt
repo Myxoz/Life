@@ -103,7 +103,6 @@ fun MapBoxMap(mapViewModel: MapViewModel, innerPadding: PaddingValues){
             return@OnMapClickListener true
         },
         style = {
-            @Suppress("COMPOSE_APPLIER_CALL_MISMATCH")
             MapboxStandardStyle(
                 standardStyleState = rememberStandardStyleState {
                     configurationsState.apply {

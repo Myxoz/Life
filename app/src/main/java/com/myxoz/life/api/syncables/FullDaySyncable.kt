@@ -5,6 +5,7 @@ import com.myxoz.life.api.ServerSyncableCompanion
 import com.myxoz.life.api.Syncable
 import com.myxoz.life.dbwrapper.days.DayScreenTimeEntity
 import com.myxoz.life.dbwrapper.days.DaysEntity
+import com.myxoz.life.utils.getSafeLong
 import com.myxoz.life.utils.jsonObjArray
 import org.json.JSONArray
 import org.json.JSONObject
@@ -65,9 +66,9 @@ class FullDaySyncable(
             val successfulness = json.getString("successfulness").toInt()
             val topApps = json.getJSONArray("top").jsonObjArray.map {
                 DayScreenTimeEntity(
-                    it.getString("date").toLong(),
+                    it.getSafeLong("date"),
                     it.getString("packagename"),
-                    it.getString("duration_ms").toLong(),
+                    it.getSafeLong("duration_ms"),
                 )
             }
             return FullDaySyncable(

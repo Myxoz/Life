@@ -65,7 +65,7 @@ import com.myxoz.life.utils.toPx
 
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
-fun DisplayEvent(fullEvent: SyncedEvent){
+fun DisplayEvent(fullEvent: SyncedEvent) {
     val context = LocalContext.current
     val screens = LocalScreens.current
     Column(
@@ -75,21 +75,21 @@ fun DisplayEvent(fullEvent: SyncedEvent){
         verticalArrangement = Arrangement.spacedBy(5.dp)
     ) {
         Spacer(Modifier.height(20.dp))
-        if (fullEvent.proposed is TitleEvent) {
+        if (fullEvent.raw is TitleEvent) {
             Text(
-                fullEvent.proposed.title.takeIf { it.isNotBlank() } ?: "Kein Titel",
+                fullEvent.raw.title.takeIf { it.isNotBlank() } ?: "Kein Titel",
                 Modifier
                     .fillMaxWidth(),
                 style =
-                    if (fullEvent.proposed.title.isNotBlank())
+                    if (fullEvent.raw.title.isNotBlank())
                         TypoStyle(Theme.primary, FontSize.XXLARGE, FontFamily.Display)
                     else
                         TypoStyle(Theme.secondary, FontSize.XXLARGE).copy(fontStyle = FontStyle.Italic)
             )
         }
-        if (fullEvent.proposed is DetailsEvent && fullEvent.proposed.details != null) {
+        if (fullEvent.raw is DetailsEvent && fullEvent.raw.details != null) {
             Text(
-                fullEvent.proposed.details ?: "",
+                fullEvent.raw.details ?: "",
                 Modifier
                     .fillMaxWidth()
                     .padding(horizontal = 10.dp),
@@ -97,12 +97,12 @@ fun DisplayEvent(fullEvent: SyncedEvent){
             )
         }
         Spacer(Modifier.height(10.dp))
-        if (fullEvent.proposed is TagEvent) {
+        if (fullEvent.raw is TagEvent) {
             val tagsHeight = FontSize.SMALL.size.toDp() + 2.dp
             FlowRow(
                 horizontalArrangement = Arrangement.spacedBy(10.dp)
             ) {
-                fullEvent.proposed.eventTags.forEach {
+                fullEvent.raw.eventTags.forEach {
                     Row(
                         Modifier
                             .padding(vertical = 5.dp)
@@ -138,25 +138,25 @@ fun DisplayEvent(fullEvent: SyncedEvent){
                 }
             }
         }
-        if(fullEvent.proposed is DigSocEvent) {
-            TimedTagLikeBar(fullEvent.proposed.digSocEntries) {
+        if(fullEvent.raw is DigSocEvent) {
+            TimedTagLikeBar(fullEvent.raw.digSocEntries) {
                 screens.openCalendarWithSearch {
                     selectedEventTypes.value = listOf(EventType.DigSoc)
                     digsocPlatforms.value = digsocPlatforms.value.toMutableList().apply { add(it) }
                 }
             }
         }
-        if(fullEvent.proposed is TimewasteEvent) {
-            TimedTagLikeBar(fullEvent.proposed.timewastePlatforms) {
+        if(fullEvent.raw is TimewasteEvent) {
+            TimedTagLikeBar(fullEvent.raw.timewastePlatforms) {
                 screens.openCalendarWithSearch {
                     selectedEventTypes.value = listOf(EventType.Timewaste)
                     timewastePlatform.value = timewastePlatform.value.toMutableList().apply { add(it) }
                 }
             }
         }
-        if (fullEvent.proposed is PeopleEvent) {
+        if (fullEvent.raw is PeopleEvent) {
             val profileViewModel = LocalScreens.current.profileInfoModel
-            val displayedPeople by profileViewModel.getPeople(fullEvent.proposed.people).collectAsState()
+            val displayedPeople by profileViewModel.getPeople(fullEvent.raw.people).collectAsState()
             Spacer(Modifier.height(10.dp))
             Text("Mit:", style = TypoStyle(Theme.onSecondaryContainer, FontSize.LARGE))
             FlowRow(
@@ -187,16 +187,16 @@ fun DisplayEvent(fullEvent: SyncedEvent){
                         )
                     }
                 }
-                if(fullEvent.proposed is SocialEvent && fullEvent.proposed.more)
+                if(fullEvent.raw is SocialEvent && fullEvent.raw.more)
                     Chip(null, null, color = Color.Transparent) {
                         Text("+ Weitere", style = TypoStyle(Theme.secondary, FontSize.MEDIUM))
                     }
             }
         }
-        if (fullEvent.proposed is TravelEvent) {
+        if (fullEvent.raw is TravelEvent) {
             val profileViewModel = LocalScreens.current.profileInfoModel
-            val from by profileViewModel.getLocationById(fullEvent.proposed.from).collectAsState()
-            val to by profileViewModel.getLocationById(fullEvent.proposed.to).collectAsState()
+            val from by profileViewModel.getLocationById(fullEvent.raw.from).collectAsState()
+            val to by profileViewModel.getLocationById(fullEvent.raw.to).collectAsState()
             val size = FontSize.MEDIUM.size.toDp()
             @Composable
             fun RenderLocation(location: LocationSyncable?, isFrom: Boolean) {
@@ -344,8 +344,8 @@ fun DisplayEvent(fullEvent: SyncedEvent){
                                         context, HVV.constructLink(
                                             from,
                                             to,
-                                            if(fullEvent.proposed.end > System.currentTimeMillis())
-                                                fullEvent.proposed.end.formatTimeStamp(calendar)
+                                            if(fullEvent.raw.end > System.currentTimeMillis())
+                                                fullEvent.raw.end.formatTimeStamp(calendar)
                                             else
                                                 null
                                         )
@@ -370,7 +370,7 @@ fun DisplayEvent(fullEvent: SyncedEvent){
                         ,
                     )
                     Spacer(Modifier.width(5.dp))
-                    TimedTagLikeBar(fullEvent.proposed.vehicles)
+                    TimedTagLikeBar(fullEvent.raw.vehicles)
                 }
                 RenderLocation(to, false)
             }

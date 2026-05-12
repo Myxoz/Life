@@ -4,19 +4,20 @@ import com.myxoz.life.api.API
 import com.myxoz.life.api.ServerSyncableCompanion
 import com.myxoz.life.api.Syncable
 import com.myxoz.life.events.EmptyEvent
-import com.myxoz.life.events.ProposedEvent
+import com.myxoz.life.events.RawEvent
 import com.myxoz.life.screens.feed.fullscreenevent.getId
 import com.myxoz.life.utils.getLongOrNull
+import com.myxoz.life.utils.getSafeLong
 import org.json.JSONObject
 
 class SyncedEvent(
     override val id: Long,
     val created: Long,
     val edited: Long?,
-    val proposed: ProposedEvent,
-) : Syncable(proposed.type.id, id) {
+    val raw: RawEvent,
+) : Syncable(raw.type.id, id) {
     override suspend fun specificsToJson(): JSONObject? =
-        proposed.toJson()
+        raw.toJson()
             .put("id", id.toString())
             .put("created", created)
             .put("edited", edited ?: JSONObject.NULL)
@@ -25,7 +26,7 @@ class SyncedEvent(
         if(!isSynced())
             throw Error("Trying to save unsynced event to db. Aborting before harm.")
         else
-            proposed.saveEventToDB(db.eventDetailsDao, id, created, edited)
+            raw.saveEventToDB(db.eventDetailsDao, id, created, edited)
     }
 
     // override fun equals(other: Any?): Boolean = other is SyncedEvent && other.id == id
@@ -34,32 +35,32 @@ class SyncedEvent(
         id: Long = this.id,
         created: Long = this.created,
         edited: Long? = this.edited,
-        proposedEvent: ProposedEvent = this.proposed
-    ) = SyncedEvent(id, created, edited, proposedEvent)
+        rawEvent: RawEvent = this.raw
+    ) = SyncedEvent(id, created, edited, rawEvent)
 
-    fun makeSynced() = SyncedEvent(if(isSynced()) id else API.generateId(), created, edited, proposed)
+    fun makeSynced() = if(!isSynced()) SyncedEvent(API.generateId(), created, edited, raw) else this
 
-    fun copyWithTimes(start: Long = proposed.start, end: Long = proposed.end) =
-        SyncedEvent(id, created, edited, proposed.copyWithTimes(start, end))
+    fun copyWithTimes(start: Long = raw.start, end: Long = raw.end) =
+        SyncedEvent(id, created, edited, raw.copyWithTimes(start, end))
 
-    override fun getInvalidReason(): String? = proposed.getInvalidReason()
+    override fun getInvalidReason(): String? = raw.getInvalidReason()
 
     companion object : ServerSyncableCompanion<SyncedEvent> {
-        fun from(preparedEventContent: ProposedEvent.PreparedEventContent): SyncedEvent? {
+        fun from(preparedEventContent: RawEvent.PreparedEventContent): SyncedEvent? {
             return SyncedEvent(
                 preparedEventContent.event.id,
                 preparedEventContent.event.created,
                 preparedEventContent.event.edited,
-                ProposedEvent.from(preparedEventContent) ?: return null
+                RawEvent.from(preparedEventContent) ?: return null
             )
         }
 
         override fun fromJSON(json: JSONObject): SyncedEvent =
             SyncedEvent(
                 json.getId(),
-                json.getString("created").toLong(),
+                json.getSafeLong("created"),
                 json.getLongOrNull("edited"),
-               ProposedEvent.fromJSON(json)
+               RawEvent.fromJSON(json)
             )
         fun getSemanticNullValueEvent() = SyncedEvent(-1L, 0L, null, EmptyEvent(0L, 0L, false, usl = false))
     }

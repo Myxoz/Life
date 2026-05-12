@@ -8,6 +8,7 @@ import androidx.navigation.NavController
 import com.mapbox.geojson.Point
 import com.mapbox.maps.CameraOptions
 import com.myxoz.life.api.Syncable
+import com.myxoz.life.api.extensions.StreakExtendable
 import com.myxoz.life.api.syncables.LocationSyncable
 import com.myxoz.life.api.syncables.SyncedEvent
 import com.myxoz.life.api.syncables.TodoSyncable
@@ -25,10 +26,12 @@ import com.myxoz.life.viewmodels.LocationEditingViewModel
 import com.myxoz.life.viewmodels.MapViewModel
 import com.myxoz.life.viewmodels.ProfileInfoModel
 import com.myxoz.life.viewmodels.SocialGraphViewModel
+import com.myxoz.life.viewmodels.StreakViewModel
 import com.myxoz.life.viewmodels.TransactionViewModel
 import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import java.time.LocalDate
 import kotlin.math.cos
@@ -45,6 +48,7 @@ class LocalScreensProvider(
     private val transactionViewModel: TransactionViewModel,
     private val instantEventsViewModel: InstantEventsViewModel,
     private val locationEditingViewModel: LocationEditingViewModel,
+    private val streakViewModel: StreakViewModel,
     private val nav: NavController,
 ) {
     private var calendarCooldown = System.currentTimeMillis()
@@ -57,10 +61,14 @@ class LocalScreensProvider(
     fun openCalendarWithSearch(applied: SearchField.()->Unit){
         calendarViewModel.search.openCalendarWithSearch(nav, applied)
     }
-    fun openCalendarAt(date: LocalDate){
+    fun openCalendarAt(date: LocalDate, pop: Boolean = true){
         if(System.currentTimeMillis() - calendarCooldown > calendarViewModel.viewModelScope.coroutineContext[MotionDurationScale]?.scaleFactor.def(1f)*2000L) {
             calendarViewModel.setDay(date)
-            nav.popBackStack(NavPath.HOME, false)
+            if(pop) {
+                nav.popBackStack(NavPath.HOME, false)
+            } else {
+                nav.navigate(NavPath.HOME)
+            }
             calendarCooldown = System.currentTimeMillis()
         }
     }
@@ -167,5 +175,16 @@ class LocalScreensProvider(
     fun openDebt(personId: Long) {
         nav.navigate(NavPath.Menu.Contacts.DEBT_DISPLAY.with(personId))
         profileInfoModel.debtListState = LazyListState()
+    }
+
+    fun openStreak(streak: StreakExtendable.StreakItem) {
+        val now = streak.timespan.now()
+        streakViewModel.days.value = (now.minus(20)..now).reversed().toList()
+        streakViewModel.scrollStateSubScreen.requestScrollToItem(0)
+        nav.navigate(NavPath.Menu.Streak.FULL_SCREEN_STREAK.with(streak.id))
+    }
+    fun openStreakEditing(streak: StreakExtendable.StreakItem) {
+        streakViewModel.editingStreak.update { streak }
+        nav.navigate(NavPath.Menu.Streak.EDIT_SCREEN_STREAK)
     }
 }

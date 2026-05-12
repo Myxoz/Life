@@ -21,7 +21,7 @@ class SpontEvent(
     usl: Boolean,
     override val eventTags: List<EventTag>,
     override val title: String
-): ProposedEvent(start, end, EventType.Spont, uss, usl), TagEvent, TitleEvent {
+): RawEvent(start, end, EventType.Spont, uss, usl), TagEvent, TitleEvent {
     override suspend fun saveEventSpecifics(writeEventDetailsDao: WriteEventDetailsDao, id: Long): Boolean {
         storeTags(writeEventDetailsDao, id)
         writeEventDetailsDao.insertSpont(

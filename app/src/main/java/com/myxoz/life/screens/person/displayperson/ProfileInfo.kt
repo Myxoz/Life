@@ -567,7 +567,7 @@ fun ProfileInfo(largeDataCache: LargeDataCache, profileInfoModel: ProfileInfoMod
                         val lastInteraction by profileInfoModel.lastInteractionFlow(personId).collectAsState()
                         if(lastInteraction != null) {
                             ClickableIcon(R.drawable.graph, "Social Graph") {
-                                screens.openSocialGraphWithNodeSelected(personId, lastInteraction?.proposed?.end)
+                                screens.openSocialGraphWithNodeSelected(personId, lastInteraction?.raw?.end)
                             }
                         }
                     }

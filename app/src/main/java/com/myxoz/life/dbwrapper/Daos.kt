@@ -1,6 +1,8 @@
 package com.myxoz.life.dbwrapper
 
 class Daos(db: AppDatabase) {
+    val readExtensionDao = db.readExtensionDao()
+    val writeExtensionDao = db.writeExtensionDao()
     val readTodosDao = db.readTodosDao()
     val writeTodosDao = db.writeTodosDao()
     val readEventDetailsDao = db.readEventsDetailsDao()

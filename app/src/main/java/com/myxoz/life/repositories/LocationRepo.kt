@@ -17,7 +17,7 @@ class LocationRepo(
     private val readSyncableDaos: API.ReadSyncableDaos,
     private val writeSyncableDaos: API.WriteSyncableDaos,
     private val waitingSyncDao: WaitingSyncDao,
-    private val appScope: CoroutineScope
+    appScope: CoroutineScope
 ) {
     val readLocationsDao = readSyncableDaos.locationsDao
     var fetchedAllLocations = false
@@ -30,7 +30,7 @@ class LocationRepo(
             }
         )
     }
-    suspend fun update(location: LocationSyncable){
+    fun update(location: LocationSyncable){
         _cache.overwrite(location.id, location)
     }
     suspend fun updateAndStage(location: LocationSyncable){

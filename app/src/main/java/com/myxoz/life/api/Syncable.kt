@@ -5,6 +5,7 @@ import android.util.Log
 import androidx.compose.runtime.Composable
 import com.myxoz.life.api.syncables.BankingSidecarSyncable
 import com.myxoz.life.api.syncables.DeleteEntry
+import com.myxoz.life.api.syncables.ExtensionSyncable
 import com.myxoz.life.api.syncables.FullDaySyncable
 import com.myxoz.life.api.syncables.LocationSyncable
 import com.myxoz.life.api.syncables.ManualTransactionSyncable
@@ -15,7 +16,7 @@ import com.myxoz.life.api.syncables.TodoSyncable
 import com.myxoz.life.api.syncables.TransactionSplitSyncable
 import com.myxoz.life.dbwrapper.WaitingSyncDao
 import com.myxoz.life.dbwrapper.WaitingSyncEntity
-import com.myxoz.life.events.ProposedEvent
+import com.myxoz.life.events.RawEvent
 import com.myxoz.life.repositories.AppRepositories
 import com.myxoz.life.screens.feed.instantevents.InstantEvent
 import org.json.JSONObject
@@ -133,6 +134,14 @@ abstract class Syncable(
                         )
                     )
                 }
+                SpecialSyncablesIds.EXTENSION -> {
+                    val dbEntry = readSyncableDaos.extensionDao.getById(entry.id) ?: return null
+                    val type = ExtensionSyncable.ExtensionSyncableType.typeFromId(entry.id) ?: return null
+                    ExtensionSyncable(
+                        type,
+                        type.parser.fromString(dbEntry.data)
+                    )
+                }
 
                 else -> {
                     val dbEntry =  readSyncableDaos.eventDetailsDao.getEvent(entry.id)
@@ -144,7 +153,7 @@ abstract class Syncable(
                         return null
                     }
                     val dbEvent = SyncedEvent.from(
-                        ProposedEvent.PreparedEventContent.prepareContentFor(
+                        RawEvent.PreparedEventContent.prepareContentFor(
                             dbEntry, readSyncableDaos.eventDetailsDao
                         ) ?: return null
                     )
@@ -172,6 +181,7 @@ abstract class Syncable(
         const val MANUALTRANSACTION = 57
         const val TODOS = 58
         const val TRANSACTIONSPLIT = 59
+        const val EXTENSION = 60
     }
     interface DatedSyncable<T>: SyncableContract {
         val timestamp: Long
@@ -181,8 +191,8 @@ abstract class Syncable(
         fun asInstantEvent(): InstantEvent
     }
     interface FeedInstantEventSyncable: DatedSyncable<FeedInstantEventSyncable>, InstantEventSyncable {
-        suspend fun delete(repos: AppRepositories): Unit
-        suspend fun saveWithCache(repos: AppRepositories): Unit
+        suspend fun delete(repos: AppRepositories)
+        suspend fun saveWithCache(repos: AppRepositories)
         fun getFeedInvalidReason(): String?
         override fun getInvalidReason() = getFeedInvalidReason()
         @Composable

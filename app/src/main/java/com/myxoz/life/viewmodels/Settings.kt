@@ -339,7 +339,7 @@ object Settings {
                 val spk: String,
                 val prefs: SharedPreferences,
                 val clazz: KClass<T>,
-                val defaultValue: T
+                defaultValue: T
             ) {
                 private val _flow: MutableStateFlow<T> = MutableStateFlow(prefs.get(spk, clazz) ?: defaultValue)
                 val flow: StateFlow<T> = _flow

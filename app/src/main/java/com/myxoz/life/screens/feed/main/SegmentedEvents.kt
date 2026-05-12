@@ -24,7 +24,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.myxoz.life.api.syncables.SyncedEvent
-import com.myxoz.life.events.ProposedEvent
+import com.myxoz.life.events.RawEvent
 import com.myxoz.life.events.additionals.DefinedDurationEvent
 import com.myxoz.life.events.additionals.EventType
 import com.myxoz.life.events.additionals.PeopleEvent
@@ -68,10 +68,10 @@ data class PrerenderedEvent(
                             onClick = openEventDetails,
                             onLongClick = editEvent
                         )
-                        .background(event.proposed.getBackgroundBrush(), RoundedCornerShape(10.dp))
+                        .background(event.raw.getBackgroundBrush(), RoundedCornerShape(10.dp))
                 ) {
                     if(segment.hasContent) {
-                        with(event.proposed) {
+                        with(event.raw) {
                             RenderContent(oneHour, startOfDay, endOfDay, !segment.isLeft, segment.getBlockHeight(startOfDay, endOfDay))
                         }
                     }
@@ -96,8 +96,8 @@ data class PrerenderedEvent(
             // All will just be the first iteration and fill spots will use something different from all
             val all = LinkedList<Pair<SyncedEvent, PrerenderedEventBuilder.SegmentBuilder>>()
             for (type in order) {
-                for(event in events.filter { it.proposed.type == type }){
-                    val overlapping = all.filter { it.first.proposed.overlaps(event.proposed) }
+                for(event in events.filter { it.raw.type == type }){
+                    val overlapping = all.filter { it.first.raw.overlaps(event.raw) }
                     for (prerenderedEvent in overlapping) {
                         prerenderedEvent.second.isFullWidth = false
                         prerenderedEvent.second.isLeft = false
@@ -106,8 +106,8 @@ data class PrerenderedEvent(
                         overlapping.isEmpty(),
                         true,
                         true,
-                        event.proposed.start,
-                        event.proposed.end
+                        event.raw.start,
+                        event.raw.end
                     )
                     all.add(event to segment)
                 }
@@ -118,7 +118,7 @@ data class PrerenderedEvent(
                     event.end + instantEventDisplaySize / 2
                 )
                 all.forEach {
-                    if(it.first.proposed.overlaps(instantEventAsDDEvent)) {
+                    if(it.first.raw.overlaps(instantEventAsDDEvent)) {
                         it.second.isFullWidth = false
                         // Does not set left or right align
                     }
@@ -136,7 +136,7 @@ data class PrerenderedEvent(
                     )
                 } else {
                     // Everything that is just a bar at the right
-                    val proposed = event.first.proposed
+                    val proposed = event.first.raw
                     if (proposed is PeopleEvent) {
                         peopleEvents.add(proposed)
                     }
@@ -194,9 +194,9 @@ data class PrerenderedEvent(
                 }
             }
             segmentedMap.forEach { (_, ev) ->
-                if(ev.event.proposed !is PeopleEvent)
+                if(ev.event.raw !is PeopleEvent)
                     peopleEvents
-                        .filter { (it as? ProposedEvent)?.overlaps(ev.event.proposed) ?: false }
+                        .filter { (it as? RawEvent)?.overlaps(ev.event.raw) ?: false }
                         .forEach { ev.nextToPeople.addAll(it.people) }
             }
             return segmentedMap.mapValues {

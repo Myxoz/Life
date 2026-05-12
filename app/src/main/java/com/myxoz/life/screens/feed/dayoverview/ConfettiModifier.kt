@@ -20,7 +20,7 @@ import kotlin.math.sin
 import kotlin.random.Random
 
 // Fully Vibe-Coded refer to https://chatgpt.com/c/695adcd8-53c4-8332-82fc-75dae846bbcd
-// Nvm, ChatGPTs-Version sucked so I rewrote most of it
+// Nvm, ChatGPTs-Version sucked, so I rewrote most of it
 
 private data class ConfettiParticle(
     val startX: Float,          // 0..1 (relative, scaled each frame)

@@ -31,8 +31,8 @@ class DaySummaryAggregator(
         val endOfDay = date.atEndAsMillis(zone)
         val events = rawEvents ?: return@map mapOf()
         events.forEach {
-            val duration = it.proposed.end.coerceAtMost(endOfDay) - it.proposed.start.coerceAtLeast(startOfDay)
-            total[it.proposed.type] = total[it.proposed.type]?.plus(duration) ?: duration
+            val duration = it.raw.end.coerceAtMost(endOfDay) - it.raw.start.coerceAtLeast(startOfDay)
+            total[it.raw.type] = total[it.raw.type]?.plus(duration) ?: duration
         }
         total.mapValues {
             PieChart.Companion.PieChartPart(it.key.colors.bg, it.value.toDouble())

@@ -134,7 +134,7 @@ fun AlarmScreen(alarmViewModel: AlarmViewModel){
         }
         NextEventInformation(alarmViewModel, nextEvent, LocalScreens.current, LocalScreens.current.profileInfoModel)
         Spacer(Modifier.weight(1f))
-        RenderClockVisual(alarmViewModel, nextEvent.proposed.start)
+        RenderClockVisual(alarmViewModel, nextEvent.raw.start)
         Spacer(Modifier.weight(1f))
         Row(
             Modifier
@@ -228,7 +228,7 @@ fun AlarmScreen(alarmViewModel: AlarmViewModel){
                     if(!settings.hasAssured(Settings.Feature.LifeAlarmClock)){
                         nav.navigate(NavPath.Menu.More.Settings.PERMISSIONS)
                     } else if(!alarmIsSet) {
-                        alarmViewModel.setAlarm(nextEvent.proposed.start)
+                        alarmViewModel.setAlarm(nextEvent.raw.start)
                     } else {
                         alarmViewModel.removeAlarm()
                     }
@@ -264,14 +264,14 @@ fun RenderEventPreview(syncedEvent: SyncedEvent, screens: LocalScreensProvider?,
             })
     Box(
         Modifier
-            .background(syncedEvent.proposed.type.colors.bg, CircleShape)
+            .background(syncedEvent.raw.type.colors.bg, CircleShape)
             .clip(CircleShape)
             .rippleClick{
                 openFullScreenEvent()
             }
             .padding(5.dp, 5.dp, 10.dp, 5.dp)
     ) {
-        when(val event = syncedEvent.proposed) {
+        when(val event = syncedEvent.raw) {
             is TagEvent -> RenderTagAndTitleBar(
                 event.eventTags,
                 if(event is TitleEvent) event.title else null,
@@ -464,10 +464,10 @@ fun NextEventInformation(alarmViewModel: AlarmViewModel, nextEvent: SyncedEvent,
         Spacer(Modifier)
         Text("Nächstes Event:", style = TypoStyle(Theme.secondary, FontSize.MEDIUM))
         RenderEventPreview(nextEvent, screens, profileInfoModel)
-        Text("Um ${nextEvent.proposed.start.formatDayTime(calendar)} in", style = TypoStyle(Theme.secondary, FontSize.MEDIUM))
+        Text("Um ${nextEvent.raw.start.formatDayTime(calendar)} in", style = TypoStyle(Theme.secondary, FontSize.MEDIUM))
         val animatedTime = remember { Animatable(0f) }
-        LaunchedEffect(currentTime, nextEvent.proposed.start) {
-            animatedTime.animateTo((nextEvent.proposed.start - currentTime).toFloat(), chartBasedAnimation)
+        LaunchedEffect(currentTime, nextEvent.raw.start) {
+            animatedTime.animateTo((nextEvent.raw.start - currentTime).toFloat(), chartBasedAnimation)
         }
         Text(animatedTime.value.toLong().formatMsToDuration(true), style = TypoStyle(Theme.primary, FontSize.XXLARGE, FontFamily.Display))
     }

@@ -44,6 +44,7 @@ import androidx.compose.ui.unit.times
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.myxoz.life.LocalScreens
 import com.myxoz.life.Theme
+import com.myxoz.life.api.API
 import com.myxoz.life.api.Syncable
 import com.myxoz.life.screens.feed.instantevents.InstantEvent
 import com.myxoz.life.ui.theme.FontSize
@@ -118,7 +119,7 @@ fun DayComposable(
                     oneHourDp
                 )
 
-                RenderProposedEvents(
+                RenderLocalEvents(
                     calendarViewModel,
                     date,
                     oneHourDp,
@@ -281,27 +282,29 @@ private fun RenderInstantEvents(
 }
 
 @Composable
-private fun BoxScope.RenderProposedEvents(
+private fun BoxScope.RenderLocalEvents(
     calendarViewModel: CalendarViewModel,
     date: LocalDate,
     oneHourDp: Dp,
     startOfDay: Long,
     endOfDay: Long,
 ) {
-    val collectedProposedEvents by calendarViewModel.getProposedEventsAt(date).collectAsState()
+    val collectedLocalEvents by calendarViewModel.getLocalEventsAt(date).collectAsState()
     val coroutineScope = rememberCoroutineScope()
-    if (collectedProposedEvents == null) return
-    for(event in collectedProposedEvents) {
+    if (collectedLocalEvents == null) return
+    for(event in collectedLocalEvents) {
         Box(Modifier
             .fillMaxHeight()
             .fillMaxWidth()
             .align(Alignment.CenterStart)) {
             event.Render(oneHourDp, startOfDay, endOfDay,{
                 coroutineScope.launch {
-                    calendarViewModel.removeProposedEvent(event)
+                    calendarViewModel.localEventInteracted(event, null)
                 }
             }) {
-                calendarViewModel.saveProposedEvent(event)
+                coroutineScope.launch {
+                    calendarViewModel.localEventInteracted(event, API.generateId())
+                }
             }
         }
     }
@@ -317,11 +320,11 @@ private fun BoxScope.RenderEditing(
     oneHourPx: Float,
     instantEventSize: Dp,
     calendar: Calendar,
-){
+) {
     val editedEvent by inspectedEventViewModel.event.collectAsState()
     val syncable by inspectedEventViewModel.editedSyncable.collectAsState()
     if (isEditing) {
-        if (syncable == null && editedEvent.proposed.end > startOfDay && editedEvent.proposed.start < endOfDay) {
+        if (syncable == null && editedEvent.raw.end > startOfDay && editedEvent.raw.start < endOfDay) {
             RenderEventEditing(
                 inspectedEventViewModel,
                 startOfDay,
@@ -355,7 +358,7 @@ private fun BoxScope.RenderEventEditing(
 ){
     val screens = LocalScreens.current
     val editedEvent by inspectedEventViewModel.event.collectAsState()
-    val colors = editedEvent.proposed.type.colors.bg
+    val colors = editedEvent.raw.type.colors.bg
     val gradientBottom = remember(colors) {
         Brush.radialGradient(
             listOf(colors, Color.Transparent),
@@ -377,33 +380,33 @@ private fun BoxScope.RenderEventEditing(
                 ev = inspectedEventViewModel.event.value; totalDrag = 0f
             }
         ) { _, it ->
-            totalDrag += it;
+            totalDrag += it
             val offsetInMs =
                 ((totalDrag / hourInPx * 4).toInt() * 900 * 1000L)
             inspectedEventViewModel.setInspectedEventTo(
                 when {
                     !start && end -> {
                         ev.copyWithTimes(
-                            start = ev.proposed.start,
-                            end = (ev.proposed.end + offsetInMs).coerceAtLeast(
-                                ev.proposed.start + 900 * 1000
+                            start = ev.raw.start,
+                            end = (ev.raw.end + offsetInMs).coerceAtLeast(
+                                ev.raw.start + 900 * 1000
                             )
                         )
                     }
 
                     start && !end -> {
                         ev.copyWithTimes(
-                            start = (ev.proposed.start + offsetInMs).coerceAtMost(
-                                ev.proposed.end - 900 * 1000
+                            start = (ev.raw.start + offsetInMs).coerceAtMost(
+                                ev.raw.end - 900 * 1000
                             ),
-                            end = editedEvent.proposed.end
+                            end = editedEvent.raw.end
                         )
                     }
 
                     else -> {
                         ev.copyWithTimes(
-                            ev.proposed.start + offsetInMs,
-                            ev.proposed.end + offsetInMs
+                            ev.raw.start + offsetInMs,
+                            ev.raw.end + offsetInMs
                         )
                     }
                 }
@@ -444,7 +447,7 @@ private fun BoxScope.RenderEventEditing(
         Modifier
             .fillMaxWidth()
             .padding(
-                top = editedEvent.proposed.getTopPadding(
+                top = editedEvent.raw.getTopPadding(
                     oneHourDp,
                     startOfDay
                 )
@@ -456,7 +459,7 @@ private fun BoxScope.RenderEventEditing(
                 dragEvent(true, end = true)
             }
             .height(
-                editedEvent.proposed.getHeightDp(
+                editedEvent.raw.getHeightDp(
                     oneHourDp,
                     startOfDay,
                     endOfDay
@@ -464,7 +467,7 @@ private fun BoxScope.RenderEventEditing(
             )
             .border(
                 2.dp,
-                editedEvent.proposed.type.colors.bg,
+                editedEvent.raw.type.colors.bg,
                 RoundedCornerShape(10.dp)
             )
             .boxShadow(
@@ -473,18 +476,18 @@ private fun BoxScope.RenderEventEditing(
                 shape = RoundedCornerShape(10.dp)
             )
     ) {
-        if (editedEvent.proposed.start >= startOfDay) topDragger()
-        if (editedEvent.proposed.end <= endOfDay) bottomDragger()
+        if (editedEvent.raw.start >= startOfDay) topDragger()
+        if (editedEvent.raw.end <= endOfDay) bottomDragger()
         Box(
             Modifier
                 .fillMaxSize()
                 .alpha(.7f)
                 .background(
-                    editedEvent.proposed.getBackgroundBrush(6 / 7f), // Just no
+                    editedEvent.raw.getBackgroundBrush(6 / 7f), // Just no
                     RoundedCornerShape(10.dp)
                 )
         ) {
-            with(editedEvent.proposed) {
+            with(editedEvent.raw) {
                 RenderContent(
                     oneHourDp, startOfDay, endOfDay, false,
                     getBlockHeight(startOfDay, endOfDay)
@@ -496,7 +499,7 @@ private fun BoxScope.RenderEventEditing(
         Modifier
             .align(Alignment.TopCenter)
             .offset(
-                y = -FontSize.LARGE.size.toDp() + editedEvent.proposed.getTopPadding(
+                y = -FontSize.LARGE.size.toDp() + editedEvent.raw.getTopPadding(
                     oneHourDp,
                     startOfDay
                 ).run { if (this == 1.dp) (-2).dp else this })
@@ -507,18 +510,18 @@ private fun BoxScope.RenderEventEditing(
                 dragEvent(true, end = false)
             }
     ) {
-        calendar.timeInMillis = editedEvent.proposed.start
+        calendar.timeInMillis = editedEvent.raw.start
         val currentHour = calendar.get(Calendar.HOUR_OF_DAY)
         val currentMinute = calendar.get(Calendar.MINUTE)
         Text(
             "${if (currentHour <= 9) "0" else ""}$currentHour:${if (currentMinute <= 9) "0" else ""}$currentMinute",
             Modifier
                 .background(
-                    editedEvent.proposed.type.colors.bg,
+                    editedEvent.raw.type.colors.bg,
                     RoundedCornerShape(50, 50, 0, 0)
                 )
                 .padding(horizontal = 5.dp, vertical = 2.dp),
-            color = editedEvent.proposed.type.selectedColor,
+            color = editedEvent.raw.type.selectedColor,
             textAlign = TextAlign.Right
         )
     }
@@ -526,10 +529,10 @@ private fun BoxScope.RenderEventEditing(
         Modifier
             .align(Alignment.TopCenter)
             .offset(
-                y = editedEvent.proposed.getTopPadding(
+                y = editedEvent.raw.getTopPadding(
                     oneHourDp,
                     startOfDay
-                ) + editedEvent.proposed.getHeightDp(
+                ) + editedEvent.raw.getHeightDp(
                     oneHourDp,
                     startOfDay,
                     endOfDay
@@ -542,18 +545,18 @@ private fun BoxScope.RenderEventEditing(
                 dragEvent(false, end = true)
             }
     ) {
-        calendar.timeInMillis = editedEvent.proposed.end
+        calendar.timeInMillis = editedEvent.raw.end
         val currentHour = calendar.get(Calendar.HOUR_OF_DAY)
         val currentMinute = calendar.get(Calendar.MINUTE)
         Text(
             "${if (currentHour <= 9) "0" else ""}$currentHour:${if (currentMinute <= 9) "0" else ""}$currentMinute",
             Modifier
                 .background(
-                    editedEvent.proposed.type.colors.bg,
+                    editedEvent.raw.type.colors.bg,
                     RoundedCornerShape(0, 0, 50, 50)
                 )
                 .padding(horizontal = 5.dp, vertical = 2.dp),
-            color = editedEvent.proposed.type.selectedColor,
+            color = editedEvent.raw.type.selectedColor,
             textAlign = TextAlign.Left
         )
     }

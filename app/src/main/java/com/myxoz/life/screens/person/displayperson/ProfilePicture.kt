@@ -74,7 +74,7 @@ fun ProfilePictureWithText(photoPicker: PhotoPicker, profileInfoViewModel: Profi
     @Suppress("UnnecessaryVariable", "RedundantSuppression") // LOL
     val smallPbSize = fontSize
     val maxHeight = topBarHeight - smallPbSize - smallPbPadding*2
-    val progress = 1-min(maxHeight, scrollLength)/maxHeight
+    val progress = 1-min(maxHeight, scrollLength) / maxHeight
     val fontPadding = 20.dp
     val style = TypoStyle(Theme.primary, FontSize.XLARGE, FontFamily.Display)
     val inspectedPerson by profileInfoViewModel.getInspectedPerson(personId).collectAsState()

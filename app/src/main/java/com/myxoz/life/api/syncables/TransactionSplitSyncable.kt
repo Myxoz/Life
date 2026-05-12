@@ -7,6 +7,7 @@ import com.myxoz.life.dbwrapper.banking.TransactionSplitEntity
 import com.myxoz.life.dbwrapper.banking.TransactionSplitPartEntity
 import com.myxoz.life.screens.feed.fullscreenevent.getId
 import com.myxoz.life.utils.getLongOrNull
+import com.myxoz.life.utils.getSafeLong
 import com.myxoz.life.utils.getStringOrNull
 import com.myxoz.life.utils.jsonObjArray
 import org.json.JSONArray
@@ -45,7 +46,7 @@ data class TransactionSplitSyncable(
                 json.getLongOrNull("syncable_id"),
                 json.getStringOrNull("remote_id"),
                 json.getJSONArray("parts").jsonObjArray.map {
-                    Part(it.getString("person").toLong(), it.getInt("amount"))
+                    Part(it.getSafeLong("person"), it.getInt("amount"))
                 }
             )
         data class Part(val person: Long, val amount: Int) {

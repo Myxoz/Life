@@ -86,7 +86,7 @@ import com.myxoz.life.events.DigSocEvent
 import com.myxoz.life.events.EmptyEvent
 import com.myxoz.life.events.HobbyEvent
 import com.myxoz.life.events.LearnEvent
-import com.myxoz.life.events.ProposedEvent
+import com.myxoz.life.events.RawEvent
 import com.myxoz.life.events.SleepEvent
 import com.myxoz.life.events.SocialEvent
 import com.myxoz.life.events.SpontEvent
@@ -120,6 +120,7 @@ import com.myxoz.life.utils.filteredWith
 import com.myxoz.life.utils.formatMinutesToVisual
 import com.myxoz.life.utils.formatMsToDuration
 import com.myxoz.life.utils.formatTimeStamp
+import com.myxoz.life.utils.getSafeLong
 import com.myxoz.life.utils.matchInstrinsicHeight
 import com.myxoz.life.utils.matchesNormalized
 import com.myxoz.life.utils.nullIfEmpty
@@ -137,11 +138,11 @@ import java.time.ZoneId
 fun ModifyEvent(viewModel: InspectedEventViewModel){
     val nav = LocalNavController.current
     val syncedEvent by viewModel.event.collectAsState()
-    val event = syncedEvent.proposed
+    val event = syncedEvent.raw
     val syncableRaw by viewModel.editedSyncable.collectAsState()
     val syncable = syncableRaw
-    val setEventTo: (ProposedEvent)->Unit = {
-        viewModel.setInspectedEventTo(syncedEvent.copy(proposedEvent = it))
+    val setEventTo: (RawEvent)->Unit = {
+        viewModel.setInspectedEventTo(syncedEvent.copy(rawEvent = it))
     }
     val setSyncableTo: (Syncable.FeedInstantEventSyncable)->Unit = {
         viewModel.setEditedSyncableTo(it)
@@ -512,7 +513,7 @@ fun ModifyEvent(viewModel: InspectedEventViewModel){
                         false,
                         0,
                         "",
-                        viewModel.event.value.proposed.start,
+                        viewModel.event.value.raw.start,
                         null
                     )
                 )
@@ -524,7 +525,7 @@ fun ModifyEvent(viewModel: InspectedEventViewModel){
                         "",
                         null,
                         false,
-                        viewModel.event.value.proposed.start,
+                        viewModel.event.value.raw.start,
                     )
                 )
             }
@@ -697,6 +698,8 @@ fun InputField(
     onImeAction: (()-> ImeActionClicked)?=null,
     multiline: Boolean = false,
     background: Color = Theme.secondaryContainer,
+    visualTransformation: VisualTransformation? = null,
+    keyboardType: KeyboardType? = null,
     onChange: (String)->Unit
 ){
     var value by remember(defaultValue, placeholder) {
@@ -722,7 +725,7 @@ fun InputField(
             cursorColor = Theme.primary,
         ),
         singleLine = !multiline,
-        keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Sentences, imeAction = ImeAction.Done),
+        keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Sentences, imeAction = ImeAction.Done, keyboardType = keyboardType ?: KeyboardType.Unspecified),
         keyboardActions = KeyboardActions{
             if(onImeAction!=null) {
                 val imeAction = onImeAction()
@@ -734,6 +737,7 @@ fun InputField(
                 focusManager.clearFocus()
             }
         },
+        visualTransformation = visualTransformation ?: VisualTransformation.None,
         shape = RoundedCornerShape(10.dp),
         placeholder = {
             Text(placeholder, style = TypoStyle(Theme.secondary, FontSize.LARGE))
@@ -845,10 +849,10 @@ fun TagsBar(ev: List<EventTag>, updateEvent: (List<EventTag>)->Unit){
 }
 data class ImeActionClicked(val unfocusField: Boolean, val clearField: Boolean)
 /** Gets the "id"-key of a JSON object without ridiculous rounding errors */
-fun JSONObject.getId() = getString("id").toLong()
+inline fun JSONObject.getId() = getSafeLong("id")
 
 @Composable
-fun TimeBar(event: ProposedEvent, progress: Float = 0f, color: Color, setEventTo: (ProposedEvent) -> Unit){
+fun TimeBar(event: RawEvent, progress: Float = 0f, color: Color, setEventTo: (RawEvent) -> Unit){
     val screens = LocalScreens.current
     val verticalOffset = FontSize.SMALLM.size.toDp()
     Box(
@@ -1213,10 +1217,10 @@ fun VehicleSelection(defSelected: List<TimedTagLikeContainer<Vehicle>>, inspectV
                     .rippleClick{
                         coroutineScope.launch {
                             val event = inspectViewModel?.event?.value ?: return@launch
-                            if(event.proposed !is TravelEvent) return@launch
-                            val from = screens.getCachedLocation(event.proposed.from)
-                            val to = screens.getCachedLocation(event.proposed.to)
-                            AndroidUtils.openLink(context, HVV.constructLink(from, to, (event.proposed.start-15*1000L*60L).formatTimeStamp(calendar)))
+                            if(event.raw !is TravelEvent) return@launch
+                            val from = screens.getCachedLocation(event.raw.from)
+                            val to = screens.getCachedLocation(event.raw.to)
+                            AndroidUtils.openLink(context, HVV.constructLink(from, to, (event.raw.start-15*1000L*60L).formatTimeStamp(calendar)))
                         }
                     }
                     .border(2.dp, Theme.outlineVariant, CircleShape)

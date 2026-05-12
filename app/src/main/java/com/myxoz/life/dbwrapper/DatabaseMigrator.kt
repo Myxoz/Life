@@ -21,7 +21,7 @@ class DatabaseMigrator(var version: Int, val builder: RoomDatabase.Builder<AppDa
     companion object {
         // TODO Increment for each migration.
         // Yes I tried but VERSION needs to be a compile-time constant
-        const val VERSION = 40
+        const val VERSION = 41
         fun RoomDatabase.Builder<AppDatabase>.applyAllMigrations(): RoomDatabase.Builder<AppDatabase> {
             val mig = DatabaseMigrator(37, this)
             return mig
@@ -54,6 +54,14 @@ class DatabaseMigrator(var version: Int, val builder: RoomDatabase.Builder<AppDa
                         amount INTEGER NOT NULL,
                         PRIMARY KEY (id, person)
                     )""".trimIndent())
+                }
+                .add { db ->
+                    db.execSQL("""
+                    CREATE TABLE IF NOT EXISTS extension (
+                        id INTEGER NOT NULL PRIMARY KEY,
+                        data TEXT NOT NULL
+                    )
+                    """.trimIndent())
                 }
                 .builder
         }

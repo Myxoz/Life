@@ -1,15 +1,18 @@
 package com.myxoz.life.android.autodetect
 
 import android.content.Context
+import android.content.SharedPreferences
 import android.icu.util.Calendar
 import com.myxoz.life.events.SleepEvent
 import com.myxoz.life.screens.options.getUsageDataSessions
+import com.myxoz.life.utils.SharedPrefsUtils.edit
 import com.myxoz.life.utils.roundToNearest15Min
 
 object AutoDetectSleep{
     const val SPK = "declined_sleep"
-    fun getSessions(context: Context): List<SleepEvent> {
-        val sessions = getUsageDataSessions(context, 0L, System.currentTimeMillis())
+    fun getSessions(prefs: SharedPreferences, context: Context): List<SleepEvent> {
+        val after = prefs.getLong(SPK+"_after", 0)
+        val sessions = getUsageDataSessions(context, after, System.currentTimeMillis())
         if(sessions.isEmpty()) return listOf()
         var lastTimestamp = sessions.first().end
         val calendar = Calendar.getInstance()
@@ -28,6 +31,12 @@ object AutoDetectSleep{
             }
             lastTimestamp = session.end
         }
+        resultList.lastOrNull()?.let {
+            prefs.edit {
+                putLong(SPK+"_after", it.end)
+            }
+        }
+
         return resultList // We sort this in AutoDetect
     }
 }

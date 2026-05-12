@@ -20,9 +20,12 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.myxoz.life.api.API
 import com.myxoz.life.api.Syncable
+import com.myxoz.life.api.extensions.RepeatingEventsExtendable
+import com.myxoz.life.api.syncables.ExtensionSyncable
 import com.myxoz.life.api.syncables.FullDaySyncable
 import com.myxoz.life.api.syncables.PersonSyncable
-import com.myxoz.life.events.ProposedEvent
+import com.myxoz.life.api.syncables.SyncedEvent
+import com.myxoz.life.events.LocalEvent
 import com.myxoz.life.repositories.AppRepositories
 import com.myxoz.life.repositories.utils.Cached
 import com.myxoz.life.repositories.utils.StateFlowCache
@@ -31,7 +34,7 @@ import com.myxoz.life.screens.feed.dayoverview.getMonthByCalendarMonth
 import com.myxoz.life.screens.feed.instantevents.InstantEvent
 import com.myxoz.life.screens.feed.main.PrerenderedEvent
 import com.myxoz.life.screens.feed.search.SearchField
-import com.myxoz.life.utils.daysUntil
+import com.myxoz.life.utils.datesThrough
 import com.myxoz.life.utils.syncToPrefs
 import com.myxoz.life.utils.toLocalDate
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -55,12 +58,14 @@ class CalendarViewModel(
     val yesterdaySummaryAdded = repos.calendarRepo.todayFlow.flatMapConcat {
         getDaySummary(it.minusDays(1))
     }
-    val todayFlow = repos.calendarRepo.todayFlow.subscribeToColdFlow(viewModelScope, LocalDate.now())
+    val todayFlow = repos.calendarRepo.todayFlow
     val steps = repos.stepRepo.steps
     private val calendar: Calendar = Calendar.getInstance()
     val currentYear = MutableStateFlow(calendar.get(Calendar.YEAR))
     val currentMonth = MutableStateFlow(getMonthByCalendarMonth(calendar.get(Calendar.MONTH)))
     val lazyListState = LazyListState(0, 0)
+    val repeatingEvents = repos.extensionRepo.flowFor(ExtensionSyncable.ExtensionSyncableType.RepeatingEvents).subscribeToColdFlow(viewModelScope, null)
+
     val snapFlingBehavior = snapFlingBehavior(
         SnapLayoutInfoProvider(lazyListState, SnapPosition.Start),
         exponentialDecay(3f),
@@ -114,7 +119,7 @@ class CalendarViewModel(
         val current = days.value[index]
         val startOfRange = current.minusDays(dayAmount.value * 3L)
         val endOfRange = current.plusDays(dayAmount.value * 3L)
-        val between = startOfRange.daysUntil(endOfRange)
+        val between = startOfRange.datesThrough(endOfRange)
 
         days.update { days ->
             (days + between).distinct().sorted()
@@ -151,7 +156,34 @@ class CalendarViewModel(
         currentYear.value = current.year
     }
 
-    suspend fun removeProposedEvent(event: ProposedEvent) = repos.calendarRepo.removeProposedEvent(event)
+    suspend fun localEventInteracted(event: LocalEvent, newEventId: Long?) {
+        run {
+            repos.extensionRepo.updateAndSyncWith(ExtensionSyncable.ExtensionSyncableType.RepeatingEvents) { old ->
+                if(old.value?.events?.any { it.id == event.localId } != true) return@run
+                val res = RepeatingEventsExtendable(old.value.events.map {
+                    if(it.id == event.localId) it.next(newEventId) else it
+                })
+                repos.hooks.updateRepeatingEvents(res)
+                res
+            }
+            // We are done, event moved!
+            createSyncedEventFor(event, newEventId)
+            return
+        }
+        repos.calendarRepo.removeLocalEventFromPrefsAndCache(event)
+        createSyncedEventFor(event, newEventId)
+        // New event created, save and sync
+    }
+    private suspend fun createSyncedEventFor(event: LocalEvent, newId: Long?){
+        if(newId != null) {
+            updateOrCreateSyncedEvent(
+                SyncedEvent(newId, System.currentTimeMillis(), null, event.raw),
+                false
+            )
+        }
+    }
+    suspend fun updateOrCreateSyncedEvent(event: SyncedEvent, wasEdited: Boolean) = repos.calendarRepo.updateOrCreateSyncedEvent(event, wasEdited)
+
     fun setDay(selectedDay: LocalDate) {
         days.value = listOf(selectedDay)
     }
@@ -164,17 +196,22 @@ class CalendarViewModel(
         repos.peopleRepo.getPeopleWithBirthdayAt(it).map { it?:listOf() }.subscribeToColdFlow(viewModelScope, listOf())
     }
     fun getPeopleWithBirthdayAt(date: LocalDate) = birthDayAtCached.get(date)
-    private val getProposedEventsAtCache = StateFlowCache<LocalDate, List<ProposedEvent>?>{
-        repos.calendarRepo.getProposedEventsAt(it).subscribeToColdFlow(viewModelScope, listOf())
+    private val getLocalEventsAtCache = StateFlowCache<LocalDate, List<LocalEvent>?>{
+        repos.calendarRepo.getLocalEventsAt(it).subscribeToColdFlow(viewModelScope, listOf())
     }
-    fun getProposedEventsAt(date: LocalDate) = getProposedEventsAtCache.get(date)
-    fun saveProposedEvent(event: ProposedEvent) = repos.calendarRepo.saveProposedNotYetSyncedEvent(event)
+    fun getLocalEventsAt(date: LocalDate) = getLocalEventsAtCache.get(date)
     fun requestAutoDetectedEventStart(settings: Settings.CompositionSettings) = repos.calendarRepo.fetchAutoDetectEvents(settings)
     suspend fun testSign() = repos.api.testSign()
     fun getBase64Public() = repos.api.getBase64Public()
     fun requireAllPeople() = repos.peopleRepo.requireAllPeople()
     private val prerenderedEventCache = StateFlowCache<LocalDate, Map<Long, PrerenderedEvent>>{ date ->
         repos.aggregators.calendarAggregator.getPrerenderedEvents(date).subscribeToColdFlow(viewModelScope, mapOf())
+    }
+    suspend fun loadRepeatingEvents() {
+        val repeatingEvents = repos.extensionRepo.getExtension(ExtensionSyncable.ExtensionSyncableType.RepeatingEvents)?.events ?: return
+        repos.calendarRepo.updateLocalEvents(
+            repeatingEvents.map { LocalEvent(it.id, it.event) }
+        )
     }
     fun getSegmentedEvents(date: LocalDate) = prerenderedEventCache.get(date)
     val instantEventsForDayCache = StateFlowCache<LocalDate, List<InstantEvent.InstantEventGroup>>{ date ->

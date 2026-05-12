@@ -42,7 +42,6 @@ import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
-import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalFocusManager
@@ -91,7 +90,7 @@ import kotlin.math.ln
 @Composable
 fun MapSheet(mapViewModel: MapViewModel, innerPadding: PaddingValues){
     val nav = LocalNavController.current
-    val screenHeight = LocalConfiguration.current.screenHeightDp.dp
+    val screenHeight = LocalWindowInfo.current.containerDpSize.height
     val coroutineScope = rememberCoroutineScope()
     val selectCoordsOnMap by mapViewModel.selectCoordsOnMap.collectAsState()
     val sheetLocation by mapViewModel.sheetLocation.collectAsState()

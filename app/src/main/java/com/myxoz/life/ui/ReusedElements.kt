@@ -375,7 +375,7 @@ fun rememberAsymmetricalHorrizontalCornerRadius(isFirst: Boolean, isLast: Boolea
 
 val BOTTOMSEARCHBARHEIGHT = 56.dp + 5.dp * 2 + 15.dp
 @Composable
-fun BottomSearchBar(bg: Color, bottomPadding: Dp, onChange: (String)->Unit, icon: Painter? = null, onHold: (() -> Unit)? = null, defaltValue: String? = null, onClick: (() -> Unit)? = null){
+fun BottomSearchBar(bg: Color, bottomPadding: Dp, onChange: (String)->Unit, icon: Painter? = null, onHold: (() -> Unit)? = null, defaltValue: String? = null, onClick: (() -> Unit)? = null) {
     Column(
         Modifier
             .fillMaxWidth()

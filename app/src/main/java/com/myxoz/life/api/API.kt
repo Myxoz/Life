@@ -8,6 +8,7 @@ import androidx.core.content.edit
 import com.myxoz.life.api.syncables.BankingSidecarSyncable
 import com.myxoz.life.api.syncables.BankingSyncable
 import com.myxoz.life.api.syncables.CommitSyncable
+import com.myxoz.life.api.syncables.ExtensionSyncable
 import com.myxoz.life.api.syncables.FullDaySyncable
 import com.myxoz.life.api.syncables.LocationSyncable
 import com.myxoz.life.api.syncables.ManualTransactionSyncable
@@ -26,6 +27,8 @@ import com.myxoz.life.dbwrapper.days.ReadDaysDao
 import com.myxoz.life.dbwrapper.days.WriteDaysDao
 import com.myxoz.life.dbwrapper.events.ReadEventDetailsDao
 import com.myxoz.life.dbwrapper.events.WriteEventDetailsDao
+import com.myxoz.life.dbwrapper.extension.ReadExtensionDao
+import com.myxoz.life.dbwrapper.extension.WriteExtensionDao
 import com.myxoz.life.dbwrapper.locations.ReadLocationsDao
 import com.myxoz.life.dbwrapper.locations.WriteLocationsDao
 import com.myxoz.life.dbwrapper.people.ReadPeopleDao
@@ -37,6 +40,7 @@ import com.myxoz.life.repositories.BankingRepo
 import com.myxoz.life.repositories.CalendarRepo
 import com.myxoz.life.repositories.CommitsRepo
 import com.myxoz.life.repositories.DaySummaryRepo
+import com.myxoz.life.repositories.ExtensionRepo
 import com.myxoz.life.repositories.LocationRepo
 import com.myxoz.life.repositories.PeopleRepo
 import com.myxoz.life.repositories.TodoRepo
@@ -48,7 +52,8 @@ import org.json.JSONObject
 import kotlin.random.Random
 
 @Stable
-class API(
+class API (
+    private val hooks: UpdateHooks,
     private val calendarRepo: CalendarRepo,
     private val daySummaryRepo: DaySummaryRepo,
     private val peopleRepo: PeopleRepo,
@@ -56,6 +61,7 @@ class API(
     private val locationRepo: LocationRepo,
     private val commitsRepo: CommitsRepo,
     private val todoRepo: TodoRepo,
+    private val extensionRepo: ExtensionRepo,
     private val waitingSyncDao: WaitingSyncDao,
     private val readSyncableDaos: ReadSyncableDaos,
     private val writeSyncableDaos: WriteSyncableDaos,
@@ -267,6 +273,11 @@ class API(
                 val split = TransactionSplitSyncable.overwriteDBByJson(writeSyncableDaos, json)
                 bankingRepo.updateCachedSplit(split)
             }
+            Syncable.SpecialSyncablesIds.EXTENSION -> {
+                val extension = ExtensionSyncable.overwriteDBByJson(writeSyncableDaos, json)
+                hooks.updateExtension(extension)
+                extensionRepo.overwriteCache(extension.type, extension.content)
+            }
 
             else -> {
                 val syned = SyncedEvent.overwriteDBByJson(writeSyncableDaos, json)
@@ -290,7 +301,7 @@ class API(
     companion object {
         const val LOGTAG = "API"
         fun generateId(): Long {
-            return Random.Default.nextLong(0, Long.MAX_VALUE)
+            return Random.nextLong(0, Long.MAX_VALUE)
         }
     }
     class ReadSyncableDaos(
@@ -301,6 +312,7 @@ class API(
         val bankingDao: ReadBankingDao,
         val commitsDao: ReadCommitsDao,
         val todosDao: ReadTodosDao,
+        val extensionDao: ReadExtensionDao,
     )
     class WriteSyncableDaos(
         val eventDetailsDao: WriteEventDetailsDao,
@@ -310,6 +322,7 @@ class API(
         val bankingDao: WriteBankingDao,
         val commitsDao: WriteCommitsDao,
         val todosDao: WriteTodosDao,
+        val extensionDao: WriteExtensionDao,
     )
     fun getBase64Public() = security.getBase64Public()
 }

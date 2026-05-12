@@ -506,7 +506,7 @@ fun LiffyFace(size: Dp){
                 0f at 0+offset
                 1f at dur+offset
                 0f at 2*dur+offset
-                -1f at 3*dur+offset
+                (-1f) at 3*dur+offset
                 0f at 4*dur+offset
                 0f at 5000
                 durationMillis = 5000

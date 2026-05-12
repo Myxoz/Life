@@ -282,8 +282,10 @@ fun MyCard(largeDataCache: LargeDataCache, transactionViewModel: TransactionView
                 .align(Alignment.TopCenter)
         ) {
             Text(
-                if (showBalance) balance.toInt()
-                    .formatCents(true) else "· · · , · · €",
+                if (showBalance)
+                    balance?.toInt()?.formatCents(true) ?: "Unbekannt"
+                else
+                    if(balance != null) "· · · , · · €" else "? ? ? , ? ? €",
                 Modifier
                     .fillMaxWidth(),
                 color = Theme.primary,

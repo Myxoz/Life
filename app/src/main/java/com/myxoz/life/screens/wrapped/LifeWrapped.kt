@@ -41,7 +41,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalHapticFeedback
 import com.myxoz.life.api.API
 import com.myxoz.life.api.syncables.PersonSyncable
-import com.myxoz.life.events.ProposedEvent
+import com.myxoz.life.events.RawEvent
 import com.myxoz.life.events.SocialEvent
 import com.myxoz.life.events.TravelEvent
 import com.myxoz.life.events.additionals.EventTag
@@ -81,10 +81,10 @@ fun LifeWrappedScreen(db: API.ReadSyncableDaos, profileInfoModel: ProfileInfoMod
                 startOfYear,
                 endOfYear
             )
-            val allYearEvents = ProposedEvent.PreparedEventContent.prepareContentFor(
+            val allYearEvents = RawEvent.PreparedEventContent.prepareContentFor(
                 allYearEventsRaw, db.eventDetailsDao
             ).mapNotNull {
-                ProposedEvent.from(it)
+                RawEvent.from(it)
             }
             futurePages.add(IntroTitlePage())
             futurePages.add(YearPage(year))
@@ -130,11 +130,11 @@ fun LifeWrappedScreen(db: API.ReadSyncableDaos, profileInfoModel: ProfileInfoMod
             val allPeople = db.peopleDao.getAllPeople().map { PersonSyncable.from(db.peopleDao, it) }
 
             // This will only do 4 database queries, the world is efficient
-            val pec = ProposedEvent.PreparedEventContent.prepareContentFor(db.peopleDao.getFirstEventsFor(allPeople.map { it.id }), db.eventDetailsDao)
+            val pec = RawEvent.PreparedEventContent.prepareContentFor(db.peopleDao.getFirstEventsFor(allPeople.map { it.id }), db.eventDetailsDao)
             val firstPeopleEvents = pec.mapNotNull {
-                ProposedEvent.from(it) as? PeopleEvent
+                RawEvent.from(it) as? PeopleEvent
             }
-            val newPeople = allPeople.filter { e -> firstPeopleEvents.find { e.id in it.people }?.let { it is ProposedEvent && it.start >= startOfYear && it.end <= endOfYear } == true }
+            val newPeople = allPeople.filter { e -> firstPeopleEvents.find { e.id in it.people }?.let { it is RawEvent && it.start >= startOfYear && it.end <= endOfYear } == true }
             futurePages.add(NewSocialContact(newPeople.size))
             val mostInteractedPeople = mutableMapOf<Long, Long>()
             allYearEvents.forEach {

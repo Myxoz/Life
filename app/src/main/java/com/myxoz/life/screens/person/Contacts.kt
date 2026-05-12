@@ -70,7 +70,6 @@ import com.myxoz.life.ui.theme.FontSize
 import com.myxoz.life.ui.theme.OldColors
 import com.myxoz.life.ui.theme.TypoStyle
 import com.myxoz.life.utils.MaterialShapes
-import com.myxoz.life.utils.collectAsMutableState
 import com.myxoz.life.utils.filteredWith
 import com.myxoz.life.utils.rippleClick
 import com.myxoz.life.utils.toDp
@@ -107,13 +106,13 @@ fun Contacts(contactsViewModel: ContactsViewModel){
             val screens = LocalScreens.current
             val settings = LocalSettings.current
             val screenWidthPx = LocalWindowInfo.current.containerDpSize.width.toPx(LocalDensity.current)
-            val lifeContacts by contactsViewModel.getAllLifeContacts.collectAsState()
-            val deviceContacts by contactsViewModel.getAllDeviceContacts().collectAsState()
+            val lifeContacts by contactsViewModel.lifeContacts.collectAsState()
+            val deviceContacts by contactsViewModel.allSortedDeviceContacts.collectAsState()
             val showIcons by contactsViewModel.showIcons.collectAsState()
             val ordering = remember {
                 arrayOf('F', '*', 'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z', 'C')
             }
-            var favoriteIds by contactsViewModel.favoriteIds.collectAsMutableState()
+            val favoriteIds by contactsViewModel.favoritePeople.collectAsState()
             LaunchedEffect(Unit) {
                 if(settings.hasAssured(Settings.Feature.AddNewPerson)) withContext(Dispatchers.IO){
                      contactsViewModel.requestRefetchDeviceContacts()
@@ -343,9 +342,13 @@ fun Contacts(contactsViewModel: ContactsViewModel){
                                             .clip(CircleShape)
                                             .rippleClick {
                                                 if (letter != 'F' && !favoriteIds.contains(contact.id)) {
-                                                    favoriteIds += contact.id
+                                                    contactsViewModel.favoritePeople.set(
+                                                        favoriteIds + contact.id
+                                                    )
                                                 } else {
-                                                    favoriteIds -= contact.id
+                                                    contactsViewModel.favoritePeople.set(
+                                                        favoriteIds - contact.id
+                                                    )
                                                 }
                                             }
                                         )

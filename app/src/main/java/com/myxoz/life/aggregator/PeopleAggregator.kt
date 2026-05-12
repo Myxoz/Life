@@ -6,7 +6,7 @@ import com.myxoz.life.api.syncables.ProfilePictureSyncable
 import com.myxoz.life.api.syncables.SyncedEvent
 import com.myxoz.life.dbwrapper.events.EventEntity
 import com.myxoz.life.dbwrapper.people.PersonEntity
-import com.myxoz.life.events.ProposedEvent
+import com.myxoz.life.events.RawEvent
 import com.myxoz.life.events.additionals.EventType
 import com.myxoz.life.repositories.AppRepositories
 import com.myxoz.life.screens.options.settings.ME_ID
@@ -27,7 +27,7 @@ class PeopleAggregator(
     @OptIn(ExperimentalCoroutinesApi::class)
     fun getLastInteraction(personId: Long) = repos.calendarRepo.interactedWithPerson(personId).mapLatest {
         SyncedEvent.from(
-            ProposedEvent.PreparedEventContent.prepareContentFor(
+            RawEvent.PreparedEventContent.prepareContentFor(
                 repos.readSyncableDaos.peopleDao.getLastInteractionByPerson(personId, System.currentTimeMillis()) ?: return@mapLatest null,
                 repos.readSyncableDaos.eventDetailsDao
             ) ?: return@mapLatest null
@@ -36,7 +36,7 @@ class PeopleAggregator(
     @OptIn(ExperimentalCoroutinesApi::class)
     fun getNextInteraction(personId: Long) = repos.calendarRepo.interactedWithPerson(personId).mapLatest {
         SyncedEvent.from(
-            ProposedEvent.PreparedEventContent.prepareContentFor(
+            RawEvent.PreparedEventContent.prepareContentFor(
                 repos.readSyncableDaos.peopleDao.getNextInteractionByPerson(personId, System.currentTimeMillis()) ?: return@mapLatest null,
                 repos.readSyncableDaos.eventDetailsDao
             ) ?: return@mapLatest null

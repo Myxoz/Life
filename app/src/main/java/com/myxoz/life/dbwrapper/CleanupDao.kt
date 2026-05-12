@@ -39,6 +39,9 @@ interface DatabaseCleanupDao {
     @Query("DELETE FROM people")
     suspend fun clearKnownPeople()
 
+    @Query("DELETE FROM socials")
+    suspend fun clearKnownPeopleSocials()
+
     @Query("DELETE FROM spont")
     suspend fun clearSpontEvents()
 
@@ -81,8 +84,11 @@ interface DatabaseCleanupDao {
     @Query("DELETE FROM transaction_split")
     suspend fun clearTransactionSplit()
 
-    @Query("DELETE FROM transaction_split")
+    @Query("DELETE FROM transaction_split_part")
     suspend fun clearTransactionSplitParts()
+
+    @Query("DELETE FROM extension")
+    suspend fun clearExtension()
 
     @Transaction
     suspend fun clearAllExceptPersistent() {
@@ -98,6 +104,7 @@ interface DatabaseCleanupDao {
         clearFullDayScreentime()
         clearPeopleSocialMapping()
         clearKnownPeople()
+        clearKnownPeopleSocials()
         clearSpontEvents()
         clearAllEvents()
         clearTravelEvents()
@@ -112,5 +119,6 @@ interface DatabaseCleanupDao {
         clearTodos()
         clearTransactionSplit()
         clearTransactionSplitParts()
+        clearExtension()
     }
 }

@@ -54,7 +54,7 @@ fun rememberTextSelectionColors(colorScheme: ColorScheme): TextSelectionColors {
 const val TextSelectionBackgroundOpacity = 0.4f
 
 @Composable
-fun rememberColorScemeFromColor(color: Color, vararg key: Any) = remember(*key) {
+fun rememberColorScemeFromColor(color: Color, vararg key: Any) = remember(color, *key) {
     colorSchemeFromColor(color)
 }
 fun colorSchemeFromColor(color: Color): ColorScheme =

@@ -41,6 +41,7 @@ import com.myxoz.life.events.additionals.TimedTagLikeContainer
 import com.myxoz.life.events.additionals.Vehicle
 import com.myxoz.life.ui.ArrowDirection
 import com.myxoz.life.ui.drawArrowBehind
+import com.myxoz.life.utils.getSafeLong
 import com.myxoz.life.utils.jsonObjArray
 import com.myxoz.life.utils.toPx
 import com.myxoz.life.utils.toSp
@@ -55,7 +56,7 @@ class TravelEvent(
     val from: Long,
     val to: Long,
     val vehicles: List<TimedTagLikeContainer<Vehicle>>
-): ProposedEvent(start, end, EventType.Travel, uss, usl) {
+): RawEvent(start, end, EventType.Travel, uss, usl) {
     override suspend fun saveEventSpecifics(writeEventDetailsDao: WriteEventDetailsDao, id: Long): Boolean {
         writeEventDetailsDao.insertTravel(
             TravelEntity(
@@ -84,7 +85,6 @@ class TravelEvent(
         blockHeight: Int
     ) {
         val profileInfoModel = LocalScreens.current.profileInfoModel
-        val blockHeight = getBlockHeight(startOfDay, endOfDay)
         val from by profileInfoModel.getLocationById(from).collectAsState()
         val to by profileInfoModel.getLocationById(to).collectAsState()
         val fromDisplay = from?.name ?: "Von"
@@ -222,8 +222,8 @@ class TravelEvent(
     companion object {
         fun fromJson(json: JSONObject, start: Long, end: Long, uss: Boolean, usl: Boolean) =
             TravelEvent(
-                start, end, uss, usl, json.getString("from").toLong(),
-                json.getString("to").toLong(),
+                start, end, uss, usl, json.getSafeLong("from"),
+                json.getSafeLong("to"),
                 json.getJSONArray("vehicles").jsonObjArray.mapNotNull {
                     TimedTagLikeContainer(
                         Vehicle.getById(it.getInt("type")) ?: return@mapNotNull null,

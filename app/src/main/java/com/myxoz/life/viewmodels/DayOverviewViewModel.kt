@@ -40,7 +40,7 @@ class DayOverviewViewModel(
 
     fun getScreentimeLive(date: LocalDate) = repos.aggregators.daySummaryAggregator.getScreenTimeOnDayLive(date)
     fun getScreentime(date: LocalDate) = repos.aggregators.daySummaryAggregator.getScreenTimeForDay(date)
-    suspend fun getLastNDaysAsNonFlow(days: Int) = repos.daySummaryRepo.getLastNDaysAsNonFlow(days)
+    fun getLastNDaysAsNonFlow(days: Int) = repos.daySummaryRepo.getLastNDaysAsNonFlow(days)
 
     suspend fun setAndStageDaySummary(fullDayEvent: FullDaySyncable) = repos.daySummaryRepo.setAndStageDaySummary(fullDayEvent)
     private val profilePictureCache = StateFlowCache<Long, Bitmap?>{ personId ->

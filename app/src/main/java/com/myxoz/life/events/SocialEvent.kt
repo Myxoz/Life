@@ -39,7 +39,7 @@ class SocialEvent(
     override val title: String,
     override val people: List<Long>,
     val more: Boolean
-): ProposedEvent(start, end, EventType.Social, uss, usl), TagEvent, TitleEvent, PeopleEvent
+): RawEvent(start, end, EventType.Social, uss, usl), TagEvent, TitleEvent, PeopleEvent
 {
     override suspend fun saveEventSpecifics(writeEventDetailsDao: WriteEventDetailsDao, id: Long): Boolean {
         storeTags(writeEventDetailsDao, id)

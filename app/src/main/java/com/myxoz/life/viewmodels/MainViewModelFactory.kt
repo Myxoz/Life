@@ -8,9 +8,11 @@ import com.myxoz.life.repositories.AppRepositories
 class MainViewModelFactory(
     private val repositories: AppRepositories,
 ) : ViewModelProvider.Factory {
-
     override fun <T : ViewModel> create(modelClass: Class<T>): T {
         return when {
+            modelClass.isAssignableFrom(StreakViewModel::class.java) ->
+                StreakViewModel(repositories) as T
+
             modelClass.isAssignableFrom(TodoViewModel::class.java) ->
                 TodoViewModel(repositories) as T
 

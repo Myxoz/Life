@@ -8,7 +8,7 @@ import com.myxoz.life.dbwrapper.WaitingSyncDao
 import com.myxoz.life.repositories.utils.PerformantCache
 import com.myxoz.life.repositories.utils.PerformantInterlockedCache
 import com.myxoz.life.screens.options.settings.ME_ID
-import com.myxoz.life.utils.daysUntil
+import com.myxoz.life.utils.datesThrough
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -32,10 +32,11 @@ class PeopleRepo(
     val meFlow: StateFlow<PersonSyncable?> = _meFlow
     private val _cachedPeople = PerformantInterlockedCache.dayedSame(
         appScope,
+        { first, other -> first.id == other.id },
         {
             it.birthday?.let { birthday -> LocalDate.ofEpochDay(birthday).allFutureBirthdays() } ?: emptyList()
         },
-        { first, other -> first.id == other.id },
+        { it.id },
         { id ->
             PersonSyncable.from(
                 readPeopleDao, readPeopleDao.getPersonById(id).let { entity ->
@@ -46,9 +47,9 @@ class PeopleRepo(
             )
         },
         { from, to ->
-            from.daysUntil(to).flatMap { date ->
+            from.datesThrough(to).flatMap { date ->
                 readSyncableDaos.peopleDao.getPeopleWithBirthdayAt(date).map { entry ->
-                    entry.id to PersonSyncable.from(readPeopleDao, entry)
+                    PersonSyncable.from(readPeopleDao, entry)
                 }
             }
         }
@@ -62,7 +63,7 @@ class PeopleRepo(
         ProfilePictureSyncable.getSyncable(it, context, readPeopleDao)
     }
 
-    suspend fun updatePP(new: ProfilePictureSyncable) = _pps.overwrite(new.id, new)
+    fun updatePP(new: ProfilePictureSyncable) = _pps.overwrite(new.id, new)
     suspend fun updatePP(personId: Long, base64: String?) {
         val new = ProfilePictureSyncable(personId, base64)
         new.saveToDB(writeSyncableDaos)
@@ -89,7 +90,7 @@ class PeopleRepo(
     }
     fun getPeopleWithBirthdayAt(date: LocalDate) = _cachedPeople.getInterlockedFlowFor(date)
     fun LocalDate.allFutureBirthdays(maxAge: Int = 130): List<LocalDate> {
-        // Lets hope the life expectancy doesnt raise more than this /halfjoke
+        // Lets hope the life expectancy doesnt rise more than this /halfjoke
         val monthDay = MonthDay.from(this)
         val startYear = this.year
         return (1..maxAge).mapNotNull { offset ->

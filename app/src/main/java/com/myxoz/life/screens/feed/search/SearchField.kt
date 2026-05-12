@@ -42,7 +42,7 @@ class SearchField {
         if(old != textInputValue.value) wasUpdated()
     }
     fun isSearched(calendarViewModel: CalendarViewModel, event: PrerenderedEvent): Boolean {
-        val proposed = event.event.proposed
+        val proposed = event.event.raw
         if(mode.value == SearchMode.Text) {
             val text = textInputValue.value?.lowercase() ?: return true
             return (proposed is TagEvent && proposed.containsTagLike(text)) ||

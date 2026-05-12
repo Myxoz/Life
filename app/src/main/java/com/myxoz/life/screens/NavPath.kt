@@ -43,6 +43,11 @@ object NavPath {
         object Alarm {
             const val ALARM_SOUND_SETTINGS = "${ALARM}/soundsettings"
         }
+        const val STREAK = "$MENU/streak"
+        object Streak {
+            val FULL_SCREEN_STREAK = SingleParamaterizedPath("streakId") { "$STREAK/$it" }
+            const val EDIT_SCREEN_STREAK = "$STREAK/editing"
+        }
         const val MAP = "$MENU/map"
         const val MORE = "$MENU/more"
         const val REPOS = "repos"

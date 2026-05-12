@@ -68,7 +68,7 @@ fun DayTopBar(
                 screens.openDayOverview(date)
             }
     ) {
-        val today by calendarViewModel.todayFlow.collectAsState()
+        val today by calendarViewModel.todayFlow.collectAsState(LocalDate.now())
         val isToday = today == date
         Box(
             Modifier

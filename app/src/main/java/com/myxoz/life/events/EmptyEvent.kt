@@ -7,7 +7,7 @@ import com.myxoz.life.dbwrapper.events.WriteEventDetailsDao
 import com.myxoz.life.events.additionals.EventType
 import org.json.JSONObject
 
-class EmptyEvent(start: Long, end: Long, uss: Boolean, usl: Boolean): ProposedEvent(start, end, EventType.Empty, uss, usl) {
+class EmptyEvent(start: Long, end: Long, uss: Boolean, usl: Boolean): RawEvent(start, end, EventType.Empty, uss, usl) {
     override suspend fun saveEventSpecifics(writeEventDetailsDao: WriteEventDetailsDao, id: Long) = false
 
     @Composable

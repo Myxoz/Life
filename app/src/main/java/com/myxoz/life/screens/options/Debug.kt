@@ -1,6 +1,7 @@
 package com.myxoz.life.screens.options
 
 import android.content.Context.MODE_PRIVATE
+import android.content.pm.ApplicationInfo
 import android.icu.util.Calendar
 import android.provider.CallLog
 import androidx.activity.compose.LocalActivity
@@ -40,13 +41,18 @@ import com.myxoz.life.R
 import com.myxoz.life.Theme
 import com.myxoz.life.api.API
 import com.myxoz.life.api.Syncable
+import com.myxoz.life.api.extensions.StreakExtendable
+import com.myxoz.life.api.syncables.ExtensionSyncable
 import com.myxoz.life.dbwrapper.Daos
+import com.myxoz.life.events.additionals.EventTag
+import com.myxoz.life.events.additionals.EventType
 import com.myxoz.life.repositories.AppRepositories
 import com.myxoz.life.repositories.MainApplication
 import com.myxoz.life.ui.holdToCopy
 import com.myxoz.life.ui.theme.FontColor
 import com.myxoz.life.ui.theme.FontSize
 import com.myxoz.life.ui.theme.OldColors
+import com.myxoz.life.ui.theme.TypoStyle
 import com.myxoz.life.ui.theme.TypoStyleOld
 import com.myxoz.life.utils.formatTimeStamp
 import com.myxoz.life.viewmodels.AlarmViewModel
@@ -59,7 +65,7 @@ fun DebugScreen(
     db: Daos,
     api: API,
     repos: AppRepositories
-){
+) {
     Scaffold(
         Modifier.fillMaxSize(),
         containerColor = OldColors.BACKGROUND
@@ -102,6 +108,11 @@ fun DebugScreen(
             Text(
                 sprefs.all.map { "${it.key}: ${it.value}\n" }.joinToString(""),
                 style = TypoStyleOld(FontColor.PRIMARY, FontSize.MEDIUM)
+            )
+            val isDebuggable = 0 != context.applicationInfo.flags and ApplicationInfo.FLAG_DEBUGGABLE
+            Text(
+                "The current build is: ${if(isDebuggable) "Debuggable" else "Release"}",
+                style = TypoStyle(Theme.primary, FontSize.MEDIUM)
             )
             Spacer(Modifier.height(5.dp))
 //            Column(
@@ -195,6 +206,84 @@ fun DebugScreen(
             Button({renderCallLogs = true}) {
                 Text("Render call logs")
             }
+            Button({
+                repos.extensionRepo.overwriteCache(
+                    ExtensionSyncable.ExtensionSyncableType.Streak,
+                    StreakExtendable(
+                        listOf(
+                            StreakExtendable.StreakItem(
+                                API.generateId(),
+                                true,
+                                2,
+                                StreakExtendable.Timespan.Week,
+                                StreakExtendable.StreakTarget.EventTarget(
+                                    true,
+                                    EventType.Social,
+                                    listOf(EventTag.Sport),
+                                    listOf(),
+                                    "Gym"
+                                ),
+                                "2x Gym pro Woche",
+                                "2*Gym / Woche",
+                            ),
+                            StreakExtendable.StreakItem(
+                                API.generateId(),
+                                true,
+                                1000*3600*7,
+                                StreakExtendable.Timespan.Week,
+                                StreakExtendable.StreakTarget.EventTarget(
+                                    false,
+                                    EventType.Hobby,
+                                    listOf(EventTag.Code),
+                                    listOf(),
+                                    "Life"
+                                ),
+                                "7h Life-Coding in der Woche",
+                                "7h Life-Coding / Woche",
+                            ),
+                            StreakExtendable.StreakItem(
+                                API.generateId(),
+                                true,
+                                15*1000*60L,
+                                StreakExtendable.Timespan.Day,
+                                StreakExtendable.StreakTarget.EventTarget(
+                                    false,
+                                    EventType.DigSoc,
+                                    listOf(),
+                                    listOf(5048114124350931236),
+                                    null
+                                ),
+                                "Mind 15m Call mit Soso am Tag",
+                                "15m Soso-Call / Tag",
+                            ),
+                            StreakExtendable.StreakItem(
+                                API.generateId(),
+                                false,
+                                4*3600*1000L,
+                                StreakExtendable.Timespan.Day,
+                                StreakExtendable.StreakTarget.DayTarget(
+                                    StreakExtendable.DayTargetType.Screentime
+                                ),
+                                "Weniger als 4h Screentime täglich",
+                                "< 4h Screentime/Tag",
+                            ),
+                            StreakExtendable.StreakItem(
+                                API.generateId(),
+                                true,
+                                42_000,
+                                StreakExtendable.Timespan.Week,
+                                StreakExtendable.StreakTarget.DayTarget(
+                                    StreakExtendable.DayTargetType.Steps
+                                ),
+                                "42.000 Scritte wöchentlich (6k täglich)",
+                                "42.000 Scritte / Woche",
+                            ),
+                        )
+                    )
+                )
+            }) {
+                Text("Create streak overwrite (likely no sync)")
+            }
             if(renderCallLogs) {
                 if(settings.hasAssured(Settings.Feature.AutoDetectCalls)){
                     CallLogDumpDebug()
@@ -230,6 +319,7 @@ fun DebugScreen(
         }
     }
 }
+
 @Composable
 fun CallLogDumpDebug() {
     val context = LocalContext.current

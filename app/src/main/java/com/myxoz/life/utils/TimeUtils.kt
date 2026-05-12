@@ -3,6 +3,7 @@ package com.myxoz.life.utils
 import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneId
+import java.time.temporal.ChronoUnit
 
 fun Long.toLocalDate(zone: ZoneId): LocalDate =
     Instant.ofEpochMilli(this).atZone(zone).toLocalDate()
@@ -13,14 +14,24 @@ fun LocalDate.atStartAsMillis(zone: ZoneId): Long =
 fun LocalDate.atEndAsMillis(zone: ZoneId): Long =
     this.plusDays(1).atStartAsMillis(zone)
 
-fun LocalDate.daysUntil(other: LocalDate): List<LocalDate> {
-    if(this == other) return listOf(this)
-    val dates = mutableListOf<LocalDate>()
-    var current = this
-
-    while (!current.isAfter(other)) {
-        dates.add(current)
-        current = current.plusDays(1)
+fun LocalDate.datesThrough(other: LocalDate): List<LocalDate> =
+    generateSequence(this) { it.plusDays(1) }
+        .takeWhile { !it.isAfter(other) }
+        .toList()
+class UnixWeek(val week: Long) {
+    val start: LocalDate = epochMonday.plusWeeks(week)
+    val end: LocalDate = start.plusDays(6)
+    fun containedDays() = start.datesThrough(end)
+    override fun equals(other: Any?) = other is UnixWeek && other.week == week
+    override fun hashCode() = week.hashCode()
+    companion object {
+        inline fun of(epochDay: LocalDate) = epochDay.asUnixWeek()
+        val epochMonday: LocalDate = LocalDate.of(1970, 1, 5)
     }
-    return dates
 }
+fun LocalDate.asUnixWeek(): UnixWeek = UnixWeek(
+    ChronoUnit.DAYS.between(
+        UnixWeek.epochMonday,
+        this
+    ) / 7
+)

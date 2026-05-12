@@ -3,7 +3,7 @@ package com.myxoz.life.events.additionals
 import com.myxoz.life.R
 import com.myxoz.life.dbwrapper.events.TagsEntity
 import com.myxoz.life.dbwrapper.events.WriteEventDetailsDao
-import com.myxoz.life.utils.forEach
+import com.myxoz.life.utils.asNotNullList
 import org.json.JSONArray
 import org.json.JSONObject
 
@@ -57,13 +57,8 @@ interface TagEvent {
     fun containsTagLike(query: String) = eventTags.any { it.matches(query) }
     fun JSONObject.addTags(): JSONObject = put("tags", JSONArray().apply {eventTags.forEach { put(it.id) }})
     companion object {
-        fun JSONObject.getTagsFromJson() = getJSONArray("tags").run {
-            val list = mutableListOf<EventTag>()
-            forEach {
-                val eventTag = EventTag.getTagById(it as Int)?:return@forEach
-                list.add(eventTag)
-            }
-            list
+        fun JSONObject.getTagsFromJson() = getJSONArray("tags").asNotNullList {
+            EventTag.getTagById(getInt(it))
         }
     }
 }

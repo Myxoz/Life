@@ -395,5 +395,5 @@ fun getMonthByCalendarMonth(month: Int): String{
     return listOf("Jan", "Feb", "Mär", "Apr", "Mai", "Juni", "Juli", "Aug", "Sep", "Okt", "Nov", "Dez")[month]
 }
 fun getWeekDayByInt(day: Int): String {
-    return listOf("Mon", "Di", "Mi", "Do", "Fr", "Sa", "So")[day]
+    return listOf("Mo", "Di", "Mi", "Do", "Fr", "Sa", "So")[day]
 }

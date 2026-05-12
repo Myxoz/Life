@@ -7,9 +7,9 @@ import android.service.notification.NotificationListenerService
 import android.service.notification.StatusBarNotification
 import android.util.Log
 import com.myxoz.life.android.autodetect.AutoDetect
-import com.myxoz.life.android.autodetect.AutoDetectCall
+import com.myxoz.life.api.API
 import com.myxoz.life.events.DigSocEvent
-import com.myxoz.life.events.ProposedEvent
+import com.myxoz.life.events.LocalEvent
 import com.myxoz.life.events.additionals.DigSocPlatform
 import com.myxoz.life.events.additionals.EventType
 import com.myxoz.life.events.additionals.TimedTagLikeContainer
@@ -83,8 +83,9 @@ class NotificationReaderService : NotificationListenerService() {
             }
             "com.whatsapp" -> {
                 if(!Settings.Feature.AutoDetectWhatsAppCalls.isEnabled(repo.permissionChecker)) return
+                if(sbn.notification.category != Notification.CATEGORY_CALL) return
+
                 CoroutineScope(Dispatchers.IO).launch {
-                    if(sbn.notification.category != Notification.CATEGORY_CALL) return@launch
                     val allPeople = repo.peopleRepo.getAllPeople().first()
                     repo.prefs.edit {
                         putString("last_whatsapp_call", JSONObject().apply {
@@ -186,11 +187,11 @@ class NotificationReaderService : NotificationListenerService() {
                 json.getJSONArray("ids").asList { getString(it).toLong() },
             )
             val autodetectPrefs = getSharedPreferences(AutoDetect.AUTODETECT_PREFS, MODE_PRIVATE)
-            val oldPrefs = (autodetectPrefs.getStringSet(AutoDetect.getStored(AutoDetectCall.SPK), setOf<String>()) ?: setOf<String>()).toMutableSet()
+            val oldPrefs = (autodetectPrefs.getStringSet(AutoDetect.SESSIONS, setOf<String>()) ?: setOf<String>()).toMutableSet()
             val max = oldPrefs.maxByOrNull { JSONObject(it).getLong("end") }
             if(max != null) {
-                val oldEvent = ProposedEvent.fromJSON(JSONObject(max))
-                val merge = oldEvent.type == EventType.DigSoc && oldEvent is DigSocEvent &&
+                val oldEvent = LocalEvent.fromJSON(JSONObject(max))?.raw
+                val merge = oldEvent?.type == EventType.DigSoc && oldEvent is DigSocEvent &&
                         oldEvent.digSocEntries.all { old -> proposed.digSocEntries.any { old.type == it.type } } &&
                         oldEvent.title == proposed.title &&
                         oldEvent.people == proposed.people &&
@@ -214,9 +215,9 @@ class NotificationReaderService : NotificationListenerService() {
                     oldPrefs.remove(max)
                 }
             }
-            oldPrefs.add(proposed.toJson().toString())
+            oldPrefs.add(LocalEvent(API.generateId(), proposed).specificsToJson().toString())
             autodetectPrefs.edit {
-                putStringSet(AutoDetect.getStored(AutoDetectCall.SPK), oldPrefs)
+                putStringSet(AutoDetect.SESSIONS, oldPrefs)
             }
         }
     }
@@ -310,7 +311,7 @@ class NotificationReaderService : NotificationListenerService() {
                         add("extras[$key]", dumpPerson(value))
                     }
                     is ArrayList<*> -> {
-                        if (value.all { it is android.app.Person }) {
+                        if (value.all { it is Person }) {
                             val peopleDump = value.mapIndexed { index, p ->
                                 "[$index]: ${dumpPerson(p as Person)}"
                             }.joinToString(", ")

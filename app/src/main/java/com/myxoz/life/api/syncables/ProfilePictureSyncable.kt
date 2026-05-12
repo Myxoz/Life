@@ -124,7 +124,7 @@ class ProfilePictureSyncable(
             return ProfilePictureSyncable(id, loadBase64ByPerson(context, id))
         }
 
-        fun bitmapToBase64(bitmap: Bitmap): String? {
+        fun bitmapToBase64(bitmap: Bitmap): String {
             val outputStream = ByteArrayOutputStream()
             bitmap.compress(Bitmap.CompressFormat.JPEG, 80, outputStream)
             val bytes = outputStream.toByteArray()

@@ -1,7 +1,7 @@
 package com.myxoz.life.repositories
 
-import android.content.SharedPreferences
 import android.icu.util.Calendar
+import android.util.Log
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.State
 import androidx.compose.runtime.collectAsState
@@ -18,7 +18,6 @@ import com.myxoz.life.dbwrapper.banking.ReadBankingDao
 import com.myxoz.life.repositories.utils.Cached
 import com.myxoz.life.repositories.utils.Cached.Companion.cached
 import com.myxoz.life.repositories.utils.PerformantInterlockedCache
-import com.myxoz.life.repositories.utils.PerformantInterlockedCache.Companion.loadDays
 import com.myxoz.life.repositories.utils.PerformantInterlockedCache.Companion.overwrite
 import com.myxoz.life.repositories.utils.PerformantInterlockedCache.Companion.remove
 import com.myxoz.life.utils.atEndAsMillis
@@ -42,7 +41,6 @@ import kotlin.math.abs
 class BankingRepo(
     private val readBankingDao: ReadBankingDao,
     private val writeSyncableDaos: API.WriteSyncableDaos,
-    private val mainPrefs: SharedPreferences,
     private val appScope: CoroutineScope,
     private val waitingSyncDao: WaitingSyncDao,
 ) {
@@ -51,13 +49,27 @@ class BankingRepo(
     private val _earliestTransaction = MutableStateFlow(LocalDate.now())
     val earliestTransaction: StateFlow<LocalDate> = _earliestTransaction
     private val zone: ZoneId = ZoneId.systemDefault()
-
+    fun updateTransactionsDate(new: BankingDisplayEntity){
+        val newTransactionDate = new.processDate?.toLocalDate(zone)
+        if(newTransactionDate != null) {
+            // Assures this is a bank transaction
+            if(newTransactionDate > _lastTransactionDay.value) {
+                Log.d("Transaction", "last transaction day $newTransactionDate (${new.processDate}) with $new")
+                _lastTransactionDay.value = newTransactionDate
+            }
+            if(newTransactionDate < _earliestTransaction.value){
+                _earliestTransaction.value = newTransactionDate
+            }
+        }
+    }
     private val _transactions = PerformantInterlockedCache.dayedSame<String, BankingDisplayEntity>(
         appScope,
-        { listOf(it.timestamp.toLocalDate(zone)) },
         { first, other -> first.key.second == other.key.second },
+        { listOf(it.timestamp.toLocalDate(zone)) },
+        { it.key.second ?: error("Tried to get banking display key in _transaction and got null meaning the transaction in the bankTransactionCache is not a bankTransaction. Check logic.") },
         { key ->
-            BankingDisplayEntity.from(key, readBankingDao) ?: throw Error("This transaction doesnt exist. Check where you get the id from! $key")
+            (BankingDisplayEntity.from(key, readBankingDao) ?: error("This transaction doesnt exist. Check where you get the id from! $key"))
+                .also { transaction -> updateTransactionsDate(transaction) }
         },
         { from, to ->
             val start = from.atStartAsMillis(zone)
@@ -65,23 +77,18 @@ class BankingRepo(
             val sidecars = readBankingDao.getSidecarsBetween(start, end).associateBy { it.transactionId }
             val transactions = readBankingDao.getCombinedTransactions(start, end)
             transactions.map {
-                it.id to BankingDisplayEntity.from(it, sidecars[it.id])
+                BankingDisplayEntity.from(it, sidecars[it.id])
+                    .also { transaction -> updateTransactionsDate(transaction) }
             }
         }
     ) { _, new ->
-        val newTransactionDate = new.timestamp.toLocalDate(zone)
-        if(newTransactionDate > _lastTransactionDay.value){
-            _lastTransactionDay.value = newTransactionDate
-        }
-        if(newTransactionDate < _earliestTransaction.value){
-            _earliestTransaction.value = newTransactionDate
-        }
+        updateTransactionsDate(new)
         appScope.launch {
             checkForFutureTransaction(new)
         }
     }
     suspend fun prepareBeween(from: LocalDate, to: LocalDate): Int {
-        return _transactions.loadDays(from, to).values.sumOf { it.size } + _manualTransactions.loadDays(from, to).values.sumOf { it.size }
+        return _transactions.fetchRange(from, to).size + _manualTransactions.fetchRange(from, to).size
     }
 
     fun updateCachedTransaction(transactionId: String, new: BankingDisplayEntity){
@@ -100,10 +107,11 @@ class BankingRepo(
 
     private val _manualTransactions = PerformantInterlockedCache.dayedCached(
         appScope,
+        { first, other -> first.value?.id == other.id },
         {
             listOfNotNull(it.value?.timestamp?.toLocalDate(zone))
         },
-        { first, other -> first.value?.id == other.id },
+        { it.id },
         { id ->
             ManualTransactionSyncable.fromEntity(
                 readBankingDao.getManualTransaction(id) ?:
@@ -114,10 +122,12 @@ class BankingRepo(
             val start = from.atStartAsMillis(zone)
             val end = to.atEndAsMillis(zone)
             readBankingDao.getManualTransactionsBetween(start, end).map { entity ->
-                entity.id to ManualTransactionSyncable.fromEntity(entity).cached
+                ManualTransactionSyncable.fromEntity(entity)
             }
         },
     )
+    fun getBankTransactionsAt(date: LocalDate) = _transactions.getInterlockedFlowFor(date)
+    fun getBankTransactionsBetweenAt(start: LocalDate, end: LocalDate) = _transactions.flowByRange(start, end)
     fun getSortedTransactionsAt(date: LocalDate): Flow<List<BankingDisplayEntity>> {
         return combine(
             _transactions.getInterlockedFlowFor(date),
@@ -175,7 +185,7 @@ class BankingRepo(
     }
     private suspend fun checkForExistingTransaction(future: ManualTransactionSyncable): Boolean {
         val day = future.timestamp.toLocalDate(zone)
-        val transactions = _transactions.loadDays(day, day)[day] ?: return false
+        val transactions = _transactions.fetchRange(day, day)
         val found = transactions.any { real -> matches(real, future) }
         if(found) deleteManualTransaction(future)
         return found
@@ -184,6 +194,7 @@ class BankingRepo(
         val new = _transactionSplitCache.getCachedContent(future.id to null)?.value?.copy(remoteId = replacement.key.second).cached
         if(new.value != null) {
             new.value.saveToDB(writeSyncableDaos)
+            waitingSyncDao.requestSync(new.value)
             _transactionSplitCache.overwriteAll(
                 listOf(
                     (null to replacement.key.second) to new,
@@ -202,15 +213,16 @@ class BankingRepo(
             migrateFutureTransaction(match, newTransaction)
         }
     }
-    private val _transactionSplitCache = PerformantInterlockedCache.cached<BankingDisplayEntityKey, Long, TransactionSplitSyncable>(
+    private val _transactionSplitCache = PerformantInterlockedCache.cachedNonRange<BankingDisplayEntityKey, Long, TransactionSplitSyncable>(
         appScope,
-        { it.value?.parts?.map { part -> part.person } ?: emptyList() },
         { first, other -> first.value?.id == other.id },
+        { it.value?.parts?.map { part -> part.person } ?: emptyList() },
+        { it.key },
         {
             val syncableId = it.first
             val remoteId = it.second
-            if(syncableId == null && remoteId == null) return@cached Cached.Null
-            val entity = readBankingDao.getTransactionSplit(remoteId, syncableId) ?: return@cached Cached.Null
+            if(syncableId == null && remoteId == null) return@cachedNonRange Cached.Null
+            val entity = readBankingDao.getTransactionSplit(remoteId, syncableId) ?: return@cachedNonRange Cached.Null
             TransactionSplitSyncable(
                 entity.id,
                 syncableId,
@@ -220,10 +232,24 @@ class BankingRepo(
                 }
             ).cached
         },
-        { _, _ -> listOf() },
+        { person ->
+            val splits = readBankingDao.getTransactionSplitsByPerson(person)
+            val ids = splits.map { it.id }
+            val allSplits = readBankingDao.getAllSplits(ids)
+            val allSplitsParts = readBankingDao.getAllSplitParts(ids).groupBy { it.id }
+            allSplits.map {
+                TransactionSplitSyncable(
+                    it.id,
+                    it.syncableId,
+                    it.remoteId,
+                    (allSplitsParts[it.id] ?: listOf()).map(
+                        TransactionSplitSyncable.Companion.Part::from
+                    )
+                )
+            }
+        }
     )
-    fun getSplitFlow(key: BankingDisplayEntityKey) =
-        _transactionSplitCache.flowFor(key)
+    fun getSplitFlow(key: BankingDisplayEntityKey) = _transactionSplitCache.flowFor(key)
 
     suspend fun saveAndSyncSplit(maybeUnsyncedSplit: TransactionSplitSyncable) {
         val split = maybeUnsyncedSplit.ensureSynced()
@@ -247,24 +273,6 @@ class BankingRepo(
             && real.amount == future.amountCents
 
     fun getDebtFor(person: Long): Flow<List<TransactionSplitSyncable>?> {
-        appScope.launch {
-            val splits = readBankingDao.getTransactionSplitsByPerson(person)
-            val ids = splits.map { it.id }
-            val allSplits = readBankingDao.getAllSplits(ids)
-            val allSplitsParts = readBankingDao.getAllSplitParts(ids).groupBy { it.id }
-            _transactionSplitCache.overwriteAll(
-                allSplits.map { (it.syncableId to it.remoteId) to
-                        TransactionSplitSyncable(
-                            it.id,
-                            it.syncableId,
-                            it.remoteId,
-                            (allSplitsParts[it.id] ?: listOf()).map (
-                                TransactionSplitSyncable.Companion.Part::from
-                            )
-                        ).cached
-                }
-            )
-        }
         return _transactionSplitCache.getInterlockedFlowFor(person)
     }
 
@@ -320,14 +328,13 @@ class BankingRepo(
             !digital && !cashless -> manual?.name ?: ""
             else -> "Unbekannt"
         }
+        val processDate = entity?.valueDate
         val title = manual?.name ?: sidecar?.name ?: entity?.fromName ?: error("This can't happend")
         val subTitle = if(manual != null) manual.purpose ?: ""
             else if(sidecar == null && entity != null) entity.fromIban.chunked(4).joinToString(" ") else entity?.fromName ?: ""
         fun getStoredManualTransactionSyncable(): ManualTransactionSyncable? = manual
-        fun equals(other: BankingDisplayEntity): Boolean {
-            return if(entity != null && other.entity?.id == entity.id)
-                true
-            else manual != null && other.manual?.id == manual.id
+        override fun equals(other: Any?): Boolean {
+            return other is BankingDisplayEntity && ((entity != null && other.entity?.id == entity.id) || (manual != null && other.manual?.id == manual.id))
         }
 
         override fun toString(): String = "Title: $title; Subtitle: $subTitle; Amount: $amount; At: $timestamp (${timestamp.formatTimeStamp(Calendar.getInstance())}); Categorization: $categorization; Key: $key"
@@ -373,8 +380,11 @@ class BankingRepo(
                     }
                 }
             }
-            fun finalDailyBalance(transactions: List<BankingDisplayEntity>?): Long {
-                if (transactions?.isEmpty() != false) return 0L
+            fun finalDailyBalance(transactions: List<BankingDisplayEntity>?): Long? {
+                if (transactions.isNullOrEmpty()) {
+                    Log.w("Transaction", "No transactions for the last day: $transactions")
+                    return null
+                }
                 val entites = transactions.mapNotNull { it.entity }
 
                 // Try to find the "last" transaction recursively
@@ -393,8 +403,17 @@ class BankingRepo(
                     }
                 }
 
-                error("Could not determine transaction order")
+                Log.w("Transaction", "Could not determine transaction order $entites")
+                return null
             }
+        }
+
+        override fun hashCode(): Int {
+            var result = amount
+            result = 31 * result + (entity?.hashCode() ?: 0)
+            result = 31 * result + (sidecar?.hashCode() ?: 0)
+            result = 31 * result + (manual?.hashCode() ?: 0)
+            return result
         }
     }
 }

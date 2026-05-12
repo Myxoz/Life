@@ -21,6 +21,7 @@ import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.text.selection.LocalTextSelectionColors
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -66,6 +67,10 @@ import com.myxoz.life.screens.person.FullScreenDebt
 import com.myxoz.life.screens.person.SocialGraph
 import com.myxoz.life.screens.person.displayperson.PhotoPicker
 import com.myxoz.life.screens.person.displayperson.ProfileFullScreen
+import com.myxoz.life.screens.pick.PickExistingLocation
+import com.myxoz.life.screens.streaks.EditStreaksScreen
+import com.myxoz.life.screens.streaks.StreakFullScreen
+import com.myxoz.life.screens.streaks.StreaksScreen
 import com.myxoz.life.screens.todo.FullScreenTodo
 import com.myxoz.life.screens.transactions.MyCard
 import com.myxoz.life.screens.transactions.TransactionFeed
@@ -89,6 +94,7 @@ import com.myxoz.life.viewmodels.MapViewModel
 import com.myxoz.life.viewmodels.ProfileInfoModel
 import com.myxoz.life.viewmodels.Settings
 import com.myxoz.life.viewmodels.SocialGraphViewModel
+import com.myxoz.life.viewmodels.StreakViewModel
 import com.myxoz.life.viewmodels.TodoViewModel
 import com.myxoz.life.viewmodels.TransactionViewModel
 import kotlinx.coroutines.CoroutineScope
@@ -125,6 +131,7 @@ class MainActivity : ComponentActivity() {
     private val mapViewModel: MapViewModel by viewModels{ factory }
     private val aiSettingsViewModel: AISettingsViewModel by viewModels { factory }
     private val todoViewModel: TodoViewModel by viewModels { factory }
+    private val streakViewmodel: StreakViewModel by viewModels { factory }
     private val photoPicker = PhotoPicker()
     private val imagePickerLauncher = registerForActivityResult(
         ActivityResultContracts.StartActivityForResult()
@@ -146,6 +153,7 @@ class MainActivity : ComponentActivity() {
             if(settings.hasAssured(Settings.Feature.AddNewPerson))
                 contacsViewModel.requestRefetchDeviceContacts()
             calendarViewModel.requireAllPeople()
+            calendarViewModel.loadRepeatingEvents()
             largeDataCache.preloadAll(applicationContext)
         }
         createNotificationChannels(applicationContext)
@@ -156,6 +164,7 @@ class MainActivity : ComponentActivity() {
             controller = navController
             val colorScheme = systemColorScheme()
             val selectionColors = rememberTextSelectionColors(colorScheme)
+            MaterialTheme() { }
             CompositionLocalProvider(
                 LocalNavController provides navController,
                 LocalSettings provides settings,
@@ -169,6 +178,7 @@ class MainActivity : ComponentActivity() {
                     transactionViewModel,
                     instantEventsViewModel,
                     locationEditingViewModel,
+                    streakViewmodel,
                     navController
                 ),
                 LocalColors provides colorScheme,
@@ -230,6 +240,11 @@ class MainActivity : ComponentActivity() {
                     composable(NavPath.ADVANCED_SEARCH) {
                         AdvancedSearch(calendarViewModel)
                     }
+
+                        //  ---------- Pick -> ExistingLocation ----------
+                        composable(NavPath.Pick.LOCATION) {
+                            PickExistingLocation(mapViewModel)
+                        }
 
                         //  ---------- FEED -> Location ----------
                         composable(NavPath.MODIFY_LOCATION) {
@@ -342,6 +357,20 @@ class MainActivity : ComponentActivity() {
                             AlarmSoundSettings(alarmViewModel)
                         }
 
+                        //  ---------- Menu -> Streak ----------
+                        composable(NavPath.Menu.STREAK) {
+                            StreaksScreen(streakViewmodel)
+                        }
+                        composable(NavPath.Menu.Streak.FULL_SCREEN_STREAK.asTemplate, arguments = listOf(
+                            navArgument(NavPath.Menu.Streak.FULL_SCREEN_STREAK.parameterName) { type = NavType.LongType }
+                        )){
+                            val streakId = it.arguments?.getLong(NavPath.Menu.Streak.FULL_SCREEN_STREAK.parameterName) ?: return@composable
+                            StreakFullScreen(streakViewmodel, streakId)
+                        }
+                        composable(NavPath.Menu.Streak.EDIT_SCREEN_STREAK) {
+                            EditStreaksScreen(streakViewmodel)
+                        }
+
                         //  ---------- Menu -> More ----------
                         composable(NavPath.Menu.MORE) {
                             MoreComposable()
@@ -411,7 +440,7 @@ class MainActivity : ComponentActivity() {
                 inspectedEventViewModel.setInspectedEventTo(
                     if (!event.isSynced()) {
                         if(inspectedEventViewModel.isEditing.value) {
-                            inspectedEventViewModel.event.value.copy(proposedEvent = event.proposed)
+                            inspectedEventViewModel.event.value.copy(rawEvent = event.raw)
                         } else {
                             inspectedEventViewModel.setEditing(true)
                             event

@@ -152,10 +152,10 @@ fun ProfileFullScreen(
                         val lastInteraction by profileInfoModel.lastInteractionFlow(personId).collectAsState()
                         val nextInteraction by profileInfoModel.nextInteractionFlow(personId).collectAsState()
                         val lastInteractionDisplay = remember(lastInteraction) {
-                            ProfileInfoModel.formatTime((lastInteraction?.proposed?.end?:return@remember null) - System.currentTimeMillis())
+                            ProfileInfoModel.formatTime((lastInteraction?.raw?.end?:return@remember null) - System.currentTimeMillis())
                         }
                         val nextInteractionDisplay = remember(nextInteraction) {
-                            ProfileInfoModel.formatTime((nextInteraction?.proposed?.start ?: return@remember null) - System.currentTimeMillis())
+                            ProfileInfoModel.formatTime((nextInteraction?.raw?.start ?: return@remember null) - System.currentTimeMillis())
                         }
                         FlowRowItem(
                             "Geburtstag",
@@ -167,7 +167,7 @@ fun ProfileFullScreen(
                         if(lastInteractionDisplay!=null){
                             FlowRowItem(
                                 "Zuletzt interagiert",
-                                lastInteraction?.let { if(it.proposed is DigSocEvent) it.proposed.digSocEntries.maxByOrNull { c -> c.durationMs }?.type?.drawable else null } ?: R.drawable.met,
+                                lastInteraction?.let { if(it.raw is DigSocEvent) it.raw.digSocEntries.maxByOrNull { c -> c.durationMs }?.type?.drawable else null } ?: R.drawable.met,
                                 lastInteractionDisplay
                             ) {
                                 coroutineScope.launch {
@@ -180,7 +180,7 @@ fun ProfileFullScreen(
                         if(nextInteractionDisplay!=null){
                             FlowRowItem(
                                 "Nächste Interaktion",
-                                nextInteraction?.let { if(it.proposed is DigSocEvent) it.proposed.digSocEntries.maxByOrNull { c -> c.durationMs }?.type?.drawable else null } ?: R.drawable.met,
+                                nextInteraction?.let { if(it.raw is DigSocEvent) it.raw.digSocEntries.maxByOrNull { c -> c.durationMs }?.type?.drawable else null } ?: R.drawable.met,
                                 nextInteractionDisplay
                             ) {
                                 coroutineScope.launch {
@@ -215,19 +215,17 @@ fun ProfileFullScreen(
                         }
                     }
                     ButtonGroup(
-                        arrayOf("All-Time", "1 Jahr", "1 Monat", "1 Woche"),
+                        listOf("All-Time", "1 Jahr", "1 Monat", "1 Woche"),
                         boxWidth,
                         profileInfoModel.chartScale
                     ) {
                         profileInfoModel.chartScale.value = it
-                        coroutineScope.launch {
-                        }
                     }
                     Box(Modifier.size(width*.8f)){
                         chart.Render()
                     }
                     ButtonGroup(
-                        arrayOf("Prozent", "Zeit"),
+                        listOf("Prozent", "Zeit"),
                         boxWidth,
                         profileInfoModel.chartUnit
                     ) {}
@@ -575,7 +573,7 @@ fun switchColors(
 )
 
 @Composable
-fun ButtonGroup(list: Array<String>, width: Dp, selectedItem: MutableStateFlow<Int>, onClick: (Int) -> Unit){
+fun ButtonGroup(list: List<String>, width: Dp, selectedItem: MutableStateFlow<Int>, onClick: (Int) -> Unit) {
     Box(
         Modifier
             .width(width)
