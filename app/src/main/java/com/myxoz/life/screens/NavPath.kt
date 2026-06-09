@@ -32,6 +32,7 @@ object NavPath {
     const val MENU = "menu"
     object Menu {
         const val LIFE_WRAPPED = "life_wrapped"
+        const val BIRTHDAY_QUIZ = "birthday_quiz"
         const val TRANSACTION_FEED = "$MENU/transaction_feed"
         const val CONTACTS = "$MENU/contacts"
         object Contacts {

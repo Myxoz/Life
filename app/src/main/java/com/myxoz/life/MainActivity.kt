@@ -68,6 +68,7 @@ import com.myxoz.life.screens.person.SocialGraph
 import com.myxoz.life.screens.person.displayperson.PhotoPicker
 import com.myxoz.life.screens.person.displayperson.ProfileFullScreen
 import com.myxoz.life.screens.pick.PickExistingLocation
+import com.myxoz.life.screens.quiz.BirthdayGuesser
 import com.myxoz.life.screens.streaks.EditStreaksScreen
 import com.myxoz.life.screens.streaks.StreakFullScreen
 import com.myxoz.life.screens.streaks.StreaksScreen
@@ -81,6 +82,7 @@ import com.myxoz.life.utils.rememberTextSelectionColors
 import com.myxoz.life.utils.systemColorScheme
 import com.myxoz.life.viewmodels.AISettingsViewModel
 import com.myxoz.life.viewmodels.AlarmViewModel
+import com.myxoz.life.viewmodels.BirthdayQuizViewModel
 import com.myxoz.life.viewmodels.CalendarViewModel
 import com.myxoz.life.viewmodels.CommitsViewModel
 import com.myxoz.life.viewmodels.ContactsViewModel
@@ -132,6 +134,7 @@ class MainActivity : ComponentActivity() {
     private val aiSettingsViewModel: AISettingsViewModel by viewModels { factory }
     private val todoViewModel: TodoViewModel by viewModels { factory }
     private val streakViewmodel: StreakViewModel by viewModels { factory }
+    private val birthdayQuizViewModel: BirthdayQuizViewModel by viewModels { factory }
     private val photoPicker = PhotoPicker()
     private val imagePickerLauncher = registerForActivityResult(
         ActivityResultContracts.StartActivityForResult()
@@ -290,6 +293,9 @@ class MainActivity : ComponentActivity() {
                     }
                     composable(NavPath.Menu.SOCIAL_GRAPH) {
                         SocialGraph(socialGraphViewModel)
+                    }
+                    composable(NavPath.Menu.BIRTHDAY_QUIZ) {
+                        BirthdayGuesser(birthdayQuizViewModel)
                     }
                     composable(NavPath.Menu.LIFE_WRAPPED) {
                         LifeWrappedScreen(repositories.api.getReadableDaosForWrapped(), profileInfoModel)

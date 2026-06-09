@@ -78,6 +78,7 @@ import com.myxoz.life.ui.theme.TypoStyle
 import com.myxoz.life.utils.diagrams.PieChart
 import com.myxoz.life.utils.formatMsToDuration
 import com.myxoz.life.utils.formatPercent
+import com.myxoz.life.utils.getAge
 import com.myxoz.life.utils.rippleClick
 import com.myxoz.life.utils.toDp
 import com.myxoz.life.utils.windowPadding
@@ -146,7 +147,7 @@ fun ProfileFullScreen(
                             val month = date.month.value
                             val year = date.year
                             val day = date.dayOfMonth
-                            val age = now.year - year - 1 + if((now.month.value > month) || (now.month.value == month && now.dayOfMonth >= day /* If equals, birthday is today, Happy Birthday */)) 1 else 0
+                            val age = now.getAge(date)
                             "$day.$month.$year · ${age}J"
                         }
                         val lastInteraction by profileInfoModel.lastInteractionFlow(personId).collectAsState()

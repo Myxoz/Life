@@ -18,6 +18,8 @@ fun LocalDate.datesThrough(other: LocalDate): List<LocalDate> =
     generateSequence(this) { it.plusDays(1) }
         .takeWhile { !it.isAfter(other) }
         .toList()
+
+fun LocalDate.getAge(birth: LocalDate) = year - birth.year + if((monthValue > birth.monthValue) || (monthValue == birth.monthValue && dayOfMonth >= birth.dayOfMonth /* If equals, birthday is today, Happy Birthday */)) 0 else -1
 class UnixWeek(val week: Long) {
     val start: LocalDate = epochMonday.plusWeeks(week)
     val end: LocalDate = start.plusDays(6)

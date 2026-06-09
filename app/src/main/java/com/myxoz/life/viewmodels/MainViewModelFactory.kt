@@ -10,6 +10,9 @@ class MainViewModelFactory(
 ) : ViewModelProvider.Factory {
     override fun <T : ViewModel> create(modelClass: Class<T>): T {
         return when {
+            modelClass.isAssignableFrom(BirthdayQuizViewModel::class.java) ->
+                BirthdayQuizViewModel(repositories) as T
+
             modelClass.isAssignableFrom(StreakViewModel::class.java) ->
                 StreakViewModel(repositories) as T
 

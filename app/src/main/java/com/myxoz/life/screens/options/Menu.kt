@@ -87,7 +87,7 @@ fun MenuComposable() {
                     .background(Theme.surfaceContainer, RoundedCornerShape(20.dp))
                     .padding(vertical = 20.dp)
                 ,
-                horizontalAlignment = Alignment.CenterHorizontally
+                horizontalAlignment = Alignment.CenterHorizontally,
             ) {
                 val fontSize = FontSize.DISPLAY.size.toDp()
                 Box {
@@ -149,6 +149,7 @@ fun MenuComposable() {
         }
         listOfNotNull(
             if(displayWrapped) wrappedEntry else null,
+            SubOption(R.drawable.birthday, "Geburtstags Quiz", NavPath.Menu.BIRTHDAY_QUIZ),
             SubOption(R.drawable.streak_icon, "Streaks", NavPath.Menu.STREAK),
             SubOption(R.drawable.alarm_clock, "Wecker", NavPath.Menu.ALARM),
             SubOption(R.drawable.github, "Repositories", NavPath.Menu.REPOS),
