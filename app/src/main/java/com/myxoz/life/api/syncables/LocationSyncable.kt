@@ -7,8 +7,8 @@ import androidx.core.net.toUri
 import com.myxoz.life.api.API
 import com.myxoz.life.api.ServerSyncableCompanion
 import com.myxoz.life.api.Syncable
-import com.myxoz.life.dbwrapper.locations.LocationEntity
-import com.myxoz.life.screens.feed.fullscreenevent.getId
+import com.myxoz.life.storage.dbwrapper.locations.LocationEntity
+import com.myxoz.life.ui.feed.fullscreenevent.getId
 import com.myxoz.life.utils.getStringOrNull
 import org.json.JSONObject
 import kotlin.math.abs

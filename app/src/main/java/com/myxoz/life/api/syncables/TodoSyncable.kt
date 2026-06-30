@@ -5,11 +5,11 @@ import com.myxoz.life.R
 import com.myxoz.life.api.API
 import com.myxoz.life.api.ServerSyncableCompanion
 import com.myxoz.life.api.Syncable
-import com.myxoz.life.dbwrapper.todos.TodoEntity
-import com.myxoz.life.repositories.AppRepositories
-import com.myxoz.life.screens.feed.fullscreenevent.InputField
-import com.myxoz.life.screens.feed.fullscreenevent.getId
-import com.myxoz.life.screens.feed.instantevents.InstantEvent
+import com.myxoz.life.storage.dbwrapper.todos.TodoEntity
+import com.myxoz.life.storage.interfaces.DatabaseInterface
+import com.myxoz.life.ui.feed.fullscreenevent.InputField
+import com.myxoz.life.ui.feed.fullscreenevent.getId
+import com.myxoz.life.ui.feed.instantevents.InstantEvent
 import com.myxoz.life.utils.getServerBoolean
 import com.myxoz.life.utils.getStringOrNull
 import com.myxoz.life.utils.nullIfEmpty
@@ -44,12 +44,12 @@ data class TodoSyncable(
         screens.fullScreenTodo(this)
     }
 
-    override suspend fun delete(repos: AppRepositories) {
-        repos.todoRepo.deleteTodoFromServerDatabaseAndCache(this)
+    override suspend fun delete(repos: DatabaseInterface) {
+        repos.todoInterface.deleteTodoFromServerDatabaseAndCache(this)
     }
 
-    override suspend fun saveWithCache(repos: AppRepositories) {
-        repos.todoRepo.savePotentiallyUnsynced(this)
+    override suspend fun saveWithCache(repos: DatabaseInterface) {
+        repos.todoInterface.savePotentiallyUnsynced(this)
     }
 
     override fun getFeedInvalidReason(): String? = when {

@@ -3,8 +3,8 @@ package com.myxoz.life.api.syncables
 import com.myxoz.life.api.API
 import com.myxoz.life.api.ServerSyncableCompanion
 import com.myxoz.life.api.Syncable
-import com.myxoz.life.dbwrapper.banking.BankingSidecarEntity
-import com.myxoz.life.screens.feed.fullscreenevent.getId
+import com.myxoz.life.storage.dbwrapper.banking.BankingSidecarEntity
+import com.myxoz.life.ui.feed.fullscreenevent.getId
 import org.json.JSONObject
 
 class BankingSidecarSyncable(

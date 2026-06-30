@@ -14,11 +14,11 @@ import com.myxoz.life.api.syncables.ProfilePictureSyncable
 import com.myxoz.life.api.syncables.SyncedEvent
 import com.myxoz.life.api.syncables.TodoSyncable
 import com.myxoz.life.api.syncables.TransactionSplitSyncable
-import com.myxoz.life.dbwrapper.WaitingSyncDao
-import com.myxoz.life.dbwrapper.WaitingSyncEntity
 import com.myxoz.life.events.RawEvent
-import com.myxoz.life.repositories.AppRepositories
-import com.myxoz.life.screens.feed.instantevents.InstantEvent
+import com.myxoz.life.storage.dbwrapper.WaitingSyncDao
+import com.myxoz.life.storage.dbwrapper.WaitingSyncEntity
+import com.myxoz.life.storage.interfaces.DatabaseInterface
+import com.myxoz.life.ui.feed.instantevents.InstantEvent
 import org.json.JSONObject
 
 interface ServerSyncableCompanion<T: ServerSyncable> {
@@ -191,8 +191,8 @@ abstract class Syncable(
         fun asInstantEvent(): InstantEvent
     }
     interface FeedInstantEventSyncable: DatedSyncable<FeedInstantEventSyncable>, InstantEventSyncable {
-        suspend fun delete(repos: AppRepositories)
-        suspend fun saveWithCache(repos: AppRepositories)
+        suspend fun delete(repos: DatabaseInterface)
+        suspend fun saveWithCache(repos: DatabaseInterface)
         fun getFeedInvalidReason(): String?
         override fun getInvalidReason() = getFeedInvalidReason()
         @Composable

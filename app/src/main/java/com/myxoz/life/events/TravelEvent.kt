@@ -32,13 +32,13 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.times
 import com.myxoz.life.LocalScreens
-import com.myxoz.life.dbwrapper.events.EventEntity
-import com.myxoz.life.dbwrapper.events.TravelEntity
-import com.myxoz.life.dbwrapper.events.VehicleEntity
-import com.myxoz.life.dbwrapper.events.WriteEventDetailsDao
 import com.myxoz.life.events.additionals.EventType
 import com.myxoz.life.events.additionals.TimedTagLikeContainer
 import com.myxoz.life.events.additionals.Vehicle
+import com.myxoz.life.storage.dbwrapper.events.EventEntity
+import com.myxoz.life.storage.dbwrapper.events.TravelEntity
+import com.myxoz.life.storage.dbwrapper.events.VehicleEntity
+import com.myxoz.life.storage.dbwrapper.events.WriteEventDetailsDao
 import com.myxoz.life.ui.ArrowDirection
 import com.myxoz.life.ui.drawArrowBehind
 import com.myxoz.life.utils.getSafeLong
@@ -84,9 +84,9 @@ class TravelEvent(
         isSmall: Boolean,
         blockHeight: Int
     ) {
-        val profileInfoModel = LocalScreens.current.profileInfoModel
-        val from by profileInfoModel.getLocationById(from).collectAsState()
-        val to by profileInfoModel.getLocationById(to).collectAsState()
+        val crossRepo = LocalScreens.current.appRepos.crossRepoSuper
+        val from by crossRepo.getLocationById(from).collectAsState()
+        val to by crossRepo.getLocationById(to).collectAsState()
         val fromDisplay = from?.name ?: "Von"
         val toDisplay = to?.name ?: "Nach"
         val density = LocalDensity.current

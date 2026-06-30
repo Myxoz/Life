@@ -1,7 +1,7 @@
 package com.myxoz.life.prediction
 
 import android.content.Context
-import com.myxoz.life.dbwrapper.banking.ReadBankingDao
+import com.myxoz.life.storage.dbwrapper.banking.ReadBankingDao
 import com.myxoz.life.prediction.Normalize.lnUnsigned
 import com.myxoz.life.prediction.Normalize.putTime
 import com.myxoz.life.prediction.Normalize.stdDev

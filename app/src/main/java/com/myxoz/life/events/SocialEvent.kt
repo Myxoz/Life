@@ -16,9 +16,6 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.myxoz.life.LocalScreens
-import com.myxoz.life.dbwrapper.events.EventEntity
-import com.myxoz.life.dbwrapper.events.SocialEntity
-import com.myxoz.life.dbwrapper.events.WriteEventDetailsDao
 import com.myxoz.life.events.additionals.EventTag
 import com.myxoz.life.events.additionals.EventType
 import com.myxoz.life.events.additionals.PeopleEvent
@@ -26,7 +23,10 @@ import com.myxoz.life.events.additionals.PeopleEvent.Companion.getPeopleFromJson
 import com.myxoz.life.events.additionals.TagEvent
 import com.myxoz.life.events.additionals.TagEvent.Companion.getTagsFromJson
 import com.myxoz.life.events.additionals.TitleEvent
-import com.myxoz.life.screens.feed.main.RenderTagAndTitleBar
+import com.myxoz.life.storage.dbwrapper.events.EventEntity
+import com.myxoz.life.storage.dbwrapper.events.SocialEntity
+import com.myxoz.life.storage.dbwrapper.events.WriteEventDetailsDao
+import com.myxoz.life.ui.feed.main.RenderTagAndTitleBar
 import com.myxoz.life.utils.toSp
 import org.json.JSONObject
 
@@ -62,8 +62,8 @@ class SocialEvent(
         isSmall: Boolean,
         blockHeight: Int
     ) {
-        val profileViewModel = LocalScreens.current.profileInfoModel
-        val people by profileViewModel.getPeople(people).collectAsState()
+        val crossRepo = LocalScreens.current.appRepos.crossRepoSuper
+        val people by crossRepo.getPeople(people).collectAsState()
         val displayText = people.joinToString(" · ") { it.name }
         if(isSmall){
             Text(

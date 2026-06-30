@@ -37,10 +37,10 @@ import com.myxoz.life.aggregator.CalendarAggregator
 import com.myxoz.life.api.API
 import com.myxoz.life.api.ServerSyncableCompanion
 import com.myxoz.life.api.Syncable
-import com.myxoz.life.dbwrapper.banking.ManualTransactionEntity
-import com.myxoz.life.repositories.AppRepositories
-import com.myxoz.life.screens.feed.fullscreenevent.InputField
-import com.myxoz.life.screens.feed.fullscreenevent.getId
+import com.myxoz.life.storage.dbwrapper.banking.ManualTransactionEntity
+import com.myxoz.life.storage.interfaces.DatabaseInterface
+import com.myxoz.life.ui.feed.fullscreenevent.InputField
+import com.myxoz.life.ui.feed.fullscreenevent.getId
 import com.myxoz.life.ui.theme.FontFamily
 import com.myxoz.life.ui.theme.FontSize
 import com.myxoz.life.ui.theme.OldColors
@@ -82,11 +82,11 @@ data class ManualTransactionSyncable(
 
     fun ensureSynced() = if(!isSynced()) copy(id = API.generateId()) else this
 
-    override suspend fun delete(repos: AppRepositories) {
+    override suspend fun delete(repos: DatabaseInterface) {
         repos.bankingRepo.deleteManualTransaction(this)
     }
 
-    override suspend fun saveWithCache(repos: AppRepositories) {
+    override suspend fun saveWithCache(repos: DatabaseInterface) {
         repos.bankingRepo.putManualTransaction(this)
     }
 

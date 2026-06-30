@@ -1,5 +1,7 @@
 package com.myxoz.life.utils
 
+import androidx.lifecycle.SavedStateHandle
+import com.myxoz.life.ui.NavPath
 import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneId
@@ -37,3 +39,8 @@ fun LocalDate.asUnixWeek(): UnixWeek = UnixWeek(
         this
     ) / 7
 )
+
+fun SavedStateHandle.getDate(path: NavPath.SingleParamaterizedPath): LocalDate {
+    val epochDay = this.get<Long>(path.parameterName)
+    return if(epochDay == null) LocalDate.now() else LocalDate.ofEpochDay(epochDay)
+}

@@ -3,16 +3,15 @@ package com.myxoz.life.android.sensors
 import android.content.Context
 import android.util.Log
 import com.myxoz.life.android.integration.HVV
-import com.myxoz.life.dbwrapper.DatabaseProvider
 import com.myxoz.life.events.TravelEvent
 import com.myxoz.life.events.additionals.TimedTagLikeContainer
 import com.myxoz.life.events.additionals.Vehicle
-import com.myxoz.life.repositories.LocationRepo
-import com.myxoz.life.viewmodels.SharingContent
+import com.myxoz.life.storage.dbwrapper.DatabaseProvider
+import com.myxoz.life.storage.interfaces.LocationInterface
 
-data class SharedRouteParser(val event: TravelEvent): SharingContent() {
+data class SharedRouteParser(val event: TravelEvent) {
     companion object {
-        suspend fun from(sharedText: String, context: Context, locationRepo: LocationRepo): TravelEvent?{
+        suspend fun from(sharedText: String, context: Context, locationInterface: LocationInterface): TravelEvent?{
             val parsedRoute = HVV.parseTransitRoute(sharedText) ?: return null
             val db = DatabaseProvider.getDatabase(context)
 
@@ -22,7 +21,7 @@ data class SharedRouteParser(val event: TravelEvent): SharingContent() {
             val start = if(parsedRoute.startAddress.startsWith("c;")){
                 val lat = subedStart.substringBefore(";").toDoubleOrNull().also { Log.d("SharedRouteParser","lat: $it") }?:return null
                 val long = subedStart.substringAfter(";").toDoubleOrNull().also { Log.d("SharedRouteParser","long: $it") }?:return null
-                locationRepo.queryByCoordinate(lat,long)?.id
+                locationInterface.queryByCoordinate(lat,long)?.id
             } else if(subedStart.isNotBlank()) db.readLocationsDao().queryLocation(
                 subedStart.substringBeforeLast(",").substringBeforeLast(" ").also { Log.d("SharedRouteParser",it) },
                 subedStart.substringBeforeLast(",").substringAfterLast(" ").also { Log.d("SharedRouteParser",it) },
@@ -34,7 +33,7 @@ data class SharedRouteParser(val event: TravelEvent): SharingContent() {
             val to = if(parsedRoute.endAddress.startsWith("c;")){
                 val lat = subedEnd.substringBefore(";").toDoubleOrNull().also { Log.d("SharedRouteParser","lat: $it") }?:return null
                 val long = subedEnd.substringAfter(";").toDoubleOrNull().also { Log.d("SharedRouteParser","long: $it") }?:return null
-                locationRepo.queryByCoordinate(lat,long)?.id
+                locationInterface.queryByCoordinate(lat,long)?.id
             } else if(subedEnd.isNotBlank()) db.readLocationsDao().queryLocation(
                 subedEnd.substringBeforeLast(",").substringBeforeLast(" ").also { Log.d("SharedRouteParser",it) },
                 subedEnd.substringBeforeLast(",").substringAfterLast(" ").also { Log.d("SharedRouteParser",it) },

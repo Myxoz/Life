@@ -5,7 +5,7 @@ import com.myxoz.life.api.ServerSyncableCompanion
 import com.myxoz.life.api.Syncable
 import com.myxoz.life.events.EmptyEvent
 import com.myxoz.life.events.RawEvent
-import com.myxoz.life.screens.feed.fullscreenevent.getId
+import com.myxoz.life.ui.feed.fullscreenevent.getId
 import com.myxoz.life.utils.getLongOrNull
 import com.myxoz.life.utils.getSafeLong
 import org.json.JSONObject

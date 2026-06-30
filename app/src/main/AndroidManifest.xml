@@ -37,7 +37,7 @@
         android:theme="@style/Theme.Life"
         android:enableOnBackInvokedCallback="true"
         android:configChanges="keyboardHidden|orientation|screenSize"
-        android:name=".repositories.MainApplication"
+        android:name=".android.MainApplication"
         tools:targetApi="33">
         <service
             android:name=".android.sensors.StepsService"
@@ -77,7 +77,7 @@
             android:turnScreenOn="true"
             android:exported="false"/>
         <receiver
-            android:name=".screens.alarm.AlarmReceiver"
+            android:name=".android.alarm.AlarmReceiver"
             android:exported="false"/>
         <service
             android:name=".android.notifications.NotificationReaderService"

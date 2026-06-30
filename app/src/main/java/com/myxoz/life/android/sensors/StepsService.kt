@@ -14,21 +14,21 @@ import android.os.IBinder
 import androidx.core.app.NotificationCompat
 import com.myxoz.life.MainActivity
 import com.myxoz.life.R
-import com.myxoz.life.repositories.MainApplication
-import com.myxoz.life.repositories.StepRepo
-import com.myxoz.life.screens.NavPath
+import com.myxoz.life.android.MainApplication
+import com.myxoz.life.storage.interfaces.StepInterface
+import com.myxoz.life.ui.NavPath
 import com.myxoz.life.viewmodels.Settings
 
 class StepsService : Service(), SensorEventListener {
     private lateinit var sensorManager: SensorManager
     private lateinit var stepSensor: Sensor
-    private lateinit var repository: StepRepo
+    private lateinit var repository: StepInterface
     private lateinit var permissionChecker: Settings.Permission.PermissionChecker
 
     override fun onCreate() {
         super.onCreate()
-        val appRepo = (applicationContext as MainApplication).repositories
-        repository = appRepo.stepRepo
+        val appRepo = (applicationContext as MainApplication).dbInterface
+        repository = appRepo.stepInterface
         permissionChecker = appRepo.permissionChecker
         if(!Settings.Feature.StepCounting.hasAssured(permissionChecker)) return stopSelf()
         sensorManager = getSystemService(SENSOR_SERVICE) as SensorManager

@@ -7,17 +7,17 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.unit.Dp
 import com.myxoz.life.LocalScreens
 import com.myxoz.life.android.autodetect.AutoDetect
-import com.myxoz.life.dbwrapper.events.DigSocEntity
-import com.myxoz.life.dbwrapper.events.DigSocMappingEntity
-import com.myxoz.life.dbwrapper.events.EventEntity
-import com.myxoz.life.dbwrapper.events.WriteEventDetailsDao
 import com.myxoz.life.events.additionals.DigSocPlatform
 import com.myxoz.life.events.additionals.EventType
 import com.myxoz.life.events.additionals.PeopleEvent
 import com.myxoz.life.events.additionals.PeopleEvent.Companion.getPeopleFromJson
 import com.myxoz.life.events.additionals.TimedTagLikeContainer
 import com.myxoz.life.events.additionals.TitleEvent
-import com.myxoz.life.screens.feed.main.RenderBasicEventContent
+import com.myxoz.life.storage.dbwrapper.events.DigSocEntity
+import com.myxoz.life.storage.dbwrapper.events.DigSocMappingEntity
+import com.myxoz.life.storage.dbwrapper.events.EventEntity
+import com.myxoz.life.storage.dbwrapper.events.WriteEventDetailsDao
+import com.myxoz.life.ui.feed.main.RenderBasicEventContent
 import com.myxoz.life.utils.jsonObjArray
 import org.json.JSONArray
 import org.json.JSONObject
@@ -54,7 +54,7 @@ class DigSocEvent(
         isSmall: Boolean,
         blockHeight: Int
     ) {
-        val profileViewModel = LocalScreens.current.profileInfoModel
+        val profileViewModel = LocalScreens.current.appRepos.crossRepoSuper
         val people by profileViewModel.getPeople(people).collectAsState()
         val displayText = people.joinToString(" · ") { it.name }
         RenderBasicEventContent(

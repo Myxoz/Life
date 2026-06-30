@@ -4,7 +4,7 @@ import androidx.compose.material3.ColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.navigation.NavController
-import com.myxoz.life.screens.LocalScreensProvider
+import com.myxoz.life.ui.LocalScreensProvider
 import com.myxoz.life.viewmodels.Settings
 
 val LocalNavController = staticCompositionLocalOf<NavController> {

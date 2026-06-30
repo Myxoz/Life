@@ -3,7 +3,7 @@ package com.myxoz.life.events
 import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.unit.Dp
-import com.myxoz.life.dbwrapper.events.WriteEventDetailsDao
+import com.myxoz.life.storage.dbwrapper.events.WriteEventDetailsDao
 import com.myxoz.life.events.additionals.EventType
 import org.json.JSONObject
 

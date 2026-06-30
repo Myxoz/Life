@@ -4,9 +4,9 @@ import android.app.Activity
 import android.content.Intent
 import android.os.Bundle
 import com.myxoz.life.MainActivity
+import com.myxoz.life.android.MainApplication
 import com.myxoz.life.api.syncables.SyncedEvent
-import com.myxoz.life.repositories.MainApplication
-import com.myxoz.life.screens.NavPath
+import com.myxoz.life.ui.NavPath
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -24,12 +24,12 @@ class ShareReceiverActivity : Activity() {
                         -1L,
                         System.currentTimeMillis(),
                         null,
-                        SharedRouteParser.from(sharedText, applicationContext, (applicationContext as MainApplication).repositories.locationRepo) ?: return@launch
+                        SharedRouteParser.from(sharedText, applicationContext, (applicationContext as MainApplication).dbInterface.locationInterface) ?: return@launch
                     )
                     // Launch MainActivity with navigation intent
                     withContext(Dispatchers.Main){
                         val mainIntent = Intent(applicationContext, MainActivity::class.java).apply {
-                            putExtra("targetRoute", NavPath.FULLSCREEN_EVENT)
+                            putExtra("targetRoute", NavPath.FULLSCREEN_EVENT.with("0"))
                             putExtra("shared_event", travelEvent.toJson().toString())
                             flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
                         }

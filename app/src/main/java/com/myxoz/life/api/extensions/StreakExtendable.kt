@@ -19,8 +19,8 @@ import com.myxoz.life.events.additionals.EventType
 import com.myxoz.life.events.additionals.PeopleEvent
 import com.myxoz.life.events.additionals.TagEvent
 import com.myxoz.life.events.additionals.TitleEvent
-import com.myxoz.life.screens.feed.fullscreenevent.TimeBasedVisualTransformation
-import com.myxoz.life.screens.feed.fullscreenevent.getId
+import com.myxoz.life.ui.feed.fullscreenevent.TimeBasedVisualTransformation
+import com.myxoz.life.ui.feed.fullscreenevent.getId
 import com.myxoz.life.ui.theme.OldColors
 import com.myxoz.life.utils.UnixWeek
 import com.myxoz.life.utils.asList

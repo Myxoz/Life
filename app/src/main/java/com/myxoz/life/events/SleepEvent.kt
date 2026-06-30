@@ -18,8 +18,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.times
 import com.myxoz.life.R
 import com.myxoz.life.android.autodetect.AutoDetect
-import com.myxoz.life.dbwrapper.events.EventEntity
-import com.myxoz.life.dbwrapper.events.WriteEventDetailsDao
+import com.myxoz.life.storage.dbwrapper.events.EventEntity
+import com.myxoz.life.storage.dbwrapper.events.WriteEventDetailsDao
 import com.myxoz.life.events.additionals.EventType
 import com.myxoz.life.ui.theme.OldColors
 import com.myxoz.life.utils.toSp

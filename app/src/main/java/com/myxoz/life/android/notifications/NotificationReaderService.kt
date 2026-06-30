@@ -13,7 +13,7 @@ import com.myxoz.life.events.LocalEvent
 import com.myxoz.life.events.additionals.DigSocPlatform
 import com.myxoz.life.events.additionals.EventType
 import com.myxoz.life.events.additionals.TimedTagLikeContainer
-import com.myxoz.life.repositories.MainApplication
+import com.myxoz.life.android.MainApplication
 import com.myxoz.life.utils.SharedPrefsUtils.edit
 import com.myxoz.life.utils.asList
 import com.myxoz.life.utils.getLongOrNull
@@ -30,7 +30,7 @@ import kotlin.math.abs
 class NotificationReaderService : NotificationListenerService() {
     override fun onNotificationPosted(sbn: StatusBarNotification?) {
         if (sbn == null) return
-        val repo = (applicationContext as MainApplication).repositories
+        val repo = (applicationContext as MainApplication).dbInterface
         val extras = sbn.notification.extras
 
         when(sbn.packageName) {
@@ -86,7 +86,7 @@ class NotificationReaderService : NotificationListenerService() {
                 if(sbn.notification.category != Notification.CATEGORY_CALL) return
 
                 CoroutineScope(Dispatchers.IO).launch {
-                    val allPeople = repo.peopleRepo.getAllPeople().first()
+                    val allPeople = repo.peopleInterface.getAllPeople().first()
                     repo.prefs.edit {
                         putString("last_whatsapp_call", JSONObject().apply {
                             put("start", sbn.notification.`when`.toString())
@@ -109,7 +109,7 @@ class NotificationReaderService : NotificationListenerService() {
 
     override fun onNotificationRemoved(unreliableSBN: StatusBarNotification?) {
         if(unreliableSBN  == null) return
-        val repo = (applicationContext as MainApplication).repositories
+        val repo = (applicationContext as MainApplication).dbInterface
         // dumpNotification(unreliableSBN)
         if(!Settings.Feature.AutoDetectWhatsAppCalls.isEnabled(repo.permissionChecker)) return
         if(unreliableSBN.packageName != "com.whatsapp") return

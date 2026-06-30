@@ -3,7 +3,7 @@ package com.myxoz.life.api.extensions
 import android.icu.util.Calendar
 import com.myxoz.life.api.syncables.ExtensionSyncable
 import com.myxoz.life.events.RawEvent
-import com.myxoz.life.screens.feed.fullscreenevent.getId
+import com.myxoz.life.ui.feed.fullscreenevent.getId
 import com.myxoz.life.utils.asList
 import com.myxoz.life.utils.asNotNullList
 import com.myxoz.life.utils.getJSONObjectOrNull

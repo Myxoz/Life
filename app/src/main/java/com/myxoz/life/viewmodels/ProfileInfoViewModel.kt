@@ -1,84 +1,66 @@
 package com.myxoz.life.viewmodels
 
-import android.graphics.Bitmap
-import androidx.compose.foundation.lazy.LazyListState
+import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import androidx.navigation.NavController
-import com.myxoz.life.api.syncables.LocationSyncable
 import com.myxoz.life.api.syncables.PersonSyncable
-import com.myxoz.life.api.syncables.SyncedEvent
-import com.myxoz.life.api.syncables.TransactionSplitSyncable
-import com.myxoz.life.repositories.AppRepositories
-import com.myxoz.life.repositories.utils.PerformantCache
-import com.myxoz.life.repositories.utils.StateFlowCache
-import com.myxoz.life.repositories.utils.subscribeToColdFlow
-import com.myxoz.life.screens.NavPath
-import com.myxoz.life.utils.diagrams.PieChart
+import com.myxoz.life.repositories.supermodule.CrossRepoSuper
+import com.myxoz.life.storage.interfaces.DatabaseInterface
+import com.myxoz.life.storage.interfaces.utils.StateFlowCache
+import com.myxoz.life.storage.interfaces.utils.subscribeToColdFlow
+import com.myxoz.life.ui.NavPath
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
-import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.filterNotNull
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.flatMapMerge
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
-class ProfileInfoModel(val repos: AppRepositories): ViewModel(){
-    private val lastInteractionFlowCache = StateFlowCache<Long, SyncedEvent?> {
-        repos.aggregators.peopleAggregator.getLastInteraction(it).subscribeToColdFlow(viewModelScope, null)
-    }
-    fun lastInteractionFlow(personId: Long) = lastInteractionFlowCache.get(personId)
+class ProfileInfoModel(
+    val handle: SavedStateHandle,
+    val dbInterface: DatabaseInterface,
+    val crossRepoSuper: CrossRepoSuper
+): ViewModel(){
+    val peopleAggregator = dbInterface.aggregators.peopleAggregator
+    val inspectedPersonId = handle.get<Long>(NavPath.Menu.Contacts.DISPLAY_PERSON.parameterName) ?: error("Cannot parse person id in route")
+    val inspectedPerson = crossRepoSuper.getPerson(inspectedPersonId)
+        .subscribeToColdFlow(viewModelScope, null)
 
-    private val nextInteractionFlowCache = StateFlowCache<Long, SyncedEvent?> {
-        repos.aggregators.peopleAggregator.getNextInteraction(it).subscribeToColdFlow(viewModelScope, null)
+    suspend fun getPersonOrAwait(): PersonSyncable{
+        val person = inspectedPerson.value
+        if(person != null) return person
+        return inspectedPerson.filterNotNull().first()
     }
-    fun nextInteractionFlow(personId: Long) = nextInteractionFlowCache.get(personId)
+    val lastInteraction = peopleAggregator
+        .getLastInteraction(inspectedPersonId)
+        .subscribeToColdFlow(viewModelScope, null)
 
-    private val debtFlowCache = StateFlowCache<Long, List<TransactionSplitSyncable>?> { person ->
-        repos.bankingRepo.getDebtFor(person).subscribeToColdFlow(viewModelScope, null)
-    }
-    fun debtFlow(personId: Long) = debtFlowCache.get(personId)
+    val nextInteraction = peopleAggregator
+        .getNextInteraction(inspectedPersonId)
+        .subscribeToColdFlow(viewModelScope, null)
 
-    private val getPersonFlowCache = StateFlowCache<Long, PersonSyncable?>{
-        repos.peopleRepo.getPerson(it).subscribeToColdFlow(viewModelScope, null)
-    }
-    fun getPerson(personId: Long) = getPersonFlowCache.get(personId)
-
-    private val getPeopleFlowCache = StateFlowCache<List<Long>, List<PersonSyncable>>{
-        repos.peopleRepo.getPeople(it).subscribeToColdFlow(viewModelScope, listOf())
-    }
-    fun getPeople(personIds: List<Long>) = getPeopleFlowCache.get(personIds)
-
-    val getAlPeopleFlow = repos.peopleRepo.getAllPeople().subscribeToColdFlow(viewModelScope, listOf())
-
-    private val getLocationByIdFLowCache = StateFlowCache<Long?, LocationSyncable?>{
-        if(it == null || it == 0L) return@StateFlowCache MutableStateFlow(null)
-        repos.locationRepo.getLocationById(it).subscribeToColdFlow(viewModelScope, null)
-    }
-    fun getLocationById(locationId: Long?) = getLocationByIdFLowCache.get(locationId)
-
-    fun getCachedLocation(locationId: Long?) = (if(locationId != null) repos.locationRepo.getCachedLocation(locationId) else null)
-    private val _editingPerson = PerformantCache<Long, PersonSyncable>(viewModelScope) {
-        repos.peopleRepo.getCurrentPersonNotAsFlow(it)
-    }
-    private val editingPersonFlowCache = StateFlowCache<Long, PersonSyncable?>{
-        _editingPerson.flowByKey(it).subscribeToColdFlow(viewModelScope, null)
-    }
-    fun getEditingPerson(personId: Long) = editingPersonFlowCache.get(personId)
-    fun edit(personId: Long, editWith: (PersonSyncable)->PersonSyncable) {
+    val debt = dbInterface.bankingRepo
+        .getDebtFor(inspectedPersonId)
+        .subscribeToColdFlow(viewModelScope, null)
+    val editingPerson = MutableStateFlow<PersonSyncable?>(null)
+    fun edit(editWith: (PersonSyncable)->PersonSyncable) {
         _isEditing.value = true
         viewModelScope.launch {
-            val cached = _editingPerson.getValue(personId)
+            val cached = editingPerson.value ?: getPersonOrAwait()
             val new = editWith(cached)
             platformInputs.value = new.socials.map { it.asString() }
-            _editingPerson.overwrite(personId, new)
+            editingPerson.update { new }
         }
     }
-    suspend fun discardChanges(personId: Long){
+    suspend fun discardChanges(){
         _isEditing.value = false
-        _editingPerson.overwrite(personId, repos.peopleRepo.getCurrentPersonNotAsFlow(personId))
+        editingPerson.value = getPersonOrAwait()
     }
-    suspend fun saveAndStageChanges(personId: Long) {
-        val asEdited = _editingPerson.getValue(personId)
+    suspend fun saveAndStageChanges() {
+        val asEdited = editingPerson.value ?: return
         val editedPerson = asEdited.copy(
             iban = asEdited.iban?.takeIf { it.length > 4 }?.replace(" ", ""),
             socials = PersonSyncable.getOrderedSocials(platformInputs.value.mapNotNull {
@@ -87,23 +69,16 @@ class ProfileInfoModel(val repos: AppRepositories): ViewModel(){
             fullName = asEdited.fullName?.takeIf { it.isNotBlank() },
             phoneNumber = asEdited.phoneNumber?.replace(" ", "")?.takeIf { it.isNotBlank() }
         )
-        repos.peopleRepo.updateAndStageSync(editedPerson)
-        _editingPerson.overwrite(personId, editedPerson)
+        dbInterface.peopleInterface.updateAndStageSync(editedPerson)
+        editingPerson.value = null
         _isEditing.value = false
     }
-    @OptIn(ExperimentalCoroutinesApi::class)
-    private val inspectedPersonCache = StateFlowCache<Long, PersonSyncable?>{
-        isEditing.flatMapLatest { editing ->
-            if(editing) getEditingPerson(it) else getPerson(it)
-        }.subscribeToColdFlow(viewModelScope, null)
-    }
-    fun getInspectedPerson(personId: Long) = inspectedPersonCache.get(personId)
     private val savedInContactsCache = StateFlowCache<String, Boolean?>{
-        repos.contactRepo.isSavedInContacts(it).subscribeToColdFlow(viewModelScope, null)
+        dbInterface.deviceContactRepo.isSavedInContacts(it).subscribeToColdFlow(viewModelScope, null)
     }
     fun getSavedInContacts(phoneNumber: String) = savedInContactsCache.get(phoneNumber)
-    suspend fun getSavedInContactsNOW(phoneNumber: String) = repos.contactRepo.isSavedInContactsNOW(phoneNumber)
-    suspend fun updateProfilePicture(personId: Long, base64: String?) = repos.peopleRepo.updatePP(personId, base64)
+    suspend fun getSavedInContactsNOW(phoneNumber: String) = dbInterface.deviceContactRepo.isSavedInContactsNOW(phoneNumber)
+    suspend fun updateProfilePicture(base64: String?) = dbInterface.peopleInterface.updatePP(inspectedPersonId, base64)
     private val _isEditing = MutableStateFlow(false)
     val isEditing: StateFlow<Boolean> = _isEditing
     val isExtended = MutableStateFlow(false)
@@ -111,27 +86,19 @@ class ProfileInfoModel(val repos: AppRepositories): ViewModel(){
     val chartUnit = MutableStateFlow(1)
     val platformInputs = MutableStateFlow(listOf<String>())
     val isProfilePictureFullScreen = MutableStateFlow(false) /* This doesnt belong here, but this is my app so I dont care */
-    private val piechartFlowCache = StateFlowCache<Long, Map<String, PieChart.Companion.PieChartPart>?>{ person ->
-        combine(
-            repos.calendarRepo.interactedWithPerson(person),
+
+    val pieChart = combine(
+            dbInterface.calendarInterface.interactedWithPerson(inspectedPersonId),
             chartScale
         ) { _, scale ->
-            repos.aggregators.peopleAggregator.getPieChartFor(person, scale)
+            dbInterface.aggregators.peopleAggregator.getPieChartFor(inspectedPersonId, scale)
         }.subscribeToColdFlow(viewModelScope, null)
-    }
-    fun getPieChartForPerson(personId: Long) = piechartFlowCache.get(personId)
-    fun openPersonDetails(personId: Long, nav: NavController){
-        isExtended.value = false
-        isProfilePictureFullScreen.value = false
-        nav.navigate(NavPath.Menu.Contacts.DISPLAY_PERSON.with(personId))
-    }
 
-    private val profilePictureCache = StateFlowCache<Long, Bitmap?>{ personId ->
-        repos.aggregators.peopleAggregator.getProfilePicture(personId).subscribeToColdFlow(viewModelScope, null)
-    }
-    fun getProfilePicture(personId: Long) = profilePictureCache.get(personId)
+    val profilePic = dbInterface.aggregators.peopleAggregator.getProfilePicture(inspectedPersonId).subscribeToColdFlow(viewModelScope, null)
 
-    var debtListState = LazyListState()
+    @OptIn(ExperimentalCoroutinesApi::class)
+    val inspectedPersonIncludingEdits = isEditing.flatMapMerge { if(it) editingPerson else inspectedPerson }.subscribeToColdFlow(viewModelScope, null)
+
     companion object {
         fun formatTime(duration: Long): String{
             val future = duration > 0

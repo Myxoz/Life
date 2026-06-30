@@ -4,25 +4,25 @@ import android.app.AlarmManager
 import com.myxoz.life.R
 import com.myxoz.life.api.syncables.CommitSyncable
 import com.myxoz.life.api.syncables.ManualTransactionSyncable
-import com.myxoz.life.dbwrapper.banking.formatCents
-import com.myxoz.life.repositories.AppRepositories
-import com.myxoz.life.repositories.BankingRepo
-import com.myxoz.life.screens.feed.instantevents.InstantEvent
-import com.myxoz.life.screens.feed.instantevents.InstantEvent.Companion.INSTANTEVENTSIZE
-import com.myxoz.life.screens.feed.main.PrerenderedEvent
+import com.myxoz.life.storage.dbwrapper.banking.formatCents
+import com.myxoz.life.storage.interfaces.BankingRepo
+import com.myxoz.life.storage.interfaces.DatabaseInterface
+import com.myxoz.life.ui.feed.instantevents.InstantEvent
+import com.myxoz.life.ui.feed.instantevents.InstantEvent.Companion.INSTANTEVENTSIZE
+import com.myxoz.life.ui.feed.main.PrerenderedEvent
 import com.myxoz.life.utils.AndroidUtils.sendWithBal
 import com.myxoz.life.utils.def
 import kotlinx.coroutines.flow.combine
 import java.time.LocalDate
 
 class CalendarAggregator(
-    private val repos: AppRepositories
+    private val repos: DatabaseInterface
 ) {
     fun getInstantEventsForDay(date: LocalDate) = combine(
-        repos.calendarRepo.nextAlarmClockTs,
-        repos.commitsRepo.getCommitsForDay(date),
+        repos.calendarInterface.nextAlarmClockTs,
+        repos.commitsInterface.getCommitsForDay(date),
         repos.bankingRepo.getSortedTransactionsAt(date),
-        repos.todoRepo.getTodosForDay(date)
+        repos.todoInterface.getTodosForDay(date)
     ) { nextAlarm, commits, transactions, todos ->
         val nextAlarmEvent = listOfNotNull(
             nextAlarm?.let { alarmToInstantEvent(it) }
@@ -52,7 +52,7 @@ class CalendarAggregator(
         return groups.map { InstantEvent.InstantEventGroup(it) }
     }
     fun getPrerenderedEvents(date: LocalDate) = combine(
-        repos.calendarRepo.eventsForDay(date),
+        repos.calendarInterface.eventsForDay(date),
         getInstantEventsForDay(date),
     ) { events, instantEvents ->
         PrerenderedEvent.getPrerenderedEvents(
@@ -93,7 +93,7 @@ class CalendarAggregator(
                 R.drawable.alarm_clock,
                 "Wecker",
                 alarm.triggerTime,
-                {false},
+                { false },
             ) {
                 alarm.showIntent?.sendWithBal()
             }

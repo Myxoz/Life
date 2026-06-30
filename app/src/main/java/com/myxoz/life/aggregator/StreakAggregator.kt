@@ -4,9 +4,9 @@ import com.myxoz.life.api.extensions.StreakExtendable
 import com.myxoz.life.api.syncables.ExtensionSyncable
 import com.myxoz.life.api.syncables.FullDaySyncable
 import com.myxoz.life.api.syncables.SyncedEvent
-import com.myxoz.life.repositories.AppRepositories
-import com.myxoz.life.repositories.utils.Cached.Companion.cached
-import com.myxoz.life.repositories.utils.subscribeToColdFlow
+import com.myxoz.life.storage.interfaces.DatabaseInterface
+import com.myxoz.life.storage.interfaces.utils.Cached.Companion.cached
+import com.myxoz.life.storage.interfaces.utils.subscribeToColdFlow
 import com.myxoz.life.utils.UnixWeek
 import com.myxoz.life.utils.atEndAsMillis
 import com.myxoz.life.utils.atStartAsMillis
@@ -28,14 +28,14 @@ typealias FullDayFlow = StateFlow<FullDaySyncable?>
 typealias FullDayFlows = StateFlow<List<FullDaySyncable>?>
 
 class StreakAggregator(
-    private val repos: AppRepositories
+    private val repos: DatabaseInterface
 ) {
     private val zone = ZoneId.systemDefault()
     private val dayedEventFlows = ConcurrentHashMap<LocalDate, EventFlow>()
     private val weekEventFlows = ConcurrentHashMap<UnixWeek, EventFlow>()
     private val dayedFullDayFlows = ConcurrentHashMap<LocalDate, FullDayFlow>()
     private val weekFullDayFlows = ConcurrentHashMap<UnixWeek, FullDayFlows>()
-    val streaks = repos.extensionRepo
+    val streaks = repos.extensionInterface
         .flowFor(ExtensionSyncable.ExtensionSyncableType.Streak)
         .map {
             it?.streaks?.associate { item -> item.id to item.cached } ?: emptyMap()
@@ -44,7 +44,7 @@ class StreakAggregator(
     fun getStreak(id: Long) = streaks.map { it[id] }
     fun getDayedFullDayFlow(day: LocalDate): FullDayFlow {
         return dayedFullDayFlows.computeIfAbsent(day) {
-            repos.daySummaryRepo
+            repos.daySummaryInterface
                 .getDaySummary(it)
                 .map{ summary -> summary?.value }
                 .subscribeToColdFlow(repos.appScope, null)
@@ -52,7 +52,7 @@ class StreakAggregator(
     }
     fun getWeekFullDayFlow(week: UnixWeek): FullDayFlows {
         return weekFullDayFlows.computeIfAbsent(week) { week ->
-            repos.daySummaryRepo
+            repos.daySummaryInterface
                 .getSummaryWeek(week)
                 .map{ summaries -> summaries.mapNotNull { it.value } }
                 .subscribeToColdFlow(repos.appScope, null)
@@ -60,12 +60,12 @@ class StreakAggregator(
     }
     fun getDayedEventFlow(day: LocalDate): EventFlow {
         return dayedEventFlows.computeIfAbsent(day) {
-            repos.calendarRepo.eventsForDay(it).subscribeToColdFlow(repos.appScope, null)
+            repos.calendarInterface.eventsForDay(it).subscribeToColdFlow(repos.appScope, null)
         }
     }
     fun getWeekEventFlow(week: UnixWeek): EventFlow {
         return weekEventFlows.computeIfAbsent(week) {
-            repos.calendarRepo.eventsForWeek(it).subscribeToColdFlow(repos.appScope, null)
+            repos.calendarInterface.eventsForWeek(it).subscribeToColdFlow(repos.appScope, null)
         }
     }
     @OptIn(ExperimentalCoroutinesApi::class)

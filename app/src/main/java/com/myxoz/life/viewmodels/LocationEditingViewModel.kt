@@ -2,13 +2,14 @@ package com.myxoz.life.viewmodels
 
 import androidx.lifecycle.ViewModel
 import com.myxoz.life.api.syncables.LocationSyncable
-import com.myxoz.life.repositories.LocationRepo
+import com.myxoz.life.storage.interfaces.LocationInterface
 
+@Deprecated("Use map launched with a specific location instead.")
 class LocationEditingViewModel(
-    val locationRepo: LocationRepo
+    val locationInterface: LocationInterface
 ): ViewModel()  {
     var nowEditing: LocationSyncable? = null
     suspend fun save(location: LocationSyncable) {
-        locationRepo.updateAndStage(location)
+        locationInterface.updateAndStage(location)
     }
 }

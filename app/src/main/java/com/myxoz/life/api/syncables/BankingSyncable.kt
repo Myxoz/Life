@@ -4,8 +4,8 @@ import com.myxoz.life.api.API
 import com.myxoz.life.api.ServerSyncable
 import com.myxoz.life.api.ServerSyncableCompanion
 import com.myxoz.life.api.Syncable
-import com.myxoz.life.dbwrapper.banking.BankingEntity
-import com.myxoz.life.dbwrapper.banking.ReadBankingDao
+import com.myxoz.life.storage.dbwrapper.banking.BankingEntity
+import com.myxoz.life.storage.dbwrapper.banking.ReadBankingDao
 import com.myxoz.life.utils.getSafeLong
 import org.json.JSONObject
 

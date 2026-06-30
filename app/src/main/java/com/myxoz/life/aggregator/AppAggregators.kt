@@ -1,9 +1,9 @@
 package com.myxoz.life.aggregator
 
-import com.myxoz.life.repositories.AppRepositories
+import com.myxoz.life.storage.interfaces.DatabaseInterface
 
 class AppAggregators(
-    repos: AppRepositories
+    repos: DatabaseInterface
 ) {
     val peopleAggregator = PeopleAggregator(repos)
     val daySummaryAggregator = DaySummaryAggregator(repos)

@@ -2,8 +2,8 @@ package com.myxoz.life.api.syncables
 
 import com.myxoz.life.api.API
 import com.myxoz.life.api.Syncable
-import com.myxoz.life.dbwrapper.WaitingSyncDao
-import com.myxoz.life.dbwrapper.WaitingSyncEntity
+import com.myxoz.life.storage.dbwrapper.WaitingSyncDao
+import com.myxoz.life.storage.dbwrapper.WaitingSyncEntity
 import org.json.JSONObject
 
 class DeleteEntry(calendarId: Int, id: Long) : Syncable(calendarId, id) {

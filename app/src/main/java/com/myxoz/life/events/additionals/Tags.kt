@@ -1,8 +1,8 @@
 package com.myxoz.life.events.additionals
 
 import com.myxoz.life.R
-import com.myxoz.life.dbwrapper.events.TagsEntity
-import com.myxoz.life.dbwrapper.events.WriteEventDetailsDao
+import com.myxoz.life.storage.dbwrapper.events.TagsEntity
+import com.myxoz.life.storage.dbwrapper.events.WriteEventDetailsDao
 import com.myxoz.life.utils.asNotNullList
 import org.json.JSONArray
 import org.json.JSONObject

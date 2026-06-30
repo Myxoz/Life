@@ -3,8 +3,8 @@ package com.myxoz.life.api.syncables
 import com.myxoz.life.api.API
 import com.myxoz.life.api.ServerSyncableCompanion
 import com.myxoz.life.api.Syncable
-import com.myxoz.life.dbwrapper.days.DayScreenTimeEntity
-import com.myxoz.life.dbwrapper.days.DaysEntity
+import com.myxoz.life.storage.dbwrapper.days.DayScreenTimeEntity
+import com.myxoz.life.storage.dbwrapper.days.DaysEntity
 import com.myxoz.life.utils.getSafeLong
 import com.myxoz.life.utils.jsonObjArray
 import org.json.JSONArray

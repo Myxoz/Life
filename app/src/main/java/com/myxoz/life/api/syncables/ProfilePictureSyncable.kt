@@ -8,9 +8,9 @@ import com.myxoz.life.MainActivity
 import com.myxoz.life.api.API
 import com.myxoz.life.api.ServerSyncableCompanion
 import com.myxoz.life.api.Syncable
-import com.myxoz.life.dbwrapper.people.ProfilePictureStored
-import com.myxoz.life.dbwrapper.people.ReadPeopleDao
-import com.myxoz.life.screens.feed.fullscreenevent.getId
+import com.myxoz.life.storage.dbwrapper.people.ProfilePictureStored
+import com.myxoz.life.storage.dbwrapper.people.ReadPeopleDao
+import com.myxoz.life.ui.feed.fullscreenevent.getId
 import com.myxoz.life.utils.getStringOrNull
 import org.json.JSONObject
 import java.io.ByteArrayOutputStream

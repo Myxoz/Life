@@ -1,11 +1,11 @@
 package com.myxoz.life.aggregator
 
 import android.content.Context
-import com.myxoz.life.dbwrapper.days.DayScreenTimeEntity
 import com.myxoz.life.events.additionals.EventType
-import com.myxoz.life.repositories.AppRepositories
-import com.myxoz.life.repositories.utils.FlowCache
-import com.myxoz.life.screens.options.getMappedUsageDataBetween
+import com.myxoz.life.storage.dbwrapper.days.DayScreenTimeEntity
+import com.myxoz.life.storage.interfaces.DatabaseInterface
+import com.myxoz.life.storage.interfaces.utils.FlowCache
+import com.myxoz.life.ui.options.getMappedUsageDataBetween
 import com.myxoz.life.utils.atEndAsMillis
 import com.myxoz.life.utils.atStartAsMillis
 import com.myxoz.life.utils.diagrams.PieChart
@@ -22,10 +22,10 @@ import java.time.LocalDate
 import java.time.ZoneId
 
 class DaySummaryAggregator(
-    private val repos: AppRepositories
+    private val repos: DatabaseInterface
 ) {
     private val zone = ZoneId.systemDefault()
-    fun getDayPieChart(date: LocalDate) = repos.calendarRepo.eventsForDay(date).map { rawEvents ->
+    fun getDayPieChart(date: LocalDate) = repos.calendarInterface.eventsForDay(date).map { rawEvents ->
         val total = mutableMapOf<EventType, Long>()
         val startOfDay = date.atStartAsMillis(zone)
         val endOfDay = date.atEndAsMillis(zone)
@@ -43,7 +43,7 @@ class DaySummaryAggregator(
 
     @OptIn(ExperimentalCoroutinesApi::class)
     private val getLifeScreenTime = FlowCache<LocalDate, List<DayScreenTimeEntity>> { date ->
-        repos.calendarRepo.todayFlow.flatMapLatest { today ->
+        repos.calendarInterface.todayFlow.flatMapLatest { today ->
             if(date > today) return@flatMapLatest MutableStateFlow(listOf())
             if(today == LocalDate.now()) {
                 getScreenTimeOnAsFlow(date, repos.context)
@@ -62,7 +62,7 @@ class DaySummaryAggregator(
     fun getScreenTimeOnDayLive(date: LocalDate) = getLifeScreenTime.get(date)
     @OptIn(ExperimentalCoroutinesApi::class)
     private val getScreentimeForDayFlow = FlowCache<LocalDate, Long>{ date ->
-        repos.daySummaryRepo.getDaySummary(date).flatMapLatest { summary ->
+        repos.daySummaryInterface.getDaySummary(date).flatMapLatest { summary ->
             val summary = summary?.value
             if(summary != null) return@flatMapLatest MutableStateFlow(summary.screenTimeMs.toLong())
             return@flatMapLatest getLifeScreenTime.get(date).map { entry -> entry.sumOf { it.duration } }

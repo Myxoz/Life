@@ -3,14 +3,12 @@ package com.myxoz.life
 import android.content.Context
 import android.content.Intent
 import android.content.SharedPreferences
-import android.net.Uri
 import android.os.Bundle
 import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.SystemBarStyle
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
-import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
 import androidx.compose.animation.core.FiniteAnimationSpec
 import androidx.compose.animation.core.tween
@@ -29,135 +27,107 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
+import com.myxoz.life.android.MainApplication
 import com.myxoz.life.android.notifications.createNotificationChannels
 import com.myxoz.life.api.syncables.SyncedEvent
-import com.myxoz.life.repositories.MainApplication
-import com.myxoz.life.screens.LocalScreensProvider
-import com.myxoz.life.screens.ModifyLocation
-import com.myxoz.life.screens.NavPath
-import com.myxoz.life.screens.alarm.AlarmScreen
-import com.myxoz.life.screens.alarm.AlarmSoundSettings
-import com.myxoz.life.screens.feed.commits.FullScreenCommit
-import com.myxoz.life.screens.feed.commits.FullScreenRepo
-import com.myxoz.life.screens.feed.commits.FullScreenRepos
-import com.myxoz.life.screens.feed.dayoverview.DayOverviewComposable
-import com.myxoz.life.screens.feed.dayoverview.ScreenTimeOverview
-import com.myxoz.life.screens.feed.fullscreenevent.FullScreenEvent
-import com.myxoz.life.screens.feed.instantevents.InstantEventsScreen
-import com.myxoz.life.screens.feed.main.HomeComposable
-import com.myxoz.life.screens.feed.search.AdvancedSearch
-import com.myxoz.life.screens.feed.summarizeday.SummarizeDay
-import com.myxoz.life.screens.map.MapBoxMap
-import com.myxoz.life.screens.options.AISettings
-import com.myxoz.life.screens.options.DebugScreen
-import com.myxoz.life.screens.options.InformationComposable
-import com.myxoz.life.screens.options.MenuComposable
-import com.myxoz.life.screens.options.MoreComposable
-import com.myxoz.life.screens.options.settings.PreferenceComposable
-import com.myxoz.life.screens.options.settings.SettingsComposable
-import com.myxoz.life.screens.options.settings.SettingsPermissionComposable
-import com.myxoz.life.screens.person.Contacts
-import com.myxoz.life.screens.person.FullScreenDebt
-import com.myxoz.life.screens.person.SocialGraph
-import com.myxoz.life.screens.person.displayperson.PhotoPicker
-import com.myxoz.life.screens.person.displayperson.ProfileFullScreen
-import com.myxoz.life.screens.pick.PickExistingLocation
-import com.myxoz.life.screens.quiz.BirthdayGuesser
-import com.myxoz.life.screens.streaks.EditStreaksScreen
-import com.myxoz.life.screens.streaks.StreakFullScreen
-import com.myxoz.life.screens.streaks.StreaksScreen
-import com.myxoz.life.screens.todo.FullScreenTodo
-import com.myxoz.life.screens.transactions.MyCard
-import com.myxoz.life.screens.transactions.TransactionFeed
-import com.myxoz.life.screens.transactions.TransactionList
-import com.myxoz.life.screens.transactions.TransactionOverview
-import com.myxoz.life.screens.wrapped.LifeWrappedScreen
+import com.myxoz.life.ui.AlarmUI
+import com.myxoz.life.ui.LocalScreensProvider
+import com.myxoz.life.ui.ModifyLocation
+import com.myxoz.life.ui.NavPath
+import com.myxoz.life.ui.alarm.screens.AlarmScreen
+import com.myxoz.life.ui.alarm.screens.AlarmSoundSettings
+import com.myxoz.life.ui.feed.commits.FullScreenCommit
+import com.myxoz.life.ui.feed.commits.FullScreenCommitViewModel
+import com.myxoz.life.ui.feed.commits.FullScreenRepo
+import com.myxoz.life.ui.feed.commits.FullScreenRepoViewModel
+import com.myxoz.life.ui.feed.commits.FullScreenRepos
+import com.myxoz.life.ui.feed.dayoverview.DayOverviewComposable
+import com.myxoz.life.ui.feed.dayoverview.DayOverviewTransactionModel
+import com.myxoz.life.ui.feed.dayoverview.DayOverviewViewModel
+import com.myxoz.life.ui.feed.dayoverview.ScreenTimeOverview
+import com.myxoz.life.ui.feed.dayoverview.ScreenTimeOverviewModel
+import com.myxoz.life.ui.feed.dayoverview.TransactionList
+import com.myxoz.life.ui.feed.fullscreenevent.FullScreenEvent
+import com.myxoz.life.ui.feed.fullscreenevent.InspectedEventViewModel
+import com.myxoz.life.ui.feed.instantevents.InstantEventsScreen
+import com.myxoz.life.ui.feed.instantevents.InstantEventsViewModel
+import com.myxoz.life.ui.feed.main.CalendarViewModel
+import com.myxoz.life.ui.feed.main.HomeComposable
+import com.myxoz.life.ui.feed.search.AdvancedSearch
+import com.myxoz.life.ui.feed.summarizeday.SummarizeDay
+import com.myxoz.life.ui.map.MapBoxMap
+import com.myxoz.life.ui.map.MapViewModel
+import com.myxoz.life.ui.options.AISettings
+import com.myxoz.life.ui.options.DebugScreen
+import com.myxoz.life.ui.options.InformationComposable
+import com.myxoz.life.ui.options.MenuComposable
+import com.myxoz.life.ui.options.MoreComposable
+import com.myxoz.life.ui.options.settings.PreferenceComposable
+import com.myxoz.life.ui.options.settings.SettingsComposable
+import com.myxoz.life.ui.options.settings.SettingsPermissionComposable
+import com.myxoz.life.ui.person.Contacts
+import com.myxoz.life.ui.person.FullScreenDebt
+import com.myxoz.life.ui.person.PersonalDebtViewModel
+import com.myxoz.life.ui.person.SocialGraph
+import com.myxoz.life.ui.person.displayperson.PhotoPicker
+import com.myxoz.life.ui.person.displayperson.ProfileFullScreen
+import com.myxoz.life.ui.pick.PickExistingLocation
+import com.myxoz.life.ui.quiz.BirthdayGuesser
+import com.myxoz.life.ui.streaks.EditStreaksScreen
+import com.myxoz.life.ui.streaks.StreakFullScreen
+import com.myxoz.life.ui.streaks.StreaksScreen
+import com.myxoz.life.ui.todo.FullScreenTodo
+import com.myxoz.life.ui.todo.TodoViewModel
+import com.myxoz.life.ui.transactions.MyCard
+import com.myxoz.life.ui.transactions.TransactionFeed
+import com.myxoz.life.ui.transactions.TransactionOverview
+import com.myxoz.life.ui.transactions.TransactionOverviewViewModel
+import com.myxoz.life.ui.wrapped.LifeWrappedScreen
+import com.myxoz.life.ui.wrapped.WrappedViewModel
 import com.myxoz.life.utils.rememberTextSelectionColors
 import com.myxoz.life.utils.systemColorScheme
-import com.myxoz.life.viewmodels.AISettingsViewModel
-import com.myxoz.life.viewmodels.AlarmViewModel
-import com.myxoz.life.viewmodels.BirthdayQuizViewModel
-import com.myxoz.life.viewmodels.CalendarViewModel
-import com.myxoz.life.viewmodels.CommitsViewModel
-import com.myxoz.life.viewmodels.ContactsViewModel
-import com.myxoz.life.viewmodels.DayOverviewViewModel
-import com.myxoz.life.viewmodels.InspectedEventViewModel
-import com.myxoz.life.viewmodels.InstantEventsViewModel
-import com.myxoz.life.viewmodels.LargeDataCache
 import com.myxoz.life.viewmodels.LocationEditingViewModel
 import com.myxoz.life.viewmodels.MainViewModelFactory
-import com.myxoz.life.viewmodels.MapViewModel
 import com.myxoz.life.viewmodels.ProfileInfoModel
 import com.myxoz.life.viewmodels.Settings
-import com.myxoz.life.viewmodels.SocialGraphViewModel
-import com.myxoz.life.viewmodels.StreakViewModel
-import com.myxoz.life.viewmodels.TodoViewModel
-import com.myxoz.life.viewmodels.TransactionViewModel
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import org.json.JSONObject
-import java.time.LocalDate
 import kotlin.system.exitProcess
 
 class MainActivity : ComponentActivity() {
     private lateinit var prefs: SharedPreferences
-    private val repositories by lazy {
-        (application as MainApplication).repositories
-    }
+    private val lifeApplication by lazy { application as MainApplication }
+    private val dbInterface by lazy { lifeApplication.dbInterface }
+    private val appRepos by lazy { lifeApplication.appRepos }
     private lateinit var settings: Settings.CompositionSettings
     private val factory by lazy{
-        MainViewModelFactory(
-            (application as MainApplication).repositories,
-        )
+        MainViewModelFactory(lifeApplication.dbInterface, appRepos)
     }
-    private val alarmViewModel: AlarmViewModel by viewModels { factory }
-    private val calendarViewModel: CalendarViewModel by viewModels { factory }
-    private val inspectedEventViewModel: InspectedEventViewModel by viewModels { factory }
     private val locationEditingViewModel: LocationEditingViewModel by viewModels { factory }
-    private val transactionViewModel: TransactionViewModel by viewModels { factory }
-    private val dayOverviewViewModel: DayOverviewViewModel by viewModels { factory }
-    private val instantEventsViewModel: InstantEventsViewModel by viewModels { factory }
-    private val largeDataCache: LargeDataCache by viewModels{ factory }
-    private val profileInfoModel: ProfileInfoModel by viewModels{ factory }
-    private val contacsViewModel: ContactsViewModel by viewModels{ factory }
-    private val socialGraphViewModel: SocialGraphViewModel by viewModels{ factory }
-    private val commitsViewModel: CommitsViewModel by viewModels{ factory }
-    private val mapViewModel: MapViewModel by viewModels{ factory }
-    private val aiSettingsViewModel: AISettingsViewModel by viewModels { factory }
-    private val todoViewModel: TodoViewModel by viewModels { factory }
-    private val streakViewmodel: StreakViewModel by viewModels { factory }
-    private val birthdayQuizViewModel: BirthdayQuizViewModel by viewModels { factory }
-    private val photoPicker = PhotoPicker()
-    private val imagePickerLauncher = registerForActivityResult(
-        ActivityResultContracts.StartActivityForResult()
-    ) { result ->
-        if (result.resultCode == RESULT_OK) {
-            val selectedImageUri: Uri? = result.data?.data
-            Log.d("ImagePicker", "Selected uri is $selectedImageUri")
-            photoPicker.setURI(selectedImageUri?:return@registerForActivityResult, applicationContext)
-        }
-    }.apply { photoPicker.pickerLauncher = this }
+    private val photoPicker = PhotoPicker(this)
     private var stashedRoute: String? = null
     private var controller: NavController? = null
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         instance = this
         prefs = getSharedPreferences(localClassName, MODE_PRIVATE)
-        settings = Settings.CompositionSettings(repositories.permissionChecker, this)
+        settings = Settings.CompositionSettings(dbInterface.permissionChecker, this)
         CoroutineScope(Dispatchers.IO).launch {
             if(settings.hasAssured(Settings.Feature.AddNewPerson))
-                contacsViewModel.requestRefetchDeviceContacts()
-            calendarViewModel.requireAllPeople()
-            calendarViewModel.loadRepeatingEvents()
-            largeDataCache.preloadAll(applicationContext)
+                appRepos.contactsRepo.requestRefetchDeviceContacts()
+            appRepos.calendarRepo.requireAllPeople()
+            appRepos.calendarRepo.loadRepeatingEvents()
+            appRepos.largeDataCache.preloadAll(applicationContext)
         }
         createNotificationChannels(applicationContext)
         handleIntent(intent)
@@ -172,16 +142,7 @@ class MainActivity : ComponentActivity() {
                 LocalNavController provides navController,
                 LocalSettings provides settings,
                 LocalScreens provides LocalScreensProvider(
-                    profileInfoModel,
-                    calendarViewModel,
-                    socialGraphViewModel,
-                    inspectedEventViewModel,
-                    contacsViewModel,
-                    mapViewModel,
-                    transactionViewModel,
-                    instantEventsViewModel,
-                    locationEditingViewModel,
-                    streakViewmodel,
+                    appRepos,
                     navController
                 ),
                 LocalColors provides colorScheme,
@@ -228,25 +189,33 @@ class MainActivity : ComponentActivity() {
                 ) {
                     //  ---------- FEED ----------
                     composable(NavPath.HOME) {
-                        if(!showHome) { return@composable } // Do not render
-                        HomeComposable(calendarViewModel, inspectedEventViewModel)
+                        if(!showHome) return@composable
+                        val calenderViewModel = viewModel<CalendarViewModel>(factory = factory)
+                        HomeComposable(appRepos.calendarRepo, calenderViewModel)
                     }
-                    composable(NavPath.FULLSCREEN_EVENT) {
+                    composable(
+                        NavPath.FULLSCREEN_EVENT.asTemplate,
+                        arguments = NavPath.FULLSCREEN_EVENT.asLongArg()
+                    ) {
+                        val inspectedEventViewModel = viewModel<InspectedEventViewModel>(factory = factory)
                         FullScreenEvent(inspectedEventViewModel)
                     }
                     composable(NavPath.SUMMARIZE_DAY) {
-                        SummarizeDay(dayOverviewViewModel)
+                        // This is not clean, summarizeDay doesnt need the DayOverviewContent
+                        val summarizeViewModel = viewModel<DayOverviewViewModel>(factory = factory)
+                        SummarizeDay(summarizeViewModel)
                     }
-                    composable(NavPath.INSTANT_EVENT_SELECTION) {
+                    composable(NavPath.INSTANT_EVENT_SELECTION.asTemplate, NavPath.INSTANT_EVENT_SELECTION.asLongArg()) {
+                        val instantEventsViewModel = viewModel<InstantEventsViewModel>(factory = factory)
                         InstantEventsScreen(instantEventsViewModel)
                     }
                     composable(NavPath.ADVANCED_SEARCH) {
-                        AdvancedSearch(calendarViewModel)
+                        AdvancedSearch(appRepos.calendarRepo)
                     }
 
                         //  ---------- Pick -> ExistingLocation ----------
                         composable(NavPath.Pick.LOCATION) {
-                            PickExistingLocation(mapViewModel)
+                            PickExistingLocation(appRepos.crossRepoSuper)
                         }
 
                         //  ---------- FEED -> Location ----------
@@ -256,35 +225,30 @@ class MainActivity : ComponentActivity() {
 
                         //  ---------- FEED -> Transaction ----------
                         composable(NavPath.Menu.TRANSACTION_FEED) {
-                            TransactionFeed(transactionViewModel)
+                            TransactionFeed(appRepos.transactionFeedRepo)
                         }
-                        composable(NavPath.Transaction.DETAILS) {
-                            TransactionOverview(largeDataCache, transactionViewModel)
+                        composable(NavPath.Transaction.DETAILS.asTemplate, NavPath.Transaction.DETAILS.asStringArg()) {
+                            val transactionOverviewViewModel  = viewModel<TransactionOverviewViewModel>(factory = factory)
+                            TransactionOverview(transactionOverviewViewModel)
                         }
                         composable(NavPath.Transaction.ME) {
-                            MyCard(largeDataCache, transactionViewModel)
+                            MyCard(appRepos.largeDataCache, appRepos.transactionFeedRepo)
                         }
 
                         //  ---------- FEED -> DAY_OVERVIEW ----------
-                        composable(NavPath.DAY_OVERVIEW.asTemplate, arguments = listOf(
-                            navArgument(NavPath.DAY_OVERVIEW.parameterName) { type = NavType.LongType }
-                        )) {
-                            val epochDay = (it.arguments?.getLong(NavPath.DAY_OVERVIEW.parameterName) ?: 0).run { if(this == 0L) LocalDate.now().toEpochDay() else this}
+                        composable(NavPath.DAY_OVERVIEW.asTemplate, NavPath.DAY_OVERVIEW.asLongArg()) {
                             // Semantic value: 0 == today, due to pending intent targetRoute, which isn't computable
                             // And jep the resulting bug is that 1.1.1970 always displays the current day in the dayoverview, congrats for finding out
-                            DayOverviewComposable(LocalDate.ofEpochDay(epochDay), dayOverviewViewModel)
+                            val overviewModel: DayOverviewViewModel = viewModel(factory = factory)
+                            DayOverviewComposable(overviewModel)
                         }
-                        composable(NavPath.DayOverview.SCREENTIME.asTemplate, arguments = listOf(
-                            navArgument(NavPath.DayOverview.SCREENTIME.parameterName) { type = NavType.LongType }
-                        )) {
-                            val epochDay = it.arguments?.getLong(NavPath.DayOverview.SCREENTIME.parameterName) ?: 0
-                            ScreenTimeOverview(LocalDate.ofEpochDay(epochDay), dayOverviewViewModel)
+                        composable(NavPath.DayOverview.SCREENTIME.asTemplate, NavPath.DayOverview.SCREENTIME.asLongArg()) {
+                            val screenTimeOverviewModel: ScreenTimeOverviewModel = viewModel(factory = factory)
+                            ScreenTimeOverview(screenTimeOverviewModel)
                         }
-                        composable(NavPath.DayOverview.TRANSACTIONS.asTemplate, arguments = listOf(
-                            navArgument(NavPath.DayOverview.TRANSACTIONS.parameterName) { type = NavType.LongType }
-                        )) {
-                            val epochDay = it.arguments?.getLong(NavPath.DayOverview.TRANSACTIONS.parameterName) ?: 0
-                            TransactionList(LocalDate.ofEpochDay(epochDay), transactionViewModel)
+                        composable(NavPath.DayOverview.TRANSACTIONS.asTemplate, NavPath.DayOverview.TRANSACTIONS.asLongArg()) {
+                            val overviewTransactitonModel: DayOverviewTransactionModel = viewModel(factory = factory)
+                            TransactionList(overviewTransactitonModel)
                         }
 
                     //  ---------- Menu ----------
@@ -292,16 +256,18 @@ class MainActivity : ComponentActivity() {
                         MenuComposable()
                     }
                     composable(NavPath.Menu.SOCIAL_GRAPH) {
-                        SocialGraph(socialGraphViewModel)
+                        SocialGraph(appRepos.socialGraphRepo)
                     }
                     composable(NavPath.Menu.BIRTHDAY_QUIZ) {
-                        BirthdayGuesser(birthdayQuizViewModel)
+                        BirthdayGuesser(appRepos.birthdayQuizRepo)
                     }
                     composable(NavPath.Menu.LIFE_WRAPPED) {
-                        LifeWrappedScreen(repositories.api.getReadableDaosForWrapped(), profileInfoModel)
+                        val wrappedViewModel = viewModel<WrappedViewModel>(factory = factory)
+                        LifeWrappedScreen(dbInterface.api.getReadableDaosForWrapped(), wrappedViewModel)
                     }
                     composable(
-                        NavPath.Menu.MAP,
+                        NavPath.Menu.MAP.asTemplate,
+                        NavPath.Menu.MAP.asLongActualStringArg(),
                         exitTransition = {
                             slideOutHorizontally { it }
                         },
@@ -309,72 +275,76 @@ class MainActivity : ComponentActivity() {
                             slideInHorizontally { it }
                         },
 
-                        ) {
+                        )
+                    {
+                        val mapViewModel = viewModel<MapViewModel>(factory = factory)
                         MapBoxMap(mapViewModel)
                     }
 
                         //  ---------- Menu -> TODOS ----------
                         composable(NavPath.Menu.Todo.MAIN) {
-                            FullScreenRepos(commitsViewModel)
+                            // TODO
                         }
-                        composable(
-                            NavPath.Menu.Todo.DETAILS.asTemplate, arguments = listOf(
-                            navArgument(NavPath.Menu.Todo.DETAILS.parameterName) { type = NavType.LongType })
-                        ) {
-                            val todoId = it.arguments?.getLong(NavPath.Menu.Todo.DETAILS.parameterName).takeIf { it != 0L } ?: return@composable
-                            FullScreenTodo(todoId, todoViewModel)
+                        composable(NavPath.Menu.Todo.DETAILS.asTemplate, NavPath.Menu.Todo.DETAILS.asLongArg()) {
+                            val todoViewModel = viewModel<TodoViewModel>(factory = factory)
+                            FullScreenTodo(todoViewModel)
                         }
 
                         //  ---------- Menu -> REPOS ----------
                         composable(NavPath.Menu.REPOS) {
-                            FullScreenRepos(commitsViewModel)
+                            FullScreenRepos(dbInterface.commitsInterface)
                         }
-                        composable(NavPath.Menu.Repos.COMMIT.asTemplate) {
-                            val sha = it.arguments?.getString(NavPath.Menu.Repos.COMMIT.parameterName) ?: return@composable
-                            FullScreenCommit(sha, commitsViewModel)
+                        composable(
+                            NavPath.Menu.Repos.COMMIT.asTemplate,
+                            NavPath.Menu.Repos.COMMIT.asStringArg()
+                        ) {
+                            val viewModel: FullScreenCommitViewModel = viewModel(factory = factory)
+                            FullScreenCommit(viewModel)
                         }
-                        composable(NavPath.Menu.Repos.REPO.asTemplate) {
-                            val name = it.arguments?.getString(NavPath.Menu.Repos.REPO.parameterName) ?: return@composable
-                            FullScreenRepo(name, commitsViewModel)
+                        composable(
+                            NavPath.Menu.Repos.REPO.asTemplate,
+                            arguments = NavPath.Menu.Repos.REPO.asStringArg()
+                        ) {
+                            val viewModel: FullScreenRepoViewModel = viewModel(factory = factory)
+                            FullScreenRepo(viewModel)
                         }
 
                         //  ---------- Menu -> Contacts ----------
                         composable(NavPath.Menu.CONTACTS) {
-                            Contacts(contacsViewModel)
+                            Contacts(appRepos.contactsRepo)
                         }
-                        composable(NavPath.Menu.Contacts.DISPLAY_PERSON.asTemplate, arguments = listOf(
-                            navArgument(NavPath.Menu.Contacts.DISPLAY_PERSON.parameterName) { type = NavType.LongType }
-                        )){
-                            val personId = it.arguments?.getLong(NavPath.Menu.Contacts.DISPLAY_PERSON.parameterName) ?: return@composable
-                            ProfileFullScreen(personId, photoPicker, largeDataCache, profileInfoModel)
+                        composable(
+                            NavPath.Menu.Contacts.DISPLAY_PERSON.asTemplate,
+                            NavPath.Menu.Contacts.DISPLAY_PERSON.asLongArg()
+                        ) {
+                            val profileInfoModel = viewModel<ProfileInfoModel>(factory = factory)
+                            ProfileFullScreen(photoPicker, profileInfoModel)
                         }
-                        composable(NavPath.Menu.Contacts.DEBT_DISPLAY.asTemplate, arguments = listOf(
-                            navArgument(NavPath.Menu.Contacts.DEBT_DISPLAY.parameterName) { type = NavType.LongType }
-                        )){
-                            val personId = it.arguments?.getLong(NavPath.Menu.Contacts.DEBT_DISPLAY.parameterName) ?: return@composable
-                            FullScreenDebt(profileInfoModel, transactionViewModel, personId)
+                        composable(NavPath.Menu.Contacts.DEBT_DISPLAY.asTemplate, NavPath.Menu.Contacts.DEBT_DISPLAY.asLongArg()) {
+                            val personalDebtViewModel = viewModel<PersonalDebtViewModel>(factory = factory)
+                            FullScreenDebt(personalDebtViewModel)
                         }
 
                         //  ---------- Menu -> Alarm ----------
                         composable(NavPath.Menu.ALARM) {
-                            AlarmScreen(alarmViewModel)
+                            AlarmUI.AlarmScreen(appRepos.alarmRepo)
                         }
                         composable(NavPath.Menu.Alarm.ALARM_SOUND_SETTINGS) {
-                            AlarmSoundSettings(alarmViewModel)
+                            AlarmUI.AlarmSoundSettings(appRepos.alarmRepo)
                         }
 
                         //  ---------- Menu -> Streak ----------
                         composable(NavPath.Menu.STREAK) {
-                            StreaksScreen(streakViewmodel)
+                            StreaksScreen(appRepos.streakRepo)
                         }
                         composable(NavPath.Menu.Streak.FULL_SCREEN_STREAK.asTemplate, arguments = listOf(
                             navArgument(NavPath.Menu.Streak.FULL_SCREEN_STREAK.parameterName) { type = NavType.LongType }
                         )){
                             val streakId = it.arguments?.getLong(NavPath.Menu.Streak.FULL_SCREEN_STREAK.parameterName) ?: return@composable
-                            StreakFullScreen(streakViewmodel, streakId)
+                            StreakFullScreen(appRepos.streakRepo, streakId)
                         }
                         composable(NavPath.Menu.Streak.EDIT_SCREEN_STREAK) {
-                            EditStreaksScreen(streakViewmodel)
+                            EditStreaksScreen(appRepos.streakRepo)
                         }
 
                         //  ---------- Menu -> More ----------
@@ -385,13 +355,14 @@ class MainActivity : ComponentActivity() {
                             InformationComposable()
                         }
                         composable(NavPath.Menu.More.AI) {
-                            AISettings(aiSettingsViewModel)
+                            AISettings(appRepos.aiSettingsRepo)
                         }
                         composable(NavPath.Menu.More.DEBUG) {
                             DebugScreen(
-                                repositories.api.heyAPIAlmighlyGodEtcCanIPleaseOnlyForDebugHaveAllDaoAccessImReallyTheDebugOnlyPleasePleasePlease(),
-                                repositories.api,
-                                repositories
+                                dbInterface.api.heyAPIAlmighlyGodEtcCanIPleaseOnlyForDebugHaveAllDaoAccessImReallyTheDebugOnlyPleasePleasePlease(),
+                                dbInterface.api,
+                                dbInterface,
+                                appRepos
                             )
                         }
 
@@ -400,7 +371,7 @@ class MainActivity : ComponentActivity() {
                                 SettingsComposable()
                             }
                             composable(NavPath.Menu.More.Settings.PERMISSIONS) {
-                                SettingsPermissionComposable(calendarViewModel)
+                                SettingsPermissionComposable()
                             }
                             composable(NavPath.Menu.More.Settings.PREFERENCES) {
                                 PreferenceComposable()
@@ -443,16 +414,16 @@ class MainActivity : ComponentActivity() {
         intent.getStringExtra("shared_event")?.let { jsonString ->
             try {
                 val event = SyncedEvent.fromJSON(JSONObject(jsonString))
-                inspectedEventViewModel.setInspectedEventTo(
+                appRepos.calendarSuper.setInspectedEventTo(
                     if (!event.isSynced()) {
-                        if(inspectedEventViewModel.isEditing.value) {
-                            inspectedEventViewModel.event.value.copy(rawEvent = event.raw)
+                        if(appRepos.calendarSuper.isEditing.value) {
+                            appRepos.calendarSuper.event.value.copy(rawEvent = event.raw)
                         } else {
-                            inspectedEventViewModel.setEditing(true)
+                            appRepos.calendarSuper.setEditing(true)
                             event
                         }
                     } else {
-                        inspectedEventViewModel.setEditing(false)
+                        appRepos.calendarSuper.setEditing(false)
                         event
                     }
                 )

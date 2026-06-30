@@ -9,10 +9,10 @@ import com.myxoz.life.R
 import com.myxoz.life.api.API
 import com.myxoz.life.api.ServerSyncableCompanion
 import com.myxoz.life.api.Syncable
-import com.myxoz.life.dbwrapper.people.PersonEntity
-import com.myxoz.life.dbwrapper.people.ReadPeopleDao
-import com.myxoz.life.dbwrapper.people.SocialsEntity
-import com.myxoz.life.screens.feed.fullscreenevent.getId
+import com.myxoz.life.storage.dbwrapper.people.PersonEntity
+import com.myxoz.life.storage.dbwrapper.people.ReadPeopleDao
+import com.myxoz.life.storage.dbwrapper.people.SocialsEntity
+import com.myxoz.life.ui.feed.fullscreenevent.getId
 import com.myxoz.life.utils.AndroidUtils
 import com.myxoz.life.utils.PhoneNumberParser
 import com.myxoz.life.utils.getLongOrNull

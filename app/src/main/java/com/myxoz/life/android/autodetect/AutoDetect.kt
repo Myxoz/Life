@@ -3,7 +3,7 @@ package com.myxoz.life.android.autodetect
 import android.content.Context
 import android.content.Context.MODE_PRIVATE
 import android.content.SharedPreferences
-import com.myxoz.life.dbwrapper.people.ReadPeopleDao
+import com.myxoz.life.storage.dbwrapper.people.ReadPeopleDao
 import com.myxoz.life.events.LocalEvent
 import com.myxoz.life.utils.SharedPrefsUtils.edit
 import com.myxoz.life.viewmodels.Settings

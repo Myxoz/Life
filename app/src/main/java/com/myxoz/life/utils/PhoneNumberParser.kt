@@ -1,6 +1,6 @@
 package com.myxoz.life.utils
 
-import com.myxoz.life.viewmodels.LargeDataCache
+import com.myxoz.life.repositories.LargeDataCache
 
 class PhoneNumberParser(val largeDataCache: LargeDataCache) {
     fun parse(number: String) = formatPhoneNumber(number, largeDataCache.vorwahlMap, largeDataCache.mobileCountryCodes, largeDataCache.carrierMap)

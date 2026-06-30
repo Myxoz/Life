@@ -5,7 +5,7 @@ import android.content.SharedPreferences
 import android.provider.CallLog
 import androidx.core.content.edit
 import com.myxoz.life.api.syncables.PersonSyncable
-import com.myxoz.life.dbwrapper.people.ReadPeopleDao
+import com.myxoz.life.storage.dbwrapper.people.ReadPeopleDao
 import com.myxoz.life.events.DigSocEvent
 import com.myxoz.life.events.RawEvent
 import com.myxoz.life.events.additionals.DigSocPlatform

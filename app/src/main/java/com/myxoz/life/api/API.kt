@@ -17,34 +17,34 @@ import com.myxoz.life.api.syncables.ProfilePictureSyncable
 import com.myxoz.life.api.syncables.SyncedEvent
 import com.myxoz.life.api.syncables.TodoSyncable
 import com.myxoz.life.api.syncables.TransactionSplitSyncable
-import com.myxoz.life.dbwrapper.Daos
-import com.myxoz.life.dbwrapper.WaitingSyncDao
-import com.myxoz.life.dbwrapper.banking.ReadBankingDao
-import com.myxoz.life.dbwrapper.banking.WriteBankingDao
-import com.myxoz.life.dbwrapper.commits.ReadCommitsDao
-import com.myxoz.life.dbwrapper.commits.WriteCommitsDao
-import com.myxoz.life.dbwrapper.days.ReadDaysDao
-import com.myxoz.life.dbwrapper.days.WriteDaysDao
-import com.myxoz.life.dbwrapper.events.ReadEventDetailsDao
-import com.myxoz.life.dbwrapper.events.WriteEventDetailsDao
-import com.myxoz.life.dbwrapper.extension.ReadExtensionDao
-import com.myxoz.life.dbwrapper.extension.WriteExtensionDao
-import com.myxoz.life.dbwrapper.locations.ReadLocationsDao
-import com.myxoz.life.dbwrapper.locations.WriteLocationsDao
-import com.myxoz.life.dbwrapper.people.ReadPeopleDao
-import com.myxoz.life.dbwrapper.people.WritePeopleDao
-import com.myxoz.life.dbwrapper.todos.ReadTodosDao
-import com.myxoz.life.dbwrapper.todos.WriteTodosDao
 import com.myxoz.life.events.additionals.EventType
-import com.myxoz.life.repositories.BankingRepo
-import com.myxoz.life.repositories.CalendarRepo
-import com.myxoz.life.repositories.CommitsRepo
-import com.myxoz.life.repositories.DaySummaryRepo
-import com.myxoz.life.repositories.ExtensionRepo
-import com.myxoz.life.repositories.LocationRepo
-import com.myxoz.life.repositories.PeopleRepo
-import com.myxoz.life.repositories.TodoRepo
-import com.myxoz.life.screens.feed.fullscreenevent.getId
+import com.myxoz.life.storage.dbwrapper.Daos
+import com.myxoz.life.storage.dbwrapper.WaitingSyncDao
+import com.myxoz.life.storage.dbwrapper.banking.ReadBankingDao
+import com.myxoz.life.storage.dbwrapper.banking.WriteBankingDao
+import com.myxoz.life.storage.dbwrapper.commits.ReadCommitsDao
+import com.myxoz.life.storage.dbwrapper.commits.WriteCommitsDao
+import com.myxoz.life.storage.dbwrapper.days.ReadDaysDao
+import com.myxoz.life.storage.dbwrapper.days.WriteDaysDao
+import com.myxoz.life.storage.dbwrapper.events.ReadEventDetailsDao
+import com.myxoz.life.storage.dbwrapper.events.WriteEventDetailsDao
+import com.myxoz.life.storage.dbwrapper.extension.ReadExtensionDao
+import com.myxoz.life.storage.dbwrapper.extension.WriteExtensionDao
+import com.myxoz.life.storage.dbwrapper.locations.ReadLocationsDao
+import com.myxoz.life.storage.dbwrapper.locations.WriteLocationsDao
+import com.myxoz.life.storage.dbwrapper.people.ReadPeopleDao
+import com.myxoz.life.storage.dbwrapper.people.WritePeopleDao
+import com.myxoz.life.storage.dbwrapper.todos.ReadTodosDao
+import com.myxoz.life.storage.dbwrapper.todos.WriteTodosDao
+import com.myxoz.life.storage.interfaces.BankingRepo
+import com.myxoz.life.storage.interfaces.CalendarInterface
+import com.myxoz.life.storage.interfaces.CommitsInterface
+import com.myxoz.life.storage.interfaces.DaySummaryInterface
+import com.myxoz.life.storage.interfaces.ExtensionInterface
+import com.myxoz.life.storage.interfaces.LocationInterface
+import com.myxoz.life.storage.interfaces.PeopleInterface
+import com.myxoz.life.storage.interfaces.TodoInterface
+import com.myxoz.life.ui.feed.fullscreenevent.getId
 import com.myxoz.life.utils.forEach
 import com.myxoz.life.utils.jsonObjArray
 import org.json.JSONArray
@@ -54,14 +54,14 @@ import kotlin.random.Random
 @Stable
 class API (
     private val hooks: UpdateHooks,
-    private val calendarRepo: CalendarRepo,
-    private val daySummaryRepo: DaySummaryRepo,
-    private val peopleRepo: PeopleRepo,
+    private val calendarInterface: CalendarInterface,
+    private val daySummaryInterface: DaySummaryInterface,
+    private val peopleInterface: PeopleInterface,
     private val bankingRepo: BankingRepo,
-    private val locationRepo: LocationRepo,
-    private val commitsRepo: CommitsRepo,
-    private val todoRepo: TodoRepo,
-    private val extensionRepo: ExtensionRepo,
+    private val locationInterface: LocationInterface,
+    private val commitsInterface: CommitsInterface,
+    private val todoInterface: TodoInterface,
+    private val extensionInterface: ExtensionInterface,
     private val waitingSyncDao: WaitingSyncDao,
     private val readSyncableDaos: ReadSyncableDaos,
     private val writeSyncableDaos: WriteSyncableDaos,
@@ -178,7 +178,7 @@ class API (
         when (cal) {
             in Int.MIN_VALUE..<0 -> {
                 val id = json.getId()
-                calendarRepo.deleteSyncedEventFromCache(id)
+                calendarInterface.deleteSyncedEventFromCache(id)
                 writeSyncableDaos.eventDetailsDao.removeEventById(id)
                 when (json.getInt("type")) { // GOTO AEFL
                     EventType.Sleep.id -> {}
@@ -230,17 +230,17 @@ class API (
 
             Syncable.SpecialSyncablesIds.DAYS -> {
                 val new = FullDaySyncable.overwriteDBByJson(writeSyncableDaos, json)
-                daySummaryRepo.setDaySummary(new)
+                daySummaryInterface.setDaySummary(new)
             }
 
             Syncable.SpecialSyncablesIds.PEOPLE -> {
                 val new = PersonSyncable.overwriteDBByJson(writeSyncableDaos, json)
-                peopleRepo.updateCacheOnly(new)
+                peopleInterface.updateCacheOnly(new)
             }
 
             Syncable.SpecialSyncablesIds.LOCATIONS -> {
                 val new = LocationSyncable.overwriteDBByJson(writeSyncableDaos, json)
-                locationRepo.update(new)
+                locationInterface.update(new)
             }
 
             Syncable.SpecialSyncablesIds.BANKINGSIDECAR -> {
@@ -255,11 +255,11 @@ class API (
 
             Syncable.SpecialSyncablesIds.PROFILEPICTURE -> {
                 val pp = ProfilePictureSyncable.overwriteDBByJson(writeSyncableDaos, json)
-                peopleRepo.updatePP(pp)
+                peopleInterface.updatePP(pp)
             }
             Syncable.SpecialSyncablesIds.COMMITS -> {
                 val commit = CommitSyncable.overwriteDBByJson(writeSyncableDaos, json)
-                commitsRepo.updateCommit(commit)
+                commitsInterface.updateCommit(commit)
             }
             Syncable.SpecialSyncablesIds.MANUALTRANSACTION -> {
                 val manual = ManualTransactionSyncable.overwriteDBByJson(writeSyncableDaos, json)
@@ -267,7 +267,7 @@ class API (
             }
             Syncable.SpecialSyncablesIds.TODOS -> {
                 val todo = TodoSyncable.overwriteDBByJson(writeSyncableDaos, json)
-                todoRepo.updateCachedTodo(todo)
+                todoInterface.updateCachedTodo(todo)
             }
             Syncable.SpecialSyncablesIds.TRANSACTIONSPLIT -> {
                 val split = TransactionSplitSyncable.overwriteDBByJson(writeSyncableDaos, json)
@@ -276,12 +276,12 @@ class API (
             Syncable.SpecialSyncablesIds.EXTENSION -> {
                 val extension = ExtensionSyncable.overwriteDBByJson(writeSyncableDaos, json)
                 hooks.updateExtension(extension)
-                extensionRepo.overwriteCache(extension.type, extension.content)
+                extensionInterface.overwriteCache(extension.type, extension.content)
             }
 
             else -> {
                 val syned = SyncedEvent.overwriteDBByJson(writeSyncableDaos, json)
-                calendarRepo.updateSyncedEventCached(syned)
+                calendarInterface.updateSyncedEventCached(syned)
             }
         }
     }

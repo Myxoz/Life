@@ -6,9 +6,9 @@ import com.myxoz.life.api.syncables.ExtensionSyncable.ExtensionSyncableType.Favo
 import com.myxoz.life.api.syncables.ExtensionSyncable.ExtensionSyncableType.RepeatingEvents
 import com.myxoz.life.api.syncables.ExtensionSyncable.ExtensionSyncableType.Streak
 import com.myxoz.life.events.LocalEvent
-import com.myxoz.life.repositories.CalendarRepo
-import com.myxoz.life.repositories.ExtensionRepo
-import com.myxoz.life.repositories.utils.Cached
+import com.myxoz.life.storage.interfaces.CalendarInterface
+import com.myxoz.life.storage.interfaces.ExtensionInterface
+import com.myxoz.life.storage.interfaces.utils.Cached
 
 /**
  * We try to derive everything, but sometimes this is not possible without duplicating code.
@@ -33,8 +33,8 @@ import com.myxoz.life.repositories.utils.Cached
  * created.
  * */
 class UpdateHooks(
-    val calendarRepo: CalendarRepo,
-    val extensionRepo: ExtensionRepo
+    val calendarInterface: CalendarInterface,
+    val extensionInterface: ExtensionInterface
 ) {
     suspend fun updateExtension(extension: ExtensionSyncable) {
         when(extension.type) {
@@ -50,16 +50,16 @@ class UpdateHooks(
         // Yes I am, think about it, it may seam weird but, we don't harm anything and
         // allow easiest updating when proposing multiple LocalEvents.
         // In the future, we will likely switch to a similar approach just with adding or similar
-        calendarRepo.updateLocalEvents(newEvents.map { LocalEvent(it.id, it.event) })
+        calendarInterface.updateLocalEvents(newEvents.map { LocalEvent(it.id, it.event) })
 
-        val old = extensionRepo.getExtension(RepeatingEvents)
+        val old = extensionInterface.getExtension(RepeatingEvents)
         if(old != null) {
             val oldIds = old.events.map { it.id }
             val difference = (oldIds - newEvents.map { it.id }.toSet())
             // Most likely: Only edited not changed
             if(difference.isEmpty()) return
 
-            calendarRepo.updateLocalEventsRaw( difference.map { it to Cached.Null } )
+            calendarInterface.updateLocalEventsRaw( difference.map { it to Cached.Null } )
         }
     }
 }

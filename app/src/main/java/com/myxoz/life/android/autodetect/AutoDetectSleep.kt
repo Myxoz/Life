@@ -4,7 +4,7 @@ import android.content.Context
 import android.content.SharedPreferences
 import android.icu.util.Calendar
 import com.myxoz.life.events.SleepEvent
-import com.myxoz.life.screens.options.getUsageDataSessions
+import com.myxoz.life.ui.options.getUsageDataSessions
 import com.myxoz.life.utils.SharedPrefsUtils.edit
 import com.myxoz.life.utils.roundToNearest15Min
 

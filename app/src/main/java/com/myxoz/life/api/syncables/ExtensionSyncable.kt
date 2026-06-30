@@ -6,8 +6,8 @@ import com.myxoz.life.api.Syncable
 import com.myxoz.life.api.extensions.FavoriteContactsExtendable
 import com.myxoz.life.api.extensions.RepeatingEventsExtendable
 import com.myxoz.life.api.extensions.StreakExtendable
-import com.myxoz.life.dbwrapper.extension.ExtensionEntity
-import com.myxoz.life.screens.feed.fullscreenevent.getId
+import com.myxoz.life.storage.dbwrapper.extension.ExtensionEntity
+import com.myxoz.life.ui.feed.fullscreenevent.getId
 import org.json.JSONObject
 
 class ExtensionSyncable(

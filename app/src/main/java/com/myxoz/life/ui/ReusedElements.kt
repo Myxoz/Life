@@ -73,7 +73,7 @@ import androidx.graphics.shapes.Morph
 import androidx.graphics.shapes.toPath
 import com.myxoz.life.R
 import com.myxoz.life.Theme
-import com.myxoz.life.screens.feed.fullscreenevent.InputField
+import com.myxoz.life.ui.feed.fullscreenevent.InputField
 import com.myxoz.life.ui.theme.FontSize
 import com.myxoz.life.utils.MaterialShapes
 import com.myxoz.life.utils.collectAsMutableState
