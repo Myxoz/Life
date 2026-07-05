@@ -350,7 +350,7 @@ private fun BoxScope.RenderEventEditing(
     oneHourDp: Dp,
     hourInPx: Float,
     calendar: Calendar
-){
+) {
     val screens = LocalScreens.current
     val editedEvent by calendarRepo.event.collectAsState()
     val colors = editedEvent.raw.type.colors.bg

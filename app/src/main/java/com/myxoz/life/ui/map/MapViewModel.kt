@@ -74,11 +74,13 @@ class MapViewModel(
     }
     fun parseLocation(id: Long): Pair<LocationSyncable?, String?>{
         val coords = coordsInput.value?.split(",") ?: return null to "Gib Koordinaten ein"
-        if(coords.size != 2) return null to "Die Koordinaten sollten genau ein Komma beinhalten z.B. '1.23, 4.56'"
-        val lat = coords[0].trim().toDoubleOrNull()
-        val longitude = coords[1].trim().toDoubleOrNull()
-        if(lat==null) return null to "Gib ein validen Breitengrad ein z.B. 12.456"
-        if(longitude==null) return null to "Gib ein validen Längengrad ein z.B. 12.456"
+        if(coords.size != 2 && coords.size != 4) return null to "Die Koordinaten sollten 1 oder 3 Kommas enthalten: '1.23, 3.45' oder '1,23, 3,45'"
+        val (lat, longitude) = if(coords.size == 2)
+            coords[0].trim().toDoubleOrNull() to coords[1].trim().toDoubleOrNull()
+        else
+            "${coords[0].trim()}.${coords[1].trim()}".toDoubleOrNull() to "${coords[2].trim()}.${coords[3].trim()}".trim().toDoubleOrNull()
+        if(lat==null) return null to "Gib ein validen Breitengrad ein z.B. 12.456 oder 12,456"
+        if(longitude==null) return null to "Gib ein validen Längengrad ein z.B. 12.456 oder 12,456"
         val cityCountryMix = cityCountryInput.value?.split(", ") ?: return null to "Gib Koordinaten ein"
         if(cityCountryMix.size != 2) return null to "Stadt, Land sollte genau ein Komma enthalten"
         return LocationSyncable(
