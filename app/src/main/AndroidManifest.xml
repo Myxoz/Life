@@ -72,7 +72,7 @@
             </intent-filter>
         </activity>
         <activity
-            android:name=".screens.alarm.AlarmActivity"
+            android:name=".ui.alarm.screens.AlarmActivity"
             android:showWhenLocked="true"
             android:turnScreenOn="true"
             android:exported="false"/>

@@ -1,6 +1,7 @@
 package com.myxoz.life.ui.options
 
 import android.content.Context.MODE_PRIVATE
+import android.content.Intent
 import android.content.pm.ApplicationInfo
 import android.icu.util.Calendar
 import android.provider.CallLog
@@ -49,6 +50,7 @@ import com.myxoz.life.events.additionals.EventType
 import com.myxoz.life.repositories.AppRepos
 import com.myxoz.life.storage.dbwrapper.Daos
 import com.myxoz.life.storage.interfaces.DatabaseInterface
+import com.myxoz.life.ui.alarm.screens.AlarmActivity
 import com.myxoz.life.ui.holdToCopy
 import com.myxoz.life.ui.theme.FontColor
 import com.myxoz.life.ui.theme.FontSize
@@ -162,6 +164,12 @@ fun DebugScreen(
                 repos.alarmRepo.setAlarm(System.currentTimeMillis() + 10*1000L)
             }) {
                 Text("Alarm in 10s")
+            }
+            Button({
+                val intent = Intent(context, AlarmActivity::class.java)
+                context.startActivity(intent)
+            }) {
+                Text("Alarm now")
             }
             var shouldWipeDp by remember { mutableIntStateOf(0) }
             Button({
