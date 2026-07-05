@@ -413,7 +413,7 @@ private fun BoxScope.RenderEventEditing(
         Box(
             Modifier
                 .fillMaxWidth(0.4f)
-                .height(oneHourDp * 2)
+                .height(if(editedEvent.raw.end <= endOfDay) oneHourDp * 2 else 0.dp)
                 .align(Alignment.BottomEnd)
                 .background(
                     gradientBottom,
@@ -429,9 +429,12 @@ private fun BoxScope.RenderEventEditing(
         Box(
             Modifier
                 .fillMaxWidth(0.4f)
-                .height(oneHourDp * 2)
+                .height(if(editedEvent.raw.start >= startOfDay) oneHourDp * 2 else  0.dp)
                 .align(Alignment.TopStart)
-                .background(gradientTop, RoundedCornerShape(10.dp))
+                .background(
+                    gradientTop,
+                    RoundedCornerShape(10.dp)
+                )
                 .pointerInput("start") {
                     dragEvent(true, end = false)
                 },
@@ -471,8 +474,8 @@ private fun BoxScope.RenderEventEditing(
                 shape = RoundedCornerShape(10.dp)
             )
     ) {
-        if (editedEvent.raw.start >= startOfDay) topDragger()
-        if (editedEvent.raw.end <= endOfDay) bottomDragger()
+        topDragger()
+        bottomDragger()
         Box(
             Modifier
                 .fillMaxSize()
