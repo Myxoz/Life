@@ -22,6 +22,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.coerceAtLeast
 import androidx.compose.ui.unit.dp
 import com.myxoz.life.api.syncables.SyncedEvent
 import com.myxoz.life.events.RawEvent
@@ -55,7 +56,7 @@ data class PrerenderedEvent(
                     Modifier
                         .padding(
                             top = segment.getTopPadding(oneHour, startOfDay),
-                            start = if (!segment.isLeft) width - bankingSizeDp else 0.dp
+                            start = if (!segment.isLeft) (width - bankingSizeDp).coerceAtLeast(0.dp) else 0.dp
                         )
                         .height(segment.getHeightDp(oneHour, startOfDay, endOfDay))
                         .width(if (segment.isFullWidth) width else if (segment.isLeft) width - bankingSizeDp else bankingSizeDp)

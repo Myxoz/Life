@@ -68,7 +68,7 @@ private fun DayDisplaySelector(settings: Settings.CompositionSettings){
             .fillMaxWidth()
             .horizontalScroll(rememberScrollState())
     ) {
-        repeat(20) { num ->
+        repeat(16) { num ->
             if(num == 0) return@repeat
             val isOn = (1.shl(num).and(displayedDaysOption) != 0)
             Box(

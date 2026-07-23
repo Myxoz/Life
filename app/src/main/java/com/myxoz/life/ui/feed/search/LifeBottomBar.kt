@@ -130,7 +130,6 @@ fun LifeBottomBar(calendarRepo: CalendarRepo, calendarViewModel: CalendarViewMod
                                         .size(rowHeight)
                                 )
                             }
-
                         }
                     }
                     val vehicle by search.selectedVehicles.collectAsState()
@@ -309,7 +308,7 @@ private fun DayAmountSelector(calendarViewModel: CalendarViewModel, rowHeight: D
             .size(realSize)
             .combinedRippleClick({
                 if (displayingElements == 0) return@combinedRippleClick // No bit set
-                setWidth = if (minBit <= setWidth)
+                setWidth = if (minBit < setWidth)
                     31 - displayingElements.and((1.shl(setWidth) - 1)).countLeadingZeroBits()
                 else
                     maxBit
@@ -323,7 +322,7 @@ private fun DayAmountSelector(calendarViewModel: CalendarViewModel, rowHeight: D
             }
     ) {
         repeat(4) { outerRow ->
-            val weight by animateFloatAsState(if(width >= outerRow * 4) 1000f else 1f)
+            val weight by animateFloatAsState(if(width > outerRow * 4) 1000f else 1f)
             Row(
                 Modifier
                     .weight(weight)
