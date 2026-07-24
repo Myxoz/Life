@@ -51,6 +51,7 @@ import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardCapitalization
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -65,7 +66,11 @@ import com.myxoz.life.android.integration.MapBoxAPI
 import com.myxoz.life.api.syncables.LocationSyncable
 import com.myxoz.life.ui.EditToTickAndDiscard
 import com.myxoz.life.ui.NavPath
-import com.myxoz.life.ui.ThreeStateBottomSheet
+import com.myxoz.life.ui.ThreeStateBottomSheetState
+import com.myxoz.life.ui.ThreeStateBottomSheetState.Companion.ThreeStateBottomSheet
+import com.myxoz.life.ui.map.MapViewModel.Companion.EARTH_R
+import com.myxoz.life.ui.person.displayperson.ListEditingField
+import com.myxoz.life.ui.person.displayperson.ListEntry
 import com.myxoz.life.ui.person.displayperson.navigateForResult
 import com.myxoz.life.ui.theme.FontFamily
 import com.myxoz.life.ui.theme.FontSize
@@ -75,7 +80,6 @@ import com.myxoz.life.utils.def
 import com.myxoz.life.utils.filteredWith
 import com.myxoz.life.utils.rippleClick
 import com.myxoz.life.utils.toDp
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.first
@@ -85,14 +89,7 @@ import kotlin.math.cos
 import kotlin.math.ln
 
 @Composable
-fun MapSheet(mapViewModel: MapViewModel, innerPadding: PaddingValues){
-    val nav = LocalNavController.current
-    val screenHeight = LocalWindowInfo.current.containerDpSize.height
-    val coroutineScope = rememberCoroutineScope()
-    val selectCoordsOnMap by mapViewModel.selectCoordsOnMap.collectAsState()
-    val sheetLocation by mapViewModel.sheetLocation.collectAsState()
-    val selectedCoordinates by mapViewModel.selectedCoordinates.collectAsState()
-    val isEditing by mapViewModel.isEditing.collectAsState()
+fun MapSheet(mapViewModel: MapViewModel, innerPadding: PaddingValues) {
     val state = mapViewModel.sheetState
     val minSheetHeight = FontSize.XLARGE.size.toDp() + 30.dp * 2
     ThreeStateBottomSheet(
@@ -101,11 +98,14 @@ fun MapSheet(mapViewModel: MapViewModel, innerPadding: PaddingValues){
         Theme.surfaceContainer,
         innerPadding
     ) {
-        BackHandler(sheetLocation!=null || selectedCoordinates != null) {
-            mapViewModel.setSheetLocation(null)
-            mapViewModel.decodedLocation.value = null
-            mapViewModel.selectCoordsOnMap.value = false
-            mapViewModel.isEditing.value = false
+        BackHandler(mapViewModel.selectedLifeLocation!=null || mapViewModel.selectedCoordinates != null) {
+            mapViewModel.deselectLocation()
+        }
+        BackHandler(mapViewModel.editingLocation != null) {
+            mapViewModel.discardChanges()
+        }
+        BackHandler(mapViewModel.selectingCoordsOnMapMode) {
+            mapViewModel.selectingCoordsOnMapMode = false
         }
         Column(
             Modifier
@@ -113,32 +113,23 @@ fun MapSheet(mapViewModel: MapViewModel, innerPadding: PaddingValues){
                 .padding(horizontal = 20.dp)
             ,
         ) {
-            val progress by state.progress.collectAsState()
-            val loc = sheetLocation
-            val decodedLocation by mapViewModel.decodedLocation.collectAsState()
-            val coords = selectedCoordinates
             val iconSize = FontSize.XLARGE.size.toDp()
             val context = LocalContext.current
-            if (coords != null) {
-                LaunchedEffect(coords) {
-                    if(decodedLocation != null || loc != null) return@LaunchedEffect
-                    while (true) {
-                        if(progress < 0.1f) {
-                            delay(100)
-                            continue
-                        }
-                        val response = MapBoxAPI.getLocationListFromAPIResponse(MapBoxAPI.reverseGeocode(context, coords.latitude(), coords.longitude()) ?: return@LaunchedEffect)
-                        mapViewModel.decodedLocation.value = response.getOrNull(0)?.let {
-                            LocationSyncable(it.name,
-                                coords.longitude(),
-                                coords.latitude(),
-                                it.radiusM, it.ssid, it.street, it.number, it.city, it.country, it.id)
-                        } ?: return@LaunchedEffect
-                        break
-                    }
+            val selectedCoordinates = mapViewModel.selectedCoordinates
+            if(selectedCoordinates != null) {
+                val isNotCollapsed = mapViewModel.sheetState.state != ThreeStateBottomSheetState.SheetValue.Collapsed
+                LaunchedEffect(selectedCoordinates, mapViewModel.selectedLifeLocation, isNotCollapsed) {
+                    if(!isNotCollapsed || mapViewModel.selectedLifeLocation != null) return@LaunchedEffect
+                    val response = MapBoxAPI.getLocationListFromAPIResponse(MapBoxAPI.reverseGeocode(context, selectedCoordinates.latitude(), selectedCoordinates.longitude()) ?: return@LaunchedEffect)
+                    mapViewModel.selectOrDeselectLifeLocation(response.getOrNull(0)?.let {
+                        LocationSyncable(it.name,
+                            selectedCoordinates.longitude(),
+                            selectedCoordinates.latitude(),
+                            it.radiusM, it.ssid, it.street, it.number, it.city, it.country, it.id)
+                    } ?: return@LaunchedEffect)
                 }
-                val display = loc?.name ?: decodedLocation?.name ?: "Markierung"
-                val subTitle = loc?.toAddress() ?: decodedLocation?.let { "In der Nähe von ${it.toAddress()}" } ?: "Lädt..."
+                val display = mapViewModel.selectedLifeLocation?.name ?: "Markierung"
+                val subTitle = mapViewModel.selectedLifeLocation?.toAddress() ?: "Lädt..."
                 Spacer(Modifier.height(20.dp))
                 Row(
                     Modifier
@@ -147,19 +138,20 @@ fun MapSheet(mapViewModel: MapViewModel, innerPadding: PaddingValues){
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.SpaceBetween
                 ) {
-                    val nameInput by mapViewModel.nameInput.collectAsState()
                     val focusManager = LocalFocusManager.current
                     BasicTextField(
-                        if(isEditing) nameInput?:"" else display,
+                        mapViewModel.editingLocation?.name ?: display,
                         {
-                            mapViewModel.nameInput.value = it
+                            mapViewModel.editWith {
+                                copy(name = it)
+                            }
                         },
                         Modifier
                             .padding(vertical = 5.dp)
                             .weight(1f)
                         ,
                         cursorBrush = SolidColor(Theme.primary),
-                        enabled = isEditing && progress > 0.1f,
+                        enabled = mapViewModel.editingLocation != null && isNotCollapsed,
                         textStyle = TypoStyle(Theme.primary, FontSize.XLARGE, FontFamily.Display),
                         keyboardOptions = KeyboardOptions(
                             capitalization = KeyboardCapitalization.Sentences,
@@ -171,59 +163,30 @@ fun MapSheet(mapViewModel: MapViewModel, innerPadding: PaddingValues){
                         singleLine = true,
                     )
                     EditToTickAndDiscard(
-                        isEditing,
+                        mapViewModel.editingLocation != null,
                         iconSize,
-                        { if(loc == null && !isEditing) R.drawable.add else R.drawable.edit },
+                        { if(mapViewModel.selectedLifeLocation == null || mapViewModel.selectedLifeLocation?.id == -1L) R.drawable.add else R.drawable.edit },
                         10.dp,
                         {
-                            if(loc == null) return@EditToTickAndDiscard
-                            val reason = mapViewModel.parseLocation(loc.id)
-                            if(reason.second!=null) {
-                                Toast.makeText(context, reason.second, Toast.LENGTH_LONG).show()
-                                return@EditToTickAndDiscard
-                            }
-                            coroutineScope.launch {
-                                mapViewModel.saveAndSync(
-                                    (reason.first?:return@launch)
-                                )
-                                mapViewModel.isEditing.value = false
-                                mapViewModel.setSheetLocation(reason.first)
-                            }
+                            val error = mapViewModel.saveAndSyncLocationOrError()
+                            if(error != null) Toast.makeText(context, error, Toast.LENGTH_SHORT).show()
                         },
                         {
-                            if((loc?.id ?: -1) < 1) { // Discard unsynced location
-                                mapViewModel.decodedLocation.value = loc
-                                mapViewModel.setSheetLocation(null)
-                            } else {
-                                mapViewModel.decodedLocation.value = null
-                                mapViewModel.setSheetLocation(loc)
-                            }
-                            mapViewModel.selectCoordsOnMap.value = false
-                            mapViewModel.isEditing.value = false
+                            mapViewModel.discardChanges()
                         }
                     ) {
-                        if(loc == null) { // Add new Location enter edit
-                            mapViewModel.setSheetLocation(decodedLocation)
-                            mapViewModel.decodedLocation.value = null
-                            mapViewModel.isEditing.value = true
-                            mapViewModel.setInputValuesByLocation(decodedLocation?:return@EditToTickAndDiscard)
-                        } else { // Edit known location
-                            mapViewModel.setInputValuesByLocation(loc)
-                            mapViewModel.setSheetLocation(loc)
-                            mapViewModel.decodedLocation.value = null
-                            mapViewModel.isEditing.value = true
-                        }
+                        mapViewModel.edit()
                     }
                 }
                 Text(
                     subTitle,
                     Modifier
-                        .offset(y = 20.dp*(1-progress))
-                        .alpha(if(isEditing) 0f else progress),
+                        .offset(y = 20.dp*(1-state.partialToCollapsed))
+                        .alpha(if(mapViewModel.editingLocation != null) 0f else state.partialToCollapsed),
                     style = TypoStyle(Theme.secondary, FontSize.MEDIUMM),
                 )
                 Spacer(Modifier.height(20.dp))
-                val mixedLocation = loc ?: decodedLocation
+                val mixedLocation = mapViewModel.selectedLifeLocation ?: mapViewModel.editingLocation
                 Row(
                     Modifier
                         .fillMaxWidth()
@@ -234,36 +197,35 @@ fun MapSheet(mapViewModel: MapViewModel, innerPadding: PaddingValues){
                         Modifier
                             .weight(1f),
                     ) {
-                        _root_ide_package_.com.myxoz.life.ui.person.displayperson.ListEntry(
+                        ListEntry(
                             "Koordinaten",
                             painterResource(R.drawable.location)
                         ) {
-                            val coordsInput by mapViewModel.coordsInput.collectAsState()
-                            _root_ide_package_.com.myxoz.life.ui.person.displayperson.ListEditingField(
-                                isEditing,
-                                "%.6f, %.6f".format(coords.latitude(), coords.longitude()),
-                                LocationSyncable.coordsToDMS(coords.latitude(), coords.longitude()),
-                                coordsInput,
+                            ListEditingField(
+                                mapViewModel.editingLocation != null,
+                                "%.6f, %.6f".format(selectedCoordinates.latitude(), selectedCoordinates.longitude()),
+                                LocationSyncable.coordsToDMS(selectedCoordinates.latitude(), selectedCoordinates.longitude()),
+                                mapViewModel.coordsInput,
                                 "Koordinaten"
                             ) {
-                                mapViewModel.coordsInput.value = it
+                                mapViewModel.coordsInput = it
+                                val (coords, _) = mapViewModel.coordsToTuple()
+                                if(coords == null) return@ListEditingField
+                                mapViewModel.editWith {
+                                    copy(lat = coords.first, longitude = coords.second)
+                                }
+                                mapViewModel.selectedCoordinates = Point.fromLngLat(coords.second, coords.first)
                             }
                         }
                     }
-                    LaunchedEffect(Unit) {
-                        mapViewModel.selectedCoordinates.collect {
-                            if(it==null) return@collect
-                            mapViewModel.coordsInput.value = "%.6f, %.6f".format(it.latitude(), it.longitude())
-                        }
-                    }
-                    if(isEditing)
+                    if(mapViewModel.editingLocation != null)
                         Box(
                             Modifier
                                 .size(iconSize + 10.dp)
-                                .background(if(selectCoordsOnMap) Theme.primaryContainer else Color.Transparent, CircleShape)
+                                .background(if(mapViewModel.selectingCoordsOnMapMode) Theme.primaryContainer else Color.Transparent, CircleShape)
                                 .clip(CircleShape)
                                 .rippleClick{
-                                    mapViewModel.selectCoordsOnMap.value = !selectCoordsOnMap
+                                    mapViewModel.selectingCoordsOnMapMode = !mapViewModel.selectingCoordsOnMapMode
                                 }
                                 .padding(10.dp)
                         ) {
@@ -271,385 +233,398 @@ fun MapSheet(mapViewModel: MapViewModel, innerPadding: PaddingValues){
                                 painterResource(R.drawable.pick),
                                 "Pick",
                                 Modifier.fillMaxSize(),
-                                if(selectCoordsOnMap) Theme.onPrimaryContainer else Theme.primary
+                                if(mapViewModel.selectingCoordsOnMapMode) Theme.onPrimaryContainer else Theme.primary
                             )
                         }
                 }
                 AnimatedVisibility(
-                    loc != null
+                    mapViewModel.selectedLifeLocation != null && mapViewModel.selectedLifeLocation?.id != -1L || mapViewModel.editingLocation != null
                 ) {
-                    _root_ide_package_.com.myxoz.life.ui.person.displayperson.ListEntry(
+                    ListEntry(
                         "Radius in Metern",
                         painterResource(R.drawable.radius)
                     ) {
-                        val radiusMField by mapViewModel.radiusMInput.collectAsState()
-                        _root_ide_package_.com.myxoz.life.ui.person.displayperson.ListEditingField(
-                            isEditing,
-                            loc?.radiusM?.toString() ?: "",
+                        ListEditingField(
+                            mapViewModel.editingLocation != null,
+                            mapViewModel.selectedLifeLocation?.radiusM?.toString() ?: "",
                             null,
-                            radiusMField,
-                            "Radius"
+                            mapViewModel.radiusMInput,
+                            "Radius",
+                            KeyboardType.Number
                         ) { text ->
-                            mapViewModel.radiusMInput.value = text
+                            mapViewModel.radiusMInput = text
+                            val radiusM = text.toIntOrNull()
+                            if(radiusM != null) {
+                                mapViewModel.editWith {
+                                    copy(radiusM = radiusM)
+                                }
+                            }
                         }
                     }
                 }
-                _root_ide_package_.com.myxoz.life.ui.person.displayperson.ListEntry(
+                ListEntry(
                     "Hausnummer",
                     painterResource(R.drawable.house)
                 ) {
-                    val numberInp by mapViewModel.numberInput.collectAsState()
-                    _root_ide_package_.com.myxoz.life.ui.person.displayperson.ListEditingField(
-                        isEditing,
+                    ListEditingField(
+                        mapViewModel.editingLocation != null,
                         mixedLocation?.number ?: "???",
                         null,
-                        numberInp,
+                        mapViewModel.editingLocation?.number ?: "",
                         "Nummer"
                     ) { text ->
-                        mapViewModel.numberInput.value = text
+                        mapViewModel.editWith {
+                            copy(number = text)
+                        }
                     }
                 }
-                _root_ide_package_.com.myxoz.life.ui.person.displayperson.ListEntry(
+                ListEntry(
                     "Straße",
                     painterResource(R.drawable.road)
                 ) {
-                    val streetInp by mapViewModel.streetInput.collectAsState()
-                    _root_ide_package_.com.myxoz.life.ui.person.displayperson.ListEditingField(
-                        isEditing,
+                    ListEditingField(
+                        mapViewModel.editingLocation != null,
                         mixedLocation?.street ?: "???",
                         null,
-                        streetInp,
+                        mapViewModel.editingLocation?.street ?: "",
                         "Straße"
                     ) { text ->
-                        mapViewModel.streetInput.value = text
+                        mapViewModel.editWith {
+                            copy(street = text)
+                        }
                     }
                 }
-                _root_ide_package_.com.myxoz.life.ui.person.displayperson.ListEntry(
+                ListEntry(
                     "Ort, Land",
                     painterResource(R.drawable.globe)
                 ) {
-                    val cityCountryInput by mapViewModel.cityCountryInput.collectAsState()
-                    _root_ide_package_.com.myxoz.life.ui.person.displayperson.ListEditingField(
-                        isEditing,
+                    ListEditingField(
+                        mapViewModel.editingLocation != null,
                         if (mixedLocation != null) (mixedLocation.city?.let { "$it, " }
                             ?: "") + mixedLocation.country else "Lädt...",
                         null,
-                        cityCountryInput,
+                        mapViewModel.cityCountryInput,
                         "Ort, Land"
                     ) { text ->
-                        mapViewModel.cityCountryInput.value = text
+                        mapViewModel.cityCountryInput = text
                     }
                 }
                 AnimatedVisibility(
-                    loc != null
+                    mapViewModel.selectedLifeLocation != null && mapViewModel.selectedLifeLocation?.id != -1L || mapViewModel.editingLocation != null
                 ) {
-                    _root_ide_package_.com.myxoz.life.ui.person.displayperson.ListEntry(
+                    ListEntry(
                         "SSID",
                         painterResource(R.drawable.wifi)
                     ) {
-                        val ssidInput by mapViewModel.ssidInput.collectAsState()
-                        _root_ide_package_.com.myxoz.life.ui.person.displayperson.ListEditingField(
-                            isEditing,
-                            loc?.ssid ?: "???",
+                        ListEditingField(
+                            mapViewModel.editingLocation != null,
+                            mapViewModel.selectedLifeLocation?.ssid ?: "???",
                             null,
-                            ssidInput,
+                            mapViewModel.editingLocation?.ssid,
                             "WLAN-Name"
                         ) { text ->
-                            mapViewModel.ssidInput.value = text
+                            mapViewModel.editWith {
+                                copy(ssid = text)
+                            }
                         }
                     }
                 }
             } else { // No location selected: Searchox
-                val screenHeightPx = with(LocalDensity.current) { screenHeight.toPx()  }
-                val mapBoxSearchResults by mapViewModel.mapBoxSearchResults.collectAsState()
-                val lifeSearchResults by mapViewModel.lifeSearchResults.collectAsState()
-                var lifeQueryValue by remember {
-                    mutableStateOf(
-                        TextFieldValue(
-                            text = mapViewModel.lifeQuery.value ?: "",
-                            selection = TextRange((mapViewModel.lifeQuery.value ?: "").length)
-                        )
-                    )
-                }
-                val allLocations by mapViewModel.getAllLocations.collectAsState()
-                Box(
-                    Modifier
-                        .fillMaxWidth()
-                        .padding(vertical = 15.dp)
-                    ,
-                    contentAlignment = Alignment.Center
-                ) {
-                    var hasFocus by remember { mutableStateOf(false) }
-                    val focusManager = LocalFocusManager.current
-                    val focusRequester = remember { FocusRequester() }
-                    val density = LocalDensity.current
-                    BackHandler(lifeQueryValue.text.isNotEmpty()) {
-                        focusManager.clearFocus()
-                        mapViewModel.lifeQuery.value = null
-                        lifeQueryValue = TextFieldValue("")
-                    }
-                    BasicTextField(
-                        lifeQueryValue,
-                        { text ->
-                            lifeQueryValue = text
-                            mapViewModel.lifeQuery.value = text.text
-                            mapViewModel.mapBoxSearchResults.value = null
-                            if(text.text.isEmpty()) {
-                                mapViewModel.lifeSearchResults.value = null
-                            } else {
-                                mapViewModel.lifeSearchResults.value = allLocations.filteredWith(
-                                    lifeQueryValue.text,
-                                    {
-                                        it.toAddress()
-                                    }
-                                ) {
-                                    it.name
-                                }.take(5)
-                            }
-                        },
-                        Modifier
-                            .padding(vertical = 5.dp)
-                            .background(Theme.surfaceContainerHighest, RoundedCornerShape(10.dp))
-                            .fillMaxWidth()
-                            .clip(RoundedCornerShape(10.dp))
-                            .focusRequester(focusRequester)
-                            .onFocusChanged {
-                                hasFocus = it.hasFocus || it.isFocused || it.isCaptured
-                            }
-                            .rippleClick{
-                                coroutineScope.launch {
-                                    state.expandTo(1, screenHeightPx.toInt(), with(density) {minSheetHeight.toPx()})
-                                    val text = mapViewModel.lifeQuery.value ?: ""
-                                    lifeQueryValue = lifeQueryValue.copy(
-                                        text = text,
-                                        selection = TextRange(text.length)
-                                    )
-                                    focusRequester.requestFocus()
-                                }
-                            }
-                            .padding(horizontal = 15.dp, vertical = 10.dp)
-                        ,
-                        textStyle = TypoStyle(Theme.primary, FontSize.LARGE),
-                        cursorBrush = SolidColor(OldColors.PRIMARYFONT),
-                        keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Sentences),
-                        enabled = progress > 0.1f
-                    ) { innerTextField ->
-                        if(hasFocus || mapViewModel.lifeQuery.value!=null) {
-                            innerTextField()
-                        } else{
-                            Text(
-                                "Suchen",
-                                style = TypoStyle(Theme.secondary, FontSize.LARGE),
-                            )
-                        }
-                    }
-                }
-                val screenWidthPx = with(LocalDensity.current) { LocalWindowInfo.current.containerDpSize.width.toPx() }
-                fun selectLocation(location: LocationSyncable, newComposition: Boolean){
-                    if(location.id == -1L) {
-                        mapViewModel.setSheetLocation(null)
-                        mapViewModel.selectedCoordinates.value = Point.fromLngLat(location.longitude, location.lat)
-                        mapViewModel.decodedLocation.value = location
-                    } else {
-                        mapViewModel.setSheetLocation(location)
-                    }
-                    val targetMetersOnScreen = 2 * location.radiusM.takeIf { it != 0 }.def(10) / .002f
+                ShowSelectScreen(mapViewModel)
+            }
+        }
+    }
+}
 
-                    val metersPerPixel = targetMetersOnScreen / screenWidthPx
-                    val zoom = ln(EARTH_R * cos(Math.toRadians(location.lat)) / metersPerPixel) / ln(2.0)
-                    mapViewModel.viewModelScope.launch {
-                        snapshotFlow { mapViewModel.cameraOptions.cameraState }
-                            .filterNotNull()
-                            .let { if(newComposition) it.drop(1) else it }
-                            .first()
-                        mapViewModel.cameraOptions.flyTo(
-                            cameraOptions = CameraOptions.Builder()
-                                .center(Point.fromLngLat(location.longitude, location.lat))
-                                .zoom(zoom.coerceIn(0.0, 22.0))
-                                .bearing(0.0)
-                                .pitch(0.0)
-                                .build()
-                        )
-                    }
-                }
-                Row(
-                    Modifier
-                        .fillMaxWidth()
-                        .offset(y = (1-progress)*10.dp)
-                    ,
-                    horizontalArrangement = Arrangement.SpaceBetween
-                ) {
-                    Text(
-                        "Life Search",
-                        style = TypoStyle(Theme.secondary, FontSize.MEDIUMM)
-                    )
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(5.dp)
+@Composable
+private fun ShowSelectScreen(mapViewModel: MapViewModel) {
+    var lifeQueryValue by remember {
+        mutableStateOf(
+            TextFieldValue(
+                text = mapViewModel.lifeQuery.value ?: "",
+                selection = TextRange((mapViewModel.lifeQuery.value ?: "").length)
+            )
+        )
+    }
+    val allLocations by mapViewModel.getAllLocations.collectAsState()
+    val screenWidthPx = with(LocalDensity.current) { LocalWindowInfo.current.containerDpSize.width.toPx() }
+    fun selectLocation(location: LocationSyncable, newComposition: Boolean){
+        mapViewModel.selectOrDeselectLifeLocation(location)
+        val targetMetersOnScreen = 2 * location.radiusM.takeIf { it != 0 }.def(10) / .002f
+
+        val metersPerPixel = targetMetersOnScreen / screenWidthPx
+        val zoom = ln(EARTH_R * cos(Math.toRadians(location.lat)) / metersPerPixel) / ln(2.0)
+        mapViewModel.viewModelScope.launch {
+            snapshotFlow { mapViewModel.cameraOptions.cameraState }
+                .filterNotNull()
+                .let { if(newComposition) it.drop(1) else it }
+                .first()
+            mapViewModel.cameraOptions.flyTo(
+                cameraOptions = CameraOptions.Builder()
+                    .center(Point.fromLngLat(location.longitude, location.lat))
+                    .zoom(zoom.coerceIn(0.0, 22.0))
+                    .bearing(0.0)
+                    .pitch(0.0)
+                    .build()
+            )
+        }
+    }
+    Box(
+        Modifier
+            .fillMaxWidth()
+            .padding(vertical = 15.dp)
+        ,
+        contentAlignment = Alignment.Center
+    ) {
+        var hasFocus by remember { mutableStateOf(false) }
+        val focusManager = LocalFocusManager.current
+        val focusRequester = remember { FocusRequester() }
+        val isFieldEnabled = mapViewModel.sheetState.state != ThreeStateBottomSheetState.SheetValue.Collapsed
+
+        val coroutineScope = rememberCoroutineScope()
+
+        BackHandler(lifeQueryValue.text.isNotEmpty()) {
+            focusManager.clearFocus()
+            mapViewModel.lifeQuery.value = null
+            lifeQueryValue = TextFieldValue("")
+        }
+        BasicTextField(
+            lifeQueryValue,
+            { text ->
+                lifeQueryValue = text
+                mapViewModel.lifeQuery.value = text.text
+                mapViewModel.mapBoxSearchResults.value = null
+                if(text.text.isEmpty()) {
+                    mapViewModel.lifeSearchResults.value = null
+                } else {
+                    mapViewModel.lifeSearchResults.value = allLocations.filteredWith(
+                        lifeQueryValue.text,
+                        {
+                            it.toAddress()
+                        }
                     ) {
-                        Text(
-                            "Alle",
-                            Modifier
-                                .rippleClick{
-                                    nav.navigateForResult<String?>(
-                                        NavPath.Pick.LOCATION,
-                                        "pelocation",
-                                        {
-                                            setOrRemove("pequery", mapViewModel.lifeQuery.value)
-                                        }
-                                    ) {
-                                        selectLocation(LocationSyncable.fromJSON(
-                                            JSONObject(
-                                                it ?: return@navigateForResult
-                                            )
-                                        ), true)
-                                    }
-                                }
-                            ,
-                            style = TypoStyle(Theme.secondary, FontSize.MEDIUMM)
+                        it.name
+                    }.take(5)
+                }
+            },
+            Modifier
+                .padding(vertical = 5.dp)
+                .background(Theme.surfaceContainerHighest, RoundedCornerShape(10.dp))
+                .fillMaxWidth()
+                .clip(RoundedCornerShape(10.dp))
+                .focusRequester(focusRequester)
+                .onFocusChanged {
+                    hasFocus = it.hasFocus || it.isFocused || it.isCaptured
+                }
+                .rippleClick{
+                    coroutineScope.launch {
+                        mapViewModel.sheetState.expandTo(ThreeStateBottomSheetState.SheetValue.Partial)
+                        val text = mapViewModel.lifeQuery.value ?: ""
+                        lifeQueryValue = lifeQueryValue.copy(
+                            text = text,
+                            selection = TextRange(text.length)
                         )
-                        Icon(painterResource(R.drawable.arrow_right), "All", Modifier.size(FontSize.MEDIUMM.size.toDp()), OldColors.TERTIARYFONT)
+                        focusRequester.requestFocus()
                     }
                 }
-                Spacer(Modifier.height(10.dp))
-                Column(
-                    Modifier
-                        .fillMaxWidth()
-                        .then(
-                            if(lifeSearchResults.isNullOrEmpty())
-                                Modifier.border(1.dp, Theme.outlineVariant, RoundedCornerShape(15.dp))
-                            else
-                                Modifier.background(Theme.surfaceContainerHigh, RoundedCornerShape(15.dp))
-                        )
-                ) {
-                    if(lifeSearchResults.isNullOrEmpty()) {
-                        Text(
-                            if(lifeSearchResults==null) "Suche etwas" else "Keine Ergebnisse",
-                            Modifier.padding(vertical = 15.dp).fillMaxWidth(),
-                            style = TypoStyle(Theme.secondary, FontSize.LARGE).copy(fontStyle = FontStyle.Italic),
-                            textAlign = TextAlign.Center
-                        )
-                    }
-                    lifeSearchResults?.forEach {
-                        Row(
-                            Modifier
-                                .clip(RoundedCornerShape(15.dp))
-                                .fillMaxWidth()
-                                .rippleClick{
-                                    selectLocation(it, false)
-                                }
-                                .padding(horizontal = 15.dp, vertical = 15.dp)
-                            ,
-                            horizontalArrangement = Arrangement.spacedBy(15.dp),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Icon(
-                                painterResource(R.drawable.location),
-                                "Location",
-                                Modifier.size(20.dp),
-                                Theme.primary
-                            )
-                            Column{
-                                Text(
-                                    it.name,
-                                    style = TypoStyle(Theme.primary, FontSize.LARGE)
-                                )
-                                Spacer(Modifier.height(2.dp))
-                                Text(
-                                    it.toAddress(false),
-                                    style = TypoStyle(Theme.secondary, FontSize.SMALLM)
-                                )
+                .padding(horizontal = 15.dp, vertical = 10.dp)
+            ,
+            textStyle = TypoStyle(Theme.primary, FontSize.LARGE),
+            cursorBrush = SolidColor(OldColors.PRIMARYFONT),
+            keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Sentences, imeAction = ImeAction.Done),
+            keyboardActions = KeyboardActions {
+                if(mapViewModel.lifeSearchResults.value?.size != 0) {
+                    selectLocation(mapViewModel.lifeSearchResults.value?.getOrNull(0) ?: return@KeyboardActions, false)
+                } else {
+                    mapViewModel.loadSearchResults()
+                }
+            },
+            enabled = isFieldEnabled
+        ) { innerTextField ->
+            if(hasFocus || mapViewModel.lifeQuery.value!=null) {
+                innerTextField()
+            } else{
+                Text(
+                    "Suchen",
+                    style = TypoStyle(Theme.secondary, FontSize.LARGE),
+                )
+            }
+        }
+    }
+    Row(
+        Modifier
+            .fillMaxWidth()
+            .offset(y = (1-mapViewModel.sheetState.partialToCollapsed) * 10.dp)
+        ,
+        horizontalArrangement = Arrangement.SpaceBetween
+    ) {
+        Text(
+            "Life Search",
+            style = TypoStyle(Theme.secondary, FontSize.MEDIUMM)
+        )
+        val nav = LocalNavController.current
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(5.dp)
+        ) {
+            Text(
+                "Alle",
+                Modifier
+                    .rippleClick{
+                        nav.navigateForResult<String?>(
+                            NavPath.Pick.LOCATION,
+                            "pelocation",
+                            {
+                                setOrRemove("pequery", mapViewModel.lifeQuery.value)
                             }
+                        ) {
+                            selectLocation(LocationSyncable.fromJSON(
+                                JSONObject(
+                                    it ?: return@navigateForResult
+                                )
+                            ), true)
                         }
                     }
-                }
-                Spacer(Modifier.height(20.dp))
-                Row(
-                    Modifier
-                        .fillMaxWidth()
-                        .offset(y = (1-progress)*10.dp)
-                    ,
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
+                ,
+                style = TypoStyle(Theme.secondary, FontSize.MEDIUMM)
+            )
+            Icon(painterResource(R.drawable.arrow_right), "All", Modifier.size(FontSize.MEDIUMM.size.toDp()), OldColors.TERTIARYFONT)
+        }
+    }
+    Spacer(Modifier.height(10.dp))
+    val lifeSearchResults by mapViewModel.lifeSearchResults.collectAsState()
+    Column(
+        Modifier
+            .fillMaxWidth()
+            .then(
+                if(lifeSearchResults.isNullOrEmpty())
+                    Modifier.border(1.dp, Theme.outlineVariant, RoundedCornerShape(15.dp))
+                else
+                    Modifier.background(Theme.surfaceContainerHigh, RoundedCornerShape(15.dp))
+            )
+    ) {
+        if(lifeSearchResults.isNullOrEmpty()) {
+            Text(
+                if(lifeSearchResults==null) "Suche etwas" else "Keine Ergebnisse",
+                Modifier.padding(vertical = 15.dp).fillMaxWidth(),
+                style = TypoStyle(Theme.secondary, FontSize.LARGE).copy(fontStyle = FontStyle.Italic),
+                textAlign = TextAlign.Center
+            )
+        }
+        lifeSearchResults?.forEach {
+            Row(
+                Modifier
+                    .clip(RoundedCornerShape(15.dp))
+                    .fillMaxWidth()
+                    .rippleClick{
+                        selectLocation(it, false)
+                    }
+                    .padding(horizontal = 15.dp, vertical = 15.dp)
+                ,
+                horizontalArrangement = Arrangement.spacedBy(15.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Icon(
+                    painterResource(R.drawable.location),
+                    "Location",
+                    Modifier.size(20.dp),
+                    Theme.primary
+                )
+                Column{
                     Text(
-                        "Mapbox Search",
-                        style = TypoStyle(Theme.secondary, FontSize.MEDIUMM)
+                        it.name,
+                        style = TypoStyle(Theme.primary, FontSize.LARGE)
+                    )
+                    Spacer(Modifier.height(2.dp))
+                    Text(
+                        it.toAddress(false),
+                        style = TypoStyle(Theme.secondary, FontSize.SMALLM)
                     )
                 }
-                Spacer(Modifier.height(10.dp))
-                Column(
+            }
+        }
+    }
+    Spacer(Modifier.height(20.dp))
+    Row(
+        Modifier
+            .fillMaxWidth()
+            // .offset(y = (1-progress)*10.dp)
+        ,
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Text(
+            "Mapbox Search",
+            style = TypoStyle(Theme.secondary, FontSize.MEDIUMM)
+        )
+    }
+    Spacer(Modifier.height(10.dp))
+    Column(
+        Modifier
+            .fillMaxWidth()
+            .then(
+                if(lifeSearchResults.isNullOrEmpty())
+                    Modifier.border(1.dp, Theme.outlineVariant, RoundedCornerShape(15.dp))
+                else
+                    Modifier.background(Theme.surfaceContainerHigh, RoundedCornerShape(15.dp))
+            )
+        ,
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        val mapBoxSearchResults by mapViewModel.mapBoxSearchResults.collectAsState()
+        if(mapBoxSearchResults.isNullOrEmpty()) {
+            if(mapBoxSearchResults == null) {
+                Text(
+                    "Suchen",
                     Modifier
                         .fillMaxWidth()
-                        .then(
-                            if(lifeSearchResults.isNullOrEmpty())
-                                Modifier.border(1.dp, Theme.outlineVariant, RoundedCornerShape(15.dp))
-                            else
-                                Modifier.background(Theme.surfaceContainerHigh, RoundedCornerShape(15.dp))
-                        )
+                        .clip(RoundedCornerShape(15.dp))
+                        .rippleClick{
+                            mapViewModel.loadSearchResults()
+                        }
+                        .padding(vertical = 10.dp)
                     ,
-                    horizontalAlignment = Alignment.CenterHorizontally
-                ) {
-                    if(mapBoxSearchResults.isNullOrEmpty()) {
-                        if(mapBoxSearchResults == null) {
-                            Text(
-                                "Suchen",
-                                Modifier
-                                    .fillMaxWidth()
-                                    .clip(RoundedCornerShape(15.dp))
-                                    .rippleClick{
-                                        if(lifeQueryValue.text.isBlank()) return@rippleClick
-                                        coroutineScope.launch {
-                                            val resp = MapBoxAPI.getLocationListFromAPIResponse(MapBoxAPI.forwardGeocode(context, lifeQueryValue.text) ?: return@launch)
-                                            mapViewModel.mapBoxSearchResults.value = resp
-                                        }
-                                    }
-                                    .padding(vertical = 10.dp)
-                                ,
-                                style = TypoStyle(Theme.secondary, FontSize.LARGE),
-                                textAlign = TextAlign.Center
-                            )
-                        } else {
-                            Text(
-                                "Keine Ergebnisse",
-                                Modifier.padding(vertical = 15.dp).fillMaxWidth(),
-                                style = TypoStyle(Theme.secondary, FontSize.LARGE).copy(fontStyle = FontStyle.Italic),
-                                textAlign = TextAlign.Center
-                            )
-                        }
+                    style = TypoStyle(Theme.secondary, FontSize.LARGE),
+                    textAlign = TextAlign.Center
+                )
+            } else {
+                Text(
+                    "Keine Ergebnisse",
+                    Modifier.padding(vertical = 15.dp).fillMaxWidth(),
+                    style = TypoStyle(Theme.secondary, FontSize.LARGE).copy(fontStyle = FontStyle.Italic),
+                    textAlign = TextAlign.Center
+                )
+            }
+        }
+        mapBoxSearchResults?.forEach {
+            Row(
+                Modifier
+                    .clip(RoundedCornerShape(15.dp))
+                    .fillMaxWidth()
+                    .rippleClick{
+                        selectLocation(it, false)
                     }
-                    mapBoxSearchResults?.forEach {
-                        Row(
-                            Modifier
-                                .clip(RoundedCornerShape(15.dp))
-                                .fillMaxWidth()
-                                .rippleClick{
-                                    selectLocation(it, false)
-                                }
-                                .padding(horizontal = 15.dp, vertical = 15.dp)
-                            ,
-                            horizontalArrangement = Arrangement.spacedBy(15.dp),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Icon(
-                                painterResource(R.drawable.location),
-                                "Location",
-                                Modifier.size(20.dp),
-                                Theme.primary
-                            )
-                            Column{
-                                Text(
-                                    it.name,
-                                    style = TypoStyle(Theme.primary, FontSize.LARGE)
-                                )
-                                Spacer(Modifier.height(2.dp))
-                                Text(
-                                    it.toAddress(false),
-                                    style = TypoStyle(Theme.secondary, FontSize.SMALLM)
-                                )
-                            }
-                        }
-                    }
+                    .padding(horizontal = 15.dp, vertical = 15.dp)
+                ,
+                horizontalArrangement = Arrangement.spacedBy(15.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Icon(
+                    painterResource(R.drawable.location),
+                    "Location",
+                    Modifier.size(20.dp),
+                    Theme.primary
+                )
+                Column{
+                    Text(
+                        it.name,
+                        style = TypoStyle(Theme.primary, FontSize.LARGE)
+                    )
+                    Spacer(Modifier.height(2.dp))
+                    Text(
+                        it.toAddress(false),
+                        style = TypoStyle(Theme.secondary, FontSize.SMALLM)
+                    )
                 }
             }
         }

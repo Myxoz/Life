@@ -53,6 +53,18 @@ class LocationSyncable(
 
     fun toCords() = coordinatesToString(lat, longitude)
 
+    fun copy(
+        name: String = this.name,
+        longitude: Double = this.longitude,
+        lat: Double = this.lat,
+        radiusM: Int = this.radiusM,
+        ssid: String? = this.ssid,
+        street: String? = this.street,
+        number: String? = this.number,
+        city: String? = this.city,
+        country: String = this.country
+    ) = LocationSyncable(name, longitude, lat, radiusM, ssid, street, number, city, country, id)
+
     companion object : ServerSyncableCompanion<LocationSyncable> {
         fun coordinatesToString(lat: Double, longitude: Double): String {
             return "%.6f, %.6f (${coordsToDMS(lat, longitude)})".format(lat, longitude)

@@ -9,21 +9,17 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import com.mapbox.annotation.MapboxExperimental
-import com.mapbox.geojson.Point
 import com.mapbox.maps.CameraOptions
 import com.mapbox.maps.EdgeInsets
 import com.mapbox.maps.extension.compose.MapEffect
@@ -37,7 +33,6 @@ import com.mapbox.maps.extension.compose.style.standard.ThemeValue
 import com.mapbox.maps.extension.compose.style.standard.rememberStandardStyleState
 import com.mapbox.maps.extension.style.layers.properties.generated.IconAnchor
 import com.mapbox.maps.plugin.PuckBearing
-import com.mapbox.maps.plugin.annotation.generated.PolygonAnnotationOptions
 import com.mapbox.maps.plugin.gestures.OnMapClickListener
 import com.mapbox.maps.plugin.locationcomponent.createDefault2DPuck
 import com.mapbox.maps.plugin.locationcomponent.location
@@ -45,33 +40,27 @@ import com.myxoz.life.LocalSettings
 import com.myxoz.life.R
 import com.myxoz.life.Theme
 import com.myxoz.life.ui.theme.OldColors
-import com.myxoz.life.ui.map.MapViewModel
 import com.myxoz.life.viewmodels.Settings
-import kotlinx.coroutines.launch
-import kotlin.math.asin
-import kotlin.math.atan2
-import kotlin.math.cos
-import kotlin.math.sin
 
 @OptIn(MapboxExperimental::class)
 @Composable
 fun MapBoxMap(mapViewModel: MapViewModel, innerPadding: PaddingValues){
-    var sheetHeight by remember { mutableStateOf(0.dp) }
     val state = mapViewModel.sheetState
-    LaunchedEffect(Unit) {
-        state.height.collect {
-            sheetHeight = it
-        }
-    }
-    val sheetLocation by mapViewModel.sheetLocation.collectAsState()
-    val selectedCoordinates by mapViewModel.selectedCoordinates.collectAsState()
-    val selectCoordsOnMap by mapViewModel.selectCoordsOnMap.collectAsState()
-    val isEditing by mapViewModel.isEditing.collectAsState()
-    val allLocations by mapViewModel.getAllLocations.collectAsState()
     val viewPortState = mapViewModel.cameraOptions
     var mapBoxInitialRender by remember { mutableStateOf(false) }
-    val coroutineScope = rememberCoroutineScope()
-    val snapHeight by state.snapHeight.collectAsState()
+
+    val density = LocalDensity.current
+    val sheetHeight by remember {
+        derivedStateOf {
+            with(density) { state.height.toDp()
+            }
+        }
+    }
+    val snapHeight by remember {
+        derivedStateOf {
+            with(density) { state.snapHeightPx.toDp() }
+        }
+    }
     val shrunkArea = sheetHeight.coerceIn(0.dp, snapHeight)
     MapboxMap(
         Modifier
@@ -88,19 +77,8 @@ fun MapBoxMap(mapViewModel: MapViewModel, innerPadding: PaddingValues){
             )
         },
         onMapClickListener = OnMapClickListener {
-            if (isEditing) {
-                if (selectCoordsOnMap) {
-                    mapViewModel.selectedCoordinates.value = it
-                }
-            } else {
-                coroutineScope.launch {
-                    val dbLocation = mapViewModel.queryByCoordinate(it.latitude(), it.longitude())
-                    mapViewModel.setSheetLocation(dbLocation)
-                    mapViewModel.selectedCoordinates.value =
-                        dbLocation?.let { loc -> Point.fromLngLat(loc.longitude, loc.lat) } ?: it
-                }
-            }
-            return@OnMapClickListener true
+            mapViewModel.clickedOn(it)
+            true
         },
         style = {
             MapboxStandardStyle(
@@ -143,53 +121,13 @@ fun MapBoxMap(mapViewModel: MapViewModel, innerPadding: PaddingValues){
                     .build()
             )
         }
-        val selectedLoc by mapViewModel.sheetLocation.collectAsState()
-        val selectedRadius by mapViewModel.radiusMInput.collectAsState()
-        val selectedLocationInput by mapViewModel.coordsInput.collectAsState()
-        val polygonOptions = remember(selectedLoc, selectedRadius, selectedLocationInput, allLocations) {
-            val result = mutableListOf<PolygonAnnotationOptions>()
-            allLocations
-                .filter { loc -> loc.id != selectedLoc?.id }
-                .forEach { loc ->
-                    val radius = loc.radiusM
-                    val ring = circleRing(loc.longitude,loc.lat,radius.toDouble())
-                    result += PolygonAnnotationOptions()
-                        .withPoints(listOf(ring))
-                        .withFillColor(Color(0x80000000).toArgb())
-                }
-
-            val loc = selectedLoc
-            if (loc != null) {
-                val radius = selectedRadius?.toIntOrNull() ?: loc.radiusM
-                val decodeCoordsFromInput = selectedLocationInput
-                    ?.split(",")
-                    ?.map { it.trim().toDoubleOrNull() }
-
-                var lat = loc.lat
-                var long = loc.longitude
-                if (decodeCoordsFromInput?.size == 2) {
-                    lat = decodeCoordsFromInput[0] ?: loc.lat
-                    long = decodeCoordsFromInput[1] ?: loc.longitude
-                }
-
-                val ring = circleRing(
-                    long,
-                    lat,
-                    radius.toDouble()
-                )
-                result += PolygonAnnotationOptions()
-                    .withPoints(listOf(ring))
-                    .withFillColor(OldColors.SELECTED.copy(alpha = 0.5f).toArgb())
-            }
-            result
-        }
-
-        PolygonAnnotationGroup(annotations = polygonOptions)
+        PolygonAnnotationGroup(annotations = mapViewModel.displayedPolygon)
         val marker = rememberIconImage(key = R.drawable.location_marker, painter = painterResource(R.drawable.location_marker))
-        selectedCoordinates?.let {
+        mapViewModel.selectedCoordinates?.let {
             PointAnnotation(point = it) {
                 iconImage = marker
-                iconSize = if(sheetLocation==null) 1.5 else 1.0
+                // iconSize = if(sheetLocation==null) 1.5 else 1.0
+                iconSize = 1.0
                 iconAnchor = IconAnchor.BOTTOM
             }
         }
@@ -205,34 +143,4 @@ fun MapBoxMap(mapViewModel: MapViewModel, innerPadding: PaddingValues){
                 .background(Theme.background)
         )
     }
-}
-const val EARTH_R = 6_371_000.0 // meters
-private fun circleRing(
-    centerLon: Double,
-    centerLat: Double,
-    radiusM: Double,
-    steps: Int = 20
-): List<Point> {
-    val fi1 = Math.toRadians(centerLat)
-    val lamda1 = Math.toRadians(centerLon)
-    val s = radiusM / EARTH_R
-
-    val ring = ArrayList<Point>(steps + 1)
-
-    for (i in 0 until steps) {
-        val theta = 2.0 * Math.PI * i / steps // bearing in radians
-
-        val sinfi2 = sin(fi1) * cos(s) +
-                cos(fi1) * sin(s) * cos(theta)
-        val fi2 = asin(sinfi2)
-
-        val y = sin(theta) * sin(s) * cos(fi1)
-        val x = cos(s) - sin(fi1) * sin(fi2)
-        val lambda2 = lamda1 + atan2(y, x)
-
-        ring += Point.fromLngLat(Math.toDegrees(lambda2), Math.toDegrees(fi2))
-    }
-
-    ring += ring.first() // close ring
-    return ring
 }

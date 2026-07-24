@@ -49,7 +49,9 @@ object MapBoxAPI {
         context: Context,
         query: String
     ): String? {
-        val encodedQuery = URLEncoder.encode(query, Charsets.UTF_8.name())
+        val encodedQuery = withContext(Dispatchers.IO) {
+            URLEncoder.encode(query, Charsets.UTF_8.name())
+        }
         val baseUrl = "https://api.mapbox.com/search/geocode/v6/forward?q=$encodedQuery"
         return getWithMapboxToken(context, baseUrl)
     }

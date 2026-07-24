@@ -1,6 +1,7 @@
 package com.myxoz.life.ui
 
 import android.annotation.SuppressLint
+import androidx.activity.BackEventCompat
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.PredictiveBackHandler
 import androidx.compose.animation.animateColorAsState
@@ -40,10 +41,14 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Icon
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.SideEffect
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
@@ -84,8 +89,10 @@ import com.myxoz.life.utils.toDp
 import com.myxoz.life.utils.toShape
 import com.myxoz.life.utils.transformed
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.launch
+import kotlin.coroutines.cancellation.CancellationException
 import kotlin.math.pow
 import kotlin.math.roundToInt
 
@@ -217,113 +224,160 @@ fun RowChip(onClick: (()->Unit)?=null, onHold: (()->Unit)?=null, spacing: Dp = 0
         content()
     }
 }
-@SuppressLint("StateFlowValueCalledInComposition")
-@OptIn(ExperimentalFoundationApi::class)
-@Composable
-fun ThreeStateBottomSheet(
-    state: ThreeStateBottomSheetState,
-    minHeight: Dp,
-    color: Color,
-    innerPadding: PaddingValues,
-    content: @Composable () -> Unit,
+
+class ThreeStateBottomSheetState(
+    val initialState: SheetValue,
 ) {
-    BoxWithConstraints(
-        Modifier.fillMaxSize(),
-        contentAlignment = Alignment.BottomCenter
-    ) {
-        val density = LocalDensity.current
-        val offset by state.offset.collectAsState()
-        val minHeightPx = with(density) { minHeight.toPx() }
-        val screenHeightPx = with(density) { maxHeight.toPx()  } - minHeightPx
-        val heightDp = with(density) {minHeight + offset.toDp()}.coerceIn(minHeight, maxHeight)
-        val coroutineScope = rememberCoroutineScope()
-        val lastVelocity by state.lastVelocity.collectAsState()
-        val snapHeightPx = 0.7f * screenHeightPx
-        fun getSnapTarget(): Float{
-            if(lastVelocity > 0f  && offset < snapHeightPx) return 0f
-            if((lastVelocity > 0f && offset > snapHeightPx && offset <= screenHeightPx) || (lastVelocity < 0f && offset < snapHeightPx)) return snapHeightPx
-            return screenHeightPx
-        }
-        val snapHeightDp = with(density) { snapHeightPx.toDp() }
-        state.snapHeight.value = minHeight + snapHeightDp
-        state.height.value = heightDp
-        state.progress.value = (offset / snapHeightPx).coerceIn(0f, 1f)
-        val shape = remember {
-            RoundedCornerShape(topStart = 20.dp, topEnd = 20.dp)
-        }
-        PredictiveBackHandler(offset!=0f) {
-            val ititialOffset = offset
-            it.collect { prog ->
-                state.offset.value = ititialOffset * (1-prog.progress.pow(0.5f) * .25f)
-            }
-            state.expandTo(0, screenHeightPx.toInt(), minHeightPx)
-        }
-        Box(
-            Modifier
-                .height(heightDp)
-                .background(color, shape)
-                .clip(shape)
-                .pointerInput(Unit){
-                    detectVerticalDragGestures(
-                        onDragEnd = {
-                            coroutineScope.launch {
-                                animate(
-                                    offset,
-                                    getSnapTarget(),
-                                    lastVelocity,
-                                ){ a, _ ->
-                                    state.offset.value = a
-                                }
-                            }
-                        },
-                    ){ _, d ->
-                        state.lastVelocity.value = d
-                        state.offset.value += -d
-                    }
-                }
-                .rippleClick(offset == 0f){
-                    coroutineScope.launch {
-                        animate(0f, snapHeightPx){ a, _ -> state.offset.value = a }
-                    }
-                }
-                .padding(
-                    bottom = (1f-(offset/snapHeightPx).coerceIn(0f, 1f))*innerPadding.calculateBottomPadding(),
-                    top = (((offset-snapHeightPx)/(screenHeightPx-snapHeightPx)).coerceIn(0f, 1f))*innerPadding.calculateTopPadding()
-                )
-        ) {
-            MeasuredSheetContent(
-                {}
-            ){
-                content()
-            }
+    var state by mutableStateOf(initialState)
+        private set
+    var height by mutableFloatStateOf(0f)
+        private set
+    var snapHeightPx by mutableFloatStateOf(0f)
+        private set
+    var partialToFullProgress by mutableFloatStateOf(if(initialState == SheetValue.Expanded) 1f else 0f)
+        private set
+    var partialToCollapsed by mutableFloatStateOf(if(initialState == SheetValue.Collapsed) 1f else 0f)
+        private set
+    private var lastVelocity by mutableFloatStateOf(0f)
+    private var screenHeightPx by mutableFloatStateOf(0f)
+    private var collapsedSheetHeight by mutableFloatStateOf(0f)
+    suspend fun expandTo(stateLevel: SheetValue){
+        animateTo(stateLevel)
+    }
+    private var isInitial = true
+    private fun updateLayout(screenHeightPx: Float, collapsedSheetHeight: Float) {
+        val screenHeightHasUpdated = screenHeightPx != this.screenHeightPx
+        this.screenHeightPx = screenHeightPx
+        this.snapHeightPx = screenHeightPx * .7f
+        this.collapsedSheetHeight = collapsedSheetHeight
+        if(isInitial) {
+            applyNewHeight(initialState.heightPx())
+            isInitial = false
+        } else if(screenHeightHasUpdated) {
+            applyNewHeight(state.heightPx())
         }
     }
-}
-class ThreeStateBottomSheetState{
-    val progress = MutableStateFlow(0f)
-    val offset = MutableStateFlow(0f)
-    val height = MutableStateFlow(0.dp)
-    val snapHeight = MutableStateFlow(0.dp)
-    val lastVelocity = MutableStateFlow(0f)
-    suspend fun expandTo(stateLevel: Int, screenHeightPx: Int, minHeightPx: Float){
-        val snapHeightPx = 0.7f * (screenHeightPx-minHeightPx)
-        val snapTarget = when (stateLevel) {
-            0 -> 0f
-            1 -> snapHeightPx
-            else -> screenHeightPx.toFloat()
-        }
+    private fun getSnapTarget(): SheetValue {
+        if(lastVelocity > 0f  && height < snapHeightPx) return SheetValue.Collapsed
+        if((lastVelocity > 0f && height > snapHeightPx && height <= screenHeightPx) || (lastVelocity < 0f && height < snapHeightPx)) return SheetValue.Partial
+        return SheetValue.Expanded
+    }
+    private suspend fun animateTo(target: SheetValue) {
         animate(
-            offset.value,
-            snapTarget,
-            lastVelocity.value,
-        ){ a, v ->
-            offset.value = a
-            lastVelocity.value = v
-            progress.value = (offset.value / snapHeightPx).coerceIn(0f, 1f)
+            height,
+            target.heightPx(),
+            lastVelocity,
+        ){ animationValue, v ->
+            applyNewHeight(animationValue)
+            lastVelocity = v
         }
-        offset.value = snapTarget
-        lastVelocity.value = 0f
-        progress.value = (snapTarget / snapHeightPx).coerceIn(0f, 1f)
+    }
+    private fun applyNewHeight(newHeight: Float) {
+        val partial = SheetValue.Partial.heightPx()
+        val expanded = SheetValue.Expanded.heightPx()
+        val collapsed = SheetValue.Collapsed.heightPx()
+        height = newHeight
+        state = when {
+            newHeight <= collapsed -> SheetValue.Collapsed
+            newHeight >= expanded -> SheetValue.Expanded
+            else -> SheetValue.Partial
+        }
+        partialToFullProgress = ((height - partial) / (expanded - partial)).coerceIn(0f, 1f)
+        partialToCollapsed = ((height - collapsed) / (partial - collapsed)).coerceIn(0f, 1f)
+    }
+    private fun SheetValue.heightPx(): Float{
+        return when(this){
+            SheetValue.Collapsed -> collapsedSheetHeight
+            SheetValue.Partial -> snapHeightPx
+            SheetValue.Expanded -> screenHeightPx
+        }
+    }
+    private suspend fun handleDrop() {
+        animateTo(getSnapTarget())
+    }
+    private suspend fun previewPredictiveBack(progress: Flow<BackEventCompat>) {
+        val ititialOffset = height
+        try {
+            progress.collect { backEvent ->
+                height = ititialOffset * (1-backEvent.progress.pow(0.5f) * .25f)
+            }
+            expandTo(SheetValue.Collapsed)
+        } catch (_: CancellationException) {
+            // This block is executed if the gesture is cancelled.
+            height = ititialOffset
+        }
+    }
+    enum class SheetValue {
+        Collapsed,
+        Partial,
+        Expanded
+    }
+    companion object {
+        @SuppressLint("StateFlowValueCalledInComposition")
+        @OptIn(ExperimentalFoundationApi::class)
+        @Composable
+        fun ThreeStateBottomSheet(
+            state: ThreeStateBottomSheetState,
+            collapsedSheetHeight: Dp,
+            color: Color,
+            innerPadding: PaddingValues,
+            content: @Composable () -> Unit,
+        ) {
+            BoxWithConstraints(
+                Modifier.fillMaxSize(),
+                contentAlignment = Alignment.BottomCenter
+            ) {
+                val density = LocalDensity.current
+                val screenHeightPx = with(density) { maxHeight.toPx()  }
+                SideEffect {
+                    state.updateLayout(screenHeightPx, with(density) { collapsedSheetHeight.toPx() })
+                }
+
+                val shape = remember {
+                    RoundedCornerShape(topStart = 20.dp, topEnd = 20.dp)
+                }
+                PredictiveBackHandler(state.state != SheetValue.Collapsed, state::previewPredictiveBack)
+                val heightDp by remember {
+                    derivedStateOf {
+                        with(density) { state.height.toDp() }
+                    }
+                }
+                val coroutineScope = rememberCoroutineScope()
+                Box(
+                    Modifier
+                        .height(heightDp)
+                        .background(color, shape)
+                        .clip(shape)
+                        .pointerInput(Unit){
+                            detectVerticalDragGestures(
+                                onDragEnd = {
+                                    coroutineScope.launch {
+                                        state.handleDrop()
+                                    }
+                                },
+                            ){ _, d ->
+                                state.lastVelocity = d
+                                state.applyNewHeight(state.height - d)
+                            }
+                        }
+                        .rippleClick(state.state == SheetValue.Collapsed) {
+                            coroutineScope.launch {
+                                state.expandTo(SheetValue.Partial)
+                            }
+                        }
+                        .padding(
+                            top = state.partialToFullProgress * innerPadding.calculateTopPadding()
+                        )
+                ) {
+                    MeasuredSheetContent(
+                        {}
+                    ) {
+                        content()
+                    }
+                }
+            }
+        }
+
     }
 }
 

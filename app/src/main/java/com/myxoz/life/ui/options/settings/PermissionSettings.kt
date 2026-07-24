@@ -39,6 +39,7 @@ import com.myxoz.life.LocalSettings
 import com.myxoz.life.R
 import com.myxoz.life.Theme
 import com.myxoz.life.ui.feed.dayoverview.edgeToEdgeGradient
+import com.myxoz.life.ui.person.displayperson.switchColors
 import com.myxoz.life.ui.setMaxTabletWidth
 import com.myxoz.life.ui.theme.FontSize
 import com.myxoz.life.ui.theme.OldColors
@@ -151,7 +152,7 @@ fun PermissionComposable(settings: Settings.CompositionSettings, permission: Set
         Text(permission.displayName, Modifier.weight(1f), style = TypoStyle(if(!isUseless) Theme.secondary else Theme.tertiary, FontSize.LARGE))
         Switch(state, {
             toggle(it)
-        }, colors = _root_ide_package_.com.myxoz.life.ui.person.displayperson.switchColors())
+        }, colors = switchColors())
     }
 }
 
@@ -177,7 +178,7 @@ fun FeatureItem(settings: Settings.CompositionSettings, feature: Settings.Featur
                 state,
                 { setTo(!state) },
                 enabled = isEnablable,
-                colors = _root_ide_package_.com.myxoz.life.ui.person.displayperson.switchColors()
+                colors = switchColors()
             )
         }
         Column(

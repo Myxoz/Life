@@ -35,8 +35,10 @@ import com.myxoz.life.R
 import com.myxoz.life.Theme
 import com.myxoz.life.api.extensions.StreakExtendable
 import com.myxoz.life.events.additionals.EventType
+import com.myxoz.life.repositories.StreakRepo
 import com.myxoz.life.ui.NavPath
 import com.myxoz.life.ui.getMaxTabletScreenWidth
+import com.myxoz.life.ui.person.displayperson.ButtonGroup
 import com.myxoz.life.ui.setMaxTabletWidth
 import com.myxoz.life.ui.theme.FontFamily
 import com.myxoz.life.ui.theme.FontSize
@@ -45,7 +47,6 @@ import com.myxoz.life.utils.collectAsMutableState
 import com.myxoz.life.utils.nullIfEmpty
 import com.myxoz.life.utils.rippleClick
 import com.myxoz.life.utils.windowPadding
-import com.myxoz.life.repositories.StreakRepo
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.launch
 
@@ -86,7 +87,7 @@ fun EditStreaksScreen(streakRepo: StreakRepo){
                 ) {
                     rawStreak = streak.copy(smallTitle = it.nullIfEmpty())
                 }
-                _root_ide_package_.com.myxoz.life.ui.person.displayperson.ButtonGroup(
+                ButtonGroup(
                     StreakExtendable.Timespan.entries.map { it.displayName },
                     getMaxTabletScreenWidth(),
                     remember { MutableStateFlow(streak.timespan.ordinal) }
@@ -94,7 +95,7 @@ fun EditStreaksScreen(streakRepo: StreakRepo){
                     rawStreak =
                         rawStreak?.copy(timespan = StreakExtendable.Timespan.entries.first { it.ordinal == newTimespan })
                 }
-                _root_ide_package_.com.myxoz.life.ui.person.displayperson.ButtonGroup(
+                ButtonGroup(
                     listOf("Mindestens", "Maximal"),
                     getMaxTabletScreenWidth(),
                     remember { MutableStateFlow(if (streak.atLeast) 0 else 1) }
@@ -109,7 +110,7 @@ fun EditStreaksScreen(streakRepo: StreakRepo){
                 ) {
                     rawStreak = rawStreak?.copy(threshold = streak.target.stringToThreshold(it))
                 }
-                _root_ide_package_.com.myxoz.life.ui.person.displayperson.ButtonGroup(
+                ButtonGroup(
                     listOf("Event", "Tageszusammenfassung"),
                     getMaxTabletScreenWidth(),
                     remember { MutableStateFlow(if (streak.target is StreakExtendable.StreakTarget.EventTarget) 0 else 1) }
@@ -132,7 +133,7 @@ fun EditStreaksScreen(streakRepo: StreakRepo){
                 }
                 when(streak.target) {
                     is StreakExtendable.StreakTarget.DayTarget -> {
-                        _root_ide_package_.com.myxoz.life.ui.person.displayperson.ButtonGroup(
+                        ButtonGroup(
                             StreakExtendable.DayTargetType.entries.map { it.displayName },
                             getMaxTabletScreenWidth(),
                             remember { MutableStateFlow(StreakExtendable.DayTargetType.Steps.ordinal) }
@@ -143,7 +144,7 @@ fun EditStreaksScreen(streakRepo: StreakRepo){
                         }
                     }
                     is StreakExtendable.StreakTarget.EventTarget -> {
-                        _root_ide_package_.com.myxoz.life.ui.person.displayperson.ButtonGroup(
+                        ButtonGroup(
                             listOf("Eventlänge", "Eventanzahl"),
                             getMaxTabletScreenWidth(),
                             remember { MutableStateFlow(if (streak.target.searchEventAmount) 1 else 0) }
