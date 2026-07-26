@@ -17,6 +17,7 @@ import com.myxoz.life.ui.NavPath
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.flatMapMerge
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.map
@@ -99,7 +100,9 @@ class InspectedEventViewModel(
             if(eventId != null && !isEditing.value)
                 isEditing.flatMapMerge { isEditing ->
                     if(isEditing) calendarSuper.event else dbInterface.calendarInterface.eventById(eventId).map { it?.value ?: semanticNullValueEvent }
-                }.subscribeToColdFlow(viewModelScope, semanticNullValueEvent)
+                }
+                    .filter { it != semanticNullValueEvent }
+                    .subscribeToColdFlow(viewModelScope, semanticNullValueEvent)
             else
                 calendarSuper.event
         )
