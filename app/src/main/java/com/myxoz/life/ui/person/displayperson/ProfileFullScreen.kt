@@ -101,7 +101,7 @@ fun ProfileFullScreen(
     val coroutineScope = rememberCoroutineScope()
     var isPickingBirthDay by remember { mutableStateOf(false) }
     val verticalScrollState = rememberScrollState()
-    val inspectedPerson by profileInfoModel.inspectedPerson.collectAsState()
+    val inspectedPersonIncludingEdits by profileInfoModel.inspectedPersonIncludingEdits.collectAsState()
     Box(
         Modifier
             .background(Theme.background)
@@ -139,8 +139,8 @@ fun ProfileFullScreen(
                         horizontalArrangement = Arrangement.spacedBy(15.dp),
                         verticalArrangement = Arrangement.spacedBy(15.dp)
                     ) {
-                        val dateString = remember(inspectedPerson?.birthday) {
-                            val bd = inspectedPerson?.birthday ?: return@remember "Hinzufügen"
+                        val dateString = remember(inspectedPersonIncludingEdits?.birthday) {
+                            val bd = inspectedPersonIncludingEdits?.birthday ?: return@remember "Hinzufügen"
                             val date = LocalDate.ofEpochDay(bd)
                             val now = LocalDate.now()
                             val month = date.month.value
@@ -336,7 +336,7 @@ fun ProfileFullScreen(
         }
     }
     UnmodalBottomSheet(isPickingBirthDay, {isPickingBirthDay=false}) {
-        val birthday = inspectedPerson?.birthday
+        val birthday = inspectedPersonIncludingEdits?.birthday
         val datePickerState = rememberDatePickerState(
             initialSelectedDateMillis = birthday?.let {
                 LocalDate.ofEpochDay(it).atStartOfDay(ZoneId.of("UTC")).toEpochSecond()*1000L
@@ -345,8 +345,11 @@ fun ProfileFullScreen(
         DatePicker(datePickerState, colors = datePickerColors())
         ActionBar({
             isPickingBirthDay = false
+            profileInfoModel.edit {
+                it.copy(birthday = null) // Remove birthday on delete press
+            }
         }, {
-            Icon(painterResource(R.drawable.close), "Close", Modifier.fillMaxSize(), Theme.onSecondaryContainer)
+            Icon(painterResource(R.drawable.delete), "Remove Birthday", Modifier.fillMaxSize(), Theme.onSecondaryContainer)
         }, Theme.primaryContainer, {
             profileInfoModel.edit {
                 it.copy(

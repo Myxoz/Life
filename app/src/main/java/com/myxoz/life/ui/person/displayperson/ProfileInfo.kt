@@ -149,7 +149,7 @@ fun ProfileInfo(profileInfoModel: ProfileInfoModel){
                     )
                     .clip(RectangleShape)
             ) {
-                //val iban = "DE65430609673062465800"
+                //val iban = "DE18446744073709551615"
                 ListEntry(
                     "Voller Name",
                     painterResource(R.drawable.id_card)
