@@ -24,6 +24,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
@@ -288,17 +289,19 @@ private fun BoxScope.RenderLocalEvents(
     val coroutineScope = rememberCoroutineScope()
     if (collectedLocalEvents == null) return
     for(event in collectedLocalEvents) {
-        Box(Modifier
-            .fillMaxHeight()
-            .fillMaxWidth()
-            .align(Alignment.CenterStart)) {
-            event.Render(oneHourDp, startOfDay, endOfDay,{
-                coroutineScope.launch {
-                    calendarRepo.localEventInteracted(event, null)
-                }
-            }) {
-                coroutineScope.launch {
-                    calendarRepo.localEventInteracted(event, API.generateId())
+        key(event.localId) {
+            Box(Modifier
+                .fillMaxHeight()
+                .fillMaxWidth()
+                .align(Alignment.CenterStart)) {
+                event.Render(oneHourDp, startOfDay, endOfDay,{
+                    coroutineScope.launch {
+                        calendarRepo.localEventInteracted(event, null)
+                    }
+                }) {
+                    coroutineScope.launch {
+                        calendarRepo.localEventInteracted(event, API.generateId())
+                    }
                 }
             }
         }
