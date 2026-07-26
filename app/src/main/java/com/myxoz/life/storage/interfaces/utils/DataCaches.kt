@@ -8,6 +8,7 @@ import kotlinx.coroutines.Deferred
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.mapNotNull
 import kotlinx.coroutines.flow.update
@@ -122,18 +123,19 @@ open class PerformantCache<K: Any, V: Any>(
         internalValueMap += values
         commitMap()
     }
+    // Added the two distinctUntilChanged here. Might lead to cache inconsistencies
     fun flowByKey(key: K): Flow<V?> {
         assureIsFetchingOrCached(key)
         return content.map {
             it[key]
-        }
+        }.distinctUntilChanged()
     }
     val allValuesFlow = content.map { it.values.toList() }
     fun flowsByKey(keys: List<K>): Flow<List<V>> {
         assureIsFetchingOrCachedAll(keys)
         return content.map { map ->
             keys.mapNotNull { key -> map[key] }
-        }
+        }.distinctUntilChanged()
     }
 
     companion object {
@@ -272,7 +274,7 @@ open class PerformantInterlockedCache<K: Any, I: Any, V: Any, L: Any>(
     }
     fun getInterlockedFlowFor(interlocked: I): Flow<List<L>?> {
         requireInterlocked(interlocked)
-        return flow.map { it[interlocked] }
+        return flow.map { it[interlocked] }.distinctUntilChanged()
     }
     protected fun getCached(interlocked: I) = interlockedContent[interlocked]
     private fun overwriteSingleNoCommit(key: K, value: V) {
