@@ -237,8 +237,6 @@ class MainActivity : ComponentActivity() {
 
                         //  ---------- FEED -> DAY_OVERVIEW ----------
                         composable(NavPath.DAY_OVERVIEW.asTemplate, NavPath.DAY_OVERVIEW.asLongArg()) {
-                            // Semantic value: 0 == today, due to pending intent targetRoute, which isn't computable
-                            // And jep the resulting bug is that 1.1.1970 always displays the current day in the dayoverview, congrats for finding out
                             val overviewModel: DayOverviewViewModel = viewModel(factory = factory)
                             DayOverviewComposable(overviewModel)
                         }

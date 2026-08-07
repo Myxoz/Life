@@ -15,7 +15,11 @@ class DayOverviewViewModel(
     private val dbInterface: DatabaseInterface,
     savedStateHandle: SavedStateHandle
 ): ViewModel() {
-    val date = savedStateHandle.getDate(NavPath.DAY_OVERVIEW)
+    // Semantic value: 0 == today, due to pending intent targetRoute, which isn't computable
+    // And jep the resulting bug is that 1.1.1970 always displays the current day in the dayoverview, congrats for finding out
+    val date: LocalDate = savedStateHandle.getDate(NavPath.DAY_OVERVIEW).let { date ->
+        if(date.toEpochDay() == 0L) LocalDate.now() else date
+    }
     val birthdays = dbInterface.peopleInterface
         .getPeopleWithBirthdayAt(date)
         .map { it ?: listOf() }
