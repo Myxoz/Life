@@ -352,7 +352,7 @@ fun DisplayEvent(fullEvent: SyncedEvent) {
                                             from,
                                             to,
                                             if(fullEvent.raw.end > System.currentTimeMillis())
-                                                fullEvent.raw.end.formatTimeStamp(calendar)
+                                                fullEvent.raw.start.formatTimeStamp(calendar)
                                             else
                                                 null
                                         )
