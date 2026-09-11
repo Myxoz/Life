@@ -6,6 +6,9 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.unit.Dp
+import com.myxoz.life.events.additionals.DefinedDurationEvent
+import com.myxoz.life.events.additionals.EventTag
+import com.myxoz.life.events.additionals.EventType
 import com.myxoz.life.storage.dbwrapper.events.DigSocEntity
 import com.myxoz.life.storage.dbwrapper.events.DigSocMappingEntity
 import com.myxoz.life.storage.dbwrapper.events.EventEntity
@@ -20,12 +23,9 @@ import com.myxoz.life.storage.dbwrapper.events.TravelEntity
 import com.myxoz.life.storage.dbwrapper.events.VehicleEntity
 import com.myxoz.life.storage.dbwrapper.events.WorkEntity
 import com.myxoz.life.storage.dbwrapper.events.WriteEventDetailsDao
-import com.myxoz.life.events.additionals.DefinedDurationEvent
-import com.myxoz.life.events.additionals.EventTag
-import com.myxoz.life.events.additionals.EventType
 import org.json.JSONObject
 
-abstract class RawEvent(start: Long, end: Long, val type: EventType, val uss: Boolean, val usl: Boolean): DefinedDurationEvent(start, end) {
+sealed class RawEvent(start: Long, end: Long, val type: EventType, val uss: Boolean, val usl: Boolean): DefinedDurationEvent(start, end) {
     /**
      * Returns true if all entries were made successful, then entering will continue. This method is expected to revert all changes if false is ever returned
      */

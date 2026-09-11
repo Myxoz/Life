@@ -29,6 +29,8 @@ interface ReadEventDetailsDao {
     @Query("SELECT * FROM events WHERE start > :start AND type != 2 ORDER BY start ASC LIMIT 1")
     suspend fun getNonSleepEventAfter(start: Long): EventEntity?
 
+    @Query("SELECT * FROM events WHERE start > :timestamp ORDER BY start ASC LIMIT 1")
+    suspend fun getEventAfter(timestamp: Long): EventEntity?
 
     // Work
     @Query("SELECT * FROM work WHERE id = :id LIMIT 1")

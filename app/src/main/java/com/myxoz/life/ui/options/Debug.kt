@@ -41,6 +41,7 @@ import com.myxoz.life.MainActivity
 import com.myxoz.life.R
 import com.myxoz.life.Theme
 import com.myxoz.life.android.MainApplication
+import com.myxoz.life.android.livenotification.LiveEventRefreshReceiver
 import com.myxoz.life.api.API
 import com.myxoz.life.api.Syncable
 import com.myxoz.life.api.extensions.StreakExtendable
@@ -170,6 +171,12 @@ fun DebugScreen(
                 context.startActivity(intent)
             }) {
                 Text("Alarm now")
+            }
+            Button({
+                val intent = Intent(context, LiveEventRefreshReceiver::class.java)
+                context.sendBroadcast(intent)
+            }) {
+                Text("Refresh live activity now")
             }
             var shouldWipeDp by remember { mutableIntStateOf(0) }
             Button({

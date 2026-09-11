@@ -3,6 +3,7 @@ package com.myxoz.life.android.notifications
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.content.Context
+import com.myxoz.life.android.livenotification.LiveRescheduling
 
 fun createNotificationChannels(context: Context) {
     val nm = context.getSystemService(NotificationManager::class.java)
@@ -16,6 +17,8 @@ fun createNotificationChannels(context: Context) {
         enableVibration(false)
         setShowBadge(false)
     }
+
+    LiveRescheduling.createNotificationChannel(nm)
 
     nm.createNotificationChannel(stepsChannel)
     nm.deleteNotificationChannel("step_tracking")

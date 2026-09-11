@@ -3,8 +3,8 @@ package com.myxoz.life.storage.interfaces
 import android.app.AlarmManager
 import android.content.Context
 import android.content.Context.MODE_PRIVATE
-import android.content.SharedPreferences
 import com.myxoz.life.aggregator.PeopleAggregator
+import com.myxoz.life.android.MainApplication
 import com.myxoz.life.android.autodetect.AutoDetect
 import com.myxoz.life.api.API
 import com.myxoz.life.api.syncables.DeleteEntry
@@ -47,14 +47,15 @@ class CalendarInterface(
     private val appScope: CoroutineScope,
 ) {
     val nextAlarmClockTs = MutableStateFlow<AlarmManager.AlarmClockInfo?>(null)
+    val hooks = listOfNotNull<CalendarHook>(
+        (context as? MainApplication)?.liveRescheduling
+    )
     fun refetchAlarmClockTs() {
         val service: AlarmManager =
             context.getSystemService(Context.ALARM_SERVICE) as? AlarmManager ?: return
         nextAlarmClockTs.value = service.nextAlarmClock
     }
 
-    private val autoDetectPrefs: SharedPreferences =
-        context.getSharedPreferences(AutoDetect.AUTODETECT_PREFS, MODE_PRIVATE)
     private val zone: ZoneId = ZoneId.systemDefault()
     val todayFlow: Flow<LocalDate> = flow {
         emit(LocalDate.now())
@@ -120,16 +121,24 @@ class CalendarInterface(
     suspend fun removeSyncedEvent(event: SyncedEvent) {
         DeleteEntry.requestSyncDelete(waitingSyncDao, event)
         event.raw.eraseFromDB(writeSyncableDaos.eventDetailsDao, event.id)
-        _cachedEvents.remove(event.id)
+        hooks.forEach{ it.eventRemoved(event) }
+        deleteSyncedEventFromCache(event.id)
     }
 
     suspend fun updateOrCreateSyncedEvent(event: SyncedEvent, wasEdited: Boolean) {
         val ev = if (wasEdited) { // Edited
             val old = _cachedEvents.getContent(event.id).value // This should be cached
+            val new = event.copy(edited = System.currentTimeMillis())
             old?.raw?.eraseFromDB(writeSyncableDaos.eventDetailsDao, event.id)
-            event.copy(edited = System.currentTimeMillis())
-        } else event.makeSynced()
-        ev.saveToDB(writeSyncableDaos)
+            new.saveToDB(writeSyncableDaos)
+            hooks.forEach { it.eventUpdated(old,new) }
+            new
+        } else {
+            val new = if(event.isSynced()) event else event.copy(id = API.generateId(), created = System.currentTimeMillis())
+            new.saveToDB(writeSyncableDaos)
+            hooks.forEach { it.eventAdded(new) }
+            new
+        }
         waitingSyncDao.insertWaitingSync(
             WaitingSyncEntity(
                 ev.id,
@@ -137,7 +146,7 @@ class CalendarInterface(
                 System.currentTimeMillis()
             )
         )
-        _cachedEvents.overwrite(ev.id, ev)
+        updateSyncedEventCached(ev)
     }
 
     fun updateSyncedEventCached(event: SyncedEvent) {
@@ -201,4 +210,9 @@ class CalendarInterface(
     }
 
     fun eventsForWeek(week: UnixWeek) = _cachedEvents.flowByRange(week.start, week.end)
+    interface CalendarHook{
+        fun eventUpdated(old: SyncedEvent?, new: SyncedEvent)
+        fun eventRemoved(old: SyncedEvent)
+        fun eventAdded(new: SyncedEvent)
+    }
 }

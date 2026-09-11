@@ -19,7 +19,6 @@ import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.text.selection.LocalTextSelectionColors
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -137,7 +136,6 @@ class MainActivity : ComponentActivity() {
             controller = navController
             val colorScheme = systemColorScheme()
             val selectionColors = rememberTextSelectionColors(colorScheme)
-            MaterialTheme() { }
             CompositionLocalProvider(
                 LocalNavController provides navController,
                 LocalSettings provides settings,

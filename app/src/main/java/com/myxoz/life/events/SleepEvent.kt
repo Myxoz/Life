@@ -18,10 +18,11 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.times
 import com.myxoz.life.R
 import com.myxoz.life.android.autodetect.AutoDetect
+import com.myxoz.life.events.additionals.EventType
 import com.myxoz.life.storage.dbwrapper.events.EventEntity
 import com.myxoz.life.storage.dbwrapper.events.WriteEventDetailsDao
-import com.myxoz.life.events.additionals.EventType
 import com.myxoz.life.ui.theme.OldColors
+import com.myxoz.life.utils.formatMsToDuration
 import com.myxoz.life.utils.toSp
 import org.json.JSONObject
 
@@ -36,7 +37,6 @@ class SleepEvent(start: Long, end: Long, uss: Boolean, usl: Boolean): RawEvent(s
         isSmall: Boolean,
         blockHeight: Int
     ) {
-        val blockEvent = getBlockLength()
         Row(
             Modifier
                 .padding(horizontal = if(isSmall) 2.dp else 5.dp)
@@ -54,7 +54,7 @@ class SleepEvent(start: Long, end: Long, uss: Boolean, usl: Boolean): RawEvent(s
                 tint = OldColors.SECONDARYFONT
             )
             Text(
-                "${if(blockEvent>=4) "${blockEvent/4}h " else ""}${if(blockEvent%4!=0) "${(blockEvent%4)*15}m" else ""}",
+                length().formatMsToDuration(true),
                 fontSize = ((blockHeight*.9f).coerceIn(0f, if(!isSmall) 2f else 1.25f)*oneHourDp/4).toSp(),
                 color = type.colors.textColor,
                 fontWeight = FontWeight.Bold

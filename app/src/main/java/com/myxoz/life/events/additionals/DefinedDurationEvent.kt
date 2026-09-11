@@ -12,7 +12,6 @@ open class DefinedDurationEvent(val start: Long, val end: Long) {
     fun length() = (end - start).coerceAtLeast(15*1000L*60)
     fun getDurationInRange(startOfDay: Long, endOfDay: Long): Long = min(length(), min(endOfDay - start, end - startOfDay))
     fun getBlockHeight(startOfDay: Long, endOfDay: Long): Int = (getDurationInRange(startOfDay, endOfDay)/(900*1000)).toInt()
-    fun getBlockLength() = (length() / (900*1000)).toInt()
     fun getTopPadding(oneHour: Dp, startOfDay: Long) = ((this.start - startOfDay).coerceAtLeast(0L) / (3600 * 1000L).toFloat()) * oneHour + 1.dp
     fun getHeightDp(oneHour: Dp, startOfDay: Long, endOfDay: Long) = oneHour*(getBlockHeight(startOfDay, endOfDay)/4f) - 1.dp
     fun overlaps(other: DefinedDurationEvent): Boolean = start < other.end && end > other.start

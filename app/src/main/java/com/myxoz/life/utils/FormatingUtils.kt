@@ -44,3 +44,8 @@ fun Long.formatMsToDuration(ignoreSeconds: Boolean=false): String {
 
 inline fun String.nullIfEmpty() = if(!isEmpty()) this else null
 fun Double.formatPercent(precision: Int): String = "${(this*100).toInt()}.${(this*100).toString().substringAfter(".").padStart(precision, '0').substring(0, precision)}%"
+fun List<String>.joinGramatically(): String = when(size) {
+    in Int.MIN_VALUE..0 -> ""
+    1 -> first()
+    else -> dropLast(1).joinToString(", ") + " und "+last()
+}

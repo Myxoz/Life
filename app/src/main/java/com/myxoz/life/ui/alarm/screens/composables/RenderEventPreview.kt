@@ -111,6 +111,8 @@ fun AlarmUI.RenderEventPreview(syncedEvent: SyncedEvent, screens: LocalScreensPr
                     Text(toDisplay, style = TypoStyle(event.type.colors.textColor, FontSize.LARGE))
                 }
             }
+
+            else -> {}
         }
     }
 }
