@@ -153,10 +153,10 @@ fun DaySummaryPopUp(calendarRepo: CalendarRepo) {
 }
 
 @Composable
-fun MainFeedDatePicker(calendarViewModel: CalendarViewModel){
-    var isSelectDayVisible by calendarViewModel.isSelectDayVisible.collectAsMutableState()
+fun MainFeedDatePicker(calendarApplicationState: CalendarApplicationState){
+    var isSelectDayVisible by calendarApplicationState.isSelectDayVisible.collectAsMutableState()
 
-    UnmodalBottomSheet(isSelectDayVisible, { calendarViewModel.isSelectDayVisible.value = false }) {
+    UnmodalBottomSheet(isSelectDayVisible, { calendarApplicationState.isSelectDayVisible.value = false }) {
         val datePickerState = rememberDatePickerState()
         DatePicker(datePickerState, colors = datePickerColors())
         ActionBar(
@@ -178,8 +178,8 @@ fun MainFeedDatePicker(calendarViewModel: CalendarViewModel){
                         .atZone(ZoneId.of("UTC"))
                         .toLocalDate()
                 } ?: return@ActionBar
-                calendarViewModel.setDay(selectedDay)
-                calendarViewModel.isSelectDayVisible.value = false
+                calendarApplicationState.setDay(selectedDay)
+                calendarApplicationState.isSelectDayVisible.value = false
             }) {
             Text(
                 "Auswählen",

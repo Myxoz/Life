@@ -64,15 +64,16 @@ val daySummaryHeight = 15.dp
 val sidebarWidth = 40.dp
 
 @Composable
-fun CalendarComposable(calendarRepo: CalendarRepo, calendarViewModel: CalendarViewModel) {
+fun CalendarComposable(calendarRepo: CalendarRepo, calendarApplicationState: CalendarApplicationState) {
     val conf = LocalWindowInfo.current.containerDpSize
     val today by calendarRepo.todayFlow.collectAsState(LocalDate.now())
     val isEditing by calendarRepo.isEditing.collectAsState()
-    val displayedDays by calendarViewModel.dayAmount.collectAsState()
+    val displayedDays by calendarApplicationState.dayAmount.collectAsState()
     val eachDayWidthGoal = (conf.width.value-sidebarWidth.value+1)/displayedDays.toFloat()
     val eachDayWidth by animateFloatAsState(eachDayWidthGoal)
     val focusManager = LocalFocusManager.current
     val isSearching by calendarRepo.search.isSearching.collectAsState()
+    calendarApplicationState.ObserveLazyListState()
     BackHandler(isSearching) {
         calendarRepo.search.reset()
         focusManager.clearFocus()
@@ -84,9 +85,9 @@ fun CalendarComposable(calendarRepo: CalendarRepo, calendarViewModel: CalendarVi
         Modifier
             .fillMaxSize()
     ) {
-        CalendarTimeline(calendarViewModel, today, eachDayWidth, displayedDays)
+        CalendarTimeline(calendarApplicationState, today, eachDayWidth, displayedDays)
 
-        val days by calendarViewModel.days.collectAsState()
+        val days by calendarApplicationState.days.collectAsState()
         val insets = windowPadding
         val screenHeight = LocalWindowInfo.current.containerDpSize.height
         val density = LocalDensity.current
@@ -97,13 +98,13 @@ fun CalendarComposable(calendarRepo: CalendarRepo, calendarViewModel: CalendarVi
                 (daySummaryHeight + dateBarHeight + paddingBetweenSummaryAndDate)
         val fullDayHeightPx = with(density) { fullDayDp.toPx() }
         LazyRow(
-            state = calendarViewModel.lazyListState,
-            flingBehavior = calendarViewModel.snapFlingBehavior
+            state = calendarApplicationState.lazyListState,
+            flingBehavior = calendarApplicationState.snapFlingBehavior
         ) {
             items(days, {it.toEpochDay()}) { day ->
                 DayComposable(
                     calendarRepo,
-                    calendarViewModel,
+                    calendarApplicationState,
                     day,
                     eachDayWidth.dp,
                     fullDayDp,
@@ -115,11 +116,11 @@ fun CalendarComposable(calendarRepo: CalendarRepo, calendarViewModel: CalendarVi
 }
 
 @Composable
-fun CalendarTimeline(calendarViewModel: CalendarViewModel, today: LocalDate, eachDayWidth: Float, displayedDays: Int){
-    val listState = calendarViewModel.lazyListState
+fun CalendarTimeline(calendarApplicationState: CalendarApplicationState, today: LocalDate, eachDayWidth: Float, displayedDays: Int){
+    val listState = calendarApplicationState.lazyListState
     val density = LocalDensity.current
-    val currentYear by calendarViewModel.currentYear.collectAsState()
-    val currentMonth by calendarViewModel.currentMonth.collectAsState()
+    val currentYear by calendarApplicationState.currentYear.collectAsState()
+    val currentMonth by calendarApplicationState.currentMonth.collectAsState()
     Column(
         Modifier
             .width(sidebarWidth)
@@ -130,7 +131,7 @@ fun CalendarTimeline(calendarViewModel: CalendarViewModel, today: LocalDate, eac
             Modifier
                 .height(dateBarHeight)
                 .clickable(null, null){
-                    calendarViewModel.isSelectDayVisible.value = true
+                    calendarApplicationState.isSelectDayVisible.value = true
                 }
             ,
             horizontalAlignment = Alignment.CenterHorizontally,
@@ -144,8 +145,8 @@ fun CalendarTimeline(calendarViewModel: CalendarViewModel, today: LocalDate, eac
         ) {
             var rotation by remember { mutableFloatStateOf(0f) }
             val coroutineScope = rememberCoroutineScope()
-            val days by calendarViewModel.days.collectAsState()
-            LaunchedEffect(calendarViewModel.dayAmount, today) {
+            val days by calendarApplicationState.days.collectAsState()
+            LaunchedEffect(calendarApplicationState.dayAmount, today) {
                 snapshotFlow { listState.firstVisibleItemScrollOffset to listState.firstVisibleItemIndex }.collect {
                     val itemProgress = it.first / (eachDayWidth * density.density)
                     val day = days.getOrNull(it.second)?:return@collect
@@ -173,7 +174,7 @@ fun CalendarTimeline(calendarViewModel: CalendarViewModel, today: LocalDate, eac
                     .rippleClick{
                         val index = days.indexOfFirst { today.isEqual(it) }
                         if(index==-1) {
-                            calendarViewModel.days.value = listOf(today)
+                            calendarApplicationState.days.value = listOf(today)
                         } else {
                             coroutineScope.launch {
                                 listState.scrollToItem(index)
@@ -190,7 +191,7 @@ fun CalendarTimeline(calendarViewModel: CalendarViewModel, today: LocalDate, eac
             contentAlignment = Alignment.Center
         ){
             var timelineHeight by remember { mutableStateOf(100.dp) }
-            val currentTime by calendarViewModel.minuteFlow.collectAsStateWithLifecycle()
+            val currentTime by calendarApplicationState.minuteFlow.collectAsStateWithLifecycle()
             val calendar = remember { Calendar.getInstance() }
             calendar.timeInMillis = currentTime
             val currentHour = calendar.get(Calendar.HOUR_OF_DAY)

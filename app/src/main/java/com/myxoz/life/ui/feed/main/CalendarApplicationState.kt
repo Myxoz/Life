@@ -8,10 +8,9 @@ import androidx.compose.foundation.gestures.snapping.SnapLayoutInfoProvider
 import androidx.compose.foundation.gestures.snapping.SnapPosition
 import androidx.compose.foundation.gestures.snapping.snapFlingBehavior
 import androidx.compose.foundation.lazy.LazyListState
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.snapshotFlow
-import androidx.core.content.edit
-import androidx.lifecycle.ViewModel
-import androidx.lifecycle.viewModelScope
 import com.myxoz.life.storage.interfaces.DatabaseInterface
 import com.myxoz.life.storage.interfaces.utils.subscribeToColdFlow
 import com.myxoz.life.ui.feed.dayoverview.getMonthByCalendarMonth
@@ -23,15 +22,17 @@ import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import java.time.LocalDate
+import kotlin.time.Duration.Companion.milliseconds
 
-class CalendarViewModel(
+class CalendarApplicationState(
     val repos: DatabaseInterface
-): ViewModel() {
+) {
+    private var isInitialized = false
     val isSelectDayVisible = MutableStateFlow(false)
     val minuteFlow = flow {
         emit(System.currentTimeMillis())
         while (true){
-            delay(60*1000L-System.currentTimeMillis()%(60*1000L))
+            delay((60*1000L-System.currentTimeMillis()%(60*1000L)).milliseconds)
             emit(System.currentTimeMillis())
         }
     }.subscribeToColdFlow(repos.appScope, System.currentTimeMillis())
@@ -49,27 +50,11 @@ class CalendarViewModel(
         spring(stiffness = Spring.StiffnessMediumLow)
     )
     init {
-        viewModelScope.launch {
-            snapshotFlow { lazyListState.firstVisibleItemIndex }.collect {
-                val day = days.value.getOrNull(it) ?: return@collect
-                repos.prefs.edit { putLong("visible_date", day.toEpochDay()) }
-            }
-        }
-        viewModelScope.launch {
-            // Init and scroll logic
-            val date = LocalDate.ofEpochDay(
-                repos.prefs.getLong("visible_date", LocalDate.now().toEpochDay())
-            )
-            days.value += date
-            onDayScrolled(0)
-            // Snap correct item to viewport
-            lazyListState.scrollToItem(days.value.indexOfFirst { it == date })
-            snapshotFlow { lazyListState.firstVisibleItemIndex }
-                .collect { index ->
-                    onDayScrolled(index)
-                }
-        }
-        viewModelScope.launch {
+        val date = LocalDate.ofEpochDay(
+            repos.prefs.getLong("visible_date", LocalDate.now().toEpochDay())
+        )
+        days.value += date
+        repos.appScope.launch {
             repos.calendarInterface.todayFlow.collect {
                 repos.stepInterface.insertYesterdayIfNeeded(it)
             }
@@ -77,7 +62,7 @@ class CalendarViewModel(
     }
 
     private suspend fun onDayScrolled(index: Int) {
-        val current = days.value[index]
+        val current = days.value.getOrNull(index) ?: return
         val startOfRange = current.minusDays(dayAmount.value * 3L)
         val endOfRange = current.plusDays(dayAmount.value * 3L)
         val between = startOfRange.datesThrough(endOfRange)
@@ -118,5 +103,25 @@ class CalendarViewModel(
     }
     fun setDay(selectedDay: LocalDate) {
         days.value = listOf(selectedDay)
+    }
+    @Composable
+    fun ObserveLazyListState() {
+        LaunchedEffect(this) {
+            if(!isInitialized) {
+                onDayScrolled(0)
+                isInitialized = true
+            }
+            launch {
+                snapshotFlow { lazyListState.firstVisibleItemIndex }
+                    .collect { index ->
+                        onDayScrolled(index)
+                    }
+            }
+            launch {
+                repos.calendarInterface.todayFlow.collect {
+                    repos.stepInterface.insertYesterdayIfNeeded(it)
+                }
+            }
+        }
     }
 }

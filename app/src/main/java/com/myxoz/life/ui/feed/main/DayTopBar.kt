@@ -38,6 +38,7 @@ import com.myxoz.life.LocalSettings
 import com.myxoz.life.R
 import com.myxoz.life.Theme
 import com.myxoz.life.ui.feed.CalendarRepo
+import com.myxoz.life.ui.feed.dayoverview.getWeekDayByInt
 import com.myxoz.life.ui.theme.FontColor
 import com.myxoz.life.ui.theme.FontFamily
 import com.myxoz.life.ui.theme.FontSize
@@ -102,7 +103,7 @@ fun DayTopBar(
                         .run { this.copy(fontWeight = if (isToday) FontWeight.Bold else FontWeight.Normal) }
                 )
                 Text(
-                    _root_ide_package_.com.myxoz.life.ui.feed.dayoverview.getWeekDayByInt(date.dayOfWeek.value - 1),
+                    getWeekDayByInt(date.dayOfWeek.value - 1),
                     style = TypoStyle(
                         if (isToday) Theme.onPrimary else Theme.secondary,
                         FontSize.SMALLM

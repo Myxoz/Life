@@ -51,7 +51,7 @@ import com.myxoz.life.events.additionals.EventType
 import com.myxoz.life.events.additionals.TagLike
 import com.myxoz.life.ui.NavPath
 import com.myxoz.life.ui.feed.CalendarRepo
-import com.myxoz.life.ui.feed.main.CalendarViewModel
+import com.myxoz.life.ui.feed.main.CalendarApplicationState
 import com.myxoz.life.ui.theme.FontSize
 import com.myxoz.life.ui.theme.TypoStyle
 import com.myxoz.life.utils.MaterialShapes
@@ -62,7 +62,7 @@ import com.myxoz.life.utils.toDp
 import com.myxoz.life.utils.toShape
 
 @Composable
-fun LifeBottomBar(calendarRepo: CalendarRepo, calendarViewModel: CalendarViewModel){
+fun LifeBottomBar(calendarRepo: CalendarRepo, calendarApplicationState: CalendarApplicationState){
     val nav = LocalNavController.current
     Row(
         Modifier
@@ -85,7 +85,7 @@ fun LifeBottomBar(calendarRepo: CalendarRepo, calendarViewModel: CalendarViewMod
         val allLocationsMap = remember(allLocations) {
             allLocations.groupBy { it.id }.mapValues { it.value.first() }
         }
-        DayAmountSelector(calendarViewModel, rowHeight)
+        DayAmountSelector(calendarApplicationState, rowHeight)
         Spacer(Modifier.width(7.dp))
         val focusManager = LocalFocusManager.current
         var hasFocus by remember { mutableStateOf(false) }
@@ -295,10 +295,10 @@ fun LifeBottomBar(calendarRepo: CalendarRepo, calendarViewModel: CalendarViewMod
 }
 
 @Composable
-private fun DayAmountSelector(calendarViewModel: CalendarViewModel, rowHeight: Dp) {
+private fun DayAmountSelector(calendarApplicationState: CalendarApplicationState, rowHeight: Dp) {
     val settings = LocalSettings.current
     val displayingElements by settings.preferences.displayedDaysOptions.flow.collectAsState()
-    var setWidth by calendarViewModel.dayAmount.collectAsMutableState()
+    var setWidth by calendarApplicationState.dayAmount.collectAsMutableState()
     val width by animateFloatAsState(setWidth.toFloat())
     val realSize = rowHeight - 8.dp
     val maxBit = 31 - displayingElements.countLeadingZeroBits()

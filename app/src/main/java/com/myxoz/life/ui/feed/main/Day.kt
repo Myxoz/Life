@@ -56,6 +56,7 @@ import com.myxoz.life.utils.toDp
 import kotlinx.coroutines.launch
 import java.time.LocalDate
 import java.time.ZoneId
+import kotlin.collections.iterator
 import kotlin.math.abs
 
 const val screenTimeGoal = 1000f*3600*4f
@@ -63,7 +64,7 @@ const val stepsGoal = 6000f
 @Composable
 fun DayComposable(
     calendarRepo: CalendarRepo,
-    calendarViewModel: CalendarViewModel,
+    calendarApplicationState: CalendarApplicationState,
     date: LocalDate,
     fullWidth: Dp,
     fullHeight: Dp,
@@ -126,7 +127,7 @@ fun DayComposable(
                 )
 
                 RenderCurrentTimeCursor(
-                    calendarViewModel,
+                    calendarApplicationState,
                     calendar,
                     isEditing,
                     oneHourDp,
@@ -165,13 +166,13 @@ fun DayComposable(
 }
 @Composable
 private fun RenderCurrentTimeCursor(
-    calendarViewModel: CalendarViewModel,
+    calendarApplicationState: CalendarApplicationState,
     calendar: Calendar,
     isEditing: Boolean,
     oneHourDp: Dp,
     date: LocalDate
 ) {
-    val time by calendarViewModel.minuteFlow.collectAsStateWithLifecycle()
+    val time by calendarApplicationState.minuteFlow.collectAsStateWithLifecycle()
     calendar.timeInMillis = time
     val zone = remember { ZoneId.systemDefault() }
     val start = remember(date) { date.atStartAsMillis(zone) }

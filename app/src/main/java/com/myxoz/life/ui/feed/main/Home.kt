@@ -21,7 +21,7 @@ import kotlinx.coroutines.withContext
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun HomeComposable(calendarRepo: CalendarRepo, calendarViewModel: CalendarViewModel) {
+fun HomeComposable(calendarRepo: CalendarRepo, calendarApplicationState: CalendarApplicationState) {
     val settings = LocalSettings.current
     LaunchedEffect(Unit) {
         if(settings.hasAssured(Settings.Feature.SyncWithServer)) calendarRepo.resync()
@@ -41,12 +41,12 @@ fun HomeComposable(calendarRepo: CalendarRepo, calendarViewModel: CalendarViewMo
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
             Box(Modifier.weight(1f)) {
-                CalendarComposable(calendarRepo, calendarViewModel)
+                CalendarComposable(calendarRepo, calendarApplicationState)
             }
-            LifeBottomBar(calendarRepo, calendarViewModel)
+            LifeBottomBar(calendarRepo, calendarApplicationState)
         }
         DaySummaryPopUp(calendarRepo)
         BackupIssuesPopup(calendarRepo)
-        MainFeedDatePicker(calendarViewModel)
+        MainFeedDatePicker(calendarApplicationState)
     }
 }

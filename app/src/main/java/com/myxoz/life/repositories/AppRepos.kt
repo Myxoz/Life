@@ -1,5 +1,6 @@
 package com.myxoz.life.repositories
 
+import com.myxoz.life.ui.feed.main.CalendarApplicationState
 import com.myxoz.life.repositories.supermodule.CalendarSuper
 import com.myxoz.life.repositories.supermodule.CrossRepoSuper
 import com.myxoz.life.storage.interfaces.DatabaseInterface
@@ -15,6 +16,7 @@ class AppRepos(dbInterface: DatabaseInterface) {
 
     val alarmRepo = AlarmRepo(dbInterface)
     val calendarRepo = CalendarRepo(dbInterface, calendarSuper)
+    val calendarApplicationState = CalendarApplicationState(dbInterface)
     val transactionFeedRepo = TransactionFeedRepo(dbInterface)
     val socialGraphRepo = SocialGraphRepo(dbInterface)
     val birthdayQuizRepo = BirthdayQuizRepo(dbInterface)

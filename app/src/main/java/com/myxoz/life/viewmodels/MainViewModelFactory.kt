@@ -17,7 +17,6 @@ import com.myxoz.life.ui.feed.dayoverview.DayOverviewViewModel
 import com.myxoz.life.ui.feed.dayoverview.ScreenTimeOverviewModel
 import com.myxoz.life.ui.feed.fullscreenevent.InspectedEventViewModel
 import com.myxoz.life.ui.feed.instantevents.InstantEventsViewModel
-import com.myxoz.life.ui.feed.main.CalendarViewModel
 import com.myxoz.life.ui.map.MapViewModel
 import com.myxoz.life.ui.person.PersonalDebtViewModel
 import com.myxoz.life.ui.todo.TodoViewModel
@@ -91,9 +90,6 @@ class MainViewModelFactory(
 
             modelClass.isAssignableFrom(CommitsViewModel::class.java) ->
                 CommitsViewModel(dbInterfaces) as T
-
-            modelClass.isAssignableFrom(CalendarViewModel::class.java) ->
-                CalendarViewModel(dbInterfaces) as T
 
             else -> error("Unknown ViewModel: $modelClass")
         }

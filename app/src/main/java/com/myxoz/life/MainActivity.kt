@@ -36,6 +36,7 @@ import androidx.navigation.navArgument
 import com.myxoz.life.android.MainApplication
 import com.myxoz.life.android.notifications.createNotificationChannels
 import com.myxoz.life.api.syncables.SyncedEvent
+import com.myxoz.life.ui.feed.main.HomeComposable
 import com.myxoz.life.ui.AlarmUI
 import com.myxoz.life.ui.LocalScreensProvider
 import com.myxoz.life.ui.ModifyLocation
@@ -57,8 +58,6 @@ import com.myxoz.life.ui.feed.fullscreenevent.FullScreenEvent
 import com.myxoz.life.ui.feed.fullscreenevent.InspectedEventViewModel
 import com.myxoz.life.ui.feed.instantevents.InstantEventsScreen
 import com.myxoz.life.ui.feed.instantevents.InstantEventsViewModel
-import com.myxoz.life.ui.feed.main.CalendarViewModel
-import com.myxoz.life.ui.feed.main.HomeComposable
 import com.myxoz.life.ui.feed.search.AdvancedSearch
 import com.myxoz.life.ui.feed.summarizeday.SummarizeDay
 import com.myxoz.life.ui.map.MapBoxMap
@@ -188,7 +187,7 @@ class MainActivity : ComponentActivity() {
                     //  ---------- FEED ----------
                     composable(NavPath.HOME) {
                         if(!showHome) return@composable
-                        val calenderViewModel = viewModel<CalendarViewModel>(factory = factory)
+                        val calenderViewModel = appRepos.calendarApplicationState
                         HomeComposable(appRepos.calendarRepo, calenderViewModel)
                     }
                     composable(

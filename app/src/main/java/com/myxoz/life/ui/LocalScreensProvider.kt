@@ -31,7 +31,7 @@ class LocalScreensProvider(
     }
     fun openCalendarAt(date: LocalDate, pop: Boolean = true){
         if(System.currentTimeMillis() - calendarCooldown > 2000L) {
-            // appRepos.calendarRepo.setDay(date)
+            appRepos.calendarApplicationState.setDay(date)
             // Todo
             if(pop) {
                 nav.popBackStack(NavPath.HOME, false)

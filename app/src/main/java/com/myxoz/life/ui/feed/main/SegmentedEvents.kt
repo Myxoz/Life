@@ -30,6 +30,7 @@ import com.myxoz.life.events.additionals.DefinedDurationEvent
 import com.myxoz.life.events.additionals.EventType
 import com.myxoz.life.events.additionals.PeopleEvent
 import com.myxoz.life.ui.feed.CalendarRepo
+import com.myxoz.life.ui.feed.instantevents.InstantEvent
 import java.util.LinkedList
 
 
@@ -80,7 +81,7 @@ data class PrerenderedEvent(
         }
     }
     companion object {
-        fun getPrerenderedEvents(events: List<SyncedEvent>, instantEntries: List<com.myxoz.life.ui.feed.instantevents.InstantEvent.InstantEventGroup>, instantEventDisplaySize: Long): Map<Long, PrerenderedEvent> {
+        fun getPrerenderedEvents(events: List<SyncedEvent>, instantEntries: List<InstantEvent.InstantEventGroup>, instantEventDisplaySize: Long): Map<Long, PrerenderedEvent> {
             val order = arrayOf(
                 EventType.DigSoc,
                 EventType.Social,
