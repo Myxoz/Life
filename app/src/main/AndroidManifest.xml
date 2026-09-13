@@ -24,6 +24,8 @@
         android:name="android.hardware.telephony"
         android:required="false" />
     <uses-permission android:name="android.permission.CALL_PHONE" />
+    <uses-permission
+        android:name="android.permission.POST_PROMOTED_NOTIFICATIONS" />
 
     <!-- Idk why, but it works -->
     <application
@@ -39,6 +41,12 @@
         android:configChanges="keyboardHidden|orientation|screenSize"
         android:name=".android.MainApplication"
         tools:targetApi="33">
+        <meta-data
+            android:name="com.samsung.android.support.ongoing_activity"
+            android:value="true" />
+        <receiver
+            android:name=".android.livenotification.LiveEventRefreshReceiver"
+            android:exported="false" />
         <service
             android:name=".android.sensors.StepsService"
             android:exported="false"
