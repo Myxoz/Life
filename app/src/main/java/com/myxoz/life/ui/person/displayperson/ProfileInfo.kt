@@ -151,7 +151,7 @@ fun ProfileInfo(profileInfoModel: ProfileInfoModel){
             ) {
                 //val iban = "DE18446744073709551615"
                 ListEntry(
-                    "Voller Name",
+                    "Bürgerlicher Name",
                     painterResource(R.drawable.id_card)
                 ) {
                     val displayText = inspectedPerson?.fullName?.let {
@@ -185,7 +185,7 @@ fun ProfileInfo(profileInfoModel: ProfileInfoModel){
                         displayText ?: "???",
                         null,
                         inspectedPerson?.fullName,
-                        "Voller Name"
+                        "Bürgerlicher Name"
                     ) { text ->
                         profileInfoModel.edit{
                             it.copy(fullName = text)
