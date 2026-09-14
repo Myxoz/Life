@@ -36,7 +36,6 @@ import androidx.navigation.navArgument
 import com.myxoz.life.android.MainApplication
 import com.myxoz.life.android.notifications.createNotificationChannels
 import com.myxoz.life.api.syncables.SyncedEvent
-import com.myxoz.life.ui.feed.main.HomeComposable
 import com.myxoz.life.ui.AlarmUI
 import com.myxoz.life.ui.LocalScreensProvider
 import com.myxoz.life.ui.ModifyLocation
@@ -58,6 +57,7 @@ import com.myxoz.life.ui.feed.fullscreenevent.FullScreenEvent
 import com.myxoz.life.ui.feed.fullscreenevent.InspectedEventViewModel
 import com.myxoz.life.ui.feed.instantevents.InstantEventsScreen
 import com.myxoz.life.ui.feed.instantevents.InstantEventsViewModel
+import com.myxoz.life.ui.feed.main.HomeComposable
 import com.myxoz.life.ui.feed.search.AdvancedSearch
 import com.myxoz.life.ui.feed.summarizeday.SummarizeDay
 import com.myxoz.life.ui.map.MapBoxMap
@@ -88,7 +88,6 @@ import com.myxoz.life.ui.transactions.TransactionFeed
 import com.myxoz.life.ui.transactions.TransactionOverview
 import com.myxoz.life.ui.transactions.TransactionOverviewViewModel
 import com.myxoz.life.ui.wrapped.LifeWrappedScreen
-import com.myxoz.life.ui.wrapped.WrappedViewModel
 import com.myxoz.life.utils.rememberTextSelectionColors
 import com.myxoz.life.utils.systemColorScheme
 import com.myxoz.life.viewmodels.LocationEditingViewModel
@@ -257,8 +256,7 @@ class MainActivity : ComponentActivity() {
                         BirthdayGuesser(appRepos.birthdayQuizRepo)
                     }
                     composable(NavPath.Menu.LIFE_WRAPPED) {
-                        val wrappedViewModel = viewModel<WrappedViewModel>(factory = factory)
-                        LifeWrappedScreen(dbInterface.api.getReadableDaosForWrapped(), wrappedViewModel)
+                        LifeWrappedScreen(appRepos.wrappedRepo)
                     }
                     composable(
                         NavPath.Menu.MAP.asTemplate,
@@ -429,6 +427,11 @@ class MainActivity : ComponentActivity() {
                 Log.e("Activity", "Failed to parse travel event from intent", e)
             }
         }
+    }
+
+    override fun onResume() {
+        super.onResume()
+        dbInterface.syncEngine.suggestResync()
     }
     companion object {
         fun restartApp(context: Context) {

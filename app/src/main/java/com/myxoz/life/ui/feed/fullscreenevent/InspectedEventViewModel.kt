@@ -89,7 +89,6 @@ class InspectedEventViewModel(
             syncable.saveWithCache(dbInterface)
         }
     }
-    suspend fun resync() = dbInterface.api.resync()
 
     // Propagated
     val isEditing = calendarSuper.isEditing

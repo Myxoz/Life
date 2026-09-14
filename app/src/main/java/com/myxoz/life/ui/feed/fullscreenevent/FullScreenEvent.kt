@@ -314,7 +314,6 @@ private fun BottomButton(
         HorizontalDivider(Modifier.clip(CircleShape), color = OldColors.SECONDARY, thickness = 3.dp)
         Spacer(Modifier.height(20.dp))
         var isSending by remember { mutableStateOf(false) }
-        var wasSuccessful by remember { mutableStateOf(false) }
         var affectsDelete by remember { mutableStateOf(false) }
         val coroutineScope = rememberCoroutineScope()
         val context = LocalContext.current
@@ -327,17 +326,13 @@ private fun BottomButton(
                     if(syncable != null) {
                         if(syncable.id != -1L) {
                             inspectedEventViewModel.updateOrCreateSynced(syncable, true)
-                            inspectedEventViewModel.resync()
                         }
                     } else {
                         if(event.id != -1L) { // If the event is a new one, ignore everything, just close
                             inspectedEventViewModel.removeSyncedEvent(event)
-                            inspectedEventViewModel.resync()
                         }
                     }
                     inspectedEventViewModel.setEditing(false)
-                    isSending = false
-                    wasSuccessful = true
                     nav.popBackStack()
                 }
             },
@@ -347,8 +342,6 @@ private fun BottomButton(
                 else
                     if(isSending)
                         LifeProgressIndicator(Modifier.fillMaxHeight(), color = Theme.primary)
-                    else if(wasSuccessful)
-                        Icon(painterResource(R.drawable.tick), "Done", Modifier.fillMaxSize(), Theme.onSecondaryContainer)
             },
             if(syncable != null && syncable.getInvalidReason() == null) Theme.primaryContainer
             else if(event.raw.getInvalidReason()!=null) OldColors.SECONDARY else event.raw.type.colors.bg,
@@ -379,10 +372,7 @@ private fun BottomButton(
                             } else {
                                 inspectedEventViewModel.updateOrCreateSyncedEvent(event, event.isSynced())
                             }
-                            inspectedEventViewModel.resync()
                             inspectedEventViewModel.setEditing(false)
-                            isSending = false
-                            wasSuccessful = true
                             nav.popBackStack()
                         }
                     }
@@ -408,7 +398,7 @@ private fun BottomButton(
                         if (!affectsDelete && isSending){
                             LifeProgressIndicator(Modifier.fillMaxHeight(), color = Theme.primary)}
                         else
-                            if (affectsDelete || !wasSuccessful) {
+                            {
                                 Text(
                                     if (event.isSynced() || syncable?.isSynced() == true) "Ändern" else "Hinzufügen",
                                     style = TypoStyleOld(
@@ -422,21 +412,6 @@ private fun BottomButton(
                                     "Continue",
                                     tint = OldColors.PRIMARYFONT,
                                     modifier = Modifier.height(20.dp)
-                                )
-                            } else {
-                                Icon(
-                                    painterResource(R.drawable.tick),
-                                    "Done",
-                                    tint = OldColors.PRIMARYFONT,
-                                    modifier = Modifier.height(20.dp)
-                                )
-                                Spacer(Modifier.width(8.dp))
-                                Text(
-                                    "Fertig",
-                                    style = TypoStyleOld(
-                                        FontColor.PRIMARY,
-                                        FontSize.LARGE
-                                    ).copy(fontWeight = FontWeight.W900)
                                 )
                             }
                     }

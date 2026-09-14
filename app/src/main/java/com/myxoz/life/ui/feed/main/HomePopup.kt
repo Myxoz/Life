@@ -42,6 +42,7 @@ import com.myxoz.life.LocalNavController
 import com.myxoz.life.LocalSettings
 import com.myxoz.life.R
 import com.myxoz.life.Theme
+import com.myxoz.life.api.API
 import com.myxoz.life.storage.interfaces.utils.Cached
 import com.myxoz.life.ui.ActionBar
 import com.myxoz.life.ui.NavPath
@@ -283,7 +284,7 @@ fun BackupIssuesPopup(calendarRepo: CalendarRepo){
     val coroutineScope = rememberCoroutineScope()
     LiffyPopup(
         // Only handles server responses not offline / connection problems
-        !ignore && lastApiResp?.hasFailed.def(false) && lastApiResp?.failedText != null,
+        !ignore && lastApiResp is API.SyncingResponse.FAILED,
         "Aua!",
         "Der Server hat unverarbeitbar geantwortet. Du kannst entweder die " +
                 "Serversynchronisation ausschalten oder das serverseitige Problem beheben.",
@@ -295,7 +296,7 @@ fun BackupIssuesPopup(calendarRepo: CalendarRepo){
     ) {
         Spacer(Modifier.height(10.dp))
         Text("Serverantwort:", style = TypoStyle(Theme.primary, FontSize.MEDIUM))
-        Text(lastApiResp?.failedText?:"", style = TypoStyle(Theme.secondary, FontSize.LARGE))
+        Text((lastApiResp as? API.SyncingResponse.FAILED)?.reason ?:"", style = TypoStyle(Theme.secondary, FontSize.LARGE))
         Spacer(Modifier.height(20.dp))
         Box(
             Modifier

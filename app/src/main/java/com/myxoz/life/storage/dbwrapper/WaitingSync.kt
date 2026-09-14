@@ -2,6 +2,7 @@ package com.myxoz.life.storage.dbwrapper
 
 import androidx.room.ColumnInfo
 import androidx.room.Dao
+import androidx.room.Delete
 import androidx.room.Entity
 import androidx.room.Insert
 import androidx.room.OnConflictStrategy
@@ -27,6 +28,9 @@ interface WaitingSyncDao {
 
     @Query("DELETE FROM waitingsync WHERE id = :id AND calendar = :calendar")
     suspend fun deleteWaitingSync(id: Long, calendar: Int)
+
+    @Delete
+    suspend fun deleteWaitingSyncItems(items: List<WaitingSyncEntity>)
 
     suspend fun requestSync(syncable: Syncable){
         insertWaitingSync(WaitingSyncEntity(syncable.id, syncable.calendarId, System.currentTimeMillis()))

@@ -52,6 +52,14 @@ inline fun <T> List<T>.jsonArray(map: (T)->Any): JSONArray {
             }
         }
 }
+inline fun <T> List<T>.jsonNonNullArray(map: (T)->Any?): JSONArray {
+    return JSONArray()
+        .apply {
+            this@jsonNonNullArray.forEach {
+                put(map(it) ?: return@forEach)
+            }
+        }
+}
 val List<Long>.jsonArray: JSONArray
     inline get() {
     return JSONArray()

@@ -271,5 +271,8 @@ class MapViewModel(
             ring += ring.first() // close ring
             return ring
         }
+        sealed interface MapState {
+
+        }
     }
 }

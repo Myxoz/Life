@@ -1,14 +1,16 @@
 package com.myxoz.life.repositories
 
-import com.myxoz.life.ui.feed.main.CalendarApplicationState
 import com.myxoz.life.repositories.supermodule.CalendarSuper
 import com.myxoz.life.repositories.supermodule.CrossRepoSuper
 import com.myxoz.life.storage.interfaces.DatabaseInterface
 import com.myxoz.life.ui.alarm.AlarmRepo
 import com.myxoz.life.ui.feed.CalendarRepo
+import com.myxoz.life.ui.feed.main.CalendarApplicationState
 import com.myxoz.life.ui.transactions.TransactionFeedRepo
+import com.myxoz.life.ui.wrapped.WrappedRepo
 
 class AppRepos(dbInterface: DatabaseInterface) {
+    val wrappedRepo: WrappedRepo = WrappedRepo(dbInterface)
     val transportRepo = TransportRepo()
     val calendarSuper = CalendarSuper()
     val crossRepoSuper = CrossRepoSuper(dbInterface)

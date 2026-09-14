@@ -26,10 +26,12 @@ import com.myxoz.life.utils.atEndAsMillis
 import com.myxoz.life.utils.atStartAsMillis
 import com.myxoz.life.viewmodels.Settings
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
@@ -38,6 +40,7 @@ import java.time.Duration
 import java.time.LocalDate
 import java.time.LocalDateTime
 import java.time.ZoneId
+import kotlin.time.Duration.Companion.milliseconds
 
 class CalendarInterface(
     private val readSyncableDaos: API.ReadSyncableDaos,
@@ -70,8 +73,9 @@ class CalendarInterface(
         }
 
     fun interactedWithPerson(person: Long) = interactedWithPersonCache.flowByKey(person)
-    val interactedWithAnyPerson = interactedWithPersonCache.allValuesFlow
-    private val _cachedEvents = PerformantInterlockedCache.Companion.dayedCached(
+    @OptIn(FlowPreview::class)
+    val debouncedInteractedWithAnyPerson = interactedWithPersonCache.allValuesFlow.debounce(100.milliseconds)
+    private val _cachedEvents = PerformantInterlockedCache.dayedCached(
         appScope,
         { first, other ->
             first.value?.id == other.id
@@ -169,7 +173,7 @@ class CalendarInterface(
         val prefs = context.getSharedPreferences(AutoDetect.AUTODETECT_PREFS, MODE_PRIVATE)
         val currentSessions = (prefs.getStringSet(AutoDetect.SESSIONS, setOf()) ?: setOf())
             .filter {
-                LocalEvent.fromJSON(JSONObject(it))?.localId != event.localId
+                LocalEvent.fromJSON(JSONObject(it)).localId != event.localId
             }
         prefs.edit {
             putStringSet(AutoDetect.SESSIONS, currentSessions.toSet())

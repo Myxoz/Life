@@ -53,7 +53,7 @@ class CommitsInterface(
     }
     fun getCommitsForDay(date: LocalDate) = _commits.getInterlockedFlowFor(date)
 
-    fun getAllCommitsFor(repoName: String) = _commits.allValuesFlow.map { commit -> commit.filter { it.repoName == repoName } }
+    fun getAllCommitsFor(repoName: String) = _commits.allValuesFlow.map { commit -> commit.filter { it.repoName == repoName }.sortedByDescending { it.commitDate } }
     fun updateCommit(commitSyncable: CommitSyncable) {
         _commits.overwrite(commitSyncable.commitSha, commitSyncable)
     }

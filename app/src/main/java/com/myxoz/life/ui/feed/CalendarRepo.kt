@@ -52,7 +52,7 @@ class CalendarRepo(
     }
     fun getStepsFor(it: LocalDate) = stepFlowCache.get(it)
     val lastAPIResponse = MutableStateFlow<API.SyncingResponse?>(null)
-    suspend fun resync() = repos.api.resync().also { lastAPIResponse.value = it }
+    fun suggestResync() = repos.syncEngine.suggestResync()
     suspend fun localEventInteracted(event: LocalEvent, newEventId: Long?) {
         run {
             repos.extensionInterface.updateAndSyncWith(ExtensionSyncable.ExtensionSyncableType.RepeatingEvents) { old ->

@@ -5,6 +5,7 @@ import android.content.Context.MODE_PRIVATE
 import android.content.SharedPreferences
 import com.myxoz.life.aggregator.AppAggregators
 import com.myxoz.life.api.API
+import com.myxoz.life.api.SyncEngine
 import com.myxoz.life.api.UpdateHooks
 import com.myxoz.life.repositories.DeviceContactRepo
 import com.myxoz.life.storage.dbwrapper.Daos
@@ -28,6 +29,7 @@ class DatabaseInterface(
     val todoInterface: TodoInterface,
     val extensionInterface: ExtensionInterface,
     val api: API,
+    val syncEngine: SyncEngine,
     val readSyncableDaos: API.ReadSyncableDaos,
     val prefs: SharedPreferences,
     val permissionChecker: Settings.Permission.PermissionChecker,
@@ -129,6 +131,25 @@ class DatabaseInterface(
                 calendarInterface,
                 extensionInterface
             )
+            val api = API(
+                hooks,
+                calendarInterface,
+                daySummaryInterface,
+                peopleInterface,
+                bankingRepo,
+                locationInterface,
+                commitsInterface,
+                todosRepo,
+                extensionInterface,
+                db.waitingSync,
+                readSyncableDaos,
+                writeSyncableDaos,
+                mainPrefs,
+                db,
+                applicationContext
+            )
+            val permissionChecker = Settings.Permission.PermissionChecker(settingsPrefs, applicationContext)
+            val syncEngine = SyncEngine(api, permissionChecker)
             return DatabaseInterface(
                 hooks,
                 calendarInterface,
@@ -142,26 +163,11 @@ class DatabaseInterface(
                 aiPredictionRepo,
                 todosRepo,
                 extensionInterface,
-                API(
-                    hooks,
-                    calendarInterface,
-                    daySummaryInterface,
-                    peopleInterface,
-                    bankingRepo,
-                    locationInterface,
-                    commitsInterface,
-                    todosRepo,
-                    extensionInterface,
-                    db.waitingSync,
-                    readSyncableDaos,
-                    writeSyncableDaos,
-                    mainPrefs,
-                    db,
-                    applicationContext
-                ),
+                api,
+                syncEngine,
                 readSyncableDaos,
                 mainPrefs,
-                Settings.Permission.PermissionChecker(settingsPrefs, applicationContext),
+                permissionChecker,
                 applicationContext,
                 appScope
             )

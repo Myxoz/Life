@@ -17,6 +17,7 @@ import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import androidx.core.content.edit
 import androidx.core.net.toUri
+import com.myxoz.life.android.MainApplication
 import com.myxoz.life.android.notifications.NotificationReaderService
 import com.myxoz.life.android.sensors.StepsService
 import com.myxoz.life.utils.SharedPrefsUtils.get
@@ -30,7 +31,7 @@ import kotlin.reflect.KClass
 
 
 object Settings {
-    enum class Feature(val spk: String, val displayName: String, val description: String, val reliesOn: List<Permission>, val onEnable: (Permission.PermissionChanger.() -> Unit)? = null) {
+    enum class Feature(val spk: String, val displayName: String, val description: String, val reliesOn: List<Permission>, val onEnable: (Permission.PermissionChanger.() -> Unit)? = null, val onDisable: (Permission.PermissionChanger.() -> Unit)? = null) {
         AutoDetectCalls(
             "autodetectcalls",
             "Anruferfassung",
@@ -102,6 +103,8 @@ object Settings {
             "Serversync",
             "Syncronisiert alle Daten mit dem Server, nur für meine private Nutzung",
             listOf(Permission.Internet),
+            {(context.applicationContext as? MainApplication)?.dbInterface?.syncEngine?.suggestResync()},
+            {(context.applicationContext as? MainApplication)?.dbInterface?.syncEngine?.stopResync()},
         );
         fun isEnabled(permissionChecker: Permission.PermissionChecker) = permissionChecker.prefs.getBoolean(spk, false)
         fun hasAssured(permissionChecker: Permission.PermissionChangerInterface) = reliesOn.all { it.check(permissionChecker) }
@@ -294,8 +297,8 @@ object Settings {
         fun set(feature: Feature, newVal: Boolean) {
             has(feature).update { newVal }
             updateDependency(feature, newVal)
-            if(newVal) feature.onEnable?.invoke(changeContext)
             permissionChecker.prefs.edit { putBoolean(feature.spk, newVal) }
+            if(newVal) feature.onEnable?.invoke(changeContext) else feature.onDisable?.invoke(changeContext)
         }
 
         suspend fun set(permission: Permission, newVal: Boolean) {

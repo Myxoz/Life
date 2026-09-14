@@ -54,7 +54,6 @@ import com.myxoz.life.api.syncables.PersonSyncable
 import com.myxoz.life.events.additionals.EventTag
 import com.myxoz.life.events.additionals.EventType
 import com.myxoz.life.events.additionals.Vehicle
-import com.myxoz.life.repositories.supermodule.CrossRepoSuper
 import com.myxoz.life.ui.theme.FontColor
 import com.myxoz.life.ui.theme.FontFamily
 import com.myxoz.life.ui.theme.FontSize
@@ -80,7 +79,7 @@ abstract class WrappedPage {
     var previousColorConfig: LifeWrappedColorContext? = null
     @Composable
     abstract fun LifeWrappedCallContext.Content()
-    class LifeWrappedCallContext(val wrappedViewModel: WrappedViewModel) {
+    class LifeWrappedCallContext(val wrappedRepo: WrappedRepo) {
         var flow = MutableStateFlow(
             LifeWrappedColorContext(
                 OldColors.Calendar.Hobby.bg,
@@ -282,7 +281,7 @@ class TopThreeSocialContacts(val people: List<Pair<PersonSyncable, Long>>, conte
                                 y = (pbSize / 2 + cos(progress + index * Math.PI * 2 / 3) * 0.325 * pbSize - 0.175 * pbSize * sizeMod),
                             )
                     ) {
-                        val rawBitmap by wrappedViewModel.getProfilePicture(person.first.id).collectAsState()
+                        val rawBitmap by wrappedRepo.getProfilePicture(person.first.id).collectAsState()
                         rawBitmap?.let { bitmap ->
                             val revealPogress by animateFloatAsState(if(step > 10 + 10*index) 1f else 0f,  tween(ANIDURATION*5, easing = LinearEasing))
                             Image(
@@ -366,7 +365,7 @@ class SpecialNewcommer(val person: PersonSyncable, val ranking: Int, val time: L
                     Modifier
                         .size(pbSize)
                 ) {
-                    val pp by wrappedViewModel.getProfilePicture(person.id).collectAsState()
+                    val pp by wrappedRepo.getProfilePicture(person.id).collectAsState()
                     pp?.let { bitmap ->
                         Image(
                             remember(bitmap) { bitmap.asImageBitmap() },

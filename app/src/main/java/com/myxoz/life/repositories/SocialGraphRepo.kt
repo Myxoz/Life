@@ -34,7 +34,7 @@ class SocialGraphRepo(
             combine(
                 addMyself,
                 chartScale,
-                repos.calendarInterface.interactedWithAnyPerson
+                repos.calendarInterface.debouncedInteractedWithAnyPerson
             ) { addMyselfValue, chartScaleValue, eventUpdate ->
                 Triple(addMyselfValue, chartScaleValue, eventUpdate)
             }

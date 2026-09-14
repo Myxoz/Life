@@ -20,6 +20,7 @@ import com.myxoz.life.api.syncables.TransactionSplitSyncable
 import com.myxoz.life.events.additionals.EventType
 import com.myxoz.life.storage.dbwrapper.Daos
 import com.myxoz.life.storage.dbwrapper.WaitingSyncDao
+import com.myxoz.life.storage.dbwrapper.WaitingSyncEntity
 import com.myxoz.life.storage.dbwrapper.banking.ReadBankingDao
 import com.myxoz.life.storage.dbwrapper.banking.WriteBankingDao
 import com.myxoz.life.storage.dbwrapper.commits.ReadCommitsDao
@@ -46,8 +47,8 @@ import com.myxoz.life.storage.interfaces.PeopleInterface
 import com.myxoz.life.storage.interfaces.TodoInterface
 import com.myxoz.life.ui.feed.fullscreenevent.getId
 import com.myxoz.life.utils.forEach
+import com.myxoz.life.utils.jsonNonNullArray
 import com.myxoz.life.utils.jsonObjArray
-import org.json.JSONArray
 import org.json.JSONObject
 import kotlin.random.Random
 
@@ -70,98 +71,101 @@ class API (
     private val context: Context
 ) {
     fun heyAPIAlmighlyGodEtcCanIPleaseOnlyForDebugHaveAllDaoAccessImReallyTheDebugOnlyPleasePleasePlease() = ONLYFORDEBUGFULLDB
-    fun getReadableDaosForWrapped() = readSyncableDaos
     private var lastUpdate = prefs.getLong("last_update", 0)
     fun resetLastUpdateDebug() { lastUpdate = 0 }
-    private var isSyncing = false
     private val security = Security()
     private val logSyncableContent = true
     private fun optionallySkip(text: String?) = if(logSyncableContent) text else "[Skipped]"
-    data class SyncingResponse(val syncedEntryAmount: Int, val hasFailed: Boolean, val failedText: String?)
-    suspend fun resync(): SyncingResponse {
-        isSyncing = true
-        val elementsPerRequest = 500
+    sealed interface SyncingResponse {
+        class FAILED(val reason: String): SyncingResponse
+        object OFFLINE: SyncingResponse
+        class SUCCESS(changed: Boolean = true): SyncingResponse
+    }
+    suspend fun sendToServer(): SyncingResponse {
         var offset = 0
+        val fullySyncedWaitingEntries = mutableListOf<WaitingSyncEntity>()
+        var sendSyncables = 0
         Log.i(LOGTAG, "Sending entries to server...")
         while (true) {
-            val lastNEntries = buildList {
-                for (entry in waitingSyncDao.getLastNWaitingSyncEntries(
-                    elementsPerRequest,
-                    offset
-                )) {
-                    try {
-                        val x = Syncable.from(entry, readSyncableDaos, context)
-                        x?.let { add(it) } ?: Log.w(LOGTAG, "Failed to create Syncable from $entry")
-                    } catch (e: Exception) {
-                        Log.e(LOGTAG, "Failed to create Syncable from $entry", e)
-                    }
+            val lastNEntries = waitingSyncDao.getLastNWaitingSyncEntries(ELEMENTSPERREQUEST, offset)
+            val syncables = lastNEntries.mapNotNull { entry ->
+                try {
+                    val syncable = Syncable.from(entry, readSyncableDaos, context)
+                    if(syncable == null) Log.w(LOGTAG, "Failed to create Syncable from $entry")
+                    syncable
+                } catch (e: Exception) {
+                    Log.e(LOGTAG, "Terribly failed to create Syncable from $entry", e)
+                    null
                 }
             }
-            if (lastNEntries.isEmpty()) {
-                Log.i(LOGTAG, "None to send")
+            if (syncables.isEmpty()) {
+                Log.i(LOGTAG, "None to send ()")
                 break
             }
 
-            val json = JSONArray()
-            for (entry in lastNEntries) {
-                entry.toJson()?.also { json.put(it) }
-                    ?: Log.w(LOGTAG, "Couldnt stringify ${entry.id} of type ${entry.calendarId} ($entry)")
+            val json = syncables.jsonNonNullArray {
+                val jsonedObject = it.toJson()
+                if(jsonedObject == null) Log.w(LOGTAG, "Couldnt stringify ${it.id} of type ${it.calendarId} ($it)")
+                jsonedObject
             }
 
             Log.i(LOGTAG,"JSON:\n${optionallySkip(json.toString(2))}")
-            val response = send(Method.Send, json.toString(), offset)
+
+            sendSyncables += json.length()
+            val response = send(Method.Send, json.toString(), ELEMENTSPERREQUEST) ?:
+                return SyncingResponse.OFFLINE
+
             Log.i(LOGTAG,"Server responded:\n${optionallySkip(response)}\n")
-            if (response.isNullOrBlank()) {
+            if (response.isBlank()) {
                 Log.e(LOGTAG, "Server didnt respond or threw an error (null or empty string reponse). We cant work with this!")
-                isSyncing = false
-                return SyncingResponse(0, true, response)
+                return SyncingResponse.FAILED(response)
             }
             val resJson = JSONObject(response)
             resJson
                 .getJSONArray("msg")
                 .forEach { Log.w(LOGTAG,"Server reported msg: $it") }
-            resJson.getJSONArray("entries").jsonObjArray.forEach {
-                waitingSyncDao.deleteWaitingSync(it.getId(), it.getInt("type"))
+            fullySyncedWaitingEntries += resJson.getJSONArray("entries").jsonObjArray.map {
+                WaitingSyncEntity(it.getId(), it.getInt("type"), 0L)
             }
-            if (lastNEntries.size < elementsPerRequest) break
-            Log.i(LOGTAG,"Server isn't done sending chunked responses...")
+            if (lastNEntries.size < ELEMENTSPERREQUEST) break
+            Log.i(LOGTAG,"Sending more chunked data to server ...")
+            offset += ELEMENTSPERREQUEST
         }
+        waitingSyncDao.deleteWaitingSyncItems(fullySyncedWaitingEntries)
+        return SyncingResponse.SUCCESS(offset != 0)
+    }
+    suspend fun receiveFromServer(): SyncingResponse {
         var serverLastUpdate: Long
-        var updateAmount = 0
-        offset = 0
+        var offset = 0
+        var receivedElements = 0
         Log.i(LOGTAG,"Get new entries...")
         while (true) {
-            val responseText = send(Method.Resync, "[]", offset)
-            if (responseText == null) {
-                isSyncing = false
-                return SyncingResponse(0, true, responseText)
-            }
+            val responseText = send(Method.Resync, "[]", offset) ?:
+                return SyncingResponse.OFFLINE
             if (!responseText.trim().startsWith("{")) {
                 Log.w(LOGTAG,"API Unexpected response: \"$responseText\". Current time: ${System.currentTimeMillis()}")
-                isSyncing = false
-                return SyncingResponse(0, true, responseText)
+                return SyncingResponse.FAILED(responseText)
             }
             val response = JSONObject(responseText)
             Log.i(LOGTAG, "Server entries (${responseText.length} bytes):\n${optionallySkip(response.toString(2))}}")
             val jsonArray = response.getJSONArray("e").jsonObjArray
             serverLastUpdate = response.getLong("date")
             if (jsonArray.isEmpty()) break
-            updateAmount += jsonArray.size
             Log.i(LOGTAG, "Batch received ${jsonArray.size} events")
             jsonArray.forEach {
                 Log.i(LOGTAG, "${optionallySkip(it.toString(2))}")
                 overwriteByJson(it)
             }
-            if (jsonArray.size < elementsPerRequest) break
-            offset += elementsPerRequest
+            receivedElements += jsonArray.size
+            if (jsonArray.size < ELEMENTSPERREQUEST) break
+            offset += ELEMENTSPERREQUEST
         }
         lastUpdate = serverLastUpdate
         prefs.edit {
             putLong("last_update", lastUpdate)
         }
         Log.i(LOGTAG, "Done with resyncing")
-        isSyncing = false
-        return SyncingResponse(updateAmount, false, null)
+        return SyncingResponse.SUCCESS(receivedElements != 0)
     }
 
     private suspend fun send(method: Method, data: String, offset: Int?): String? = security.send(
@@ -303,6 +307,7 @@ class API (
         fun generateId(): Long {
             return Random.nextLong(0, Long.MAX_VALUE)
         }
+        const val ELEMENTSPERREQUEST = 500
     }
     class ReadSyncableDaos(
         val eventDetailsDao: ReadEventDetailsDao,

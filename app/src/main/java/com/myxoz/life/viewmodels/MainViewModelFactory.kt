@@ -21,7 +21,6 @@ import com.myxoz.life.ui.map.MapViewModel
 import com.myxoz.life.ui.person.PersonalDebtViewModel
 import com.myxoz.life.ui.todo.TodoViewModel
 import com.myxoz.life.ui.transactions.TransactionOverviewViewModel
-import com.myxoz.life.ui.wrapped.WrappedViewModel
 
 @Suppress("UNCHECKED_CAST")
 class MainViewModelFactory(
@@ -78,9 +77,6 @@ class MainViewModelFactory(
 
             modelClass.isAssignableFrom(AISettingsRepo::class.java) ->
                 AISettingsRepo(dbInterfaces) as T
-
-            modelClass.isAssignableFrom(WrappedViewModel::class.java) ->
-                WrappedViewModel(dbInterfaces) as T
 
             modelClass.isAssignableFrom(PersonalDebtViewModel::class.java) ->
                 PersonalDebtViewModel(dbInterfaces, handle) as T
