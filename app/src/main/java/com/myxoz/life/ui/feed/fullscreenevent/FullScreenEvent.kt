@@ -469,8 +469,45 @@ private fun DisplayFullScreenEvent(inspectedEventViewModel: InspectedEventViewMo
                     .fillMaxWidth()
                 ,
                 verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.End
+                horizontalArrangement = Arrangement.spacedBy(10.dp, Alignment.End)
             ) {
+                val nav = LocalNavController.current
+                Row(
+                    Modifier
+                        .clip(CircleShape)
+                        .rippleClick {
+                            coroutineScope.launch {
+                                inspectedEventViewModel.setEditing(true)
+                                inspectedEventViewModel.setInspectedEventTo(
+                                    event.copy(id = -1L, edited = null)
+                                )
+                                nav.popBackStack(NavPath.HOME, false)
+                            }
+                        }
+                        .background(Theme.surfaceContainerHighest)
+                        .padding(horizontal = 10.dp, vertical = 5.dp)
+                        .height(IntrinsicSize.Min)
+                    ,
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(5.dp)
+                ) {
+                    Icon(
+                        painterResource(R.drawable.duplicate),
+                        "Copy",
+                        Modifier
+                            .aspectRatio(1f)
+                            .size(FontSize.SMALLM.size.times(1.5f).toDp())
+                        ,
+                        Theme.primary
+                    )
+                    Text(
+                        "Duplizieren",
+                        style = TypoStyle(
+                            Theme.secondary,
+                            FontSize.SMALL
+                        )
+                    )
+                }
                 val repeatingEvents by inspectedEventViewModel.repeatingEvents.collectAsState(null)
                 val isRepeating by remember {
                     derivedStateOf {
