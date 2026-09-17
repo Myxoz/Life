@@ -433,6 +433,10 @@ class MainActivity : ComponentActivity() {
         super.onResume()
         dbInterface.syncEngine.suggestResync()
     }
+    override fun onPause() {
+        super.onPause()
+        dbInterface.syncEngine.stopResync()
+    }
     companion object {
         fun restartApp(context: Context) {
             val intent = context.packageManager.getLaunchIntentForPackage(context.packageName)

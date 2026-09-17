@@ -1,5 +1,6 @@
 package com.myxoz.life.api
 
+import android.util.Log
 import com.myxoz.life.viewmodels.Settings
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -36,10 +37,12 @@ class SyncEngine(
         if (syncWorker?.isActive == true) return
 
         syncWorker = scope.launch {
+            Log.d(API.LOGTAG, "Started resyncing loop")
             resyncLoop()
         }
     }
     fun stopResync(){
+        Log.d(API.LOGTAG, "Stoped resyncing loop")
         syncWorker?.cancel()
     }
     private var retryDelay = 5.seconds
@@ -53,10 +56,14 @@ class SyncEngine(
 
             // Wait 10 seconds, unless suggestResync() interrupts it.
             select {
+                Log.d(API.LOGTAG, "Waiting $retryDelay to resync unless interrupted")
                 this.onTimeout(retryDelay) {
+                    Log.d(API.LOGTAG, "Waited $retryDelay, resyncing now")
                     // Select this after the retry delay has passed
                 }
                 resyncRequests.onReceive {
+                    Log.d(API.LOGTAG, "Interrupted: Received update resyncing earlier and resetting resync delay")
+                    retryDelay = 5.seconds
                     // Select after the update channel emits
                 }
             }
