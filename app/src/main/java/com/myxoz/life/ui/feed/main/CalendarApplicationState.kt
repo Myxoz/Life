@@ -11,6 +11,7 @@ import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.snapshotFlow
+import androidx.core.content.edit
 import com.myxoz.life.storage.interfaces.DatabaseInterface
 import com.myxoz.life.storage.interfaces.utils.subscribeToColdFlow
 import com.myxoz.life.ui.feed.dayoverview.getMonthByCalendarMonth
@@ -63,6 +64,9 @@ class CalendarApplicationState(
 
     private suspend fun onDayScrolled(index: Int) {
         val current = days.value.getOrNull(index) ?: return
+        repos.prefs.edit {
+            putLong("visible_date", current.toEpochDay())
+        }
         val startOfRange = current.minusDays(dayAmount.value * 3L)
         val endOfRange = current.plusDays(dayAmount.value * 3L)
         val between = startOfRange.datesThrough(endOfRange)
