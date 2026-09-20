@@ -9,22 +9,24 @@ import com.myxoz.life.api.ServerSyncableCompanion
 import com.myxoz.life.api.Syncable
 import com.myxoz.life.storage.dbwrapper.locations.LocationEntity
 import com.myxoz.life.ui.feed.fullscreenevent.getId
+import com.myxoz.life.ui.map.Adressable
 import com.myxoz.life.utils.getStringOrNull
 import org.json.JSONObject
 import kotlin.math.abs
 
+// Addding fields here should also be added to DisplayedLifeLocation::keepUpdated
 class LocationSyncable(
     val name: String,
     val longitude: Double,
     val lat: Double,
     val radiusM: Int,
     val ssid: String?,
-    val street: String?,
-    val number: String?,
-    val city: String?,
-    val country: String,
+    override val street: String?,
+    override val number: String?,
+    override val city: String?,
+    override val country: String,
     id: Long
-) : Syncable(SpecialSyncablesIds.LOCATIONS, id) {
+) : Syncable(SpecialSyncablesIds.LOCATIONS, id), Adressable {
     override suspend fun specificsToJson(): JSONObject? = JSONObject()
         .put("name", name)
         .put("longitude", longitude)
@@ -42,13 +44,6 @@ class LocationSyncable(
                 id, name, longitude, lat, radiusM, ssid, street, number, city, country
             )
         )
-    }
-
-    fun toAddress(stripCountry: Boolean = false): String = buildString {
-        if (street != null) append(street)
-        if (number != null) append(" $number")
-        if (city != null) append(", $city")
-        if (!stripCountry) append(", $country")
     }
 
     fun toCords() = coordinatesToString(lat, longitude)

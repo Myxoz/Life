@@ -5,18 +5,17 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
 import com.mapbox.maps.MapboxExperimental
 import com.myxoz.life.ui.theme.OldColors
-import com.myxoz.life.ui.map.MapViewModel
 
 @Suppress("COMPOSE_APPLIER_CALL_MISMATCH")
 @OptIn(MapboxExperimental::class, ExperimentalMaterial3Api::class,
     com.mapbox.annotation.MapboxExperimental::class
 )
 @Composable
-fun MapBoxMap(mapViewModel: MapViewModel){
+fun MapBoxMap(mapRepo: MapRepo){
     Scaffold(
         containerColor = OldColors.BACKGROUND
     ) { innerPadding ->
-        MapBoxMap(mapViewModel, innerPadding)
-        MapSheet(mapViewModel, innerPadding)
+        MapBoxMap(mapRepo, innerPadding)
+        MapSheet(mapRepo, innerPadding)
     }
 }

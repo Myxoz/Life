@@ -59,7 +59,7 @@ object NavPath {
             val FULL_SCREEN_STREAK = SingleParamaterizedPath("streakId") { "$STREAK/$it" }
             const val EDIT_SCREEN_STREAK = "$STREAK/editing"
         }
-        val MAP = SingleOptionalParamaterizedPath("place") {"map?$it"}
+        const val MAP = "map"
         const val MORE = "$MENU/more"
         const val REPOS = "repos"
         object Repos {

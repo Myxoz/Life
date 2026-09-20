@@ -1128,7 +1128,7 @@ fun LocationBar(defaultLocation: Long, setLocation: (Long)->Unit){
                 }
             } else {
                 Chip({
-                    navController.navigate(NavPath.Menu.MAP.with(null))
+                    navController.navigate(NavPath.Menu.MAP)
                 },
                     color = Theme.secondaryContainer
                 ) {

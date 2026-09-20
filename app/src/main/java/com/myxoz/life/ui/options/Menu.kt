@@ -155,7 +155,7 @@ fun MenuComposable() {
             SubOption(R.drawable.github, "Repositories", NavPath.Menu.REPOS),
             SubOption(R.drawable.graph, "Social Graph", NavPath.Menu.SOCIAL_GRAPH),
             SubOption(R.drawable.bank_transfer, "Transaktionen", NavPath.Menu.TRANSACTION_FEED),
-            SubOption(R.drawable.location, "Life Maps", NavPath.Menu.MAP.with(null)),
+            SubOption(R.drawable.location, "Life Maps", NavPath.Menu.MAP),
             SubOption(R.drawable.menu, "Weitere", NavPath.Menu.MORE),
             SubOption(R.drawable.contacts, "Kontakte", NavPath.Menu.CONTACTS),
         ).RenderSubOptions()

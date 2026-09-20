@@ -61,7 +61,6 @@ import com.myxoz.life.ui.feed.main.HomeComposable
 import com.myxoz.life.ui.feed.search.AdvancedSearch
 import com.myxoz.life.ui.feed.summarizeday.SummarizeDay
 import com.myxoz.life.ui.map.MapBoxMap
-import com.myxoz.life.ui.map.MapViewModel
 import com.myxoz.life.ui.options.AISettings
 import com.myxoz.life.ui.options.DebugScreen
 import com.myxoz.life.ui.options.InformationComposable
@@ -259,8 +258,7 @@ class MainActivity : ComponentActivity() {
                         LifeWrappedScreen(appRepos.wrappedRepo)
                     }
                     composable(
-                        NavPath.Menu.MAP.asTemplate,
-                        NavPath.Menu.MAP.asLongActualStringArg(),
+                        NavPath.Menu.MAP,
                         exitTransition = {
                             slideOutHorizontally { it }
                         },
@@ -270,8 +268,7 @@ class MainActivity : ComponentActivity() {
 
                         )
                     {
-                        val mapViewModel = viewModel<MapViewModel>(factory = factory)
-                        MapBoxMap(mapViewModel)
+                        MapBoxMap(appRepos.mapRepo)
                     }
 
                         //  ---------- Menu -> TODOS ----------

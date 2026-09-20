@@ -10,6 +10,7 @@ import com.myxoz.life.repositories.AppRepos
 import com.myxoz.life.storage.interfaces.BankingRepo
 import com.myxoz.life.ui.feed.instantevents.InstantEvent
 import com.myxoz.life.ui.feed.search.SearchField
+import com.myxoz.life.ui.map.MapDisplayState
 import com.myxoz.life.ui.person.displayperson.navigateForResult
 import kotlinx.coroutines.flow.update
 import java.time.LocalDate
@@ -63,7 +64,8 @@ class LocalScreensProvider(
         nav.navigate(NavPath.FULLSCREEN_EVENT.with(appRepos.calendarRepo.event.value.id))
     }
     fun openLocation(location: LocationSyncable){
-        nav.navigate(NavPath.Menu.MAP.with(location.id))
+        nav.navigate(NavPath.Menu.MAP)
+        appRepos.mapRepo.focusLocation(MapDisplayState.DisplayedLifeLocation(location))
     }
     fun openTransaction(transaction: BankingRepo.BankingDisplayEntity) {
         nav.navigate(

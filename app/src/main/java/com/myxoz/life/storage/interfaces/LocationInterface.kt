@@ -23,11 +23,8 @@ class LocationInterface(
     private var fetchedAllLocations = false
     private val _cache = PerformantCache<Long, LocationSyncable>(appScope) {
         LocationSyncable.from(
-            readLocationsDao.getLocationById(it).let { locationEntity ->
-                if (locationEntity == null)
-                    throw Error("Location Syncable was fetched with an unknown id: $it. This is unsuported behavior. Check how you get the Location id.")
-                locationEntity
-            }
+            readLocationsDao.getLocationById(it) ?:
+                throw Error("Location Syncable was fetched with an unknown id: $it. This is unsuported behavior. Check how you get the Location id.")
         )
     }
     fun update(location: LocationSyncable){
@@ -47,9 +44,11 @@ class LocationInterface(
         )
     }
     val getAllLocations = _cache.allValuesFlow
-    suspend fun queryByCoordinate(targetLat: Double, targetLon: Double): LocationSyncable? {
-        requestFetchAllLocations()
-        val allLocations = _cache.allValuesFlow.first()
+    suspend fun queryByCoordinate(targetLat: Double, targetLon: Double, allLocations: List<LocationSyncable>? = null): LocationSyncable? {
+        val allLocations = if(allLocations != null) allLocations else {
+            requestFetchAllLocations()
+            _cache.allValuesFlow.first()
+        }
 
         return allLocations
             .mapNotNull { entity ->
@@ -85,6 +84,7 @@ class LocationInterface(
                     it.id to LocationSyncable.from(it)
                 }
             )
+            fetchedAllLocations = true
         }
     }
 }

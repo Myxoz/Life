@@ -6,6 +6,7 @@ import com.myxoz.life.storage.interfaces.DatabaseInterface
 import com.myxoz.life.ui.alarm.AlarmRepo
 import com.myxoz.life.ui.feed.CalendarRepo
 import com.myxoz.life.ui.feed.main.CalendarApplicationState
+import com.myxoz.life.ui.map.MapRepo
 import com.myxoz.life.ui.transactions.TransactionFeedRepo
 import com.myxoz.life.ui.wrapped.WrappedRepo
 
@@ -25,4 +26,5 @@ class AppRepos(dbInterface: DatabaseInterface) {
     val contactsRepo = ContactsRepo(dbInterface)
     val aiSettingsRepo = AISettingsRepo(dbInterface)
     val streakRepo = StreakRepo(dbInterface)
+    val mapRepo: MapRepo = MapRepo(dbInterface)
 }

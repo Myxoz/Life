@@ -17,7 +17,6 @@ import com.myxoz.life.ui.feed.dayoverview.DayOverviewViewModel
 import com.myxoz.life.ui.feed.dayoverview.ScreenTimeOverviewModel
 import com.myxoz.life.ui.feed.fullscreenevent.InspectedEventViewModel
 import com.myxoz.life.ui.feed.instantevents.InstantEventsViewModel
-import com.myxoz.life.ui.map.MapViewModel
 import com.myxoz.life.ui.person.PersonalDebtViewModel
 import com.myxoz.life.ui.todo.TodoViewModel
 import com.myxoz.life.ui.transactions.TransactionOverviewViewModel
@@ -71,9 +70,6 @@ class MainViewModelFactory(
 
             modelClass.isAssignableFrom(ContactsRepo::class.java) ->
                 ContactsRepo(dbInterfaces) as T
-
-            modelClass.isAssignableFrom(MapViewModel::class.java) ->
-                MapViewModel(handle, dbInterfaces) as T
 
             modelClass.isAssignableFrom(AISettingsRepo::class.java) ->
                 AISettingsRepo(dbInterfaces) as T
