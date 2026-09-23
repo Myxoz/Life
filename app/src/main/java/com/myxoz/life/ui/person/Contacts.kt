@@ -59,6 +59,7 @@ import com.myxoz.life.R
 import com.myxoz.life.Theme
 import com.myxoz.life.api.API
 import com.myxoz.life.api.syncables.PersonSyncable
+import com.myxoz.life.repositories.ContactsRepo
 import com.myxoz.life.ui.BOTTOMSEARCHBARHEIGHT
 import com.myxoz.life.ui.BottomSearchBar
 import com.myxoz.life.ui.SCREENMAXWIDTH
@@ -70,13 +71,12 @@ import com.myxoz.life.ui.theme.FontSize
 import com.myxoz.life.ui.theme.OldColors
 import com.myxoz.life.ui.theme.TypoStyle
 import com.myxoz.life.utils.MaterialShapes
+import com.myxoz.life.utils.dpWidth
 import com.myxoz.life.utils.filteredWith
 import com.myxoz.life.utils.rippleClick
 import com.myxoz.life.utils.toDp
-import com.myxoz.life.utils.toPx
 import com.myxoz.life.utils.toShape
 import com.myxoz.life.utils.windowPadding
-import com.myxoz.life.repositories.ContactsRepo
 import com.myxoz.life.viewmodels.Settings
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
@@ -105,7 +105,7 @@ fun Contacts(contactsRepo: ContactsRepo){
         ) {
             val screens = LocalScreens.current
             val settings = LocalSettings.current
-            val screenWidthPx = LocalWindowInfo.current.containerDpSize.width.toPx(LocalDensity.current)
+            val screenWidthPx = LocalWindowInfo.current.containerSize.width
             val lifeContacts by contactsRepo.lifeContacts.collectAsState()
             val deviceContacts by contactsRepo.allSortedDeviceContacts.collectAsState()
             val showIcons by contactsRepo.showIcons.collectAsState()
@@ -165,7 +165,7 @@ fun Contacts(contactsRepo: ContactsRepo){
                         val swipedRight = offsetX.value > 0
                         val platform = if(!swipedRight) PersonSyncable.getOrderedSocials(contact.socials).getOrNull(0)?.platform else null
                         var snapTo by remember { mutableStateOf(true) }
-                        val screenWidth = LocalWindowInfo.current.containerDpSize.width
+                        val screenWidth = LocalWindowInfo.current.dpWidth
                         val dragThreshold = .8 /* Personal preference */ * with(LocalDensity.current) {
                             min(screenWidth * .95f, SCREENMAXWIDTH).toPx()
                         } / 2

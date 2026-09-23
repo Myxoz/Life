@@ -81,16 +81,15 @@ import com.myxoz.life.Theme
 import com.myxoz.life.ui.feed.fullscreenevent.InputField
 import com.myxoz.life.ui.theme.FontSize
 import com.myxoz.life.utils.MaterialShapes
-import com.myxoz.life.utils.collectAsMutableState
 import com.myxoz.life.utils.combinedRippleClick
 import com.myxoz.life.utils.copy
+import com.myxoz.life.utils.dpWidth
 import com.myxoz.life.utils.rippleClick
 import com.myxoz.life.utils.toDp
 import com.myxoz.life.utils.toShape
 import com.myxoz.life.utils.transformed
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.launch
 import kotlin.coroutines.cancellation.CancellationException
 import kotlin.math.pow
@@ -493,41 +492,45 @@ fun BottomSearchBar(bg: Color, bottomPadding: Dp, onChange: (String)->Unit, icon
         }
     }
 }
-
-@Composable
-fun ToggleIconButton(active: MutableStateFlow<Boolean>, icon: Painter, onClick: ((Boolean) -> Unit)? = null){
-    ToggleButton(active, onClick) {
-        Icon(
-            icon,
-            null,
+object ToggleButton {
+    val ICONSIZE = 30.dp
+    val BUTTONPADDING = 10.dp
+    val ICONBUTTONSIZE = BUTTONPADDING * 2 + ICONSIZE
+    const val NONSELECTEDROUNDINGPERCENTAGE = 30
+    @Composable
+    fun WithIcon(active: Boolean, icon: Painter, onClick: (Boolean) -> Unit){
+        WithContent(active, onClick) {
+            Icon(
+                icon,
+                null,
+                Modifier
+                    .size(ICONSIZE)
+                ,
+                tint = Theme.onPrimaryContainer
+            )
+        }
+    }
+    @Composable
+    fun WithContent(active: Boolean, toggle: (Boolean) -> Unit, content: @Composable ()->Unit){
+        val progress by animateFloatAsState(if(active) 1f else 0f) // , tween(easing = LinearEasing)
+        val colors by animateColorAsState(if(active) Theme.primaryContainer else Theme.surfaceContainerHighest)
+        Box(
             Modifier
-                .size(30.dp)
-            ,
-            tint = Theme.onPrimaryContainer
-        )
+                .clip(RoundedCornerShape((progress * (50 - NONSELECTEDROUNDINGPERCENTAGE) + NONSELECTEDROUNDINGPERCENTAGE).roundToInt()))
+                .background(colors)
+                .rippleClick{
+                    toggle(!active)
+                }
+                .padding(BUTTONPADDING)
+        ) {
+            content()
+        }
     }
 }
-@Composable
-fun ToggleButton(active: MutableStateFlow<Boolean>, onClick: ((Boolean) -> Unit)? = null, content: @Composable ()->Unit){
-    val isActive by active.collectAsMutableState()
-    val progress by animateFloatAsState(if(isActive) 1f else 0f) // , tween(easing = LinearEasing)
-    val colors by animateColorAsState(if(isActive) Theme.primaryContainer else Theme.surfaceContainerHighest)
-    Box(
-        Modifier
-            .clip(RoundedCornerShape((progress * 20 + 30).roundToInt()))
-            .background(colors)
-            .rippleClick{
-                active.value = !active.value
-                onClick?.invoke(active.value)
-            }
-            .padding(10.dp)
-    ) {
-        content()
-    }
-}
+
 val SCREENMAXWIDTH = 700.dp
 @Composable
-fun getMaxTabletScreenWidth(): Dp = min(LocalWindowInfo.current.containerDpSize.width * .95f, SCREENMAXWIDTH)
+fun getMaxTabletScreenWidth(): Dp = min(LocalWindowInfo.current.dpWidth * .95f, SCREENMAXWIDTH)
 fun Modifier.setMaxTabletWidth() =
     this
         .widthIn(max = SCREENMAXWIDTH)

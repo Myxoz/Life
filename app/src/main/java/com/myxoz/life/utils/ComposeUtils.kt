@@ -36,8 +36,10 @@ import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.ClipEntry
 import androidx.compose.ui.platform.Clipboard
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.WindowInfo
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -80,6 +82,28 @@ fun Dp.toSp(density: Density) = with(density) { this@toSp.toPx() / fontScale / t
 fun Dp.toPx() = with(LocalDensity.current) {this@toPx.toPx()}
 
 fun Dp.toPx(density: Density) = with(density) {this@toPx.toPx()}
+val WindowInfo.containerDpSize: DpSize
+    @Composable
+    get() {
+        val density = LocalDensity.current
+        val conf = this.containerSize
+        val (width, height) = with(density) { conf.width.toDp() to conf.height.toDp() }
+        return DpSize(width, height)
+    }
+val WindowInfo.dpWidth: Dp
+    @Composable
+    get() {
+        val density = LocalDensity.current
+        val conf = this.containerSize
+        return with(density) { conf.width.toDp() }
+    }
+val WindowInfo.dpHeight: Dp
+    @Composable
+    get() {
+        val density = LocalDensity.current
+        val conf = this.containerSize
+        return with(density) { conf.height.toDp() }
+    }
 data class Ref<T>(var value: T)
 
 @Composable

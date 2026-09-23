@@ -7,6 +7,7 @@ import com.myxoz.life.ui.alarm.AlarmRepo
 import com.myxoz.life.ui.feed.CalendarRepo
 import com.myxoz.life.ui.feed.main.CalendarApplicationState
 import com.myxoz.life.ui.map.MapRepo
+import com.myxoz.life.ui.socialgraph.SocialGraphRepo
 import com.myxoz.life.ui.transactions.TransactionFeedRepo
 import com.myxoz.life.ui.wrapped.WrappedRepo
 

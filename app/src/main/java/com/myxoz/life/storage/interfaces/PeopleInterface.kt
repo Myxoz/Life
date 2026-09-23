@@ -5,6 +5,7 @@ import com.myxoz.life.api.API
 import com.myxoz.life.api.syncables.PersonSyncable
 import com.myxoz.life.api.syncables.ProfilePictureSyncable
 import com.myxoz.life.storage.dbwrapper.WaitingSyncDao
+import com.myxoz.life.storage.dbwrapper.people.PersonEntity
 import com.myxoz.life.storage.interfaces.utils.PerformantCache
 import com.myxoz.life.storage.interfaces.utils.PerformantInterlockedCache
 import com.myxoz.life.ui.options.settings.ME_ID
@@ -30,7 +31,7 @@ class PeopleInterface(
     private val readPeopleDao = readSyncableDaos.peopleDao
     private val _meFlow = MutableStateFlow<PersonSyncable?>(null)
     val meFlow: StateFlow<PersonSyncable?> = _meFlow
-    private val _cachedPeople = PerformantInterlockedCache.Companion.dayedSame(
+    private val _cachedPeople = PerformantInterlockedCache.dayedSame(
         appScope,
         { first, other -> first.id == other.id },
         {
@@ -40,9 +41,9 @@ class PeopleInterface(
         { id ->
             PersonSyncable.from(
                 readPeopleDao, readPeopleDao.getPersonById(id).let { entity ->
-                    if(entity == null)
-                        throw Error("Tried to get PersonSyncable for an id, not present in db. This behaviour is unsupported, please review getId-Code. Tried to fetch: $id")
-                    entity
+                    if(entity == null && id != ME_ID) throw Error("Tried to get PersonSyncable for an id, not present in db. This behaviour is unsupported, please review getId-Code. Tried to fetch: $id")
+                    entity ?: PersonEntity(ME_ID, "Ich", null, null, null, null, null)
+
                 }
             )
         },
@@ -58,7 +59,6 @@ class PeopleInterface(
     }
     fun getPerson(personId: Long) = _cachedPeople.flowFor(personId)
     fun getPeople(personIds: List<Long>) = _cachedPeople.flowsFor(personIds)
-    suspend fun getCurrentPersonNotAsFlow(personId: Long) = _cachedPeople.getContent(personId)
     private val _pps = PerformantCache<Long, ProfilePictureSyncable>(appScope) {
         ProfilePictureSyncable.getSyncable(it, context, readPeopleDao)
     }

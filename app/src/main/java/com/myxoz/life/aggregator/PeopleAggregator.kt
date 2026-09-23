@@ -1,25 +1,20 @@
 package com.myxoz.life.aggregator
 
 import android.util.Log
-import androidx.compose.ui.geometry.Offset
 import com.myxoz.life.api.syncables.ProfilePictureSyncable
 import com.myxoz.life.api.syncables.SyncedEvent
 import com.myxoz.life.events.RawEvent
 import com.myxoz.life.events.additionals.EventType
-import com.myxoz.life.storage.dbwrapper.events.EventEntity
-import com.myxoz.life.storage.dbwrapper.people.PersonEntity
 import com.myxoz.life.storage.interfaces.DatabaseInterface
 import com.myxoz.life.ui.options.settings.ME_ID
-import com.myxoz.life.ui.person.GraphEdge
-import com.myxoz.life.ui.person.SocialGraphNode
+import com.myxoz.life.ui.socialgraph.SocialGraph
+import com.myxoz.life.ui.socialgraph.SocialGraphPanel
 import com.myxoz.life.utils.diagrams.PieChart
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.mapLatest
 import kotlinx.coroutines.withContext
-import kotlin.math.cos
-import kotlin.math.sin
 
 class PeopleAggregator(
     private val repos: DatabaseInterface
@@ -110,78 +105,34 @@ class PeopleAggregator(
         }
         return newChart
     }
-    suspend fun generateNodes(addMyself: Boolean, chartScale: Int) =
-        withContext(Dispatchers.IO) {
+    suspend fun generateNodes(query: SocialGraphQuery): SocialGraph  {
+        return withContext(Dispatchers.IO) {
             val readSyncableDaos = repos.readSyncableDaos
-            val nodes = mutableMapOf<Long, SocialGraphNode>()
-            var totalWeightAcc = 0L
-            val addMyself = addMyself
-            if(addMyself) {
-                nodes[ME_ID] = SocialGraphNode(ME_ID, "Ich", mutableListOf())
-            }
-            val end = System.currentTimeMillis()
-            val start = if(chartScale==0) 0L else System.currentTimeMillis() - 1000L*3600L*24*when(chartScale){
-                1 -> 356
-                2 -> 30
-                else -> 7
-            }
-            val allEventsMap = readSyncableDaos.eventDetailsDao.getAllPeopleEvents(start, end).run {
-                val map = mutableMapOf<Long, EventEntity>()
-                forEach { map[it.id] = it }
-                map
-            }
-            val allMapping = readSyncableDaos.eventDetailsDao.getAllPeopleMappingAfter(start, end).groupBy { it.eventId }
-            val allPeople = readSyncableDaos.peopleDao.getAllPeople().run {
-                val map = mutableMapOf<Long, PersonEntity>()
-                forEach { map[it.id] = it }
-                map
-            }
-            val iterStart = if(addMyself) -1 else 0
-            for (event in allMapping) {
-                val decodedEvent = allEventsMap[event.value[0].eventId] ?: continue
-                val weight = (decodedEvent.end - decodedEvent.start) / 1000
-                totalWeightAcc += weight
-                for (fi in iterStart..<event.value.size) {
-                    val entry = if(fi == -1) ME_ID else event.value[fi].personId
-                    val name = allPeople[entry]?.name ?: continue
-                    val person = nodes.getOrPut(entry) {
-                        SocialGraphNode(
-                            entry, name, mutableListOf()
-                        )
-                    }
-                    for(si in iterStart..<event.value.size) {
-                        val otherPerson = if(si == -1) ME_ID else event.value[si].personId
-                        if(otherPerson == entry) continue
-                        val name = allPeople[otherPerson]?.name ?: continue
-                        val otherPersonNode = nodes.getOrPut(otherPerson) {
-                            SocialGraphNode(
-                                otherPerson, name, mutableListOf()
-                            )
-                        }
-                        val existingEdge = person.edges.find { it.nodeB.personId == otherPerson|| it.nodeA.personId == otherPerson}
-                        if(existingEdge == null) {
-                            val newEdge = GraphEdge(person, otherPersonNode, weight)
-                            person.edges.add(newEdge)
-                            otherPersonNode.edges.add(newEdge)
-                        } else {
-                            existingEdge.weight += weight
-                            // Only for one, because the lists contain the same instance
-                        }
+            val edges = mutableMapOf<SocialGraph.EdgeKey, Long>()
+            val duration = query.chartScale.millis()
+            val start = if(duration == null) 0L else query.endsAt - duration
+            val socialEventsByEventId = readSyncableDaos.eventDetailsDao.getAllPeopleEvents(start, query.endsAt).associateBy { it.id }
+            val participantsByEventId = readSyncableDaos.eventDetailsDao.getMappingsForPeopleParticipatingIn(socialEventsByEventId.keys).groupBy { it.eventId }
+            val iterStart = if(query.addMyself) -1 else 0
+            val nodesList = mutableSetOf<Long>()
+            for ((eventId, participatingPeople) in participantsByEventId) {
+                val decodedEvent = socialEventsByEventId[eventId] ?: continue
+                val coercedEnd = decodedEvent.end.coerceAtMost(query.endsAt)
+                val coercedStart = decodedEvent.start.coerceAtLeast(start)
+                val weight = (coercedEnd - coercedStart) / 1000
+                for (personIndex in iterStart..<participatingPeople.size) {
+                    val firstPersonId = if(personIndex == -1) ME_ID else participatingPeople[personIndex].personId
+                    nodesList.add(firstPersonId)
+                    for(secondPerson in (personIndex + 1)..<participatingPeople.size) {
+                        val secondPersonId = participatingPeople[secondPerson].personId
+                        edges.merge(SocialGraph.EdgeKey.of(firstPersonId, secondPersonId), weight, Long::plus)
                     }
                 }
             }
-            val nodeList = nodes.values.toList()
-            Log.d("SocialGraph","We have ${nodeList.size} nodes with ${nodeList.sumOf { it.edges.size }.toFloat() / 2f} edges")
-            val radius = 500f
-            nodeList.forEachIndexed { index, node ->
-                val angle = 2 * Math.PI * index / nodeList.size
-                node.position = Offset(
-                    x = radius * cos(angle).toFloat(),
-                    y = radius * sin(angle).toFloat()
-                )
-            }
-            return@withContext nodes to totalWeightAcc
+            Log.d("SocialGraph","We have ${nodesList.size} nodes with ${edges.size} edges")
+            SocialGraph(nodesList, edges)
         }
+    }
     fun getProfilePicture(person: Long) = repos.peopleInterface.getProfilePicture(person).map { person ->
         ProfilePictureSyncable.base64ToBitmap(
             person?.bitmapBase64 ?: return@map null
@@ -191,4 +142,9 @@ class PeopleAggregator(
         override fun equals(other: Any?) = false
         override fun hashCode() = System.identityHashCode(this)
     }
+    data class SocialGraphQuery(
+        val addMyself: Boolean,
+        val chartScale: SocialGraphPanel.SocialGraphScale,
+        val endsAt: Long
+    )
 }

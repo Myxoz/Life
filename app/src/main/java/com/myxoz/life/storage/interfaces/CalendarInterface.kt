@@ -24,6 +24,8 @@ import com.myxoz.life.utils.SharedPrefsUtils.edit
 import com.myxoz.life.utils.UnixWeek
 import com.myxoz.life.utils.atEndAsMillis
 import com.myxoz.life.utils.atStartAsMillis
+import com.myxoz.life.utils.def
+import com.myxoz.life.utils.timeUntilNextMidnight
 import com.myxoz.life.viewmodels.Settings
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.FlowPreview
@@ -36,9 +38,7 @@ import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import org.json.JSONObject
-import java.time.Duration
 import java.time.LocalDate
-import java.time.LocalDateTime
 import java.time.ZoneId
 import kotlin.time.Duration.Companion.milliseconds
 
@@ -49,9 +49,33 @@ class CalendarInterface(
     private val context: Context,
     private val appScope: CoroutineScope,
 ) {
+    val firstEventTimestamp = MutableStateFlow<Long?>(null)
+    val firstEventTimesampHook = object : CalendarHook {
+        override fun eventUpdated(old: SyncedEvent?, new: SyncedEvent) {
+            if(old != null && old.raw.start == firstEventTimestamp.value) {
+                updateFirstEventTS()
+            }
+        }
+        override fun eventRemoved(old: SyncedEvent) {
+            if(old.raw.start == firstEventTimestamp.value) {
+                updateFirstEventTS()
+            }
+        }
+        override fun eventAdded(new: SyncedEvent) {
+            if(new.raw.start <= firstEventTimestamp.value.def(0)) {
+                updateFirstEventTS()
+            }
+        }
+    }
+    fun updateFirstEventTS(){
+        appScope.launch {
+            firstEventTimestamp.value = readSyncableDaos.eventDetailsDao.getFirstEventStart()
+        }
+    }
     val nextAlarmClockTs = MutableStateFlow<AlarmManager.AlarmClockInfo?>(null)
     val hooks = listOfNotNull<CalendarHook>(
-        (context as? MainApplication)?.liveRescheduling
+        (context as? MainApplication)?.liveRescheduling,
+        firstEventTimesampHook
     )
     fun refetchAlarmClockTs() {
         val service: AlarmManager =
@@ -61,10 +85,9 @@ class CalendarInterface(
 
     private val zone: ZoneId = ZoneId.systemDefault()
     val todayFlow: Flow<LocalDate> = flow {
-        emit(LocalDate.now())
         while (currentCoroutineContext().isActive) {
-            delay(timeUntilNextMidnight())
             emit(LocalDate.now())
+            delay(timeUntilNextMidnight())
         }
     }
     private val interactedWithPersonCache =
@@ -196,13 +219,6 @@ class CalendarInterface(
             )
         }
     }
-    private fun timeUntilNextMidnight(): Long {
-        val now = LocalDateTime.now()
-        val tomorrow = now.toLocalDate().plusDays(1).atStartOfDay()
-        // Very generous 10ms for LocalDate.now() to update. Very likely never ever necessary,
-        // but the user doesn't notice anything so we do not care
-        return Duration.between(now, tomorrow).toMillis() + 10
-    }
 
     suspend fun getNonSleepEventAfter(ts: Long): SyncedEvent?{
         return SyncedEvent.from(
@@ -218,5 +234,9 @@ class CalendarInterface(
         fun eventUpdated(old: SyncedEvent?, new: SyncedEvent)
         fun eventRemoved(old: SyncedEvent)
         fun eventAdded(new: SyncedEvent)
+    }
+
+    init {
+        updateFirstEventTS()
     }
 }

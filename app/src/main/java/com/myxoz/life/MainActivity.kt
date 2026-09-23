@@ -72,7 +72,7 @@ import com.myxoz.life.ui.options.settings.SettingsPermissionComposable
 import com.myxoz.life.ui.person.Contacts
 import com.myxoz.life.ui.person.FullScreenDebt
 import com.myxoz.life.ui.person.PersonalDebtViewModel
-import com.myxoz.life.ui.person.SocialGraph
+import com.myxoz.life.ui.socialgraph.SocialGraph
 import com.myxoz.life.ui.person.displayperson.PhotoPicker
 import com.myxoz.life.ui.person.displayperson.ProfileFullScreen
 import com.myxoz.life.ui.pick.PickExistingLocation

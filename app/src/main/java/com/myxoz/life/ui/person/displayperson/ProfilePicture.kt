@@ -59,6 +59,7 @@ import com.myxoz.life.ui.theme.FontFamily
 import com.myxoz.life.ui.theme.FontSize
 import com.myxoz.life.ui.theme.TypoStyle
 import com.myxoz.life.utils.MaterialShapes
+import com.myxoz.life.utils.containerDpSize
 import com.myxoz.life.utils.toShape
 import com.myxoz.life.viewmodels.ProfileInfoModel
 import kotlinx.coroutines.flow.drop

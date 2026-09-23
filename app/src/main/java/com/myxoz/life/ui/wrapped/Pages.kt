@@ -60,6 +60,7 @@ import com.myxoz.life.ui.theme.FontSize
 import com.myxoz.life.ui.theme.OldColors
 import com.myxoz.life.ui.theme.TypoStyleOld
 import com.myxoz.life.utils.MaterialShapes
+import com.myxoz.life.utils.containerDpSize
 import com.myxoz.life.utils.def
 import com.myxoz.life.utils.formatMToDistance
 import com.myxoz.life.utils.plural

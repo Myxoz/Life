@@ -1,11 +1,19 @@
 package com.myxoz.life.utils
 
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.State
+import androidx.compose.runtime.produceState
 import androidx.lifecycle.SavedStateHandle
 import com.myxoz.life.ui.NavPath
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.isActive
 import java.time.Instant
 import java.time.LocalDate
+import java.time.LocalDateTime
 import java.time.ZoneId
 import java.time.temporal.ChronoUnit
+import kotlin.time.Duration
+import kotlin.time.Duration.Companion.milliseconds
 
 fun Long.toLocalDate(zone: ZoneId): LocalDate =
     Instant.ofEpochMilli(this).atZone(zone).toLocalDate()
@@ -43,4 +51,25 @@ fun LocalDate.asUnixWeek(): UnixWeek = UnixWeek(
 fun SavedStateHandle.getDate(path: NavPath.SingleParamaterizedPath): LocalDate {
     val epochDay = this.get<Long>(path.parameterName)
     return if(epochDay == null) LocalDate.now() else LocalDate.ofEpochDay(epochDay)
+}
+
+fun timeUntilNextMidnight(): Duration {
+    val now = LocalDateTime.now()
+    val tomorrow = now.toLocalDate().plusDays(1).atStartOfDay()
+    // Very generous 10ms for LocalDate.now() to update. Very likely never ever necessary,
+    // but the user doesn't notice anything so we do not care
+    return java.time.Duration.between(now, tomorrow).toMillis().milliseconds + 10.milliseconds
+}
+suspend fun waitUntilNextMidnight(){
+    delay(timeUntilNextMidnight())
+}
+
+@Composable
+fun updatingToday(): State<LocalDate> {
+    return produceState(LocalDate.now()) {
+        while(isActive) {
+            waitUntilNextMidnight()
+            value = LocalDate.now()
+        }
+    }
 }

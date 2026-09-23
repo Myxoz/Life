@@ -67,6 +67,7 @@ import com.myxoz.life.ui.theme.OldColors
 import com.myxoz.life.ui.theme.TypoStyle
 import com.myxoz.life.ui.theme.TypoStyleOld
 import com.myxoz.life.utils.diagrams.PieChart
+import com.myxoz.life.utils.dpWidth
 import com.myxoz.life.utils.rippleClick
 import com.myxoz.life.viewmodels.Settings
 import java.time.LocalDate
@@ -418,7 +419,7 @@ fun SummarizeDay(dayOverviewViewModel: DayOverviewViewModel) {
                         horizontalAlignment = Alignment.CenterHorizontally,
                         verticalArrangement = Arrangement.SpaceBetween,
                     ) {
-                        val screenWidth = LocalWindowInfo.current.containerDpSize.width
+                        val screenWidth = LocalWindowInfo.current.dpWidth
                         Box(Modifier.size(screenWidth*.7f)){
                             pieChart.Render()
                         }

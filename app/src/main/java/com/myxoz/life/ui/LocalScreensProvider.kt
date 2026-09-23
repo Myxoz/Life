@@ -12,9 +12,10 @@ import com.myxoz.life.ui.feed.instantevents.InstantEvent
 import com.myxoz.life.ui.feed.search.SearchField
 import com.myxoz.life.ui.map.MapDisplayState
 import com.myxoz.life.ui.person.displayperson.navigateForResult
+import com.myxoz.life.ui.socialgraph.SocialGraphPanel
 import kotlinx.coroutines.flow.update
 import java.time.LocalDate
-import kotlin.math.min
+import kotlin.time.Duration.Companion.milliseconds
 
 class LocalScreensProvider(
     val appRepos: AppRepos,
@@ -24,7 +25,7 @@ class LocalScreensProvider(
     fun openPersonDetails(personId: Long){
         nav.navigate(NavPath.Menu.Contacts.DISPLAY_PERSON.with(personId))
     }
-    fun setProfileInfoChartScale(scale: Int){
+    fun setProfileInfoChartScale(socialRepoScale: SocialGraphPanel.SocialGraphScale){
         // TODO
     }
     fun openCalendarWithSearch(applied: SearchField.()->Unit){
@@ -43,17 +44,12 @@ class LocalScreensProvider(
         }
     }
     fun openSocialGraphWithNodeSelected(personId: Long?, adjustDateRangeToInclude: Long?) {
-        appRepos.socialGraphRepo.selectedNode.value = personId
+        appRepos.socialGraphRepo.socialGraph.setNodeSelection(personId)
         if(adjustDateRangeToInclude != null) {
-            appRepos.socialGraphRepo.chartScale.value = min(
-                appRepos.socialGraphRepo.chartScale.value,
-                when ((System.currentTimeMillis() - adjustDateRangeToInclude) / (1000L * 3600L * 24L)) {
-                    in Int.MIN_VALUE..6 -> 3
-                    in 6..29 -> 2
-                    in 29..356 -> 1
-                    else -> 0
-                }
-            )
+            val currentScale = appRepos.socialGraphRepo.controlPanel.chartScale
+            val minToInclude = SocialGraphPanel.SocialGraphScale.minIncluding((System.currentTimeMillis() - adjustDateRangeToInclude).milliseconds)
+            val chosen = if(minToInclude.duration > currentScale.duration) minToInclude else currentScale
+            appRepos.socialGraphRepo.controlPanel.chartScale = chosen
         }
         nav.navigate(NavPath.Menu.SOCIAL_GRAPH)
     }

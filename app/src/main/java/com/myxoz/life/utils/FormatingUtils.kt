@@ -1,12 +1,19 @@
 package com.myxoz.life.utils
 
 import android.icu.util.Calendar
+import java.time.LocalDate
 
 fun Long.formatTimeStamp(calendar: Calendar): String {
     calendar.timeInMillis = this
     return "${calendar.get(Calendar.DAY_OF_MONTH).toString().padStart(2, '0')
     }.${(calendar.get(Calendar.MONTH)+1).padStart(2, '0')}.${calendar.get(Calendar.YEAR)} ${
         calendar.get(Calendar.HOUR_OF_DAY).padStart(2, '0')}:${calendar.get(Calendar.MINUTE).padStart(2, '0')}:${calendar.get(Calendar.SECOND).padStart(2, '0')}"
+}
+
+fun LocalDate.formatToDate(): String {
+    return this.dayOfMonth.padStart(2,'0')+"."+
+            this.monthValue.toString().padStart(2,'0')+"."+
+            this.year
 }
 fun Long.formatDayTime(calendar: Calendar): String {
     calendar.timeInMillis = this

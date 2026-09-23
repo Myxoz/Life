@@ -51,6 +51,8 @@ import com.myxoz.life.Theme
 import com.myxoz.life.ui.feed.CalendarRepo
 import com.myxoz.life.ui.theme.FontSize
 import com.myxoz.life.ui.theme.TypoStyle
+import com.myxoz.life.utils.dpHeight
+import com.myxoz.life.utils.dpWidth
 import com.myxoz.life.utils.rippleClick
 import com.myxoz.life.utils.toDp
 import com.myxoz.life.utils.windowPadding
@@ -65,11 +67,11 @@ val sidebarWidth = 40.dp
 
 @Composable
 fun CalendarComposable(calendarRepo: CalendarRepo, calendarApplicationState: CalendarApplicationState) {
-    val conf = LocalWindowInfo.current.containerDpSize
+    val screenWidthDp = LocalWindowInfo.current.dpWidth
     val today by calendarRepo.todayFlow.collectAsState(LocalDate.now())
     val isEditing by calendarRepo.isEditing.collectAsState()
     val displayedDays by calendarApplicationState.dayAmount.collectAsState()
-    val eachDayWidthGoal = (conf.width.value-sidebarWidth.value+1)/displayedDays.toFloat()
+    val eachDayWidthGoal = (screenWidthDp.value-sidebarWidth.value+1)/displayedDays.toFloat()
     val eachDayWidth by animateFloatAsState(eachDayWidthGoal)
     val focusManager = LocalFocusManager.current
     val isSearching by calendarRepo.search.isSearching.collectAsState()
@@ -89,7 +91,7 @@ fun CalendarComposable(calendarRepo: CalendarRepo, calendarApplicationState: Cal
 
         val days by calendarApplicationState.days.collectAsState()
         val insets = windowPadding
-        val screenHeight = LocalWindowInfo.current.containerDpSize.height
+        val screenHeight = LocalWindowInfo.current.dpHeight
         val density = LocalDensity.current
         val fullDayDp = screenHeight -
                 insets.calculateTopPadding() -

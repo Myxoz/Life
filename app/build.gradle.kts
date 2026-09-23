@@ -51,6 +51,7 @@ kotlin {
 }
 
 dependencies {
+    implementation(libs.androidx.compose.material3)
     implementation(libs.maps.compose.ndk27)
     implementation(libs.android.ndk27)
     implementation(libs.androidx.room.runtime)
@@ -58,7 +59,7 @@ dependencies {
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)
     implementation(libs.androidx.activity.compose)
-    implementation(platform(libs.androidx.compose.bom))
+    implementation(libs.kotlin.visibility)
     implementation(libs.androidx.ui)
     implementation(libs.androidx.ui.graphics)
     implementation(libs.androidx.ui.tooling.preview)

@@ -77,6 +77,7 @@ import com.myxoz.life.ui.SCREENMAXWIDTH
 import com.myxoz.life.ui.setMaxTabletWidth
 import com.myxoz.life.ui.theme.FontSize
 import com.myxoz.life.ui.theme.TypoStyle
+import com.myxoz.life.utils.containerDpSize
 import com.myxoz.life.utils.diagrams.PieChart
 import com.myxoz.life.utils.formatMsToDuration
 import com.myxoz.life.utils.formatPercent

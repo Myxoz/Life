@@ -117,15 +117,18 @@ import com.myxoz.life.ui.theme.TypoStyle
 import com.myxoz.life.ui.theme.TypoStyleOld
 import com.myxoz.life.utils.AndroidUtils
 import com.myxoz.life.utils.filteredWith
+import com.myxoz.life.utils.formatDayTime
 import com.myxoz.life.utils.formatMinutesToVisual
 import com.myxoz.life.utils.formatMsToDuration
 import com.myxoz.life.utils.formatTimeStamp
+import com.myxoz.life.utils.formatToDate
 import com.myxoz.life.utils.getSafeLong
 import com.myxoz.life.utils.matchInstrinsicHeight
 import com.myxoz.life.utils.matchesNormalized
 import com.myxoz.life.utils.nullIfEmpty
 import com.myxoz.life.utils.rippleClick
 import com.myxoz.life.utils.toDp
+import com.myxoz.life.utils.toLocalDate
 import com.myxoz.life.utils.toPx
 import kotlinx.coroutines.launch
 import org.json.JSONObject
@@ -880,27 +883,18 @@ fun TimeBar(event: RawEvent, progress: Float = 0f, color: Color, setEventTo: (Ra
                 val calendar = remember {
                     Calendar.getInstance()
                 }
+                val zone = ZoneId.systemDefault()
                 val startTime = remember(event.start) {
-                    calendar.timeInMillis = event.start
-                    calendar.get(Calendar.HOUR_OF_DAY).toString().padStart(2,'0')+":"+
-                            calendar.get(Calendar.MINUTE).toString().padStart(2,'0')
+                    event.start.formatDayTime(calendar)
                 }
                 val endTime = remember(event.end) {
-                    calendar.timeInMillis = event.end
-                    calendar.get(Calendar.HOUR_OF_DAY).toString().padStart(2,'0')+":"+
-                            calendar.get(Calendar.MINUTE).toString().padStart(2,'0')
+                    event.end.formatDayTime(calendar)
                 }
                 val startDate = remember(event.start) {
-                    calendar.timeInMillis = event.start
-                    calendar.get(Calendar.DAY_OF_MONTH).toString().padStart(2,'0')+"."+
-                            (calendar.get(Calendar.MONTH) + 1).toString().padStart(2,'0')+"."+
-                            calendar.get(Calendar.YEAR)
+                    event.start.toLocalDate(zone).formatToDate()
                 }
                 val endDate = remember(event.end) {
-                    calendar.timeInMillis = event.end
-                    calendar.get(Calendar.DAY_OF_MONTH).toString().padStart(2,'0')+"."+
-                            (calendar.get(Calendar.MONTH) + 1).toString().padStart(2,'0')+"."+
-                            calendar.get(Calendar.YEAR)
+                    event.end.toLocalDate(zone).formatToDate()
                 }
                 Row {
                     Text(startTime, style = TypoStyle(Theme.primary, FontSize.LARGE, FontFamily.Display), modifier = Modifier.clickable(null, null) {
