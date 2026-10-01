@@ -8,8 +8,8 @@ import com.myxoz.life.api.extensions.StreakExtendable
 import com.myxoz.life.api.syncables.ExtensionSyncable
 import com.myxoz.life.storage.interfaces.DatabaseInterface
 import com.myxoz.life.storage.interfaces.utils.Cached
-import com.myxoz.life.storage.interfaces.utils.StateFlowCache
-import com.myxoz.life.storage.interfaces.utils.subscribeToColdFlow
+import com.myxoz.life.StateFlowCache
+import com.myxoz.life.subscribeToColdFlow
 import com.myxoz.life.utils.def
 import kotlinx.coroutines.flow.MutableStateFlow
 

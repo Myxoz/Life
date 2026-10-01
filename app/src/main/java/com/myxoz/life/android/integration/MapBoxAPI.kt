@@ -5,9 +5,9 @@ import android.util.Log
 import androidx.annotation.StringRes
 import com.myxoz.life.R
 import com.myxoz.life.ui.map.MapDisplayState
-import com.myxoz.life.utils.getJSONObjectOrNull
-import com.myxoz.life.utils.getStringOrNull
-import com.myxoz.life.utils.jsonObjArray
+import com.myxoz.life.core.getJSONObjectOrNull
+import com.myxoz.life.core.getStringOrNull
+import com.myxoz.life.core.jsonObjArray
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import org.json.JSONObject

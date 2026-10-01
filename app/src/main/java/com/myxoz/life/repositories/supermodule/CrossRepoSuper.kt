@@ -3,8 +3,8 @@ package com.myxoz.life.repositories.supermodule
 import com.myxoz.life.api.syncables.LocationSyncable
 import com.myxoz.life.api.syncables.PersonSyncable
 import com.myxoz.life.storage.interfaces.DatabaseInterface
-import com.myxoz.life.storage.interfaces.utils.StateFlowCache
-import com.myxoz.life.storage.interfaces.utils.subscribeToColdFlow
+import com.myxoz.life.StateFlowCache
+import com.myxoz.life.subscribeToColdFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 
 class CrossRepoSuper(

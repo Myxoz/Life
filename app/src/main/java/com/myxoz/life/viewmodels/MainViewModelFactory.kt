@@ -60,7 +60,7 @@ class MainViewModelFactory(
                 ScreenTimeOverviewModel(dbInterfaces, handle) as T
 
             modelClass.isAssignableFrom(DayOverviewTransactionModel::class.java) ->
-                DayOverviewTransactionModel(dbInterfaces.bankingRepo, handle) as T
+                DayOverviewTransactionModel(dbInterfaces.bankingInterface, handle) as T
 
             modelClass.isAssignableFrom(InstantEventsViewModel::class.java) ->
                 InstantEventsViewModel(handle, repos.transportRepo) as T

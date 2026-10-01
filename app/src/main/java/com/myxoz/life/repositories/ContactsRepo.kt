@@ -6,8 +6,8 @@ import com.myxoz.life.api.extensions.FavoriteContactsExtendable
 import com.myxoz.life.api.syncables.ExtensionSyncable
 import com.myxoz.life.api.syncables.PersonSyncable
 import com.myxoz.life.storage.interfaces.DatabaseInterface
-import com.myxoz.life.storage.interfaces.utils.setter
-import com.myxoz.life.storage.interfaces.utils.subscribeToColdFlow
+import com.myxoz.life.setter
+import com.myxoz.life.subscribeToColdFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.map
 
@@ -21,7 +21,7 @@ class ContactsRepo(private val repos: DatabaseInterface): ViewModel() {
     suspend fun createNewContact(syncable: PersonSyncable) = repos.peopleInterface.updateAndStageSync(syncable)
 
     val favoritePeople = repos.extensionInterface
-        .flowFor(ExtensionSyncable.ExtensionSyncableType.FavoriteContacts)
+        .rawFlowFor(ExtensionSyncable.ExtensionSyncableType.FavoriteContacts)
         .map { it?.ids ?: listOf() }
         .subscribeToColdFlow(viewModelScope, listOf())
         .setter(

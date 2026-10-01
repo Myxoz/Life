@@ -34,9 +34,9 @@ import com.myxoz.life.LocalNavController
 import com.myxoz.life.R
 import com.myxoz.life.Theme
 import com.myxoz.life.events.additionals.DigSocPlatform
-import com.myxoz.life.events.additionals.EventType
-import com.myxoz.life.events.additionals.TimewastePlatform
-import com.myxoz.life.events.additionals.Vehicle
+import com.myxoz.life.storage.events.additionals.EventType
+import com.myxoz.life.storage.events.additionals.TimewastePlatform
+import com.myxoz.life.storage.events.additionals.Vehicle
 import com.myxoz.life.ui.ActionBar
 import com.myxoz.life.ui.NavPath
 import com.myxoz.life.ui.feed.CalendarRepo
@@ -71,15 +71,15 @@ fun AdvancedSearch(calendarRepo: CalendarRepo){
             val selectedPeople by search.selectedPeople.collectAsState()
             val nav = LocalNavController.current
             val selectedCalendars by search.selectedEventTypes.collectAsState()
-            if(selectedCalendars.isNotEmpty() && selectedCalendars.none { it != EventType.DigSoc }){
+            if(selectedCalendars.isNotEmpty() && selectedCalendars.none { it != _root_ide_package_.com.myxoz.life.storage.events.additionals.EventType.DigSoc }){
                 val digsocPlatforms by search.digsocPlatforms.collectAsState()
                 TagLikeSelection(DigSocPlatform.entries.toList(), digsocPlatforms){
                     search.digsocPlatforms.value = it
                 }
             }
-            if(selectedCalendars.isNotEmpty() && selectedCalendars.none { it != EventType.Timewaste }){
+            if(selectedCalendars.isNotEmpty() && selectedCalendars.none { it != _root_ide_package_.com.myxoz.life.storage.events.additionals.EventType.Timewaste }){
                 val timewastePlatform by search.timewastePlatform.collectAsState()
-                TagLikeSelection(TimewastePlatform.entries.toList(), timewastePlatform){
+                TagLikeSelection(_root_ide_package_.com.myxoz.life.storage.events.additionals.TimewastePlatform.entries.toList(), timewastePlatform){
                     search.timewastePlatform.value = it
                 }
             }
@@ -109,7 +109,7 @@ fun AdvancedSearch(calendarRepo: CalendarRepo){
                     search.detailsQuery.value = it
                 }
             }
-            if(selectedCalendars.isNotEmpty() && selectedCalendars.none { it != EventType.Travel }){
+            if(selectedCalendars.isNotEmpty() && selectedCalendars.none { it != _root_ide_package_.com.myxoz.life.storage.events.additionals.EventType.Travel }){
                 val from by search.locationFrom.collectAsState()
                 MultipleLoctionBar(
                     from,
@@ -118,7 +118,7 @@ fun AdvancedSearch(calendarRepo: CalendarRepo){
                     search.locationFrom.value = it
                 }
                 @SuppressLint("StateFlowValueCalledInComposition") // Default value, this is fine and SHOULD NOT update when it updates
-                TagLikeSelection(Vehicle.entries.toList(), search.selectedVehicles.value){
+                TagLikeSelection(_root_ide_package_.com.myxoz.life.storage.events.additionals.Vehicle.entries.toList(), search.selectedVehicles.value){
                     search.selectedVehicles.value = it
                 }
                 val to by search.locationTo.collectAsState()
@@ -160,7 +160,7 @@ fun AdvancedSearch(calendarRepo: CalendarRepo){
             FlowRow(
                 horizontalArrangement = Arrangement.spacedBy(10.dp),
             ) {
-                for (type in EventType.order) {
+                for (type in _root_ide_package_.com.myxoz.life.storage.events.additionals.EventType.order) {
                     _root_ide_package_.com.myxoz.life.ui.feed.fullscreenevent.CalendarChip(
                         type,
                         selectedCalendars.contains(type)

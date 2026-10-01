@@ -82,28 +82,7 @@ import com.myxoz.life.api.Syncable
 import com.myxoz.life.api.syncables.LocationSyncable
 import com.myxoz.life.api.syncables.ManualTransactionSyncable
 import com.myxoz.life.api.syncables.TodoSyncable
-import com.myxoz.life.events.DigSocEvent
-import com.myxoz.life.events.EmptyEvent
-import com.myxoz.life.events.HobbyEvent
-import com.myxoz.life.events.LearnEvent
-import com.myxoz.life.events.RawEvent
-import com.myxoz.life.events.SleepEvent
-import com.myxoz.life.events.SocialEvent
-import com.myxoz.life.events.SpontEvent
-import com.myxoz.life.events.TimewasteEvent
-import com.myxoz.life.events.TravelEvent
-import com.myxoz.life.events.WorkEvent
-import com.myxoz.life.events.additionals.DetailsEvent
 import com.myxoz.life.events.additionals.DigSocPlatform
-import com.myxoz.life.events.additionals.EventTag
-import com.myxoz.life.events.additionals.EventType
-import com.myxoz.life.events.additionals.PeopleEvent
-import com.myxoz.life.events.additionals.TagEvent
-import com.myxoz.life.events.additionals.TagLike
-import com.myxoz.life.events.additionals.TimedTagLikeContainer
-import com.myxoz.life.events.additionals.TimewastePlatform
-import com.myxoz.life.events.additionals.TitleEvent
-import com.myxoz.life.events.additionals.Vehicle
 import com.myxoz.life.ui.ArrowDirection
 import com.myxoz.life.ui.Chip
 import com.myxoz.life.ui.NavPath
@@ -122,7 +101,7 @@ import com.myxoz.life.utils.formatMinutesToVisual
 import com.myxoz.life.utils.formatMsToDuration
 import com.myxoz.life.utils.formatTimeStamp
 import com.myxoz.life.utils.formatToDate
-import com.myxoz.life.utils.getSafeLong
+import com.myxoz.life.core.getSafeLong
 import com.myxoz.life.utils.matchInstrinsicHeight
 import com.myxoz.life.utils.matchesNormalized
 import com.myxoz.life.utils.nullIfEmpty
@@ -134,6 +113,7 @@ import kotlinx.coroutines.launch
 import org.json.JSONObject
 import java.time.Instant
 import java.time.ZoneId
+import kotlin.collections.filter
 
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
@@ -143,7 +123,7 @@ fun ModifyEvent(viewModel: InspectedEventViewModel){
     val event = syncedEvent.raw
     val syncableRaw by viewModel.editedSyncable.collectAsState()
     val syncable = syncableRaw
-    val setEventTo: (RawEvent)->Unit = {
+    val setEventTo: (com.myxoz.life.storage.events.RawEvent)->Unit = {
         viewModel.setInspectedEventTo(syncedEvent.copy(rawEvent = it))
     }
     val setSyncableTo: (Syncable.FeedInstantEventSyncable)->Unit = {
@@ -153,12 +133,12 @@ fun ModifyEvent(viewModel: InspectedEventViewModel){
         syncable.ModifyEventInputs{ setSyncableTo(it) }
     } else {
         when (event) {
-            is EmptyEvent -> {}
-            is SleepEvent -> {}
-            is SpontEvent -> {
+            is com.myxoz.life.storage.events.EmptyEvent -> {}
+            is com.myxoz.life.storage.events.SleepEvent -> {}
+            is com.myxoz.life.storage.events.SpontEvent -> {
                 TagsBar(event.eventTags) {
                     setEventTo(
-                        SpontEvent(
+                        _root_ide_package_.com.myxoz.life.storage.events.SpontEvent(
                             event.start,
                             event.end,
                             event.uss,
@@ -170,7 +150,7 @@ fun ModifyEvent(viewModel: InspectedEventViewModel){
                 }
                 InputField(event.title.ifEmpty { null }, "Titel") {
                     setEventTo(
-                        SpontEvent(
+                        _root_ide_package_.com.myxoz.life.storage.events.SpontEvent(
                             event.start,
                             event.end,
                             event.uss,
@@ -182,10 +162,10 @@ fun ModifyEvent(viewModel: InspectedEventViewModel){
                 }
             }
 
-            is HobbyEvent -> {
+            is com.myxoz.life.storage.events.HobbyEvent -> {
                 TagsBar(event.eventTags) {
                     setEventTo(
-                        HobbyEvent(
+                        _root_ide_package_.com.myxoz.life.storage.events.HobbyEvent(
                             event.start,
                             event.end,
                             event.uss,
@@ -198,7 +178,7 @@ fun ModifyEvent(viewModel: InspectedEventViewModel){
                 }
                 InputField(event.details?.ifEmpty { null }, "Details", multiline = true) {
                     setEventTo(
-                        HobbyEvent(
+                        _root_ide_package_.com.myxoz.life.storage.events.HobbyEvent(
                             event.start,
                             event.end,
                             event.uss,
@@ -211,7 +191,7 @@ fun ModifyEvent(viewModel: InspectedEventViewModel){
                 }
                 InputField(event.title.ifEmpty { null }, "Titel") {
                     setEventTo(
-                        HobbyEvent(
+                        _root_ide_package_.com.myxoz.life.storage.events.HobbyEvent(
                             event.start,
                             event.end,
                             event.uss,
@@ -224,10 +204,10 @@ fun ModifyEvent(viewModel: InspectedEventViewModel){
                 }
             }
 
-            is WorkEvent -> {
+            is com.myxoz.life.storage.events.WorkEvent -> {
                 TagsBar(event.eventTags) {
                     setEventTo(
-                        WorkEvent(
+                        _root_ide_package_.com.myxoz.life.storage.events.WorkEvent(
                             event.start,
                             event.end,
                             event.uss,
@@ -240,7 +220,7 @@ fun ModifyEvent(viewModel: InspectedEventViewModel){
                 }
                 InputField(event.details?.ifEmpty { null }, "Details", multiline = true) {
                     setEventTo(
-                        WorkEvent(
+                        _root_ide_package_.com.myxoz.life.storage.events.WorkEvent(
                             event.start,
                             event.end,
                             event.uss,
@@ -253,7 +233,7 @@ fun ModifyEvent(viewModel: InspectedEventViewModel){
                 }
                 InputField(event.title.ifEmpty { null }, "Titel") {
                     setEventTo(
-                        WorkEvent(
+                        _root_ide_package_.com.myxoz.life.storage.events.WorkEvent(
                             event.start,
                             event.end,
                             event.uss,
@@ -266,10 +246,10 @@ fun ModifyEvent(viewModel: InspectedEventViewModel){
                 }
             }
 
-            is LearnEvent -> {
+            is com.myxoz.life.storage.events.LearnEvent -> {
                 TagsBar(event.eventTags) {
                     setEventTo(
-                        LearnEvent(
+                        _root_ide_package_.com.myxoz.life.storage.events.LearnEvent(
                             event.start,
                             event.end,
                             event.uss,
@@ -282,7 +262,7 @@ fun ModifyEvent(viewModel: InspectedEventViewModel){
                 }
                 InputField(event.details?.ifEmpty { null }, "Details", multiline = true) {
                     setEventTo(
-                        LearnEvent(
+                        _root_ide_package_.com.myxoz.life.storage.events.LearnEvent(
                             event.start,
                             event.end,
                             event.uss,
@@ -295,7 +275,7 @@ fun ModifyEvent(viewModel: InspectedEventViewModel){
                 }
                 InputField(event.title.ifEmpty { null }, "Titel") {
                     setEventTo(
-                        LearnEvent(
+                        _root_ide_package_.com.myxoz.life.storage.events.LearnEvent(
                             event.start,
                             event.end,
                             event.uss,
@@ -308,10 +288,10 @@ fun ModifyEvent(viewModel: InspectedEventViewModel){
                 }
             }
 
-            is SocialEvent -> {
+            is com.myxoz.life.storage.events.SocialEvent -> {
                 TagsBar(event.eventTags) {
                     setEventTo(
-                        SocialEvent(
+                        _root_ide_package_.com.myxoz.life.storage.events.SocialEvent(
                             event.start,
                             event.end,
                             event.uss,
@@ -327,7 +307,7 @@ fun ModifyEvent(viewModel: InspectedEventViewModel){
                     nav.navigate(NavPath.Menu.CONTACTS)
                 }) { people, more ->
                     setEventTo(
-                        SocialEvent(
+                        _root_ide_package_.com.myxoz.life.storage.events.SocialEvent(
                             event.start,
                             event.end,
                             event.uss,
@@ -341,7 +321,7 @@ fun ModifyEvent(viewModel: InspectedEventViewModel){
                 }
                 InputField(event.title.ifEmpty { null }, "Titel") {
                     setEventTo(
-                        SocialEvent(
+                        _root_ide_package_.com.myxoz.life.storage.events.SocialEvent(
                             event.start,
                             event.end,
                             event.uss,
@@ -355,12 +335,12 @@ fun ModifyEvent(viewModel: InspectedEventViewModel){
                 }
             }
 
-            is DigSocEvent -> {
+            is com.myxoz.life.storage.events.DigSocEvent -> {
                 PersonBar(event.people, false, false, {
                     nav.navigate(NavPath.Menu.CONTACTS)
                 }) { people, _ ->
                     setEventTo(
-                        DigSocEvent(
+                        _root_ide_package_.com.myxoz.life.storage.events.DigSocEvent(
                             event.start,
                             event.end,
                             event.uss,
@@ -373,7 +353,7 @@ fun ModifyEvent(viewModel: InspectedEventViewModel){
                 }
                 TimeBasedTagLikeSelection(DigSocPlatform.entries.toList(), event.digSocEntries) {
                     setEventTo(
-                        DigSocEvent(
+                        _root_ide_package_.com.myxoz.life.storage.events.DigSocEvent(
                             event.start,
                             event.end,
                             event.uss,
@@ -386,7 +366,7 @@ fun ModifyEvent(viewModel: InspectedEventViewModel){
                 }
                 InputField(event.title.ifEmpty { null }, "Titel") {
                     setEventTo(
-                        DigSocEvent(
+                        _root_ide_package_.com.myxoz.life.storage.events.DigSocEvent(
                             event.start,
                             event.end,
                             event.uss,
@@ -398,10 +378,10 @@ fun ModifyEvent(viewModel: InspectedEventViewModel){
                     )
                 }
             }
-            is TimewasteEvent -> {
-                TimeBasedTagLikeSelection(TimewastePlatform.entries.toList(), event.timewastePlatforms) {
+            is com.myxoz.life.storage.events.TimewasteEvent -> {
+                TimeBasedTagLikeSelection(_root_ide_package_.com.myxoz.life.storage.events.additionals.TimewastePlatform.entries.toList(), event.timewastePlatforms) {
                     setEventTo(
-                        TimewasteEvent(
+                        _root_ide_package_.com.myxoz.life.storage.events.TimewasteEvent(
                             event.start,
                             event.end,
                             event.uss,
@@ -413,7 +393,7 @@ fun ModifyEvent(viewModel: InspectedEventViewModel){
                 }
                 InputField(event.title.ifEmpty { null }, "Titel") {
                     setEventTo(
-                        TimewasteEvent(
+                        _root_ide_package_.com.myxoz.life.storage.events.TimewasteEvent(
                             event.start,
                             event.end,
                             event.uss,
@@ -425,10 +405,10 @@ fun ModifyEvent(viewModel: InspectedEventViewModel){
                 }
             }
 
-            is TravelEvent -> {
+            is com.myxoz.life.storage.events.TravelEvent -> {
                 LocationBar(event.from) {
                     setEventTo(
-                        TravelEvent(
+                        _root_ide_package_.com.myxoz.life.storage.events.TravelEvent(
                             event.start,
                             event.end,
                             event.uss,
@@ -441,7 +421,7 @@ fun ModifyEvent(viewModel: InspectedEventViewModel){
                 }
                 VehicleSelection(event.vehicles, viewModel) {
                     setEventTo(
-                        TravelEvent(
+                        _root_ide_package_.com.myxoz.life.storage.events.TravelEvent(
                             event.start,
                             event.end,
                             event.uss,
@@ -454,7 +434,7 @@ fun ModifyEvent(viewModel: InspectedEventViewModel){
                 }
                 LocationBar(event.to) {
                     setEventTo(
-                        TravelEvent(
+                        _root_ide_package_.com.myxoz.life.storage.events.TravelEvent(
                             event.start,
                             event.end,
                             event.uss,
@@ -468,11 +448,11 @@ fun ModifyEvent(viewModel: InspectedEventViewModel){
             }
         }
     }
-    if (event.type != EventType.Sleep && event.type != EventType.Empty || syncable != null) HorizontalDivider(
+    if (event.type != _root_ide_package_.com.myxoz.life.storage.events.additionals.EventType.Sleep && event.type != _root_ide_package_.com.myxoz.life.storage.events.additionals.EventType.Empty || syncable != null) HorizontalDivider(
         color = OldColors.SECONDARY,
         thickness = 3.dp
     )
-    if(event.type == EventType.Empty) {
+    if(event.type == _root_ide_package_.com.myxoz.life.storage.events.additionals.EventType.Empty) {
         FlowRow(
             horizontalArrangement = Arrangement.spacedBy(10.dp),
         ) {
@@ -537,69 +517,76 @@ fun ModifyEvent(viewModel: InspectedEventViewModel){
         horizontalArrangement = Arrangement.spacedBy(10.dp),
     ) {
         CalendarChip(
-            EventType.Sleep,
-            event is SleepEvent
-        ) {
-            setEventTo(SleepEvent(event.start, event.end, event.uss, event.usl))
-        }
-        CalendarChip(
-            EventType.Spont,
-            event is SpontEvent
+            _root_ide_package_.com.myxoz.life.storage.events.additionals.EventType.Sleep,
+            event is com.myxoz.life.storage.events.SleepEvent
         ) {
             setEventTo(
-                SpontEvent(
-                    event.start, event.end, event.uss, event.usl,
-                    if (event is TagEvent) ((event as TagEvent).eventTags) else listOf(),
-                    if (event is TitleEvent) (event as TitleEvent).title else ""
+                _root_ide_package_.com.myxoz.life.storage.events.SleepEvent(
+                    event.start,
+                    event.end,
+                    event.uss,
+                    event.usl
                 )
             )
         }
         CalendarChip(
-            EventType.Hobby,
-            event is HobbyEvent
+            _root_ide_package_.com.myxoz.life.storage.events.additionals.EventType.Spont,
+            event is com.myxoz.life.storage.events.SpontEvent
         ) {
             setEventTo(
-                HobbyEvent(
+                _root_ide_package_.com.myxoz.life.storage.events.SpontEvent(
                     event.start, event.end, event.uss, event.usl,
-                    if (event is TagEvent) ((event as TagEvent).eventTags) else listOf(),
-                    if (event is TitleEvent) (event as TitleEvent).title else "",
-                    if (event is DetailsEvent) (event as DetailsEvent).details else ""
+                    if (event is com.myxoz.life.storage.events.additionals.TagEvent) ((event as com.myxoz.life.storage.events.additionals.TagEvent).eventTags) else listOf(),
+                    if (event is com.myxoz.life.storage.events.additionals.TitleEvent) (event as com.myxoz.life.storage.events.additionals.TitleEvent).title else ""
                 )
             )
         }
         CalendarChip(
-            EventType.Learn,
-            event is LearnEvent
+            _root_ide_package_.com.myxoz.life.storage.events.additionals.EventType.Hobby,
+            event is com.myxoz.life.storage.events.HobbyEvent
         ) {
             setEventTo(
-                LearnEvent(
+                _root_ide_package_.com.myxoz.life.storage.events.HobbyEvent(
                     event.start, event.end, event.uss, event.usl,
-                    if (event is TagEvent) ((event as TagEvent).eventTags) else listOf(),
-                    if (event is TitleEvent) (event as TitleEvent).title else "",
-                    if (event is DetailsEvent) (event as DetailsEvent).details else ""
+                    if (event is com.myxoz.life.storage.events.additionals.TagEvent) ((event as com.myxoz.life.storage.events.additionals.TagEvent).eventTags) else listOf(),
+                    if (event is com.myxoz.life.storage.events.additionals.TitleEvent) (event as com.myxoz.life.storage.events.additionals.TitleEvent).title else "",
+                    if (event is com.myxoz.life.storage.events.additionals.DetailsEvent) (event as com.myxoz.life.storage.events.additionals.DetailsEvent).details else ""
                 )
             )
         }
         CalendarChip(
-            EventType.Social,
-            event is SocialEvent
+            _root_ide_package_.com.myxoz.life.storage.events.additionals.EventType.Learn,
+            event is com.myxoz.life.storage.events.LearnEvent
         ) {
             setEventTo(
-                SocialEvent(
+                _root_ide_package_.com.myxoz.life.storage.events.LearnEvent(
                     event.start, event.end, event.uss, event.usl,
-                    if (event is TagEvent) ((event as TagEvent).eventTags) else listOf(),
-                    if (event is TitleEvent) (event as TitleEvent).title else "",
-                    if (event is PeopleEvent) (event as PeopleEvent).people else listOf(),
+                    if (event is com.myxoz.life.storage.events.additionals.TagEvent) ((event as com.myxoz.life.storage.events.additionals.TagEvent).eventTags) else listOf(),
+                    if (event is com.myxoz.life.storage.events.additionals.TitleEvent) (event as com.myxoz.life.storage.events.additionals.TitleEvent).title else "",
+                    if (event is com.myxoz.life.storage.events.additionals.DetailsEvent) (event as com.myxoz.life.storage.events.additionals.DetailsEvent).details else ""
+                )
+            )
+        }
+        CalendarChip(
+            _root_ide_package_.com.myxoz.life.storage.events.additionals.EventType.Social,
+            event is com.myxoz.life.storage.events.SocialEvent
+        ) {
+            setEventTo(
+                _root_ide_package_.com.myxoz.life.storage.events.SocialEvent(
+                    event.start, event.end, event.uss, event.usl,
+                    if (event is com.myxoz.life.storage.events.additionals.TagEvent) ((event as com.myxoz.life.storage.events.additionals.TagEvent).eventTags) else listOf(),
+                    if (event is com.myxoz.life.storage.events.additionals.TitleEvent) (event as com.myxoz.life.storage.events.additionals.TitleEvent).title else "",
+                    if (event is com.myxoz.life.storage.events.additionals.PeopleEvent) (event as com.myxoz.life.storage.events.additionals.PeopleEvent).people else listOf(),
                     false
                 )
             )
         }
         CalendarChip(
-            EventType.Travel,
-            event is TravelEvent
+            _root_ide_package_.com.myxoz.life.storage.events.additionals.EventType.Travel,
+            event is com.myxoz.life.storage.events.TravelEvent
         ) {
             setEventTo(
-                TravelEvent(
+                _root_ide_package_.com.myxoz.life.storage.events.TravelEvent(
                     event.start, event.end, event.uss, event.usl,
                     0L,
                     0L,
@@ -608,40 +595,40 @@ fun ModifyEvent(viewModel: InspectedEventViewModel){
             )
         }
         CalendarChip(
-            EventType.DigSoc,
-            event is DigSocEvent
+            _root_ide_package_.com.myxoz.life.storage.events.additionals.EventType.DigSoc,
+            event is com.myxoz.life.storage.events.DigSocEvent
         ) {
             setEventTo(
-                DigSocEvent(
+                _root_ide_package_.com.myxoz.life.storage.events.DigSocEvent(
                     event.start, event.end, event.uss, event.usl,
                     listOf(),
-                    if (event is TitleEvent) event.title else "",
-                    if (event is PeopleEvent) event.people else listOf(),
+                    if (event is com.myxoz.life.storage.events.additionals.TitleEvent) event.title else "",
+                    if (event is com.myxoz.life.storage.events.additionals.PeopleEvent) event.people else listOf(),
                 )
             )
         }
         CalendarChip(
-            EventType.Work,
-            event is WorkEvent
+            _root_ide_package_.com.myxoz.life.storage.events.additionals.EventType.Work,
+            event is com.myxoz.life.storage.events.WorkEvent
         ) {
             setEventTo(
-                WorkEvent(
+                _root_ide_package_.com.myxoz.life.storage.events.WorkEvent(
                     event.start, event.end, event.uss, event.usl,
-                    if (event is TagEvent) event.eventTags else listOf(),
-                    if (event is TitleEvent) event.title else "",
-                    if (event is DetailsEvent) event.details else ""
+                    if (event is com.myxoz.life.storage.events.additionals.TagEvent) event.eventTags else listOf(),
+                    if (event is com.myxoz.life.storage.events.additionals.TitleEvent) event.title else "",
+                    if (event is com.myxoz.life.storage.events.additionals.DetailsEvent) event.details else ""
                 )
             )
         }
         CalendarChip(
-            EventType.Timewaste,
-            event is TimewasteEvent
+            _root_ide_package_.com.myxoz.life.storage.events.additionals.EventType.Timewaste,
+            event is com.myxoz.life.storage.events.TimewasteEvent
         ) {
             setEventTo(
-                TimewasteEvent(
+                _root_ide_package_.com.myxoz.life.storage.events.TimewasteEvent(
                     event.start, event.end, event.uss, event.usl,
                     listOf(),
-                    if (event is TitleEvent) (event as TitleEvent).title else ""
+                    if (event is com.myxoz.life.storage.events.additionals.TitleEvent) (event as com.myxoz.life.storage.events.additionals.TitleEvent).title else ""
                 )
             )
         }
@@ -650,7 +637,7 @@ fun ModifyEvent(viewModel: InspectedEventViewModel){
 
 @Composable
 fun CalendarChip(
-    type: EventType,
+    type: com.myxoz.life.storage.events.additionals.EventType,
     isSelected: Boolean,
     setBasicEvent: ()->Unit
 ) {
@@ -748,13 +735,13 @@ fun InputField(
 }
 
 @Composable
-fun TagsBar(ev: List<EventTag>, updateEvent: (List<EventTag>)->Unit){
+fun TagsBar(ev: List<com.myxoz.life.storage.events.additionals.EventTag>, updateEvent: (List<com.myxoz.life.storage.events.additionals.EventTag>)->Unit){
     val tagsHeight = FontSize.SMALL.size.toDp() + 2.dp
     val selectedTags = remember { ev.toMutableStateList() }
     var search: String? by remember {
         mutableStateOf(null)
     }
-    val allEventTags = EventTag.entries.filter { it != EventTag.S }
+    val allEventTags = _root_ide_package_.com.myxoz.life.storage.events.additionals.EventTag.entries.filter { it != _root_ide_package_.com.myxoz.life.storage.events.additionals.EventTag.S }
     val leftItems by remember {
         derivedStateOf {
             val tags = allEventTags.filter {
@@ -837,7 +824,7 @@ fun TagsBar(ev: List<EventTag>, updateEvent: (List<EventTag>)->Unit){
         InputField(null, "Tags", onImeAction = {
             return@InputField if(search!=null) {
                 when (search) {
-                    "xkwreS".removeRange(1..3).reversed() -> { selectedTags.add(EventTag.S); updateEvent(selectedTags) }
+                    "xkwreS".removeRange(1..3).reversed() -> { selectedTags.add(_root_ide_package_.com.myxoz.life.storage.events.additionals.EventTag.S); updateEvent(selectedTags) }
                     else -> leftItems.getOrNull(0)?.apply { selectedTags.add(this); updateEvent(selectedTags) }
                 }
                 ImeActionClicked(false, clearField = true)
@@ -851,10 +838,9 @@ fun TagsBar(ev: List<EventTag>, updateEvent: (List<EventTag>)->Unit){
 }
 data class ImeActionClicked(val unfocusField: Boolean, val clearField: Boolean)
 /** Gets the "id"-key of a JSON object without ridiculous rounding errors */
-inline fun JSONObject.getId() = getSafeLong("id")
 
 @Composable
-fun TimeBar(event: RawEvent, progress: Float = 0f, color: Color, setEventTo: (RawEvent) -> Unit){
+fun TimeBar(event: com.myxoz.life.storage.events.RawEvent, progress: Float = 0f, color: Color, setEventTo: (com.myxoz.life.storage.events.RawEvent) -> Unit){
     val screens = LocalScreens.current
     val verticalOffset = FontSize.SMALLM.size.toDp()
     Box(
@@ -1179,9 +1165,9 @@ fun LocationBar(defaultLocation: Long, setLocation: (Long)->Unit){
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun VehicleSelection(
-    defSelected: List<TimedTagLikeContainer<Vehicle>>,
+    defSelected: List<com.myxoz.life.storage.events.additionals.TimedTagLikeContainer<com.myxoz.life.storage.events.additionals.Vehicle>>,
     inspectViewModel: InspectedEventViewModel? = null,
-    setVehiclesTo: (List<TimedTagLikeContainer<Vehicle>>) -> Unit
+    setVehiclesTo: (List<com.myxoz.life.storage.events.additionals.TimedTagLikeContainer<com.myxoz.life.storage.events.additionals.Vehicle>>) -> Unit
 ) {
     val iconHeight = FontSize.MEDIUM.size.toDp()
     val density = LocalDensity.current
@@ -1199,7 +1185,7 @@ fun VehicleSelection(
                 .drawArrowBehind(ArrowDirection.Down, iconHeight.toPx(density), Theme.primary)
         )
         Column(Modifier.fillMaxWidth()) {
-            TimeBasedTagLikeSelection(Vehicle.entries.toList(), defSelected) {
+            TimeBasedTagLikeSelection(_root_ide_package_.com.myxoz.life.storage.events.additionals.Vehicle.entries.toList(), defSelected) {
                 setVehiclesTo(it)
             }
             Spacer(Modifier.height(5.dp))
@@ -1213,7 +1199,7 @@ fun VehicleSelection(
                     .rippleClick{
                         coroutineScope.launch {
                             val event = inspectViewModel?.event?.value ?: return@launch
-                            if(event.raw !is TravelEvent) return@launch
+                            if(event.raw !is com.myxoz.life.storage.events.TravelEvent) return@launch
                             val from = crossRepo.getCachedLocation(event.raw.from)
                             val to = crossRepo.getCachedLocation(event.raw.to)
                             AndroidUtils.openLink(context, HVV.constructLink(from, to, (event.raw.start-15*1000L*60L).formatTimeStamp(calendar)))
@@ -1234,7 +1220,7 @@ fun VehicleSelection(
 
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
-fun <T: TagLike> TimeBasedTagLikeSelection(allSelectables: List<T>, defSelection: List<TimedTagLikeContainer<T>>, setVehiclesTo: (List<TimedTagLikeContainer<T>>) -> Unit){
+fun <T: com.myxoz.life.storage.events.additionals.TagLike> TimeBasedTagLikeSelection(allSelectables: List<T>, defSelection: List<com.myxoz.life.storage.events.additionals.TimedTagLikeContainer<T>>, setVehiclesTo: (List<com.myxoz.life.storage.events.additionals.TimedTagLikeContainer<T>>) -> Unit){
     val iconHeight = FontSize.MEDIUM.size.toDp()
     val selectedTagLike = remember { defSelection.toMutableStateList() }
     val textMeasurer = rememberTextMeasurer()
@@ -1285,10 +1271,11 @@ fun <T: TagLike> TimeBasedTagLikeSelection(allSelectables: List<T>, defSelection
                             text = it
                             val index = selectedTagLike.indexOf(item)
                             if(index==-1) return@BasicTextField
-                            selectedTagLike[index] = TimedTagLikeContainer(
-                                item.type,
-                                TimeBasedVisualTransformation.displayMinutesToMinutes(it)*60*1000L
-                            )
+                            selectedTagLike[index] =
+                                _root_ide_package_.com.myxoz.life.storage.events.additionals.TimedTagLikeContainer(
+                                    item.type,
+                                    TimeBasedVisualTransformation.displayMinutesToMinutes(it) * 60 * 1000L
+                                )
                             setVehiclesTo(selectedTagLike)
                         },
                         textStyle = TypoStyle(Theme.onPrimaryContainer, FontSize.MEDIUM),
@@ -1318,10 +1305,12 @@ fun <T: TagLike> TimeBasedTagLikeSelection(allSelectables: List<T>, defSelection
                         .background(Theme.secondaryContainer, CircleShape)
                         .clip(CircleShape)
                         .rippleClick{
-                            selectedTagLike.add(TimedTagLikeContainer(
-                                item,
-                                0L
-                            ))
+                            selectedTagLike.add(
+                                _root_ide_package_.com.myxoz.life.storage.events.additionals.TimedTagLikeContainer(
+                                    item,
+                                    0L
+                                )
+                            )
                             setVehiclesTo(selectedTagLike)
                             itemWasAdded=true
                         }

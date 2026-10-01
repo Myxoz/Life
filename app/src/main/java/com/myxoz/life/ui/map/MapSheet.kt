@@ -57,6 +57,7 @@ import com.myxoz.life.R
 import com.myxoz.life.Theme
 import com.myxoz.life.android.integration.MapBoxAPI
 import com.myxoz.life.api.syncables.LocationSyncable
+import com.myxoz.life.core.filteredWith
 import com.myxoz.life.ui.EditToTickAndDiscard
 import com.myxoz.life.ui.NavPath
 import com.myxoz.life.ui.ThreeStateBottomSheetState
@@ -68,7 +69,6 @@ import com.myxoz.life.ui.theme.FontFamily
 import com.myxoz.life.ui.theme.FontSize
 import com.myxoz.life.ui.theme.OldColors
 import com.myxoz.life.ui.theme.TypoStyle
-import com.myxoz.life.utils.filteredWith
 import com.myxoz.life.utils.nullIfEmpty
 import com.myxoz.life.utils.rippleClick
 import com.myxoz.life.utils.toDp

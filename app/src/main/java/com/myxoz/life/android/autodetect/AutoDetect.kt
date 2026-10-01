@@ -4,9 +4,11 @@ import android.content.Context
 import android.content.Context.MODE_PRIVATE
 import android.content.SharedPreferences
 import com.myxoz.life.storage.dbwrapper.people.ReadPeopleDao
-import com.myxoz.life.events.LocalEvent
+import com.myxoz.life.storage.LocalEvent
+import com.myxoz.life.storage.caches.InterlockedCache.Companion.remove
 import com.myxoz.life.utils.SharedPrefsUtils.edit
 import com.myxoz.life.viewmodels.Settings
+import kotlinx.coroutines.launch
 import org.json.JSONObject
 
 object AutoDetect {
@@ -18,14 +20,14 @@ object AutoDetect {
             AutoDetectSleep.SPK,
             Settings.Feature.AutoDetectSleep,
         ) { prefs, context, _ ->
-            AutoDetectSleep.getSessions(prefs, context).map { LocalEvent.deterministicId(it) }
+            AutoDetectSleep.getSessions(prefs, context).map { LocalEvent.rawEventToLocalEvent(it) }
         },
         AutoDetectFromSensors(
             AutoDetectCall.SPK,
             Settings.Feature.AutoDetectCalls,
         ) { prefs, context, db ->
             AutoDetectCall.getSessions(prefs, context, db)
-                .map { LocalEvent.deterministicId(it) }
+                .map { LocalEvent.rawEventToLocalEvent(it) }
         }
     )
 
@@ -55,4 +57,25 @@ object AutoDetect {
     }
     interface AutoDetectEvent
     const val AUTODETECT_PREFS = "autodetect"
+
+    fun removeLocalEventFromPrefsAndCache(event: LocalEvent) {
+        val prefs = context.getSharedPreferences(AutoDetect.AUTODETECT_PREFS, MODE_PRIVATE)
+        val currentSessions = (prefs.getStringSet(AutoDetect.SESSIONS, setOf()) ?: setOf())
+            .filter {
+                LocalEvent.fromJSON(JSONObject(it)).localId != event.localId
+            }
+        prefs.edit {
+            putStringSet(AutoDetect.SESSIONS, currentSessions.toSet())
+        }
+        _rawEventsDayed.remove(event.localId)
+    }
+
+    fun fetchAutoDetectEvents(settings: Settings.CompositionSettings) {
+        appScope.launch {
+            updateLocalEvents(
+                AutoDetect.autoDetectEvents(context, settings, readSyncableDaos.peopleDao)
+            )
+        }
+    }
+
 }

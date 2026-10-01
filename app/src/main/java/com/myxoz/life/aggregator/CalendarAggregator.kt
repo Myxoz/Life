@@ -2,18 +2,22 @@ package com.myxoz.life.aggregator
 
 import android.app.AlarmManager
 import com.myxoz.life.R
-import com.myxoz.life.api.syncables.CommitSyncable
-import com.myxoz.life.api.syncables.ManualTransactionSyncable
+import com.myxoz.life.core.def
+import com.myxoz.life.storage.api.syncables.CommitSyncable
+import com.myxoz.life.storage.api.syncables.ManualTransactionSyncable
 import com.myxoz.life.storage.dbwrapper.banking.formatCents
-import com.myxoz.life.storage.interfaces.BankingRepo
+import com.myxoz.life.storage.interfaces.BankingInterface
 import com.myxoz.life.storage.interfaces.DatabaseInterface
 import com.myxoz.life.ui.feed.instantevents.InstantEvent
 import com.myxoz.life.ui.feed.instantevents.InstantEvent.Companion.INSTANTEVENTSIZE
 import com.myxoz.life.ui.feed.main.PrerenderedEvent
 import com.myxoz.life.utils.AndroidUtils.sendWithBal
-import com.myxoz.life.utils.def
 import kotlinx.coroutines.flow.combine
 import java.time.LocalDate
+import kotlin.collections.listOf
+import kotlin.collections.sortedBy
+import kotlin.text.compareTo
+import kotlin.text.toLong
 
 class CalendarAggregator(
     private val repos: DatabaseInterface
@@ -21,7 +25,7 @@ class CalendarAggregator(
     fun getInstantEventsForDay(date: LocalDate) = combine(
         repos.calendarInterface.nextAlarmClockTs,
         repos.commitsInterface.getCommitsForDay(date),
-        repos.bankingRepo.getSortedTransactionsAt(date),
+        repos.bankingInterface.getSortedTransactionsAt(date),
         repos.todoInterface.getTodosForDay(date)
     ) { nextAlarm, commits, transactions, todos ->
         val nextAlarmEvent = listOfNotNull(
@@ -43,7 +47,7 @@ class CalendarAggregator(
         val groups = mutableListOf<MutableList<InstantEvent>>(mutableListOf())
         var lastTs = mix.getOrNull(0)?.timestamp ?: return listOf()
         for (event in mix) {
-            if(event.timestamp - lastTs > INSTANTEVENTSIZE * (3600 * 1000L)) {
+            if(event.timestamp - lastTs.compareTo(INSTANTEVENTSIZE * (3600 * 1000L))) {
                 groups.add(mutableListOf())
             }
             groups.last().add(event)
@@ -62,7 +66,7 @@ class CalendarAggregator(
         )
     }
     companion object {
-        private fun asInstantEvent(entity: BankingRepo.BankingDisplayEntity): InstantEvent{
+        private fun asInstantEvent(entity: BankingInterface.MixedBankingEntity): InstantEvent{
             return InstantEvent(
                 entity.icon,
                 entity.amount.formatCents(),
@@ -72,11 +76,11 @@ class CalendarAggregator(
                 screens.openTransaction(entity)
             }
         }
-        fun bankEntryAsInstantEvent(entity: BankingRepo.BankingDisplayEntity): InstantEvent?{
+        fun bankEntryAsInstantEvent(entity: BankingInterface.MixedBankingEntity): InstantEvent?{
             return if(!entity.isTransaction) asInstantEvent(entity) else null
         }
         fun manualTransactionEntityAsInstantEvent(manualTransactionSyncable: ManualTransactionSyncable): InstantEvent {
-            return asInstantEvent(BankingRepo.BankingDisplayEntity.from(manualTransactionSyncable))
+            return asInstantEvent(BankingInterface.MixedBankingEntity.from(manualTransactionSyncable))
         }
         private fun commitToInstantEvent(commitSyncable: CommitSyncable): InstantEvent? {
             return InstantEvent(

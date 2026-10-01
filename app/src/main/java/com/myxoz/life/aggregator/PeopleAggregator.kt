@@ -1,10 +1,14 @@
 package com.myxoz.life.aggregator
 
-import android.util.Log
-import com.myxoz.life.api.syncables.ProfilePictureSyncable
-import com.myxoz.life.api.syncables.SyncedEvent
-import com.myxoz.life.events.RawEvent
-import com.myxoz.life.events.additionals.EventType
+import android.graphics.Insets.addimport
+import kotlin.collections.get
+import kotlin.text.get
+
+android.util.Log
+import com.myxoz.life.storage.api.syncables.ProfilePictureSyncable
+import com.myxoz.life.storage.api.syncables.SyncedEvent
+import com.myxoz.life.storage.events.RawEvent
+import com.myxoz.life.storage.events.additionals.EventType
 import com.myxoz.life.storage.interfaces.DatabaseInterface
 import com.myxoz.life.ui.options.settings.ME_ID
 import com.myxoz.life.ui.socialgraph.SocialGraph
@@ -15,6 +19,8 @@ import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.mapLatest
 import kotlinx.coroutines.withContext
+import kotlin.collections.get
+import kotlin.text.get
 
 class PeopleAggregator(
     private val repos: DatabaseInterface
@@ -99,7 +105,7 @@ class PeopleAggregator(
         }
         val newChart = PieChart.build {
             totals.forEach {
-                val type = EventType.getById(it.key) ?: EventType.Empty
+                val type = _root_ide_package_.com.myxoz.life.storage.events.additionals.EventType.getById(it.key) ?: _root_ide_package_.com.myxoz.life.storage.events.additionals.EventType.Empty
                 add(type.colors.bg, it.value.toDouble(), type.id.toString())
             }
         }
@@ -137,10 +143,6 @@ class PeopleAggregator(
         ProfilePictureSyncable.base64ToBitmap(
             person?.bitmapBase64 ?: return@map null
         )
-    }
-    class NeverEqual{
-        override fun equals(other: Any?) = false
-        override fun hashCode() = System.identityHashCode(this)
     }
     data class SocialGraphQuery(
         val addMyself: Boolean,

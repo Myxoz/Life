@@ -3,7 +3,7 @@ package com.myxoz.life.repositories
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.myxoz.life.storage.interfaces.DatabaseInterface
-import com.myxoz.life.storage.interfaces.utils.subscribeToColdFlow
+import com.myxoz.life.subscribeToColdFlow
 import com.myxoz.life.ui.quiz.BirthdayQuiz
 import com.myxoz.life.utils.getAge
 import com.myxoz.life.utils.syncToPrefs
@@ -23,13 +23,13 @@ class BirthdayQuizRepo(repos: DatabaseInterface): ViewModel() {
         syncToPrefs(viewModelScope, repos.prefs, "birthday_streak", Int::class)
     }
     val questionFlow = combine(allPeople, changeFlow) { people, _ ->
-        val randomValue = Random.Default.nextDouble()
+        val randomValue = Random.nextDouble()
         val allPeopleWithBirthdays = people.filter { it.birthday != null }
         if (allPeopleWithBirthdays.isEmpty()) return@combine null
         when {
             randomValue < 0.30 -> { // Age
                 val person = allPeopleWithBirthdays.random()
-                val offset = Random.Default.nextInt(-5..0)
+                val offset = Random.nextInt(-5..0)
                 if (randomValue < 0.1) {
                     val realAge = LocalDate.now().getAge(LocalDate.ofEpochDay(person.birthday!!))
                     BirthdayQuiz.PersonToAge(
@@ -60,7 +60,7 @@ class BirthdayQuizRepo(repos: DatabaseInterface): ViewModel() {
                             (5f - dayDiff / 365f * 10f) + // Value between 0-ca. 5 how close the birthday is
                                     (if (candidateBirthday.dayOfMonth == birthday.dayOfMonth || candidateBirthday.month == birthday.month) 1 else 0) +
                                     // Both is not possible
-                                    Random.Default.nextDouble()
+                                    Random.nextDouble()
                         it to score
                     }
                     .sortedByDescending { it.second }

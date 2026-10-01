@@ -41,14 +41,14 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalHapticFeedback
 import com.myxoz.life.api.syncables.PersonSyncable
-import com.myxoz.life.events.RawEvent
-import com.myxoz.life.events.SocialEvent
-import com.myxoz.life.events.TravelEvent
-import com.myxoz.life.events.additionals.EventTag
-import com.myxoz.life.events.additionals.EventType
-import com.myxoz.life.events.additionals.PeopleEvent
-import com.myxoz.life.events.additionals.TagEvent
-import com.myxoz.life.events.additionals.Vehicle
+import com.myxoz.life.storage.events.RawEvent
+import com.myxoz.life.storage.events.SocialEvent
+import com.myxoz.life.storage.events.TravelEvent
+import com.myxoz.life.storage.events.additionals.EventTag
+import com.myxoz.life.storage.events.additionals.EventType
+import com.myxoz.life.storage.events.additionals.PeopleEvent
+import com.myxoz.life.storage.events.additionals.TagEvent
+import com.myxoz.life.storage.events.additionals.Vehicle
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -80,10 +80,10 @@ fun LifeWrappedScreen(wrappedRepo: WrappedRepo) {
                 startOfYear,
                 endOfYear
             )
-            val allYearEvents = RawEvent.PreparedEventContent.prepareContentFor(
+            val allYearEvents = _root_ide_package_.com.myxoz.life.storage.events.RawEvent.PreparedEventContent.prepareContentFor(
                 allYearEventsRaw, wrappedRepo.readDaos.eventDetailsDao
             ).mapNotNull {
-                RawEvent.from(it)
+                _root_ide_package_.com.myxoz.life.storage.events.RawEvent.from(it)
             }
             futurePages.add(IntroTitlePage())
             futurePages.add(YearPage(year))
@@ -92,12 +92,12 @@ fun LifeWrappedScreen(wrappedRepo: WrappedRepo) {
             val sortedByTime = sumed.sortedByDescending { it.second }
             val favoriteActivity = sortedByTime.getOrNull(0)
             var insertedTagsPage = false
-            fun getMostUsedTagList(eventType: EventType): List<MostUsedTagsForFavActivity.Companion.MUTag>?{
+            fun getMostUsedTagList(eventType: com.myxoz.life.storage.events.additionals.EventType): List<MostUsedTagsForFavActivity.Companion.MUTag>?{
                 val filteredList = allYearEvents.filter { it.type == eventType }
-                if(filteredList[0] !is TagEvent) return null
-                val mostUsedTags = mutableMapOf<EventTag, MostUsedTagsForFavActivity.Companion.MUTag>()
+                if(filteredList[0] !is com.myxoz.life.storage.events.additionals.TagEvent) return null
+                val mostUsedTags = mutableMapOf<com.myxoz.life.storage.events.additionals.EventTag, MostUsedTagsForFavActivity.Companion.MUTag>()
                 filteredList.forEach {
-                    for (tag in (it as? TagEvent)?.eventTags ?: return@forEach) {
+                    for (tag in (it as? com.myxoz.life.storage.events.additionals.TagEvent)?.eventTags ?: return@forEach) {
                         mostUsedTags[tag] = mostUsedTags
                             .getOrDefault(
                                 tag,
@@ -129,15 +129,15 @@ fun LifeWrappedScreen(wrappedRepo: WrappedRepo) {
             val allPeople = wrappedRepo.readDaos.peopleDao.getAllPeople().map { PersonSyncable.from(wrappedRepo.readDaos.peopleDao, it) }
 
             // This will only do 4 database queries, the world is efficient
-            val pec = RawEvent.PreparedEventContent.prepareContentFor(wrappedRepo.readDaos.peopleDao.getFirstEventsFor(allPeople.map { it.id }), wrappedRepo.readDaos.eventDetailsDao)
+            val pec = _root_ide_package_.com.myxoz.life.storage.events.RawEvent.PreparedEventContent.prepareContentFor(wrappedRepo.readDaos.peopleDao.getFirstEventsFor(allPeople.map { it.id }), wrappedRepo.readDaos.eventDetailsDao)
             val firstPeopleEvents = pec.mapNotNull {
-                RawEvent.from(it) as? PeopleEvent
+                _root_ide_package_.com.myxoz.life.storage.events.RawEvent.from(it) as? com.myxoz.life.storage.events.additionals.PeopleEvent
             }
-            val newPeople = allPeople.filter { e -> firstPeopleEvents.find { e.id in it.people }?.let { it is RawEvent && it.start >= startOfYear && it.end <= endOfYear } == true }
+            val newPeople = allPeople.filter { e -> firstPeopleEvents.find { e.id in it.people }?.let { it is com.myxoz.life.storage.events.RawEvent && it.start >= startOfYear && it.end <= endOfYear } == true }
             futurePages.add(NewSocialContact(newPeople.size))
             val mostInteractedPeople = mutableMapOf<Long, Long>()
             allYearEvents.forEach {
-                for (person in (it as? PeopleEvent)?.people ?: return@forEach) {
+                for (person in (it as? com.myxoz.life.storage.events.additionals.PeopleEvent)?.people ?: return@forEach) {
                     mostInteractedPeople[person] = mostInteractedPeople.getOrDefault(person, 0L) + it.length()
                 }
             }
@@ -157,9 +157,9 @@ fun LifeWrappedScreen(wrappedRepo: WrappedRepo) {
                 mostInteractedNewPeople.second,
                 context
             ))
-            val mostTagedSocialEvent = mutableMapOf<EventTag, MostUsedTagsForFavActivity.Companion.MUTag>()
+            val mostTagedSocialEvent = mutableMapOf<com.myxoz.life.storage.events.additionals.EventTag, MostUsedTagsForFavActivity.Companion.MUTag>()
             allYearEvents.forEach {
-                for (tag in (it as? SocialEvent)?.eventTags ?: return@forEach) {
+                for (tag in (it as? com.myxoz.life.storage.events.SocialEvent)?.eventTags ?: return@forEach) {
                     mostTagedSocialEvent[tag] = mostTagedSocialEvent
                         .getOrDefault(
                             tag,
@@ -193,9 +193,9 @@ fun LifeWrappedScreen(wrappedRepo: WrappedRepo) {
                     )
                 )
             }
-            val mostUsedVehicles = mutableMapOf<Vehicle, Long>()
+            val mostUsedVehicles = mutableMapOf<com.myxoz.life.storage.events.additionals.Vehicle, Long>()
             allYearEvents.forEach {
-                for (vehicle in (it as? TravelEvent)?.vehicles ?: return@forEach) {
+                for (vehicle in (it as? com.myxoz.life.storage.events.TravelEvent)?.vehicles ?: return@forEach) {
                     mostUsedVehicles[vehicle.type] = mostUsedVehicles.getOrDefault(vehicle.type, 0L) + vehicle.durationMs
                 }
             }

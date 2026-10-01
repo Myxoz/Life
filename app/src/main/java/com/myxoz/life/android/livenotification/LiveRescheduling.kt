@@ -28,21 +28,21 @@ import com.myxoz.life.R
 import com.myxoz.life.android.MainApplication
 import com.myxoz.life.android.sensors.navigateTo
 import com.myxoz.life.api.syncables.SyncedEvent
-import com.myxoz.life.events.DigSocEvent
-import com.myxoz.life.events.EmptyEvent
-import com.myxoz.life.events.HobbyEvent
-import com.myxoz.life.events.LearnEvent
-import com.myxoz.life.events.RawEvent
-import com.myxoz.life.events.SleepEvent
-import com.myxoz.life.events.SocialEvent
-import com.myxoz.life.events.SpontEvent
-import com.myxoz.life.events.TimewasteEvent
-import com.myxoz.life.events.TravelEvent
-import com.myxoz.life.events.WorkEvent
-import com.myxoz.life.events.additionals.EventType
-import com.myxoz.life.events.additionals.PeopleEvent
-import com.myxoz.life.events.additionals.TagLike
-import com.myxoz.life.events.additionals.TimedTagLikeContainer
+import com.myxoz.life.storage.events.DigSocEvent
+import com.myxoz.life.storage.events.EmptyEvent
+import com.myxoz.life.storage.events.HobbyEvent
+import com.myxoz.life.storage.events.LearnEvent
+import com.myxoz.life.storage.events.RawEvent
+import com.myxoz.life.storage.events.SleepEvent
+import com.myxoz.life.storage.events.SocialEvent
+import com.myxoz.life.storage.events.SpontEvent
+import com.myxoz.life.storage.events.TimewasteEvent
+import com.myxoz.life.storage.events.TravelEvent
+import com.myxoz.life.storage.events.WorkEvent
+import com.myxoz.life.storage.events.additionals.EventType
+import com.myxoz.life.storage.events.additionals.PeopleEvent
+import com.myxoz.life.storage.events.additionals.TagLike
+import com.myxoz.life.storage.events.additionals.TimedTagLikeContainer
 import com.myxoz.life.storage.dbwrapper.events.EventEntity
 import com.myxoz.life.storage.dbwrapper.events.ReadEventDetailsDao
 import com.myxoz.life.storage.interfaces.CalendarInterface
@@ -107,15 +107,15 @@ class LiveRescheduling(val context: Context): CalendarInterface.CalendarHook {
         } else {
             val convertedEvents = current.mapNotNull { it.trySynced() }
             if(convertedEvents.isNotEmpty()) {
-                val primaryEventSynced  = convertedEvents.find { it.raw !is PeopleEvent }
+                val primaryEventSynced  = convertedEvents.find { it.raw !is com.myxoz.life.storage.events.additionals.PeopleEvent }
                 val primaryEvent = primaryEventSynced?.raw
                 val primaryId = primaryEventSynced?.id
-                val secondaryEventSynced = convertedEvents.find { it.raw is PeopleEvent }
-                val secondaryEvent: RawEvent? = secondaryEventSynced?.raw
+                val secondaryEventSynced = convertedEvents.find { it.raw is com.myxoz.life.storage.events.additionals.PeopleEvent }
+                val secondaryEvent: com.myxoz.life.storage.events.RawEvent? = secondaryEventSynced?.raw
                 val secondaryId = secondaryEventSynced?.id
                 if(primaryEvent != null && primaryId != null && secondaryEvent != null && secondaryId != null) {
                     Log.d(LOGTAG, "Found current event ${primaryEvent.toJson()} with and secondary ${secondaryEvent.toJson()}")
-                    updateNotification(primaryEvent, secondaryEvent as? PeopleEvent, primaryId)
+                    updateNotification(primaryEvent, secondaryEvent as? com.myxoz.life.storage.events.additionals.PeopleEvent, primaryId)
                     scheduleAtFor(min(primaryEvent.end, secondaryEvent.end) - debugOffset, listOf(primaryId, secondaryId))
                 } else {
                     val event = (primaryEvent ?: secondaryEvent) ?: return
@@ -170,69 +170,69 @@ class LiveRescheduling(val context: Context): CalendarInterface.CalendarHook {
         val secondarySubtitle: String,
         val secondaryIcon: Int?
     )
-    private fun <T: TagLike> formatSubtitle(tagLikeContainers: List<TimedTagLikeContainer<T>>) = tagLikeContainers
+    private fun <T: com.myxoz.life.storage.events.additionals.TagLike> formatSubtitle(tagLikeContainers: List<com.myxoz.life.storage.events.additionals.TimedTagLikeContainer<T>>) = tagLikeContainers
         .sortedByDescending { it.durationMs }
         .map { it.durationMs.formatMsToDuration(true) + " " + it.type.displayName }
         .joinGramatically()
-    private fun <T: TagLike> mostUsedIcon(tagLikeContainers: List<TimedTagLikeContainer<T>>) = tagLikeContainers
+    private fun <T: com.myxoz.life.storage.events.additionals.TagLike> mostUsedIcon(tagLikeContainers: List<com.myxoz.life.storage.events.additionals.TimedTagLikeContainer<T>>) = tagLikeContainers
         .maxByOrNull { it.durationMs }?.type
-    private fun getPeopleFlowFor(event: PeopleEvent) =
+    private fun getPeopleFlowFor(event: com.myxoz.life.storage.events.additionals.PeopleEvent) =
         dbInterface.peopleInterface.getPeople(event.people).map {
             val peopleList = it.map { person -> person.name }
-            val people = if((event as? SocialEvent)?.more == true) peopleList.toMutableList().apply { add("Weitere") } else peopleList
+            val people = if((event as? com.myxoz.life.storage.events.SocialEvent)?.more == true) peopleList.toMutableList().apply { add("Weitere") } else peopleList
             return@map people.joinGramatically()
         }
-    fun updateNotification(mainEvent: RawEvent, secondaryEvent: PeopleEvent?, launchEventId: Long) {
+    fun updateNotification(mainEvent: com.myxoz.life.storage.events.RawEvent, secondaryEvent: com.myxoz.life.storage.events.additionals.PeopleEvent?, launchEventId: Long) {
         val chipText = when(mainEvent) {
-            is SleepEvent -> {
+            is com.myxoz.life.storage.events.SleepEvent -> {
                 mainEvent.length().formatMsToDuration(true)
             }
-            is TravelEvent -> "Reise"
-            is TimewasteEvent, is WorkEvent, is DigSocEvent, is SocialEvent, is LearnEvent, is SpontEvent, is HobbyEvent -> mainEvent.title.takeIf { it.isNotBlank() } ?: mainEvent.type.calendarName
-            is EmptyEvent -> "DEBUG"
+            is com.myxoz.life.storage.events.TravelEvent -> "Reise"
+            is com.myxoz.life.storage.events.TimewasteEvent, is com.myxoz.life.storage.events.WorkEvent, is com.myxoz.life.storage.events.DigSocEvent, is com.myxoz.life.storage.events.SocialEvent, is com.myxoz.life.storage.events.LearnEvent, is com.myxoz.life.storage.events.SpontEvent, is com.myxoz.life.storage.events.HobbyEvent -> mainEvent.title.takeIf { it.isNotBlank() } ?: mainEvent.type.calendarName
+            is com.myxoz.life.storage.events.EmptyEvent -> "DEBUG"
         }
         val primaryTitle = when(mainEvent) {
-            is DigSocEvent -> chipText.takeIf { it.isNotBlank() } ?: mainEvent.digSocEntries.map { it.type.displayName }.joinGramatically()
-            is SleepEvent -> "$chipText Schlaf"
-            is SpontEvent, is SocialEvent, is HobbyEvent -> chipText
-            is LearnEvent -> "Lernen für "+mainEvent.title
-            is TimewasteEvent -> (if(mainEvent.title.isNotBlank()) mainEvent.title+" auf " else "")+mainEvent.timewastePlatforms.map { it.type.displayName }.joinGramatically()
-            is TravelEvent -> "Nach"
-            is WorkEvent -> "Arbeit für $chipText"
-            is EmptyEvent -> "DEBUG"
+            is com.myxoz.life.storage.events.DigSocEvent -> chipText.takeIf { it.isNotBlank() } ?: mainEvent.digSocEntries.map { it.type.displayName }.joinGramatically()
+            is com.myxoz.life.storage.events.SleepEvent -> "$chipText Schlaf"
+            is com.myxoz.life.storage.events.SpontEvent, is com.myxoz.life.storage.events.SocialEvent, is com.myxoz.life.storage.events.HobbyEvent -> chipText
+            is com.myxoz.life.storage.events.LearnEvent -> "Lernen für "+mainEvent.title
+            is com.myxoz.life.storage.events.TimewasteEvent -> (if(mainEvent.title.isNotBlank()) mainEvent.title+" auf " else "")+mainEvent.timewastePlatforms.map { it.type.displayName }.joinGramatically()
+            is com.myxoz.life.storage.events.TravelEvent -> "Nach"
+            is com.myxoz.life.storage.events.WorkEvent -> "Arbeit für $chipText"
+            is com.myxoz.life.storage.events.EmptyEvent -> "DEBUG"
         }
         val color = if(secondaryEvent != null)
-            ((secondaryEvent as? RawEvent)?.type ?: EventType.Empty).colors.bg.copy(.2f).compositeOver(mainEvent.type.colors.bg)
+            ((secondaryEvent as? com.myxoz.life.storage.events.RawEvent)?.type ?: _root_ide_package_.com.myxoz.life.storage.events.additionals.EventType.Empty).colors.bg.copy(.2f).compositeOver(mainEvent.type.colors.bg)
         else
             mainEvent.type.colors.bg
         val chipIcon = when(mainEvent) {
-            is DigSocEvent -> mostUsedIcon(mainEvent.digSocEntries)?.drawable
-            is EmptyEvent -> null
-            is WorkEvent, is SpontEvent, is SocialEvent, is LearnEvent, is HobbyEvent -> mainEvent.eventTags.firstOrNull()?.drawable
-            is SleepEvent -> R.drawable.sleep
-            is TimewasteEvent -> mostUsedIcon(mainEvent.timewastePlatforms)?.drawable
-            is TravelEvent -> mostUsedIcon(mainEvent.vehicles)?.drawable
+            is com.myxoz.life.storage.events.DigSocEvent -> mostUsedIcon(mainEvent.digSocEntries)?.drawable
+            is com.myxoz.life.storage.events.EmptyEvent -> null
+            is com.myxoz.life.storage.events.WorkEvent, is com.myxoz.life.storage.events.SpontEvent, is com.myxoz.life.storage.events.SocialEvent, is com.myxoz.life.storage.events.LearnEvent, is com.myxoz.life.storage.events.HobbyEvent -> mainEvent.eventTags.firstOrNull()?.drawable
+            is com.myxoz.life.storage.events.SleepEvent -> R.drawable.sleep
+            is com.myxoz.life.storage.events.TimewasteEvent -> mostUsedIcon(mainEvent.timewastePlatforms)?.drawable
+            is com.myxoz.life.storage.events.TravelEvent -> mostUsedIcon(mainEvent.vehicles)?.drawable
         }
         val secondaryIcon = when(mainEvent) {
-            is SleepEvent, is TimewasteEvent, is DigSocEvent, is TravelEvent, is WorkEvent, is SpontEvent, is SocialEvent, is LearnEvent, is HobbyEvent -> chipIcon
-            is EmptyEvent -> null
+            is com.myxoz.life.storage.events.SleepEvent, is com.myxoz.life.storage.events.TimewasteEvent, is com.myxoz.life.storage.events.DigSocEvent, is com.myxoz.life.storage.events.TravelEvent, is com.myxoz.life.storage.events.WorkEvent, is com.myxoz.life.storage.events.SpontEvent, is com.myxoz.life.storage.events.SocialEvent, is com.myxoz.life.storage.events.LearnEvent, is com.myxoz.life.storage.events.HobbyEvent -> chipIcon
+            is com.myxoz.life.storage.events.EmptyEvent -> null
         }
         val secondaryTitle = when(mainEvent) {
-            is WorkEvent, is TimewasteEvent, is SpontEvent, is SocialEvent, is LearnEvent, is HobbyEvent, is DigSocEvent -> mainEvent.title
-            is EmptyEvent -> "Debug"
-            is SleepEvent -> "Schlaf"
-            is TravelEvent -> "Nach"
+            is com.myxoz.life.storage.events.WorkEvent, is com.myxoz.life.storage.events.TimewasteEvent, is com.myxoz.life.storage.events.SpontEvent, is com.myxoz.life.storage.events.SocialEvent, is com.myxoz.life.storage.events.LearnEvent, is com.myxoz.life.storage.events.HobbyEvent, is com.myxoz.life.storage.events.DigSocEvent -> mainEvent.title
+            is com.myxoz.life.storage.events.EmptyEvent -> "Debug"
+            is com.myxoz.life.storage.events.SleepEvent -> "Schlaf"
+            is com.myxoz.life.storage.events.TravelEvent -> "Nach"
         }
         val durationText = "${if (mainEvent.uss) "ca. " else ""}${mainEvent.start.formatDayTime(calendar)} bis ${if(mainEvent.usl) "ca. " else ""}${mainEvent.end.formatDayTime(calendar)}"
         val secondarySubtitle = when(mainEvent) {
-            is DigSocEvent -> formatSubtitle(mainEvent.digSocEntries)
-            is EmptyEvent -> ""
-            is WorkEvent, is LearnEvent, is HobbyEvent -> mainEvent.details ?: mainEvent.eventTags.map { it.displayName }.joinGramatically()
-            is SleepEvent -> mainEvent.length().formatMsToDuration(true) + " von "+durationText
-            is SocialEvent -> "mit "+(if(mainEvent.more) "Weiteren" else "")
-            is SpontEvent -> mainEvent.eventTags.map { it.displayName }.joinGramatically()
-            is TimewasteEvent -> formatSubtitle(mainEvent.timewastePlatforms)
-            is TravelEvent -> formatSubtitle(mainEvent.vehicles)
+            is com.myxoz.life.storage.events.DigSocEvent -> formatSubtitle(mainEvent.digSocEntries)
+            is com.myxoz.life.storage.events.EmptyEvent -> ""
+            is com.myxoz.life.storage.events.WorkEvent, is com.myxoz.life.storage.events.LearnEvent, is com.myxoz.life.storage.events.HobbyEvent -> mainEvent.details ?: mainEvent.eventTags.map { it.displayName }.joinGramatically()
+            is com.myxoz.life.storage.events.SleepEvent -> mainEvent.length().formatMsToDuration(true) + " von "+durationText
+            is com.myxoz.life.storage.events.SocialEvent -> "mit "+(if(mainEvent.more) "Weiteren" else "")
+            is com.myxoz.life.storage.events.SpontEvent -> mainEvent.eventTags.map { it.displayName }.joinGramatically()
+            is com.myxoz.life.storage.events.TimewasteEvent -> formatSubtitle(mainEvent.timewastePlatforms)
+            is com.myxoz.life.storage.events.TravelEvent -> formatSubtitle(mainEvent.vehicles)
         }
         var constructedNotification = LifeReschedulingNotificationContent(
             launchEventId,
@@ -256,19 +256,19 @@ class LiveRescheduling(val context: Context): CalendarInterface.CalendarHook {
                 }
             }
             when(mainEvent) {
-                is DigSocEvent -> launch {
+                is com.myxoz.life.storage.events.DigSocEvent -> launch {
                     getPeopleFlowFor(mainEvent).collect {
                         constructedNotification = constructedNotification.copy(secondarySubtitle = "$secondarySubtitle mit $it")
                         display(constructedNotification)
                     }
                 }
-                is SocialEvent -> launch {
+                is com.myxoz.life.storage.events.SocialEvent -> launch {
                     getPeopleFlowFor(mainEvent).collect {
                         constructedNotification = constructedNotification.copy(secondarySubtitle = "mit $it")
                         display(constructedNotification)
                     }
                 }
-                is TravelEvent -> launch {
+                is com.myxoz.life.storage.events.TravelEvent -> launch {
                     dbInterface.locationInterface.getLocationById(mainEvent.to).collect {
                         val location = "Nach "+(it?.name ?: "Ort")
                         constructedNotification = constructedNotification.copy(primaryTitle = location, secondaryTitle = location)
@@ -389,7 +389,7 @@ class LiveRescheduling(val context: Context): CalendarInterface.CalendarHook {
 
     private suspend fun EventEntity.trySynced(): SyncedEvent?{
         return SyncedEvent.from(
-            RawEvent.PreparedEventContent.prepareContentFor(id, eventDetailsDao)
+            _root_ide_package_.com.myxoz.life.storage.events.RawEvent.PreparedEventContent.prepareContentFor(id, eventDetailsDao)
                 ?: return null
         )
     }

@@ -47,7 +47,7 @@ import com.myxoz.life.R
 import com.myxoz.life.Theme
 import com.myxoz.life.api.syncables.PersonSyncable
 import com.myxoz.life.storage.dbwrapper.banking.formatCents
-import com.myxoz.life.storage.interfaces.BankingRepo
+import com.myxoz.life.storage.interfaces.BankingInterface
 import com.myxoz.life.ui.NavPath
 import com.myxoz.life.ui.feed.dayoverview.components.confetti
 import com.myxoz.life.ui.feed.main.screenTimeGoal
@@ -378,7 +378,7 @@ private fun DisplayStepsBlock(rawSteps: Long?){
 }
 
 @Composable
-private fun BankingBlock(bankingEntries: List<BankingRepo.BankingDisplayEntity>, openBankingMenu: ()->Unit){
+private fun BankingBlock(bankingEntries: List<BankingInterface.MixedBankingEntity>, openBankingMenu: ()->Unit){
     Column (
         Modifier
             .fillMaxWidth()

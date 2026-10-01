@@ -6,17 +6,17 @@ import android.provider.CallLog
 import androidx.core.content.edit
 import com.myxoz.life.api.syncables.PersonSyncable
 import com.myxoz.life.storage.dbwrapper.people.ReadPeopleDao
-import com.myxoz.life.events.DigSocEvent
-import com.myxoz.life.events.RawEvent
+import com.myxoz.life.storage.events.DigSocEvent
+import com.myxoz.life.storage.events.RawEvent
 import com.myxoz.life.events.additionals.DigSocPlatform
-import com.myxoz.life.events.additionals.TimedTagLikeContainer
+import com.myxoz.life.storage.events.additionals.TimedTagLikeContainer
 import com.myxoz.life.utils.PhoneNumberParser
 import com.myxoz.life.utils.roundToNearest15Min
 
 object AutoDetectCall {
     const val SPK = "declined_calls"
     private data class Call(val start: Long, val duration: Long, val number: String)
-    suspend fun getSessions(prefs: SharedPreferences, context: Context, readPeopleDao: ReadPeopleDao): List<RawEvent>{
+    suspend fun getSessions(prefs: SharedPreferences, context: Context, readPeopleDao: ReadPeopleDao): List<com.myxoz.life.storage.events.RawEvent>{
         val lookAfter = prefs.getLong(SPK+"_after", 0L)
         val resolver = context.contentResolver
         val cursor = resolver.query(
@@ -65,17 +65,24 @@ object AutoDetectCall {
             }
             .map {
                 val start = (it.start).roundToNearest15Min()
-                DigSocEvent(
+                _root_ide_package_.com.myxoz.life.storage.events.DigSocEvent(
                     start,
-                    (it.start + it.duration*1000L).roundToNearest15Min().coerceAtLeast(start),
+                    (it.start + it.duration * 1000L).roundToNearest15Min().coerceAtLeast(start),
                     false,
                     false,
                     listOf(
-                        TimedTagLikeContainer(DigSocPlatform.Anruf, it.duration*1000L)
+                        _root_ide_package_.com.myxoz.life.storage.events.additionals.TimedTagLikeContainer(
+                            DigSocPlatform.Anruf,
+                            it.duration * 1000L
+                        )
                     ),
                     "Anruf",
                     allPeople.mapNotNull { person ->
-                        if(PhoneNumberParser.areEqual(person.phoneNumber ?: return@mapNotNull null, it.number))
+                        if (PhoneNumberParser.areEqual(
+                                person.phoneNumber ?: return@mapNotNull null,
+                                it.number
+                            )
+                        )
                             person.id
                         else
                             null

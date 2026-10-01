@@ -2,7 +2,7 @@ package com.myxoz.life.repositories.supermodule
 
 import com.myxoz.life.api.Syncable
 import com.myxoz.life.api.syncables.SyncedEvent
-import com.myxoz.life.events.EmptyEvent
+import com.myxoz.life.storage.events.EmptyEvent
 import com.myxoz.life.utils.roundToNearest15Min
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -45,7 +45,7 @@ class CalendarSuper {
             setEditing(true)
             val actualTs = ts.roundToNearest15Min()
             _event.value = SyncedEvent(
-                -1L, 0L, null, EmptyEvent(
+                -1L, 0L, null, _root_ide_package_.com.myxoz.life.storage.events.EmptyEvent(
                     actualTs,
                     actualTs + 3600 * 1000L,
                     false, usl = false

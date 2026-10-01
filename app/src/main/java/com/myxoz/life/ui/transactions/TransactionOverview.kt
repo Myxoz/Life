@@ -64,8 +64,8 @@ import com.myxoz.life.api.syncables.ManualTransactionSyncable
 import com.myxoz.life.api.syncables.TransactionSplitSyncable
 import com.myxoz.life.repositories.LargeDataCache
 import com.myxoz.life.storage.dbwrapper.banking.formatCents
-import com.myxoz.life.storage.interfaces.BankingRepo
-import com.myxoz.life.storage.interfaces.BankingRepo.BankingDisplayEntity.Companion.finalDailyBalance
+import com.myxoz.life.storage.interfaces.BankingInterface
+import com.myxoz.life.storage.interfaces.BankingInterface.MixedBankingEntity.Companion.finalDailyBalance
 import com.myxoz.life.ui.ActionBar
 import com.myxoz.life.ui.EditToTickAndDiscard
 import com.myxoz.life.ui.NavPath
@@ -100,7 +100,7 @@ fun TransactionOverview(transactionOverviewViewModel: TransactionOverviewViewMod
     val transactionAtHand by transactionOverviewViewModel.inspectedTransaction.collectAsState()
     val transaction = transactionAtHand ?: return
     val innerPadding = windowPadding
-    val predictedTransactionName by BankingRepo.BankingDisplayEntity.getResolvedName(transaction, transactionFeedRepo)
+    val predictedTransactionName by BankingInterface.MixedBankingEntity.getResolvedName(transaction, transactionFeedRepo)
     Column(
         Modifier
             .fillMaxSize(),
@@ -301,7 +301,7 @@ fun MyCard(largeDataCache: LargeDataCache, transactionFeedRepo: TransactionFeedR
 }
 
 @Composable
-fun BankingEntryComposable(entry: BankingRepo.BankingDisplayEntity, isFirst: Boolean, isLast: Boolean) {
+fun BankingEntryComposable(entry: BankingInterface.MixedBankingEntity, isFirst: Boolean, isLast: Boolean) {
     val calendar = remember { Calendar.getInstance() }
     val screens = LocalScreens.current
     Column(
@@ -527,7 +527,7 @@ fun BankCard(
 }
 
 @Composable
-private fun PaymentSplit(transactionFeedRepo: TransactionFeedRepo, transaction: BankingRepo.BankingDisplayEntity) {
+private fun PaymentSplit(transactionFeedRepo: TransactionFeedRepo, transaction: BankingInterface.MixedBankingEntity) {
     Column(
         Modifier
             .fillMaxWidth(),

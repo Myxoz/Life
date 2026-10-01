@@ -5,7 +5,7 @@ import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.myxoz.life.storage.interfaces.DatabaseInterface
-import com.myxoz.life.storage.interfaces.utils.subscribeToColdFlow
+import com.myxoz.life.subscribeToColdFlow
 import com.myxoz.life.ui.NavPath
 import com.myxoz.life.utils.def
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -17,13 +17,13 @@ class PersonalDebtViewModel(
     val handle: SavedStateHandle
 ): ViewModel() {
     val personId = handle.get<Long>(NavPath.Menu.Contacts.DEBT_DISPLAY.parameterName) ?: error("Failed to parse personaldebt path $handle")
-    private val debt = dbInterface.bankingRepo.getDebtFor(personId)
+    private val debt = dbInterface.bankingInterface.getDebtFor(personId)
 
     @OptIn(ExperimentalCoroutinesApi::class)
     val debtTransactions = debt.flatMapMerge { list ->
         combine(
             list.def(emptyList()).map { syncable ->
-            dbInterface.bankingRepo.getTransaction(syncable.key)
+            dbInterface.bankingInterface.getTransaction(syncable.key)
         }){ array ->
             array
                 .filterNotNull()

@@ -5,7 +5,7 @@ import android.content.Context
 import com.myxoz.life.android.alarm.AlarmScheduler
 import com.myxoz.life.api.syncables.SyncedEvent
 import com.myxoz.life.storage.interfaces.DatabaseInterface
-import com.myxoz.life.storage.interfaces.utils.subscribeToColdFlow
+import com.myxoz.life.subscribeToColdFlow
 import com.myxoz.life.utils.syncNullableToPrefs
 import com.myxoz.life.utils.syncToPrefs
 import kotlinx.coroutines.delay

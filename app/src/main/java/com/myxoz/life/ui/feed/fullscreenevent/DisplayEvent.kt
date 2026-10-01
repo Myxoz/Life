@@ -40,16 +40,16 @@ import com.myxoz.life.Theme
 import com.myxoz.life.android.integration.HVV
 import com.myxoz.life.api.syncables.LocationSyncable
 import com.myxoz.life.api.syncables.SyncedEvent
-import com.myxoz.life.events.DigSocEvent
-import com.myxoz.life.events.SocialEvent
-import com.myxoz.life.events.TimewasteEvent
-import com.myxoz.life.events.TravelEvent
-import com.myxoz.life.events.additionals.DetailsEvent
-import com.myxoz.life.events.additionals.EventType
-import com.myxoz.life.events.additionals.PeopleEvent
-import com.myxoz.life.events.additionals.TagEvent
-import com.myxoz.life.events.additionals.TimedTagLikeContainer.Companion.TimedTagLikeBar
-import com.myxoz.life.events.additionals.TitleEvent
+import com.myxoz.life.storage.events.DigSocEvent
+import com.myxoz.life.storage.events.SocialEvent
+import com.myxoz.life.storage.events.TimewasteEvent
+import com.myxoz.life.storage.events.TravelEvent
+import com.myxoz.life.storage.events.additionals.DetailsEvent
+import com.myxoz.life.storage.events.additionals.EventType
+import com.myxoz.life.storage.events.additionals.PeopleEvent
+import com.myxoz.life.storage.events.additionals.TagEvent
+import com.myxoz.life.storage.events.additionals.TimedTagLikeContainer.Companion.TimedTagLikeBar
+import com.myxoz.life.storage.events.additionals.TitleEvent
 import com.myxoz.life.ui.ArrowDirection
 import com.myxoz.life.ui.Chip
 import com.myxoz.life.ui.drawArrowBehind
@@ -74,7 +74,7 @@ fun DisplayEvent(fullEvent: SyncedEvent) {
         verticalArrangement = Arrangement.spacedBy(5.dp)
     ) {
         Spacer(Modifier.height(20.dp))
-        if (fullEvent.raw is TitleEvent) {
+        if (fullEvent.raw is com.myxoz.life.storage.events.additionals.TitleEvent) {
             Text(
                 fullEvent.raw.title.takeIf { it.isNotBlank() } ?: "Kein Titel",
                 Modifier
@@ -86,7 +86,7 @@ fun DisplayEvent(fullEvent: SyncedEvent) {
                         TypoStyle(Theme.secondary, FontSize.XXLARGE).copy(fontStyle = FontStyle.Italic)
             )
         }
-        if (fullEvent.raw is DetailsEvent && fullEvent.raw.details != null) {
+        if (fullEvent.raw is com.myxoz.life.storage.events.additionals.DetailsEvent && fullEvent.raw.details != null) {
             Text(
                 fullEvent.raw.details ?: "",
                 Modifier
@@ -96,7 +96,7 @@ fun DisplayEvent(fullEvent: SyncedEvent) {
             )
         }
         Spacer(Modifier.height(10.dp))
-        if (fullEvent.raw is TagEvent) {
+        if (fullEvent.raw is com.myxoz.life.storage.events.additionals.TagEvent) {
             val tagsHeight = FontSize.SMALL.size.toDp() + 2.dp
             FlowRow(
                 horizontalArrangement = Arrangement.spacedBy(10.dp)
@@ -113,10 +113,10 @@ fun DisplayEvent(fullEvent: SyncedEvent) {
                                         add(it)
                                     }
                                     if(selectedEventTypes.value.isEmpty())
-                                        selectedEventTypes.value = EventType.order.filter { t -> t.isTagEvent() }
+                                        selectedEventTypes.value = _root_ide_package_.com.myxoz.life.storage.events.additionals.EventType.order.filter { t -> t.isTagEvent() }
                                     else
                                         selectedEventTypes.value = selectedEventTypes.value.filter { t -> t.isTagEvent() }
-                                            .ifEmpty { EventType.order.filter { t -> t.isTagEvent() } }
+                                            .ifEmpty { _root_ide_package_.com.myxoz.life.storage.events.additionals.EventType.order.filter { t -> t.isTagEvent() } }
                                 }
                             }
                             .padding(horizontal = 10.dp, vertical = 5.dp)
@@ -139,27 +139,27 @@ fun DisplayEvent(fullEvent: SyncedEvent) {
                 }
             }
         }
-        if(fullEvent.raw is DigSocEvent) {
+        if(fullEvent.raw is com.myxoz.life.storage.events.DigSocEvent) {
             TimedTagLikeBar(fullEvent.raw.digSocEntries) {
                 screens.openCalendarWithSearch {
-                    selectedEventTypes.value = listOf(EventType.DigSoc)
+                    selectedEventTypes.value = listOf(_root_ide_package_.com.myxoz.life.storage.events.additionals.EventType.DigSoc)
                     digsocPlatforms.value = digsocPlatforms.value.toMutableList().apply {
                         add(it)
                     }
                 }
             }
         }
-        if(fullEvent.raw is TimewasteEvent) {
+        if(fullEvent.raw is com.myxoz.life.storage.events.TimewasteEvent) {
             TimedTagLikeBar(fullEvent.raw.timewastePlatforms) {
                 screens.openCalendarWithSearch {
-                    selectedEventTypes.value = listOf(EventType.Timewaste)
+                    selectedEventTypes.value = listOf(_root_ide_package_.com.myxoz.life.storage.events.additionals.EventType.Timewaste)
                     timewastePlatform.value = timewastePlatform.value.toMutableList().apply {
                         add(it)
                     }
                 }
             }
         }
-        if (fullEvent.raw is PeopleEvent) {
+        if (fullEvent.raw is com.myxoz.life.storage.events.additionals.PeopleEvent) {
             val displayedPeople by LocalScreens.current.appRepos.crossRepoSuper.getPeople(fullEvent.raw.people).collectAsState()
             Spacer(Modifier.height(10.dp))
             Text("Mit:", style = TypoStyle(Theme.onSecondaryContainer, FontSize.LARGE))
@@ -179,11 +179,11 @@ fun DisplayEvent(fullEvent: SyncedEvent) {
                                     }
                                 if (selectedEventTypes.value.isEmpty())
                                     selectedEventTypes.value =
-                                        EventType.order.filter { t -> t.isPeopleEvent() }
+                                        _root_ide_package_.com.myxoz.life.storage.events.additionals.EventType.order.filter { t -> t.isPeopleEvent() }
                                 else
                                     selectedEventTypes.value = selectedEventTypes.value
                                         .filter { t -> t.isPeopleEvent() }
-                                        .ifEmpty { EventType.order.filter { t -> t.isPeopleEvent() } }
+                                        .ifEmpty { _root_ide_package_.com.myxoz.life.storage.events.additionals.EventType.order.filter { t -> t.isPeopleEvent() } }
                             }
                         }
                     ) {
@@ -193,13 +193,13 @@ fun DisplayEvent(fullEvent: SyncedEvent) {
                         )
                     }
                 }
-                if(fullEvent.raw is SocialEvent && fullEvent.raw.more)
+                if(fullEvent.raw is com.myxoz.life.storage.events.SocialEvent && fullEvent.raw.more)
                     Chip(null, null, color = Color.Transparent) {
                         Text("+ Weitere", style = TypoStyle(Theme.secondary, FontSize.MEDIUM))
                     }
             }
         }
-        if (fullEvent.raw is TravelEvent) {
+        if (fullEvent.raw is com.myxoz.life.storage.events.TravelEvent) {
             val profileViewModel = LocalScreens.current.appRepos.crossRepoSuper
             val from by profileViewModel.getLocationById(fullEvent.raw.from).collectAsState()
             val to by profileViewModel.getLocationById(fullEvent.raw.to).collectAsState()

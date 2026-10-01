@@ -4,8 +4,8 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.myxoz.life.api.syncables.CommitSyncable
 import com.myxoz.life.storage.interfaces.DatabaseInterface
-import com.myxoz.life.storage.interfaces.utils.StateFlowCache
-import com.myxoz.life.storage.interfaces.utils.subscribeToColdFlow
+import com.myxoz.life.StateFlowCache
+import com.myxoz.life.subscribeToColdFlow
 import kotlinx.coroutines.flow.map
 
 class CommitsViewModel(private val repos: DatabaseInterface): ViewModel() {

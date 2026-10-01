@@ -3,9 +3,9 @@ package com.myxoz.life.ui.feed.dayoverview
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.myxoz.life.api.syncables.FullDaySyncable
+import com.myxoz.life.storage.api.syncables.FullDaySyncable
 import com.myxoz.life.storage.interfaces.DatabaseInterface
-import com.myxoz.life.storage.interfaces.utils.subscribeToColdFlow
+import com.myxoz.life.subscribeToColdFlow
 import com.myxoz.life.ui.NavPath
 import com.myxoz.life.utils.getDate
 import kotlinx.coroutines.flow.map
@@ -29,7 +29,7 @@ class DayOverviewViewModel(
         .getDaySummary(date)
         .subscribeToColdFlow(viewModelScope, null)
 
-    val transactions = dbInterface.bankingRepo
+    val transactions = dbInterface.bankingInterface
         .getSortedTransactionsAt(date)
         .subscribeToColdFlow(viewModelScope, listOf())
 

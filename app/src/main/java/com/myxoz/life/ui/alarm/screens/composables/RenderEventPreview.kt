@@ -22,10 +22,10 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import com.myxoz.life.MainActivity
 import com.myxoz.life.api.syncables.SyncedEvent
-import com.myxoz.life.events.DigSocEvent
-import com.myxoz.life.events.TravelEvent
-import com.myxoz.life.events.additionals.TagEvent
-import com.myxoz.life.events.additionals.TitleEvent
+import com.myxoz.life.storage.events.DigSocEvent
+import com.myxoz.life.storage.events.TravelEvent
+import com.myxoz.life.storage.events.additionals.TagEvent
+import com.myxoz.life.storage.events.additionals.TitleEvent
 import com.myxoz.life.repositories.supermodule.CrossRepoSuper
 import com.myxoz.life.ui.AlarmUI
 import com.myxoz.life.ui.ArrowDirection
@@ -71,14 +71,14 @@ fun AlarmUI.RenderEventPreview(syncedEvent: SyncedEvent, screens: LocalScreensPr
             .padding(5.dp, 5.dp, 10.dp, 5.dp)
     ) {
         when(val event = syncedEvent.raw) {
-            is TagEvent -> RenderTagAndTitleBar(
+            is com.myxoz.life.storage.events.additionals.TagEvent -> RenderTagAndTitleBar(
                 event.eventTags,
-                if (event is TitleEvent) event.title else null,
+                if (event is com.myxoz.life.storage.events.additionals.TitleEvent) event.title else null,
                 height,
                 3,
                 event.type.colors
             )
-            is DigSocEvent -> {
+            is com.myxoz.life.storage.events.DigSocEvent -> {
                 val people by crossRepoSuper.getPeople(event.people).collectAsState()
                 val displayText = people.joinToString(" · ") { it.name }
                 RenderTagAndTitleBar(
@@ -89,7 +89,7 @@ fun AlarmUI.RenderEventPreview(syncedEvent: SyncedEvent, screens: LocalScreensPr
                     event.type.colors,
                 )
             }
-            is TravelEvent -> {
+            is com.myxoz.life.storage.events.TravelEvent -> {
                 val from by crossRepoSuper.getLocationById(event.from).collectAsState()
                 val to by crossRepoSuper.getLocationById(event.to).collectAsState()
                 val fromDisplay = from?.name ?: "Von"

@@ -3,7 +3,7 @@ package com.myxoz.life.android.integration
 import android.icu.util.Calendar
 import androidx.core.net.toUri
 import com.myxoz.life.api.syncables.LocationSyncable
-import com.myxoz.life.events.additionals.Vehicle
+import com.myxoz.life.storage.events.additionals.Vehicle
 import com.myxoz.life.android.sensors.ParsedRoute
 import com.myxoz.life.utils.roundToNearest15Min
 
@@ -11,7 +11,7 @@ object HVV {
     fun parseTransitRoute(input: String): ParsedRoute? {
         val lines = input.lines().map { it.trim() }.filter { it.isNotEmpty() }
         val partedLines = input.split("\n\n").dropLast(1).map { it.lines() } /*  Drop URL */
-        val durationMap = mutableMapOf<Vehicle, Int>()
+        val durationMap = mutableMapOf<com.myxoz.life.storage.events.additionals.Vehicle, Int>()
 
         for (linePart in partedLines) {
             val vehicleLine = linePart.getOrNull(0) ?: continue
@@ -19,11 +19,11 @@ object HVV {
             val toLine = linePart.getOrNull(2) ?: continue
             val stepContent = vehicleLine.substringAfter(")").trim()
             val vehicleType = when {
-                stepContent.startsWith("Walk", ignoreCase = true) -> Vehicle.Gehen
-                stepContent.contains("(Bus)") -> Vehicle.Bus
-                stepContent.startsWith("S") && stepContent.contains("➔") -> Vehicle.SBahn
-                stepContent.startsWith("U") && stepContent.contains("➔") -> Vehicle.UBahn
-                stepContent.startsWith("R") && stepContent.contains("➔") -> Vehicle.RBahn
+                stepContent.startsWith("Walk", ignoreCase = true) -> _root_ide_package_.com.myxoz.life.storage.events.additionals.Vehicle.Gehen
+                stepContent.contains("(Bus)") -> _root_ide_package_.com.myxoz.life.storage.events.additionals.Vehicle.Bus
+                stepContent.startsWith("S") && stepContent.contains("➔") -> _root_ide_package_.com.myxoz.life.storage.events.additionals.Vehicle.SBahn
+                stepContent.startsWith("U") && stepContent.contains("➔") -> _root_ide_package_.com.myxoz.life.storage.events.additionals.Vehicle.UBahn
+                stepContent.startsWith("R") && stepContent.contains("➔") -> _root_ide_package_.com.myxoz.life.storage.events.additionals.Vehicle.RBahn
                 stepContent.contains("Change line") -> {
                     // Extract walk duration from change line
                     val walkMinIndex = stepContent.indexOf("walk")
@@ -33,8 +33,8 @@ object HVV {
                         if (minIndex != -1) {
                             val numberStr = afterWalk.take(minIndex).trim()
                             val walkMin = numberStr.toIntOrNull() ?: 0
-                            durationMap[Vehicle.Gehen] =
-                                durationMap.getOrDefault(Vehicle.Gehen, 0) + walkMin
+                            durationMap[_root_ide_package_.com.myxoz.life.storage.events.additionals.Vehicle.Gehen] =
+                                durationMap.getOrDefault(_root_ide_package_.com.myxoz.life.storage.events.additionals.Vehicle.Gehen, 0) + walkMin
                         }
                     }
                     continue

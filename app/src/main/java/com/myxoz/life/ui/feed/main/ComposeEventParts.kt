@@ -22,13 +22,13 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.times
-import com.myxoz.life.events.additionals.EventTag
-import com.myxoz.life.events.additionals.TagLike
+import com.myxoz.life.storage.events.additionals.EventTag
+import com.myxoz.life.storage.events.additionals.TagLike
 import com.myxoz.life.ui.theme.EventColors
 import com.myxoz.life.utils.toSp
 
 @Composable
-fun RenderTagAndTitleBar(tags: List<TagLike>, title: String?, oneHourDp: Dp, blockHeight: Int, color: EventColors) {
+fun RenderTagAndTitleBar(tags: List<com.myxoz.life.storage.events.additionals.TagLike>, title: String?, oneHourDp: Dp, blockHeight: Int, color: EventColors) {
     val tagColors = color.tagColors ?: return
     Row {
         val startPadding = when(blockHeight) {
@@ -45,7 +45,7 @@ fun RenderTagAndTitleBar(tags: List<TagLike>, title: String?, oneHourDp: Dp, blo
         }
         val fontHeight = (.7f*height).toSp()
         var optimalScaling by remember { mutableFloatStateOf(1f) }
-        val displayTags = tags.filter { it!=EventTag.S }
+        val displayTags = tags.filter { it!= _root_ide_package_.com.myxoz.life.storage.events.additionals.EventTag.S }
         if(displayTags.isNotEmpty()) {
             Row(
                 Modifier
@@ -91,7 +91,7 @@ fun RenderBasicEventContent(
     details: String?,
     smallText: String,
     isSmall: Boolean,
-    tags: List<TagLike>?,
+    tags: List<com.myxoz.life.storage.events.additionals.TagLike>?,
     eventColors: EventColors,
     oneHourDp: Dp,
     blockHeight: Int,

@@ -29,7 +29,7 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import com.myxoz.life.LocalScreens
 import com.myxoz.life.Theme
-import com.myxoz.life.events.additionals.TagLike
+import com.myxoz.life.storage.events.additionals.TagLike
 import com.myxoz.life.ui.Chip
 import com.myxoz.life.ui.theme.FontColor
 import com.myxoz.life.ui.theme.FontSize
@@ -129,7 +129,7 @@ fun MultipleLoctionBar(
 
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
-fun <T: TagLike> TagLikeSelection(allTags: List<T>, defaultSelectedTags: List<T>, updateTags: (List<T>)->Unit){
+fun <T: com.myxoz.life.storage.events.additionals.TagLike> TagLikeSelection(allTags: List<T>, defaultSelectedTags: List<T>, updateTags: (List<T>)->Unit){
     val selectedTags = remember { defaultSelectedTags.toMutableStateList() }
     val height = FontSize.MEDIUM.size.toDp()
     val notSelectedTags by remember {

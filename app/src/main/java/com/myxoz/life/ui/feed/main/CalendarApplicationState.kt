@@ -13,7 +13,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.snapshotFlow
 import androidx.core.content.edit
 import com.myxoz.life.storage.interfaces.DatabaseInterface
-import com.myxoz.life.storage.interfaces.utils.subscribeToColdFlow
+import com.myxoz.life.subscribeToColdFlow
 import com.myxoz.life.ui.feed.dayoverview.getMonthByCalendarMonth
 import com.myxoz.life.utils.datesThrough
 import com.myxoz.life.utils.syncToPrefs
@@ -80,7 +80,7 @@ class CalendarApplicationState(
         var lastWasMissing = false
         suspend fun prefetch(from: LocalDate, to: LocalDate){
             repos.calendarInterface.prefetchDays(from, to)
-            repos.bankingRepo.prepareBeween(from, to)
+            repos.bankingInterface.prepareBeween(from, to)
             repos.daySummaryInterface.prefetchDay(from, to)
         }
 

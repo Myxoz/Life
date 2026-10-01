@@ -27,4 +27,5 @@ dependencyResolutionManagement {
 
 rootProject.name = "Life"
 include(":app")
- 
+include(":core")
+include(":storage")

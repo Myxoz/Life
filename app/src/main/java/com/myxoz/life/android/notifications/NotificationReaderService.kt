@@ -8,15 +8,12 @@ import android.service.notification.StatusBarNotification
 import android.util.Log
 import com.myxoz.life.android.autodetect.AutoDetect
 import com.myxoz.life.api.API
-import com.myxoz.life.events.DigSocEvent
-import com.myxoz.life.events.LocalEvent
+import com.myxoz.life.storage.LocalEvent
 import com.myxoz.life.events.additionals.DigSocPlatform
-import com.myxoz.life.events.additionals.EventType
-import com.myxoz.life.events.additionals.TimedTagLikeContainer
 import com.myxoz.life.android.MainApplication
 import com.myxoz.life.utils.SharedPrefsUtils.edit
-import com.myxoz.life.utils.asList
-import com.myxoz.life.utils.getLongOrNull
+import com.myxoz.life.core.asList
+import com.myxoz.life.core.getLongOrNull
 import com.myxoz.life.utils.roundToNearest15Min
 import com.myxoz.life.viewmodels.Settings
 import kotlinx.coroutines.CoroutineScope
@@ -71,7 +68,7 @@ class NotificationReaderService : NotificationListenerService() {
                 }
 
                 CoroutineScope(Dispatchers.IO).launch {
-                    repo.bankingRepo.putFutureTransaction(
+                    repo.bankingInterface.putFutureTransaction(
                         -cents,
                         calendar.timeInMillis,
                         false,
@@ -177,12 +174,17 @@ class NotificationReaderService : NotificationListenerService() {
             val eventStart = start.roundToNearest15Min()
             val currentTime = System.currentTimeMillis()
             val endTime = currentTime.roundToNearest15Min().coerceAtLeast(eventStart + 15*1000*60)
-            var proposed = DigSocEvent(
+            var proposed = _root_ide_package_.com.myxoz.life.storage.events.DigSocEvent(
                 eventStart,
                 endTime,
                 false,
                 false,
-                listOf(TimedTagLikeContainer(DigSocPlatform.Anruf, currentTime - start)),
+                listOf(
+                    _root_ide_package_.com.myxoz.life.storage.events.additionals.TimedTagLikeContainer(
+                        DigSocPlatform.Anruf,
+                        currentTime - start
+                    )
+                ),
                 "Anruf",
                 json.getJSONArray("ids").asList { getString(it).toLong() },
             )
@@ -191,19 +193,19 @@ class NotificationReaderService : NotificationListenerService() {
             val max = oldPrefs.maxByOrNull { JSONObject(it).getLong("end") }
             if(max != null) {
                 val oldEvent = LocalEvent.fromJSON(JSONObject(max))?.raw
-                val merge = oldEvent?.type == EventType.DigSoc && oldEvent is DigSocEvent &&
+                val merge = oldEvent?.type == _root_ide_package_.com.myxoz.life.storage.events.additionals.EventType.DigSoc && oldEvent is com.myxoz.life.storage.events.DigSocEvent &&
                         oldEvent.digSocEntries.all { old -> proposed.digSocEntries.any { old.type == it.type } } &&
                         oldEvent.title == proposed.title &&
                         oldEvent.people == proposed.people &&
                         proposed.start - oldEvent.end < 7*60*1000L // Less than 7m gap
                 if(merge) {
-                    proposed = DigSocEvent(
+                    proposed = _root_ide_package_.com.myxoz.life.storage.events.DigSocEvent(
                         oldEvent.start,
                         proposed.end,
                         false,
                         false,
                         listOf(
-                            TimedTagLikeContainer(
+                            _root_ide_package_.com.myxoz.life.storage.events.additionals.TimedTagLikeContainer(
                                 DigSocPlatform.Anruf,
                                 oldEvent.digSocEntries.sumOf { it.durationMs } +
                                         proposed.digSocEntries.sumOf { it.durationMs }

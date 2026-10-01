@@ -68,8 +68,8 @@ import com.myxoz.life.LocalNavController
 import com.myxoz.life.LocalScreens
 import com.myxoz.life.R
 import com.myxoz.life.Theme
-import com.myxoz.life.events.DigSocEvent
-import com.myxoz.life.events.additionals.EventType
+import com.myxoz.life.storage.events.DigSocEvent
+import com.myxoz.life.storage.events.additionals.EventType
 import com.myxoz.life.storage.dbwrapper.banking.formatCents
 import com.myxoz.life.ui.ActionBar
 import com.myxoz.life.ui.NavPath
@@ -168,7 +168,7 @@ fun ProfileFullScreen(
                         if(lastInteractionDisplay!=null){
                             FlowRowItem(
                                 "Zuletzt interagiert",
-                                lastInteraction?.let { if(it.raw is DigSocEvent) it.raw.digSocEntries.maxByOrNull { c -> c.durationMs }?.type?.drawable else null } ?: R.drawable.met,
+                                lastInteraction?.let { if(it.raw is com.myxoz.life.storage.events.DigSocEvent) it.raw.digSocEntries.maxByOrNull { c -> c.durationMs }?.type?.drawable else null } ?: R.drawable.met,
                                 lastInteractionDisplay
                             ) {
                                 coroutineScope.launch {
@@ -181,7 +181,7 @@ fun ProfileFullScreen(
                         if(nextInteractionDisplay!=null){
                             FlowRowItem(
                                 "Nächste Interaktion",
-                                nextInteraction?.let { if(it.raw is DigSocEvent) it.raw.digSocEntries.maxByOrNull { c -> c.durationMs }?.type?.drawable else null } ?: R.drawable.met,
+                                nextInteraction?.let { if(it.raw is com.myxoz.life.storage.events.DigSocEvent) it.raw.digSocEntries.maxByOrNull { c -> c.durationMs }?.type?.drawable else null } ?: R.drawable.met,
                                 nextInteractionDisplay
                             ) {
                                 coroutineScope.launch {
@@ -241,7 +241,7 @@ fun ProfileFullScreen(
                         val acc = components.values.sumOf { it.value }
                         components.forEach {
                             if(it.value.value <= 0.0) return@forEach
-                            val calendar = EventType.getById(it.key.toIntOrNull()?:return@forEach)
+                            val calendar = _root_ide_package_.com.myxoz.life.storage.events.additionals.EventType.getById(it.key.toIntOrNull()?:return@forEach)
                             Row(
                                 Modifier
                                     .fillMaxWidth()
@@ -287,7 +287,7 @@ fun ProfileFullScreen(
                                 .rippleClick{
                                     screens.openCalendarWithSearch{
                                         selectedPeople.value = listOf(profileInfoModel.inspectedPersonId)
-                                        selectedEventTypes.value = EventType.order.toList()
+                                        selectedEventTypes.value = _root_ide_package_.com.myxoz.life.storage.events.additionals.EventType.order.toList()
                                     }
                                 }
                             ,
@@ -301,7 +301,7 @@ fun ProfileFullScreen(
                                     Modifier
                                         .size(fontSize)
                                         .background(
-                                            Brush.sweepGradient(EventType.order.map { it.colors.bg }),
+                                            Brush.sweepGradient(_root_ide_package_.com.myxoz.life.storage.events.additionals.EventType.order.map { it.colors.bg }),
                                             CircleShape
                                         ) // Should be the same
                                 )

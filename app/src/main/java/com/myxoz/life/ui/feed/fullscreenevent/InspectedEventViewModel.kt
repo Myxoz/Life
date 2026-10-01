@@ -8,11 +8,11 @@ import com.myxoz.life.api.API
 import com.myxoz.life.api.Syncable
 import com.myxoz.life.api.extensions.RepeatingEventsExtendable
 import com.myxoz.life.api.syncables.ExtensionSyncable
-import com.myxoz.life.api.syncables.SyncedEvent
-import com.myxoz.life.events.EmptyEvent
 import com.myxoz.life.repositories.supermodule.CalendarSuper
+import com.myxoz.life.storage.api.syncables.SyncedEvent
 import com.myxoz.life.storage.interfaces.DatabaseInterface
-import com.myxoz.life.storage.interfaces.utils.subscribeToColdFlow
+import com.myxoz.life.storage.interfaces.ExtensionInterface.Companion.updateAndSyncWith
+import com.myxoz.life.subscribeToColdFlow
 import com.myxoz.life.ui.NavPath
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.delay
@@ -36,7 +36,7 @@ class InspectedEventViewModel(
             emit(System.currentTimeMillis())
         }
     }
-    val repeatingEvents = dbInterface.extensionInterface.flowFor(ExtensionSyncable.ExtensionSyncableType.RepeatingEvents)
+    val repeatingEvents = dbInterface.extensionInterface.rawFlowFor(ExtensionSyncable.ExtensionSyncableType.RepeatingEvents)
     suspend fun updateRepeatingEvent(event: SyncedEvent, type: RepeatingEventsExtendable.RepeatType?, oldId: Long?) {
         dbInterface.extensionInterface.updateAndSyncWith(ExtensionSyncable.ExtensionSyncableType.RepeatingEvents) { old ->
             if(type == null) {
@@ -92,7 +92,9 @@ class InspectedEventViewModel(
 
     // Propagated
     val isEditing = calendarSuper.isEditing
-    val semanticNullValueEvent = SyncedEvent(-1L, 0L, null, EmptyEvent(0L, 0L, false, usl = false))
+    val semanticNullValueEvent = SyncedEvent(-1L, 0L, null,
+        _root_ide_package_.com.myxoz.life.storage.events.EmptyEvent(0L, 0L, false, usl = false)
+    )
     @OptIn(ExperimentalCoroutinesApi::class)
     val event =
         (

@@ -14,7 +14,6 @@ import com.myxoz.life.Theme
 import com.myxoz.life.ui.NavPath
 import com.myxoz.life.ui.options.SubOption.Companion.RenderSubOptions
 
-const val ME_ID = 1L
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun SettingsComposable(){

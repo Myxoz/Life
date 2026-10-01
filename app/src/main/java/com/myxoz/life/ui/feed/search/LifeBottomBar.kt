@@ -47,8 +47,8 @@ import com.myxoz.life.LocalNavController
 import com.myxoz.life.LocalSettings
 import com.myxoz.life.R
 import com.myxoz.life.Theme
-import com.myxoz.life.events.additionals.EventType
-import com.myxoz.life.events.additionals.TagLike
+import com.myxoz.life.storage.events.additionals.EventType
+import com.myxoz.life.storage.events.additionals.TagLike
 import com.myxoz.life.ui.NavPath
 import com.myxoz.life.ui.feed.CalendarRepo
 import com.myxoz.life.ui.feed.main.CalendarApplicationState
@@ -134,8 +134,8 @@ fun LifeBottomBar(calendarRepo: CalendarRepo, calendarApplicationState: Calendar
                     }
                     val vehicle by search.selectedVehicles.collectAsState()
                     // This is cursed and smark, digsoc and tw cant be active at the same time
-                    val digsocPlatforms by (if(eventTypes.contains(EventType.DigSoc)) search.digsocPlatforms else search.timewastePlatform).collectAsState()
-                    for (like in arrayOf<List<TagLike>>(tags, vehicle, digsocPlatforms)) {
+                    val digsocPlatforms by (if(eventTypes.contains(_root_ide_package_.com.myxoz.life.storage.events.additionals.EventType.DigSoc)) search.digsocPlatforms else search.timewastePlatform).collectAsState()
+                    for (like in arrayOf<List<com.myxoz.life.storage.events.additionals.TagLike>>(tags, vehicle, digsocPlatforms)) {
                         if(like.isEmpty()) continue
                         Row(
                             Modifier

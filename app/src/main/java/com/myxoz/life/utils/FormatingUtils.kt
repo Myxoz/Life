@@ -1,42 +1,10 @@
 package com.myxoz.life.utils
 
 import android.icu.util.Calendar
-import java.time.LocalDate
+import com.myxoz.life.core.padStart
 
-fun Long.formatTimeStamp(calendar: Calendar): String {
-    calendar.timeInMillis = this
-    return "${calendar.get(Calendar.DAY_OF_MONTH).toString().padStart(2, '0')
-    }.${(calendar.get(Calendar.MONTH)+1).padStart(2, '0')}.${calendar.get(Calendar.YEAR)} ${
-        calendar.get(Calendar.HOUR_OF_DAY).padStart(2, '0')}:${calendar.get(Calendar.MINUTE).padStart(2, '0')}:${calendar.get(Calendar.SECOND).padStart(2, '0')}"
-}
 
-fun LocalDate.formatToDate(): String {
-    return this.dayOfMonth.padStart(2,'0')+"."+
-            this.monthValue.toString().padStart(2,'0')+"."+
-            this.year
-}
-fun Long.formatDayTime(calendar: Calendar): String {
-    calendar.timeInMillis = this
-    return "${calendar.get(Calendar.HOUR_OF_DAY).padStart(2, '0')}:${calendar.get(Calendar.MINUTE).padStart(2, '0')}"
-}
-fun Int.padStart(length: Int, char: Char) = toString().padStart(length, char)
-fun Long.roundToNearest15Min(): Long {
-    val block = 15 * 60 * 1000L // 15 minutes in ms
-    return ((this + block / 2) / block) * block
-}
-fun Long.formatMinutesToVisual() = if(this == 0L) "" else "${if(this >= 60) this / 60 else ""}${if(this >= 60) (this%60).toInt().padStart(2,'0') else this%60}"
-
-inline fun Int?.plural(s: String) = if(this == 1) "" else s
-operator fun Int.plus(other: Boolean) = this + (if(other) 1 else 0)
-operator fun Boolean.plus(other: Boolean) = if(this && other) 2 else if(this || other) 1 else 0
-inline fun <T> T?.def(value: T) = this ?: value
-fun Int.formatMToDistance(): String =
-    when(this) {
-        in 0..1000 -> "${this}m"
-        in 1000..10_000 -> "${this/1000},${(this/10)%100} km"
-        else -> "${this/1000},${(this/100)%10} km"
-    }
-
+@Deprecated("Move to using java.time")
 fun Long.formatMsToDuration(ignoreSeconds: Boolean=false): String {
     if(this == 0L) return if(ignoreSeconds) "0m" else "0s"
     val t = this/1000
@@ -49,10 +17,30 @@ fun Long.formatMsToDuration(ignoreSeconds: Boolean=false): String {
             if(!ignoreSeconds) "${if((h!=0L || m!=0L) && s<=9) " 0" else " "}${s}s" else ""
 }
 
-inline fun String.nullIfEmpty() = if(!isEmpty()) this else null
-fun Double.formatPercent(precision: Int): String = "${(this*100).toInt()}.${(this*100).toString().substringAfter(".").padStart(precision, '0').substring(0, precision)}%"
-fun List<String>.joinGramatically(): String = when(size) {
-    in Int.MIN_VALUE..0 -> ""
-    1 -> first()
-    else -> dropLast(1).joinToString(", ") + " und "+last()
+@Deprecated("Move to using java.time")
+fun Long.formatTimeStamp(calendar: Calendar): String {
+    calendar.timeInMillis = this
+    return "${calendar.get(Calendar.DAY_OF_MONTH).toString().padStart(2, '0')
+    }.${(calendar.get(Calendar.MONTH)+1).padStart(2, '0')}.${calendar.get(Calendar.YEAR)} ${
+        calendar.get(Calendar.HOUR_OF_DAY).padStart(2, '0')}:${calendar.get(Calendar.MINUTE).padStart(2, '0')}:${calendar.get(Calendar.SECOND).padStart(2, '0')}"
 }
+
+@Deprecated("Move to using java.time")
+fun Long.formatDayTime(calendar: Calendar): String {
+    calendar.timeInMillis = this
+    return "${calendar.get(Calendar.HOUR_OF_DAY).padStart(2, '0')}:${calendar.get(Calendar.MINUTE).padStart(2, '0')}"
+}
+@Deprecated("Move to using java.time")
+fun Long.roundToNearest15Min(): Long {
+    val block = 15 * 60 * 1000L // 15 minutes in ms
+    return ((this + block / 2) / block) * block
+}
+@Deprecated("Move to using java.time")
+fun Long.formatMinutesToVisual() = if(this == 0L) "" else "${if(this >= 60) this / 60 else ""}${if(this >= 60) (this%60).toInt().padStart(2,'0') else this%60}"
+
+fun Int.formatMToDistance(): String =
+    when(this) {
+        in 0..1000 -> "${this}m"
+        in 1000..10_000 -> "${this/1000},${(this/10)%100} km"
+        else -> "${this/1000},${(this/100)%10} km"
+    }

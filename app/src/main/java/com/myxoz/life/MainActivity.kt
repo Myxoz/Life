@@ -35,7 +35,7 @@ import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import com.myxoz.life.android.MainApplication
 import com.myxoz.life.android.notifications.createNotificationChannels
-import com.myxoz.life.api.syncables.SyncedEvent
+import com.myxoz.life.storage.api.syncables.SyncedEvent
 import com.myxoz.life.ui.AlarmUI
 import com.myxoz.life.ui.LocalScreensProvider
 import com.myxoz.life.ui.ModifyLocation
@@ -403,7 +403,7 @@ class MainActivity : ComponentActivity() {
     private fun handleSharingIntent(intent: Intent) {
         intent.getStringExtra("shared_event")?.let { jsonString ->
             try {
-                val event = SyncedEvent.fromJSON(JSONObject(jsonString))
+                val event = _root_ide_package_.com.myxoz.life.storage.api.syncables.SyncedEvent.fromJSON(JSONObject(jsonString))
                 appRepos.calendarSuper.setInspectedEventTo(
                     if (!event.isSynced()) {
                         if(appRepos.calendarSuper.isEditing.value) {

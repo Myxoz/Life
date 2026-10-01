@@ -1,13 +1,14 @@
 package com.myxoz.life.aggregator
 
-import com.myxoz.life.api.extensions.StreakExtendable
-import com.myxoz.life.api.syncables.ExtensionSyncable
-import com.myxoz.life.api.syncables.FullDaySyncable
-import com.myxoz.life.api.syncables.SyncedEvent
+import com.myxoz.life.core.UnixWeek
+import com.myxoz.life.storage.api.extensions.StreakExtendable
+import com.myxoz.life.storage.api.syncables.ExtensionSyncable
+import com.myxoz.life.storage.api.syncables.FullDaySyncable
+import com.myxoz.life.storage.api.syncables.SyncedEvent
 import com.myxoz.life.storage.interfaces.DatabaseInterface
+import com.myxoz.life.storage.interfaces.ExtensionInterface.Companion.flowFor
 import com.myxoz.life.storage.interfaces.utils.Cached.Companion.cached
-import com.myxoz.life.storage.interfaces.utils.subscribeToColdFlow
-import com.myxoz.life.utils.UnixWeek
+import com.myxoz.life.subscribeToColdFlow
 import com.myxoz.life.utils.atEndAsMillis
 import com.myxoz.life.utils.atStartAsMillis
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -21,6 +22,7 @@ import kotlinx.coroutines.flow.update
 import java.time.LocalDate
 import java.time.ZoneId
 import java.util.concurrent.ConcurrentHashMap
+import kotlin.collections.get
 import kotlin.math.max
 
 typealias EventFlow = StateFlow<List<SyncedEvent>?>

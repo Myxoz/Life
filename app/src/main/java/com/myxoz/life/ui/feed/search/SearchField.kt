@@ -1,18 +1,18 @@
 package com.myxoz.life.ui.feed.search
 
 import androidx.navigation.NavController
-import com.myxoz.life.events.DigSocEvent
-import com.myxoz.life.events.TimewasteEvent
-import com.myxoz.life.events.TravelEvent
-import com.myxoz.life.events.additionals.DetailsEvent
+import com.myxoz.life.storage.events.DigSocEvent
+import com.myxoz.life.storage.events.TimewasteEvent
+import com.myxoz.life.storage.events.TravelEvent
+import com.myxoz.life.storage.events.additionals.DetailsEvent
 import com.myxoz.life.events.additionals.DigSocPlatform
-import com.myxoz.life.events.additionals.EventTag
-import com.myxoz.life.events.additionals.EventType
-import com.myxoz.life.events.additionals.PeopleEvent
-import com.myxoz.life.events.additionals.TagEvent
-import com.myxoz.life.events.additionals.TimewastePlatform
-import com.myxoz.life.events.additionals.TitleEvent
-import com.myxoz.life.events.additionals.Vehicle
+import com.myxoz.life.storage.events.additionals.EventTag
+import com.myxoz.life.storage.events.additionals.EventType
+import com.myxoz.life.storage.events.additionals.PeopleEvent
+import com.myxoz.life.storage.events.additionals.TagEvent
+import com.myxoz.life.storage.events.additionals.TimewastePlatform
+import com.myxoz.life.storage.events.additionals.TitleEvent
+import com.myxoz.life.storage.events.additionals.Vehicle
 import com.myxoz.life.ui.NavPath
 import com.myxoz.life.ui.feed.CalendarRepo
 import com.myxoz.life.ui.feed.main.PrerenderedEvent
@@ -23,17 +23,17 @@ class SearchField {
     val textInputValue = MutableStateFlow<String?>(null)
     val mode = MutableStateFlow(SearchMode.Text)
     val selectedPeople = MutableStateFlow(listOf<Long>())
-    val selectedEventTypes = MutableStateFlow(listOf<EventType>())
+    val selectedEventTypes = MutableStateFlow(listOf<com.myxoz.life.storage.events.additionals.EventType>())
     val ignoreCase = MutableStateFlow(true)
     val regexMode = MutableStateFlow(false)
-    val tags = MutableStateFlow(listOf<EventTag>())
+    val tags = MutableStateFlow(listOf<com.myxoz.life.storage.events.additionals.EventTag>())
     val locationFrom = MutableStateFlow(listOf<Long>())
     val locationTo = MutableStateFlow(listOf<Long>())
-    val selectedVehicles = MutableStateFlow(listOf<Vehicle>())
+    val selectedVehicles = MutableStateFlow(listOf<com.myxoz.life.storage.events.additionals.Vehicle>())
     val detailsQuery = MutableStateFlow("")
     val titleQuery = MutableStateFlow("")
     val digsocPlatforms = MutableStateFlow(listOf<DigSocPlatform>())
-    val timewastePlatform = MutableStateFlow(listOf<TimewastePlatform>())
+    val timewastePlatform = MutableStateFlow(listOf<com.myxoz.life.storage.events.additionals.TimewastePlatform>())
     val isSearching = MutableStateFlow(false)
     // TODO ADD TO RESET
     fun setText(text: String?){
@@ -45,30 +45,30 @@ class SearchField {
         val proposed = event.event.raw
         if(mode.value == SearchMode.Text) {
             val text = textInputValue.value?.lowercase() ?: return true
-            return (proposed is TagEvent && proposed.containsTagLike(text)) ||
-                    (proposed is TitleEvent && proposed.title.contains(text, true)) ||
-                    (proposed is DetailsEvent && proposed.details?.contains(text, true) == true) ||
-                    (proposed is DigSocEvent && proposed.digSocEntries.any{it.type.name.contains(text, true)}) ||
-                    (proposed is TimewasteEvent && proposed.timewastePlatforms.any{it.type.name.contains(text, true)}) ||
-                    (proposed is TravelEvent && proposed.vehicles.any{it.type.name.contains(text, true)}) ||
-                    (proposed is TravelEvent && listOf(calendarRepo.getCachedLocation(proposed.from), calendarRepo.getCachedLocation(proposed.to))
+            return (proposed is com.myxoz.life.storage.events.additionals.TagEvent && proposed.containsTagLike(text)) ||
+                    (proposed is com.myxoz.life.storage.events.additionals.TitleEvent && proposed.title.contains(text, true)) ||
+                    (proposed is com.myxoz.life.storage.events.additionals.DetailsEvent && proposed.details?.contains(text, true) == true) ||
+                    (proposed is com.myxoz.life.storage.events.DigSocEvent && proposed.digSocEntries.any{it.type.name.contains(text, true)}) ||
+                    (proposed is com.myxoz.life.storage.events.TimewasteEvent && proposed.timewastePlatforms.any{it.type.name.contains(text, true)}) ||
+                    (proposed is com.myxoz.life.storage.events.TravelEvent && proposed.vehicles.any{it.type.name.contains(text, true)}) ||
+                    (proposed is com.myxoz.life.storage.events.TravelEvent && listOf(calendarRepo.getCachedLocation(proposed.from), calendarRepo.getCachedLocation(proposed.to))
                         .any{it?.name?.contains(text, true) == true}) ||
-                    (proposed is PeopleEvent && calendarRepo.getCachedPeopleById(proposed.people).any { it.name.contains(text, true) })
+                    (proposed is com.myxoz.life.storage.events.additionals.PeopleEvent && calendarRepo.getCachedPeopleById(proposed.people).any { it.name.contains(text, true) })
         } else  {
             return (
                     selectedPeople.value.isEmpty() ||
-                            (proposed is PeopleEvent && proposed.people.any { it in selectedPeople.value }) ||
+                            (proposed is com.myxoz.life.storage.events.additionals.PeopleEvent && proposed.people.any { it in selectedPeople.value }) ||
                             (event.nextToPeople.any { it in selectedPeople.value })
                     ) &&
-                    (detailsQuery.value.isBlank() || (proposed is DetailsEvent && proposed.details?.matchesRegexOrSearch(detailsQuery.value, regexMode.value, ignoreCase.value) == true)) &&
-                    (titleQuery.value.isBlank() || (proposed is TitleEvent && proposed.title.matchesRegexOrSearch(titleQuery.value, regexMode.value, ignoreCase.value))) &&
+                    (detailsQuery.value.isBlank() || (proposed is com.myxoz.life.storage.events.additionals.DetailsEvent && proposed.details?.matchesRegexOrSearch(detailsQuery.value, regexMode.value, ignoreCase.value) == true)) &&
+                    (titleQuery.value.isBlank() || (proposed is com.myxoz.life.storage.events.additionals.TitleEvent && proposed.title.matchesRegexOrSearch(titleQuery.value, regexMode.value, ignoreCase.value))) &&
                     (selectedEventTypes.value.isEmpty() || proposed.type in selectedEventTypes.value) &&
-                    (locationTo.value.isEmpty() || (proposed is TravelEvent && proposed.to in locationTo.value)) &&
-                    (digsocPlatforms.value.isEmpty() || (proposed is DigSocEvent && proposed.digSocEntries.any { it.type in digsocPlatforms.value })) &&
-                    (timewastePlatform.value.isEmpty() || (proposed is TimewasteEvent && proposed.timewastePlatforms.any { it.type in timewastePlatform.value })) &&
-                    (locationFrom.value.isEmpty() || (proposed is TravelEvent && proposed.from in locationFrom.value)) &&
-                    (selectedVehicles.value.isEmpty() || (proposed is TravelEvent && selectedVehicles.value.all { it in proposed.vehicles.map { c -> c.type } })) &&
-                    (tags.value.isEmpty() || (proposed is TagEvent && proposed.eventTags.any{ it in tags.value}))
+                    (locationTo.value.isEmpty() || (proposed is com.myxoz.life.storage.events.TravelEvent && proposed.to in locationTo.value)) &&
+                    (digsocPlatforms.value.isEmpty() || (proposed is com.myxoz.life.storage.events.DigSocEvent && proposed.digSocEntries.any { it.type in digsocPlatforms.value })) &&
+                    (timewastePlatform.value.isEmpty() || (proposed is com.myxoz.life.storage.events.TimewasteEvent && proposed.timewastePlatforms.any { it.type in timewastePlatform.value })) &&
+                    (locationFrom.value.isEmpty() || (proposed is com.myxoz.life.storage.events.TravelEvent && proposed.from in locationFrom.value)) &&
+                    (selectedVehicles.value.isEmpty() || (proposed is com.myxoz.life.storage.events.TravelEvent && selectedVehicles.value.all { it in proposed.vehicles.map { c -> c.type } })) &&
+                    (tags.value.isEmpty() || (proposed is com.myxoz.life.storage.events.additionals.TagEvent && proposed.eventTags.any{ it in tags.value}))
         }
     }
     private fun String.matchesRegexOrSearch(query: String, regexEnabled: Boolean, ignoreCase: Boolean): Boolean{
@@ -99,11 +99,11 @@ class SearchField {
     fun wasUpdated(){
         lastUpdated.value = System.currentTimeMillis()
         if(mode.value == SearchMode.Target){
-            if(selectedEventTypes.value.isEmpty() || selectedEventTypes.value.any { it != EventType.DigSoc }) digsocPlatforms.value = listOf()
-            if(selectedEventTypes.value.isEmpty() || selectedEventTypes.value.any { it != EventType.Timewaste }) timewastePlatform.value = listOf()
+            if(selectedEventTypes.value.isEmpty() || selectedEventTypes.value.any { it != _root_ide_package_.com.myxoz.life.storage.events.additionals.EventType.DigSoc }) digsocPlatforms.value = listOf()
+            if(selectedEventTypes.value.isEmpty() || selectedEventTypes.value.any { it != _root_ide_package_.com.myxoz.life.storage.events.additionals.EventType.Timewaste }) timewastePlatform.value = listOf()
             if(selectedEventTypes.value.isEmpty() || selectedEventTypes.value.any { !it.isTagEvent() }) tags.value = listOf()
             if(selectedEventTypes.value.isEmpty() || selectedEventTypes.value.any { !it.isTitleEvent() }) titleQuery.value = ""
-            if(selectedEventTypes.value.isEmpty() || selectedEventTypes.value.any { it != EventType.Travel }) {
+            if(selectedEventTypes.value.isEmpty() || selectedEventTypes.value.any { it != _root_ide_package_.com.myxoz.life.storage.events.additionals.EventType.Travel }) {
                 locationTo.value = listOf()
                 locationFrom.value = listOf()
                 selectedVehicles.value = listOf()

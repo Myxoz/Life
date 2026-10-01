@@ -59,6 +59,8 @@ import kotlin.math.hypot
 import kotlin.math.max
 import kotlin.math.sin
 import kotlin.reflect.KClass
+import kotlin.time.Duration
+import kotlin.time.Duration.Companion.milliseconds
 
 @Composable
 fun Modifier.rippleClick(enabled: Boolean=true, run: ()->Unit): Modifier = this.clickable( remember { MutableInteractionSource() }, ripple(), onClick = run, enabled = enabled)
@@ -146,11 +148,11 @@ fun <T: Any> Flow<T>.syncToPrefs(
     prefs: SharedPreferences,
     key: String,
     type: KClass<T>,
-    debounceMs: Long = 200
+    debounceDuration: Duration = 200.milliseconds
 ) {
     scope.launch(Dispatchers.IO) {
         this@syncToPrefs
-            .debounce(debounceMs)
+            .debounce(debounceDuration)
             .collect { value ->
                 prefs.edit{
                     put(key, value, type)

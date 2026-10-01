@@ -6,8 +6,8 @@ import androidx.lifecycle.viewModelScope
 import com.myxoz.life.api.syncables.PersonSyncable
 import com.myxoz.life.repositories.supermodule.CrossRepoSuper
 import com.myxoz.life.storage.interfaces.DatabaseInterface
-import com.myxoz.life.storage.interfaces.utils.StateFlowCache
-import com.myxoz.life.storage.interfaces.utils.subscribeToColdFlow
+import com.myxoz.life.StateFlowCache
+import com.myxoz.life.subscribeToColdFlow
 import com.myxoz.life.ui.NavPath
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -42,7 +42,7 @@ class ProfileInfoModel(
         .getNextInteraction(inspectedPersonId)
         .subscribeToColdFlow(viewModelScope, null)
 
-    val debt = dbInterface.bankingRepo
+    val debt = dbInterface.bankingInterface
         .getDebtFor(inspectedPersonId)
         .subscribeToColdFlow(viewModelScope, null)
     val editingPerson = MutableStateFlow<PersonSyncable?>(null)

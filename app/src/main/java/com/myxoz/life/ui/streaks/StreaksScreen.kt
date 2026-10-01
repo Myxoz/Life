@@ -34,13 +34,14 @@ import androidx.compose.ui.platform.LocalWindowInfo
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.lerp
 import androidx.compose.ui.unit.min
 import com.myxoz.life.LocalScreens
 import com.myxoz.life.R
 import com.myxoz.life.Theme
 import com.myxoz.life.api.extensions.StreakExtendable
 import com.myxoz.life.api.extensions.StreakExtendable.StreakItem.Companion.StreakFlameActive
-import com.myxoz.life.events.additionals.EventType
+import com.myxoz.life.storage.events.additionals.EventType
 import com.myxoz.life.repositories.StreakRepo
 import com.myxoz.life.ui.getMaxTabletScreenWidth
 import com.myxoz.life.ui.setMaxTabletWidth
@@ -51,7 +52,6 @@ import com.myxoz.life.ui.theme.TypoStyle
 import com.myxoz.life.ui.theme.makeContrasty
 import com.myxoz.life.utils.MaterialShapes
 import com.myxoz.life.utils.asUnixWeek
-import com.myxoz.life.utils.between
 import com.myxoz.life.utils.containerDpSize
 import com.myxoz.life.utils.diagrams.chartBasedAnimation
 import com.myxoz.life.utils.plural
@@ -103,7 +103,7 @@ fun StreaksScreen(streakRepo: StreakRepo) {
                                 StreakExtendable.Timespan.Day,
                                 StreakExtendable.StreakTarget.EventTarget(
                                     false,
-                                    EventType.Empty,
+                                    _root_ide_package_.com.myxoz.life.storage.events.additionals.EventType.Empty,
                                     listOf(),
                                     listOf(),
                                     null
@@ -141,23 +141,23 @@ fun StreaksScreen(streakRepo: StreakRepo) {
             val screenWidth = getMaxTabletScreenWidth()
             val smallerScreenDimension = min(screenWidth, conf.height)
             val blur = 30.dp
-            val pictureSize = between(progress, smallPictureSize, fullPictureSize)
+            val pictureSize = lerp(smallPictureSize, fullPictureSize, progress)
             Box(
                 Modifier
                     .padding(
-                        start = between(progress, startPadding, smallerScreenDimension / 2 - pictureSize / 2),
-                        top = between(progress, smallTopPadding, topPadding),
-                        bottom = between(progress, smallTopPadding, topPadding),
+                        start = lerp(startPadding, smallerScreenDimension / 2 - pictureSize / 2, progress),
+                        top = lerp(smallTopPadding, topPadding, progress),
+                        bottom = lerp(smallTopPadding, topPadding, progress),
                     )
                     .size(pictureSize)
             ) {
-                StreakFlameActive(between(progress, blur / 4, blur))
+                StreakFlameActive(lerp(blur / 4, blur, progress))
             }
             Box(
                 Modifier
                     .height(smallPictureSize)
                     .offset(
-                        between(progress, startPadding + smallPictureSize + startPadding, conf.width),
+                        lerp(startPadding + smallPictureSize + startPadding, conf.width, progress),
                         smallTopPadding
                     )
                     .alpha(1-progress)

@@ -7,7 +7,7 @@ import com.myxoz.life.api.syncables.LocationSyncable
 import com.myxoz.life.api.syncables.SyncedEvent
 import com.myxoz.life.api.syncables.TodoSyncable
 import com.myxoz.life.repositories.AppRepos
-import com.myxoz.life.storage.interfaces.BankingRepo
+import com.myxoz.life.storage.interfaces.BankingInterface
 import com.myxoz.life.ui.feed.instantevents.InstantEvent
 import com.myxoz.life.ui.feed.search.SearchField
 import com.myxoz.life.ui.map.MapDisplayState
@@ -63,14 +63,14 @@ class LocalScreensProvider(
         nav.navigate(NavPath.Menu.MAP)
         appRepos.mapRepo.focusLocation(MapDisplayState.DisplayedLifeLocation(location))
     }
-    fun openTransaction(transaction: BankingRepo.BankingDisplayEntity) {
+    fun openTransaction(transaction: BankingInterface.MixedBankingEntity) {
         nav.navigate(
             NavPath.Transaction.DETAILS
-                .with(BankingRepo.BankingDisplayEntity.parcel(transaction.key))
+                .with(BankingInterface.MixedBankingEntity.parcel(transaction.key))
         )
     }
 
-    fun editTransaction(transaction: BankingRepo.BankingDisplayEntity) {
+    fun editTransaction(transaction: BankingInterface.MixedBankingEntity) {
         val sync = transaction.getStoredManualTransactionSyncable() ?: return
         editSyncable(sync)
     }

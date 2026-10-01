@@ -9,7 +9,7 @@ import com.mapbox.maps.extension.compose.animation.viewport.MapViewportState
 import com.myxoz.life.android.integration.MapBoxAPI
 import com.myxoz.life.api.syncables.LocationSyncable
 import com.myxoz.life.storage.interfaces.DatabaseInterface
-import com.myxoz.life.storage.interfaces.utils.subscribeToColdFlow
+import com.myxoz.life.subscribeToColdFlow
 import com.myxoz.life.ui.ThreeStateBottomSheetState
 import com.myxoz.life.utils.def
 import kotlinx.coroutines.Job

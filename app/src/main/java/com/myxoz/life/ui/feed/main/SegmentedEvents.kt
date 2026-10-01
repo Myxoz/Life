@@ -25,10 +25,7 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.coerceAtLeast
 import androidx.compose.ui.unit.dp
 import com.myxoz.life.api.syncables.SyncedEvent
-import com.myxoz.life.events.RawEvent
-import com.myxoz.life.events.additionals.DefinedDurationEvent
-import com.myxoz.life.events.additionals.EventType
-import com.myxoz.life.events.additionals.PeopleEvent
+import com.myxoz.life.storage.events.additionals.EventType
 import com.myxoz.life.ui.feed.CalendarRepo
 import com.myxoz.life.ui.feed.instantevents.InstantEvent
 import java.util.LinkedList
@@ -83,15 +80,15 @@ data class PrerenderedEvent(
     companion object {
         fun getPrerenderedEvents(events: List<SyncedEvent>, instantEntries: List<InstantEvent.InstantEventGroup>, instantEventDisplaySize: Long): Map<Long, PrerenderedEvent> {
             val order = arrayOf(
-                EventType.DigSoc,
-                EventType.Social,
-                EventType.Timewaste,
-                EventType.Sleep,
-                EventType.Spont,
-                EventType.Hobby,
-                EventType.Learn,
-                EventType.Travel,
-                EventType.Work,
+                _root_ide_package_.com.myxoz.life.storage.events.additionals.EventType.DigSoc,
+                _root_ide_package_.com.myxoz.life.storage.events.additionals.EventType.Social,
+                _root_ide_package_.com.myxoz.life.storage.events.additionals.EventType.Timewaste,
+                _root_ide_package_.com.myxoz.life.storage.events.additionals.EventType.Sleep,
+                _root_ide_package_.com.myxoz.life.storage.events.additionals.EventType.Spont,
+                _root_ide_package_.com.myxoz.life.storage.events.additionals.EventType.Hobby,
+                _root_ide_package_.com.myxoz.life.storage.events.additionals.EventType.Learn,
+                _root_ide_package_.com.myxoz.life.storage.events.additionals.EventType.Travel,
+                _root_ide_package_.com.myxoz.life.storage.events.additionals.EventType.Work,
             )
             // Complexity reasons instead of using modifyable.entries / values
             // All will just be the first iteration and fill spots will use something different from all
@@ -114,10 +111,11 @@ data class PrerenderedEvent(
                 }
             }
             for(event in instantEntries) {
-                val instantEventAsDDEvent = DefinedDurationEvent(
-                    event.start - instantEventDisplaySize / 2,
-                    event.end + instantEventDisplaySize / 2
-                )
+                val instantEventAsDDEvent =
+                    _root_ide_package_.com.myxoz.life.storage.events.additionals.DefinedDurationEvent(
+                        event.start - instantEventDisplaySize / 2,
+                        event.end + instantEventDisplaySize / 2
+                    )
                 all.forEach {
                     if(it.first.raw.overlaps(instantEventAsDDEvent)) {
                         it.second.isFullWidth = false
@@ -128,7 +126,7 @@ data class PrerenderedEvent(
             // Until here the segments are only one element
             // Now iterate the list and try to fill spots
             val segmentedMap = mutableMapOf<Long, PrerenderedEventBuilder>()
-            val peopleEvents = mutableListOf<PeopleEvent>()
+            val peopleEvents = mutableListOf<com.myxoz.life.storage.events.additionals.PeopleEvent>()
             for (event in all) {
                 if (event.second.isLeft) {
                     segmentedMap[event.first.id] = PrerenderedEventBuilder(
@@ -138,7 +136,7 @@ data class PrerenderedEvent(
                 } else {
                     // Everything that is just a bar at the right
                     val proposed = event.first.raw
-                    if (proposed is PeopleEvent) {
+                    if (proposed is com.myxoz.life.storage.events.additionals.PeopleEvent) {
                         peopleEvents.add(proposed)
                     }
                     val ev = event.second
@@ -195,9 +193,9 @@ data class PrerenderedEvent(
                 }
             }
             segmentedMap.forEach { (_, ev) ->
-                if(ev.event.raw !is PeopleEvent)
+                if(ev.event.raw !is com.myxoz.life.storage.events.additionals.PeopleEvent)
                     peopleEvents
-                        .filter { (it as? RawEvent)?.overlaps(ev.event.raw) ?: false }
+                        .filter { (it as? com.myxoz.life.storage.events.RawEvent)?.overlaps(ev.event.raw) ?: false }
                         .forEach { ev.nextToPeople.addAll(it.people) }
             }
             return segmentedMap.mapValues {
@@ -211,7 +209,7 @@ data class PrerenderedEvent(
         val hasContent: Boolean,
         val segmentStart: Long,
         val segmentEnd: Long
-    ): DefinedDurationEvent(segmentStart, segmentEnd)
+    ): com.myxoz.life.storage.events.additionals.DefinedDurationEvent(segmentStart, segmentEnd)
     private data class PrerenderedEventBuilder(
         var event: SyncedEvent,
         var segments: List<SegmentBuilder>,
@@ -228,7 +226,7 @@ data class PrerenderedEvent(
             var hasContent: Boolean,
             var segmentStart: Long,
             var segmentEnd: Long
-        ): DefinedDurationEvent(segmentStart, segmentEnd) {
+        ): com.myxoz.life.storage.events.additionals.DefinedDurationEvent(segmentStart, segmentEnd) {
             fun asSegment(): Segment = Segment(isFullWidth, isLeft, hasContent, segmentStart, segmentEnd)
         }
     }

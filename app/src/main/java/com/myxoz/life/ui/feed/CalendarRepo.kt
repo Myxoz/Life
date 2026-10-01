@@ -13,12 +13,15 @@ import com.myxoz.life.api.syncables.ExtensionSyncable
 import com.myxoz.life.api.syncables.FullDaySyncable
 import com.myxoz.life.api.syncables.PersonSyncable
 import com.myxoz.life.api.syncables.SyncedEvent
-import com.myxoz.life.events.LocalEvent
+import com.myxoz.life.storage.LocalEvent
 import com.myxoz.life.repositories.supermodule.CalendarSuper
 import com.myxoz.life.storage.interfaces.DatabaseInterface
 import com.myxoz.life.storage.interfaces.utils.Cached
-import com.myxoz.life.storage.interfaces.utils.StateFlowCache
-import com.myxoz.life.storage.interfaces.utils.subscribeToColdFlow
+import com.myxoz.life.StateFlowCache
+import com.myxoz.life.storage.api.syncables.SyncedEvent
+import com.myxoz.life.storage.interfaces.ExtensionInterface.Companion.getExtension
+import com.myxoz.life.storage.interfaces.ExtensionInterface.Companion.updateAndSyncWith
+import com.myxoz.life.subscribeToColdFlow
 import com.myxoz.life.ui.feed.instantevents.InstantEvent
 import com.myxoz.life.ui.feed.main.PrerenderedEvent
 import com.myxoz.life.ui.feed.search.SearchField
@@ -44,8 +47,8 @@ class CalendarRepo(
         getDaySummary(it.minusDays(1))
     }
     val todayFlow = repos.calendarInterface.todayFlow
-    val steps = repos.stepInterface.steps
-    val repeatingEvents = repos.extensionInterface.flowFor(ExtensionSyncable.ExtensionSyncableType.RepeatingEvents).subscribeToColdFlow(repos.appScope, null)
+    val steps = repos.stepInterface.steps.subscribeToColdFlow(view)
+    val repeatingEvents = repos.extensionInterface.rawFlowFor(ExtensionSyncable.ExtensionSyncableType.RepeatingEvents).subscribeToColdFlow(repos.appScope, null)
 
     private val stepFlowCache = StateFlowCache<LocalDate, Cached<Int>?>{
         repos.stepInterface.getStepsFor(it).subscribeToColdFlow(repos.appScope, null)

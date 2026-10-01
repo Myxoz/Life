@@ -3,15 +3,15 @@ package com.myxoz.life.android.sensors
 import android.content.Context
 import android.util.Log
 import com.myxoz.life.android.integration.HVV
-import com.myxoz.life.events.TravelEvent
-import com.myxoz.life.events.additionals.TimedTagLikeContainer
-import com.myxoz.life.events.additionals.Vehicle
+import com.myxoz.life.storage.events.TravelEvent
+import com.myxoz.life.storage.events.additionals.TimedTagLikeContainer
+import com.myxoz.life.storage.events.additionals.Vehicle
 import com.myxoz.life.storage.dbwrapper.DatabaseProvider
 import com.myxoz.life.storage.interfaces.LocationInterface
 
-data class SharedRouteParser(val event: TravelEvent) {
+data class SharedRouteParser(val event: com.myxoz.life.storage.events.TravelEvent) {
     companion object {
-        suspend fun from(sharedText: String, context: Context, locationInterface: LocationInterface): TravelEvent?{
+        suspend fun from(sharedText: String, context: Context, locationInterface: LocationInterface): com.myxoz.life.storage.events.TravelEvent?{
             val parsedRoute = HVV.parseTransitRoute(sharedText) ?: return null
             val db = DatabaseProvider.getDatabase(context)
 
@@ -41,7 +41,7 @@ data class SharedRouteParser(val event: TravelEvent) {
             )?.id else null
             Log.d("SharedRouteParser","Found: $to")
 
-            return TravelEvent(
+            return _root_ide_package_.com.myxoz.life.storage.events.TravelEvent(
                 parsedRoute.startTime,
                 parsedRoute.endTime,
                 usl = false,
@@ -49,7 +49,7 @@ data class SharedRouteParser(val event: TravelEvent) {
                 from = start ?: 0L,
                 to = to ?: 0L,
                 vehicles = parsedRoute.vehicleDurations.entries.map {
-                    TimedTagLikeContainer(
+                    _root_ide_package_.com.myxoz.life.storage.events.additionals.TimedTagLikeContainer(
                         it.key,
                         it.value * 1000L * 60L
                     )
@@ -63,5 +63,5 @@ data class ParsedRoute(
     val endAddress: String,
     val startTime: Long,
     val endTime: Long,
-    val vehicleDurations: Map<Vehicle, Int>
+    val vehicleDurations: Map<com.myxoz.life.storage.events.additionals.Vehicle, Int>
 )

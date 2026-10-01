@@ -34,7 +34,7 @@ import com.myxoz.life.LocalNavController
 import com.myxoz.life.R
 import com.myxoz.life.Theme
 import com.myxoz.life.api.extensions.StreakExtendable
-import com.myxoz.life.events.additionals.EventType
+import com.myxoz.life.storage.events.additionals.EventType
 import com.myxoz.life.repositories.StreakRepo
 import com.myxoz.life.ui.NavPath
 import com.myxoz.life.ui.getMaxTabletScreenWidth
@@ -120,7 +120,7 @@ fun EditStreaksScreen(streakRepo: StreakRepo){
                             if (it == 0)
                                 StreakExtendable.StreakTarget.EventTarget(
                                     false,
-                                    EventType.Empty,
+                                    _root_ide_package_.com.myxoz.life.storage.events.additionals.EventType.Empty,
                                     listOf(),
                                     listOf(),
                                     null
@@ -155,7 +155,7 @@ fun EditStreaksScreen(streakRepo: StreakRepo){
                         FlowRow(
                             horizontalArrangement = Arrangement.spacedBy(10.dp),
                         ) {
-                            for (type in EventType.order) {
+                            for (type in _root_ide_package_.com.myxoz.life.storage.events.additionals.EventType.order) {
                                 _root_ide_package_.com.myxoz.life.ui.feed.fullscreenevent.CalendarChip(
                                     type,
                                     streak.target.type == type

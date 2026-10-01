@@ -46,8 +46,6 @@ import com.myxoz.life.api.API
 import com.myxoz.life.api.Syncable
 import com.myxoz.life.api.extensions.StreakExtendable
 import com.myxoz.life.api.syncables.ExtensionSyncable
-import com.myxoz.life.events.additionals.EventTag
-import com.myxoz.life.events.additionals.EventType
 import com.myxoz.life.repositories.AppRepos
 import com.myxoz.life.storage.dbwrapper.Daos
 import com.myxoz.life.storage.interfaces.DatabaseInterface
@@ -149,7 +147,7 @@ fun DebugScreen(
             Button({
                 val repos = ((activity as? MainActivity)?.application as? MainApplication)?.dbInterface ?: return@Button
                 coroutineScope.launch {
-                    repos.bankingRepo.putFutureTransaction(
+                    repos.bankingInterface.putFutureTransaction(
                         100,
                         System.currentTimeMillis(),
                         false,
@@ -234,8 +232,8 @@ fun DebugScreen(
                                 StreakExtendable.Timespan.Week,
                                 StreakExtendable.StreakTarget.EventTarget(
                                     true,
-                                    EventType.Social,
-                                    listOf(EventTag.Sport),
+                                    _root_ide_package_.com.myxoz.life.storage.events.additionals.EventType.Social,
+                                    listOf(_root_ide_package_.com.myxoz.life.storage.events.additionals.EventTag.Sport),
                                     listOf(),
                                     "Gym"
                                 ),
@@ -249,8 +247,8 @@ fun DebugScreen(
                                 StreakExtendable.Timespan.Week,
                                 StreakExtendable.StreakTarget.EventTarget(
                                     false,
-                                    EventType.Hobby,
-                                    listOf(EventTag.Code),
+                                    _root_ide_package_.com.myxoz.life.storage.events.additionals.EventType.Hobby,
+                                    listOf(_root_ide_package_.com.myxoz.life.storage.events.additionals.EventTag.Code),
                                     listOf(),
                                     "Life"
                                 ),
@@ -264,7 +262,7 @@ fun DebugScreen(
                                 StreakExtendable.Timespan.Day,
                                 StreakExtendable.StreakTarget.EventTarget(
                                     false,
-                                    EventType.DigSoc,
+                                    _root_ide_package_.com.myxoz.life.storage.events.additionals.EventType.DigSoc,
                                     listOf(),
                                     listOf(5048114124350931236),
                                     null

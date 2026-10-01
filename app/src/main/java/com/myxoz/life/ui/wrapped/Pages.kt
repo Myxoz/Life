@@ -51,9 +51,9 @@ import androidx.compose.ui.unit.min
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.unit.times
 import com.myxoz.life.api.syncables.PersonSyncable
-import com.myxoz.life.events.additionals.EventTag
-import com.myxoz.life.events.additionals.EventType
-import com.myxoz.life.events.additionals.Vehicle
+import com.myxoz.life.storage.events.additionals.EventTag
+import com.myxoz.life.storage.events.additionals.EventType
+import com.myxoz.life.storage.events.additionals.Vehicle
 import com.myxoz.life.ui.theme.FontColor
 import com.myxoz.life.ui.theme.FontFamily
 import com.myxoz.life.ui.theme.FontSize
@@ -131,12 +131,12 @@ class YearPage(val year: Int) : WrappedPage() {
     }
 }
 
-class MostPopularEventType(val type: EventType, val duration: Long, val followedByTagsPage: Boolean) : WrappedPage() {
+class MostPopularEventType(val type: com.myxoz.life.storage.events.additionals.EventType, val duration: Long, val followedByTagsPage: Boolean) : WrappedPage() {
     @Composable
     override fun LifeWrappedCallContext.Content() {
         ScreenScaffold {
             val step = rememberStepSequencer(24)
-            Reveal(step >= 1) { SubtleLine("Your favorite activity was ${if(type == EventType.Sleep) "(luckily)" else ""}") }
+            Reveal(step >= 1) { SubtleLine("Your favorite activity was ${if(type == _root_ide_package_.com.myxoz.life.storage.events.additionals.EventType.Sleep) "(luckily)" else ""}") }
             Reveal(step >= 4, {
                 setColorTo(
                     flow.value.copy(backgroundAccentColor = type.colors.bg, ribbonAmp = 0.5f)
@@ -155,14 +155,14 @@ class MostPopularEventType(val type: EventType, val duration: Long, val followed
                 }
             }
             val time = (duration / DAYSINYEAR / 60000).let { "${it/60}h ${it % 60}m"}
-            Reveal(step >= 19) { NoticableFact(if(type != EventType.Sleep) "Thats $time per day!" else "With an average of $time per night" ) }
+            Reveal(step >= 19) { NoticableFact(if(type != _root_ide_package_.com.myxoz.life.storage.events.additionals.EventType.Sleep) "Thats $time per day!" else "With an average of $time per night" ) }
             Spacer(Modifier.height(20.dp))
-            Reveal(step >= 23) { SubtleLine(if(type != EventType.Sleep) "Even more than sleeping!" else if(followedByTagsPage) "Let's take a look what you were doing all this time" else "But there has been something else bugging you..." ) }
+            Reveal(step >= 23) { SubtleLine(if(type != _root_ide_package_.com.myxoz.life.storage.events.additionals.EventType.Sleep) "Even more than sleeping!" else if(followedByTagsPage) "Let's take a look what you were doing all this time" else "But there has been something else bugging you..." ) }
         }
     }
 }
 
-class SecondFavoritedEventType(val type: EventType, val duration: Long, val followedByTagsPage: Boolean) : WrappedPage() {
+class SecondFavoritedEventType(val type: com.myxoz.life.storage.events.additionals.EventType, val duration: Long, val followedByTagsPage: Boolean) : WrappedPage() {
     @Composable
     override fun LifeWrappedCallContext.Content() {
         ScreenScaffold {
@@ -217,7 +217,7 @@ class MostUsedTagsForFavActivity(val tags: List<MUTag>, val isFirst: Boolean) : 
         }
     }
     companion object {
-        data class MUTag(val tag: EventTag, val duration: Long, val times: Int)
+        data class MUTag(val tag: com.myxoz.life.storage.events.additionals.EventTag, val duration: Long, val times: Int)
     }
 }
 
@@ -483,7 +483,7 @@ class CommitStatsWrapped(val commits: Int, val heavilyCommitedRepo: String, val 
     }
 }
 
-class TravelingOverview(val type: Vehicle, val duration: Long, val totalDuration: Long) : WrappedPage() {
+class TravelingOverview(val type: com.myxoz.life.storage.events.additionals.Vehicle, val duration: Long, val totalDuration: Long) : WrappedPage() {
     @Composable
     override fun LifeWrappedCallContext.Content() {
         ScreenScaffold {
