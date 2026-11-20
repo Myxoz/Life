@@ -33,11 +33,11 @@ import com.myxoz.life.R
 import com.myxoz.life.Theme
 import com.myxoz.life.ui.feed.dayoverview.edgeToEdgeGradient
 import com.myxoz.life.ui.setMaxTabletWidth
-import com.myxoz.life.ui.theme.FontSize
-import com.myxoz.life.ui.theme.TypoStyle
+import com.myxoz.life.lifeui.theme.FontSize
+import com.myxoz.life.lifeui.theme.TypoStyle
 import com.myxoz.life.utils.rippleClick
 import com.myxoz.life.utils.windowPadding
-import com.myxoz.life.repositories.AISettingsRepo
+import com.myxoz.life.state.activityscoped.AISettingsRepo
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext

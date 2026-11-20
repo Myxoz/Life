@@ -2,7 +2,6 @@ package com.myxoz.life
 
 import android.R.attr.end
 import android.R.attr.type
-import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
 import android.graphics.Color
@@ -15,22 +14,28 @@ import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.SearchBarDefaults.InputField
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.produceState
+import androidx.compose.ui.draw.BlurredEdgeTreatment
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.core.net.toUri
 import com.myxoz.life.core.atEndAsMillis
 import com.myxoz.life.core.atStartAsMillis
-import com.myxoz.life.storage.LocalEvent
+import com.myxoz.life.core.nullIfEmpty
+import com.myxoz.life.storage.AutoDetectLocalEvent
 import com.myxoz.life.storage.api.extensions.StreakExtendable.DayTargetType
+import com.myxoz.life.storage.api.syncables.FullDaySyncable
 import com.myxoz.life.storage.api.syncables.LocationSyncable
 import com.myxoz.life.storage.api.syncables.ServerSyncableCompanion
+import com.myxoz.life.storage.api.syncables.SyncedEvent
 import com.myxoz.life.storage.api.syncables.TodoSyncable
 import com.myxoz.life.storage.convertion.events.PreparedEventContent
 import com.myxoz.life.storage.dbwrapper.days.DayScreenTimeEntity
@@ -47,20 +52,25 @@ import com.myxoz.life.storage.events.SpontEvent
 import com.myxoz.life.storage.events.TimewasteEvent
 import com.myxoz.life.storage.events.TravelEvent
 import com.myxoz.life.storage.events.WorkEvent
+import com.myxoz.life.storage.events.PeopleEvent
+import com.myxoz.life.storage.events.TagEvent
+import com.myxoz.life.storage.events.additionals.TagLike
 import com.myxoz.life.storage.events.additionals.TimedTagLikeContainer
+import com.myxoz.life.storage.events.TitleEvent
 import com.myxoz.life.storage.events.additionals.Vehicle
 import com.myxoz.life.storage.interfaces.BankingInterface.MixedBankingEntity
 import com.myxoz.life.ui.Chip
+import com.myxoz.life.ui.feed.fullscreenevent.TimeBasedVisualTransformation
 import com.myxoz.life.ui.feed.instantevents.InstantEvent
-import com.myxoz.life.ui.options.getMappedUsageDataBetween
-import com.myxoz.life.ui.theme.EventColors
-import com.myxoz.life.ui.theme.FontSize
-import com.myxoz.life.ui.theme.OldColors
-import com.myxoz.life.ui.theme.TypoStyle
+import com.myxoz.life.background.screentime.getAccumulatedUsageDurationByPackagename
+import com.myxoz.life.lifecore.flows.FlowCache
+import com.myxoz.life.lifeui.theme.EventColors
+import com.myxoz.life.lifeui.theme.FontSize
+import com.myxoz.life.lifeui.theme.OldColors
+import com.myxoz.life.lifeui.theme.TypoStyle
 import com.myxoz.life.ui.transactions.TransactionFeedRepo
-import com.myxoz.life.utils.AndroidUtils
-import com.myxoz.life.utils.PhoneNumberParser
 import com.myxoz.life.utils.diagrams.PieChart
+import com.myxoz.life.utils.formatMinutesToVisual
 import com.myxoz.life.utils.formatMsToDuration
 import com.myxoz.life.utils.toDp
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -76,22 +86,17 @@ import kotlinx.coroutines.isActive
 import org.json.JSONObject
 import java.time.Instant
 import java.time.LocalDate
-import java.time.LocalDateTime
 import java.time.ZoneId
 import java.time.temporal.TemporalQueries.zone
+import kotlin.collections.filter
 import kotlin.collections.forEach
-import kotlin.collections.get
 import kotlin.div
 import kotlin.math.abs
 import kotlin.math.min
-import kotlin.text.compareTo
-import kotlin.text.get
 import kotlin.text.toLong
-import kotlin.time.Duration
-import kotlin.time.Duration.Companion.milliseconds
 
 @Composable
-fun LocalEvent.Render(oneHour: Dp, startOfDay: Long, endOfDay: Long, removeProposedEvent: ()->Unit, syncEvent: ()->Unit){
+fun AutoDetectLocalEvent.Render(oneHour: Dp, startOfDay: Long, endOfDay: Long, removeProposedEvent: ()->Unit, syncEvent: ()->Unit){
     Box(
         Modifier
             .padding(top = raw.getTopPadding(oneHour, startOfDay))
@@ -166,128 +171,6 @@ override fun ModifyEventInputs(setSyncableTo: (FeedInstantEventSyncable) -> Unit
         setSyncableTo(copy(details = it.nullIfEmpty()))
     }
 }
-fun timeUntilNextMidnight(): Duration {
-    val now = LocalDateTime.now()
-    val tomorrow = now.toLocalDate().plusDays(1).atStartOfDay()
-    // Very generous 10ms for LocalDate.now() to update. Very likely never ever necessary,
-    // but the user doesn't notice anything so we do not care
-    return java.time.Duration.between(now, tomorrow).toMillis().milliseconds + 10.milliseconds
-}
-suspend fun waitUntilNextMidnight(){
-    delay(timeUntilNextMidnight())
-}
-
-fun matchesWhatsAppNumber(phoneNumber: String): Boolean {
-    val whatsapp = socials.find { it.platform == Platform.WhatsApp && it.handle != Platform.WhatsApp.fullName }
-    if(whatsapp != null) return PhoneNumberParser.areEqual(whatsapp.handle, phoneNumber)
-    return PhoneNumberParser.areEqual(this.phoneNumber ?: return false, phoneNumber)
-}
-
-enum class Platform(
-    val id: Int,
-    val fullName: String,
-    val short: String,
-    val icon: Int,
-    val color: Color,
-    val priority: Int,
-    private val openApp: PlatformOpener.() -> Unit
-) {
-    Instagram(
-        1,
-        "Instagram",
-        "insta",
-        R.drawable.insta,
-        Color(0xFFE1306C),
-        0,
-        { web("https://www.instagram.com/$handle") }
-    ),
-    Snapchat(
-        2,
-        "Snapchat",
-        "snap",
-        R.drawable.snap,
-        Color(0xFFFFFC00),
-        1,
-        { web("https://www.snapchat.com/add/$handle") }
-    ),
-    WhatsApp(
-        3,
-        "WhatsApp",
-        "wa",
-        R.drawable.whatsapp,
-        Color(0xFF25D366),
-        9,
-        {
-            intent(
-                ComponentName("com.whatsapp", "com.whatsapp.Conversation"),
-                listOf(
-                    "jid" to (handle.takeIf { it != WhatsApp.fullName } ?: phoneNumber ?: "").replace(
-                        "\\D".toRegex(),
-                        ""
-                    ) + "@s.whatsapp.net"
-                )
-            )
-        }
-    ),
-    Youtube(
-        4,
-        "YouTube",
-        "youtube",
-        R.drawable.yt,
-        Color(0xFFFF0000),
-        -1,
-        { web("https://youtube.com/@$handle") }
-    ),
-    Signal(
-        5,
-        "Signal",
-        "signal",
-        R.drawable.signal,
-        Color(0xFF3b45fd),
-        10,
-        { web("https://signal.me/#p/$phoneNumber") }
-    ),
-    Telegram(
-        6,
-        "Telegram",
-        "telegram",
-        R.drawable.telegram,
-        Color(0xFF2AABEE),
-        2,
-        { web(if (handle != Telegram.fullName) "https://t.me/$handle" else "https://t.me/$phoneNumber") }
-    )
-    ;
-
-    fun openPlatform(context: Context, handle: String, phoneNumber: String?) = PlatformOpener(context, handle, phoneNumber).openApp()
-
-    private class PlatformOpener(
-        val context: Context,
-        val handle: String,
-        val phoneNumber: String?
-    ) {
-        fun web(url: String) {
-            AndroidUtils.openLink(context, url)
-        }
-
-        fun intent(componentName: ComponentName, extras: List<Pair<String, String>>) {
-            val intent = Intent(Intent.ACTION_MAIN)
-            intent.component = componentName
-            extras.forEach { intent.putExtra(it.first, it.second) }
-            intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-            context.startActivity(intent)
-        }
-    }
-
-    companion object {
-        fun getById(id: Int): Platform? = Platform.entries.firstOrNull { it.id == id }
-            .apply { if (this == null) Log.w("Person","Couldnt find social with id $id in Platforms.getById") }
-
-        fun getByName(name: String): Platform? =
-            Platform.entries.firstOrNull { it.short == name }
-                .apply { if (this == null) Log.w("Person","Couldnt find social with name $name in Platforms.getById") }
-    }
-}
-val permissionChecker = Settings.Permission.PermissionChecker(settingsPrefs, applicationContext)
 val syncEngine = SyncEngine(api, permissionChecker)
 fun copy(
     name: String = this.name,
@@ -390,14 +273,6 @@ companion object : ServerSyncableCompanion<LocationSyncable> {
         context.startActivity(intent)
     }
 }
-override fun asInstantEvent(): InstantEvent = InstantEvent(
-    R.drawable.todos_icon,
-    short,
-    timestamp,
-    { it is TodoSyncable && it.id == id },
-) { screens ->
-    screens.fullScreenTodo(this)
-}
 @Composable
 override fun BoxScope.RenderContent(
     oneHourDp: Dp,
@@ -432,11 +307,6 @@ override fun BoxScope.RenderContent(
 }
 
 fun length() = (end - start).coerceAtLeast(15*1000L*60)
-fun getDurationInRange(startOfDay: Long, endOfDay: Long): Long = min(length(), min(endOfDay - start, end - startOfDay))
-fun getBlockHeight(startOfDay: Long, endOfDay: Long): Int = (getDurationInRange(startOfDay, endOfDay)/(900*1000)).toInt()
-fun getTopPadding(oneHour: Dp, startOfDay: Long) = ((this.start - startOfDay).coerceAtLeast(0L) / (3600 * 1000L).toFloat()) * oneHour + 1.dp
-fun getHeightDp(oneHour: Dp, startOfDay: Long, endOfDay: Long) = oneHour*(getBlockHeight(startOfDay, endOfDay)/4f) - 1.dp
-fun overlaps(other: DefinedDurationEvent): Boolean = start < other.end && end > other.start
 fun getAllStrechedDays(zone: ZoneId): List<LocalDate> {
     val startDate = Instant.ofEpochSecond(start/1000).atZone(zone).toLocalDate()
     val endDate = Instant.ofEpochSecond(end/1000-1).atZone(zone).toLocalDate()
@@ -567,7 +437,7 @@ companion object {
 companion object {
     @Composable
     @OptIn(ExperimentalLayoutApi::class)
-    fun <T: com.myxoz.life.storage.events.additionals.TagLike> TimedTagLikeBar(tags: List<TimedTagLikeContainer<T>>, onClick: ((T)->Unit)? = null){
+    fun <T: TagLike> TimedTagLikeBar(tags: List<TimedTagLikeContainer<T>>, onClick: ((T)->Unit)? = null){
         val size = FontSize.MEDIUM.size.toDp()
         FlowRow {
             tags.forEach {
@@ -591,7 +461,7 @@ companion object {
                             },
                             Theme.onSecondaryContainer
                         )
-                        val m = it.durationMs / 1000 / 60
+                        val m = it.duration / 1000 / 60
                         Text(
                             "${if(m >= 60) "${m/60}h " else ""}${(m%60).toString().padStart(if(m>10) 2 else 1, '0')}m",
                             style = TypoStyle(Theme.onSecondaryContainer, FontSize.MEDIUM)
@@ -601,52 +471,6 @@ companion object {
             }
         }
     }
-}
-@OptIn(ExperimentalCoroutinesApi::class)
-private val getLifeScreenTime = FlowCache<LocalDate, List<DayScreenTimeEntity>> { date ->
-    repos.calendarInterface.todayFlow.flatMapLatest { today ->
-        if(date > today) return@flatMapLatest MutableStateFlow(listOf())
-        if(today == LocalDate.now()) {
-            getScreenTimeOnAsFlow(date, repos.context)
-        } else {
-            MutableStateFlow(
-                getMappedUsageDataBetween(
-                    repos.context,
-                    date.atStartAsMillis(zone),
-                    date.atEndAsMillis(zone)
-                )
-            )
-        }
-    }
-}
-/**  Collect with lifecycle. Else this might emit unnecesarily */
-fun getScreenTimeOnDayLive(date: LocalDate) = getLifeScreenTime.get(date)
-@OptIn(ExperimentalCoroutinesApi::class)
-private val getScreentimeForDayFlow = FlowCache<LocalDate, Long>{ date ->
-    repos.daySummaryInterface.getDaySummary(date).flatMapLatest { summary ->
-        val summary = summary?.value
-        if(summary != null) return@flatMapLatest MutableStateFlow(summary.screenTimeMs.toLong())
-        return@flatMapLatest getLifeScreenTime.get(date).map { entry -> entry.sumOf { it.duration } }
-    }
-}
-fun getScreenTimeForDay(date: LocalDate) = getScreentimeForDayFlow.get(date)
-fun getScreenTimeOnAsFlow(
-    date: LocalDate,
-    context: Context,
-): Flow<List<DayScreenTimeEntity>> {
-    val baseFlow: Flow<List<DayScreenTimeEntity>> = flow {
-        while (currentCoroutineContext().isActive) {
-            val list = getMappedUsageDataBetween(
-                context,
-                date.atStartAsMillis(zone),
-                if(date == LocalDate.now()) System.currentTimeMillis() else date.atEndAsMillis(zone)
-            ).sortedByDescending { it.duration }
-            emit(list)
-            delay(1000)
-        }
-    }
-
-    return baseFlow
 }
 fun getDayPieChart(date: LocalDate) = repos.calendarInterface.eventsForDay(date).map { rawEvents ->
     val total = mutableMapOf<EventType, Long>()

@@ -15,7 +15,7 @@ data class ProfilePictureSyncable(
     val bitmapBase64: String?,
 ): Syncable {
     @OptIn(ExperimentalEncodingApi::class)
-    internal companion object {
+    companion object {
         fun base64ToBitmap(base64String: String): Bitmap? {
             return try {
                 val decodedBytes = Base64.decode(base64String)
@@ -25,7 +25,7 @@ data class ProfilePictureSyncable(
                 null
             }
         }
-        fun saveBase64ToFile(context: Context, base64Str: String, personId: Long): File? {
+        internal fun saveBase64ToFile(context: Context, base64Str: String, personId: Long): File? {
             try {
                 val file = getProfilePicPath(context, personId)
                 val fos = FileOutputStream(file)
@@ -38,7 +38,7 @@ data class ProfilePictureSyncable(
                 return null
             }
         }
-        fun deleteBitmapFile(context: Context, personId: Long): Boolean {
+        internal fun deleteBitmapFile(context: Context, personId: Long): Boolean {
             return try {
                 getProfilePicPath(context, personId).delete()
             } catch (e: Exception) {
@@ -52,7 +52,7 @@ data class ProfilePictureSyncable(
             return File(directory, "$personId.jpg")
         }
 
-        fun loadBase64ByPerson(context: Context, personId: Long): String? {
+        internal fun loadBase64ByPerson(context: Context, personId: Long): String? {
             return try {
                 val file = getProfilePicPath(context, personId)
                 if (file.exists()) Base64.encode(file.readBytes()) else null
@@ -62,7 +62,7 @@ data class ProfilePictureSyncable(
             }
         }
 
-        fun bitmapToBase64(bitmap: Bitmap): String {
+        internal fun bitmapToBase64(bitmap: Bitmap): String {
             val outputStream = ByteArrayOutputStream()
             bitmap.compress(Bitmap.CompressFormat.JPEG, 80, outputStream)
             val bytes = outputStream.toByteArray()

@@ -45,18 +45,18 @@
             android:name="com.samsung.android.support.ongoing_activity"
             android:value="true" />
         <receiver
-            android:name=".android.livenotification.LiveEventRefreshReceiver"
+            android:name=".background.livenotification.LiveEventRefreshReceiver"
             android:exported="false" />
         <service
-            android:name=".android.sensors.StepsService"
+            android:name=".background.sensors.StepsService"
             android:exported="false"
             android:foregroundServiceType="health" />
-        <receiver android:name=".android.sensors.BootReceiver" android:exported="true">
+        <receiver android:name=".background.sensors.BootReceiver" android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.BOOT_COMPLETED" />
             </intent-filter>
         </receiver>
-        <receiver android:name=".android.sensors.NextAlarmChanged"
+        <receiver android:name=".background.sensors.NextAlarmChanged"
             android:exported="false">
             <intent-filter>
                 <action android:name="android.app.action.NEXT_ALARM_CLOCK_CHANGED"/>
@@ -71,7 +71,7 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
-        <activity android:name=".android.sensors.ShareReceiverActivity"
+        <activity android:name=".background.sensors.ShareReceiverActivity"
             android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.SEND" />
@@ -85,10 +85,10 @@
             android:turnScreenOn="true"
             android:exported="false"/>
         <receiver
-            android:name=".android.alarm.AlarmReceiver"
+            android:name=".background.alarm.AlarmReceiver"
             android:exported="false"/>
         <service
-            android:name=".android.notifications.NotificationReaderService"
+            android:name=".background.notifications.NotificationReaderService"
             android:exported="false"
             android:label="Notification Reader"
             android:permission="android.permission.BIND_NOTIFICATION_LISTENER_SERVICE">

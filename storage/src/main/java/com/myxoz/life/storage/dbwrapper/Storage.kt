@@ -40,8 +40,8 @@ import com.myxoz.life.storage.dbwrapper.events.WriteEventDetailsDao
 import com.myxoz.life.storage.dbwrapper.extension.ExtensionEntity
 import com.myxoz.life.storage.dbwrapper.extension.ReadExtensionDao
 import com.myxoz.life.storage.dbwrapper.extension.WriteExtensionDao
-import com.myxoz.life.storage.dbwrapper.localevent.LocalEventEntity
-import com.myxoz.life.storage.dbwrapper.localevent.LocalEventsDao
+import com.myxoz.life.storage.dbwrapper.localevent.AutoDetectLocalEventEntity
+import com.myxoz.life.storage.dbwrapper.localevent.AutoDetectLocalEventsDao
 import com.myxoz.life.storage.dbwrapper.locations.LocationEntity
 import com.myxoz.life.storage.dbwrapper.locations.ReadLocationsDao
 import com.myxoz.life.storage.dbwrapper.locations.WriteLocationsDao
@@ -50,8 +50,6 @@ import com.myxoz.life.storage.dbwrapper.people.ProfilePictureStored
 import com.myxoz.life.storage.dbwrapper.people.ReadPeopleDao
 import com.myxoz.life.storage.dbwrapper.people.SocialsEntity
 import com.myxoz.life.storage.dbwrapper.people.WritePeopleDao
-import com.myxoz.life.storage.dbwrapper.state.KeyValueDao
-import com.myxoz.life.storage.dbwrapper.state.KeyValueEntity
 import com.myxoz.life.storage.dbwrapper.todos.ReadTodosDao
 import com.myxoz.life.storage.dbwrapper.todos.TodoEntity
 import com.myxoz.life.storage.dbwrapper.todos.WriteTodosDao
@@ -88,14 +86,13 @@ import com.myxoz.life.storage.dbwrapper.todos.WriteTodosDao
         TransactionSplitEntity::class,
         TransactionSplitPartEntity::class,
         ExtensionEntity::class,
-        KeyValueEntity::class,
-        LocalEventEntity::class,
+        AutoDetectLocalEventEntity::class,
     ],
     version = DatabaseMigrator.VERSION,
     exportSchema = true
 )
 internal abstract class AppDatabase : RoomDatabase() {
-    abstract fun localEventsDao(): LocalEventsDao
+    abstract fun localEventsDao(): AutoDetectLocalEventsDao
     abstract fun readExtensionDao(): ReadExtensionDao
     abstract fun writeExtensionDao(): WriteExtensionDao
     abstract fun readTodosDao(): ReadTodosDao
@@ -121,7 +118,6 @@ internal abstract class AppDatabase : RoomDatabase() {
     abstract fun databaseCleanupDao(): DatabaseCleanupDao
     abstract fun waitingSyncDao(): WaitingSyncDao
     abstract fun proposedStepsDao(): ProposedStepsDao
-    abstract fun keyValueDao(): KeyValueDao
 }
 internal object DatabaseProvider {
     @Volatile
@@ -135,7 +131,6 @@ internal object DatabaseProvider {
                 "database.db"
             )
                 .applyAllMigrations()
-                .allowMainThreadQueries() // For KeyValueStore
                 .build()
             INSTANCE = instance
             instance

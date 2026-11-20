@@ -3,17 +3,21 @@ package com.myxoz.life.storage.convertion.events
 import com.myxoz.life.storage.api.LifeJSONArray
 import com.myxoz.life.storage.api.LifeJSONObject
 import com.myxoz.life.storage.api.syncables.SyncableIds.getEventCalendarId
+import com.myxoz.life.storage.events.DetailsEvent
 import com.myxoz.life.storage.events.DigSocEvent
+import com.myxoz.life.storage.events.PeopleEvent
 import com.myxoz.life.storage.events.RawEvent
 import com.myxoz.life.storage.events.SocialEvent
+import com.myxoz.life.storage.events.TagEvent
 import com.myxoz.life.storage.events.TimewasteEvent
+import com.myxoz.life.storage.events.TitleEvent
 import com.myxoz.life.storage.events.TravelEvent
-import com.myxoz.life.storage.events.additionals.DetailsEvent
-import com.myxoz.life.storage.events.additionals.PeopleEvent
-import com.myxoz.life.storage.events.additionals.TagEvent
+import com.myxoz.life.storage.events.additionals.DigSocPlatform
+import com.myxoz.life.storage.events.additionals.EventTag
 import com.myxoz.life.storage.events.additionals.TagLike
 import com.myxoz.life.storage.events.additionals.TimedTagLikeContainer
-import com.myxoz.life.storage.events.additionals.TitleEvent
+import com.myxoz.life.storage.events.additionals.TimewastePlatform
+import com.myxoz.life.storage.events.additionals.Vehicle
 
 object EventsToJSON {
     fun RawEvent.eventToJSON(json: LifeJSONObject): LifeJSONObject {
@@ -36,5 +40,10 @@ object EventsToJSON {
         LifeJSONObject().put("type", getEventCalendarId())
     )
     fun <T: TagLike> LifeJSONObject.putTimedTaglike(key: String, values: List<TimedTagLikeContainer<T>>): LifeJSONObject =
-        put(key, LifeJSONArray.from(values.map { LifeJSONObject().put("type", it.type.id).put("duration_ms", it.durationMs) }))
+        put(key, LifeJSONArray.from(values.map { LifeJSONObject().put("type", when(it.type){
+            is DigSocPlatform -> it.type.id
+            is EventTag -> it.type.id
+            is TimewastePlatform -> it.type.id
+            is Vehicle -> it.type.id
+        }).put("duration_ms", it.duration) }))
 }

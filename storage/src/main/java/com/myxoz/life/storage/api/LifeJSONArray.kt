@@ -94,7 +94,7 @@ class LifeJSONArray(
             }
             return LifeJSONArray(jsonArray)
         }
-        fun fromLongs(intList: List<Long>): LifeJSONArray {
+        fun fromLongs(intList: Collection<Long>): LifeJSONArray {
             val jsonArray = JSONArray()
             intList.forEach {
                 jsonArray.put(it.toString())

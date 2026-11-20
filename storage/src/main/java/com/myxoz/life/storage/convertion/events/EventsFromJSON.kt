@@ -65,12 +65,12 @@ object EventsFromJSON {
     private fun LifeJSONObject.getTitle() = getString("title")
     private fun LifeJSONObject.getDetails() = getStringOrNull("details")
     private fun LifeJSONObject.getPeople() =
-        getJSONArray("people").mapIndexed { getLong(it) }
+        getJSONArray("people").mapIndexed { getLong(it) }.toSet()
     private fun LifeJSONObject.getMore() = getBoolean("more")
     private fun LifeJSONObject.getFrom() = getLong("from")
     private fun LifeJSONObject.getTo() = getLong("to")
-    private fun LifeJSONObject.getTags(): List<EventTag> =
-        getJSONArray("tags").mapNotNullIndexed { EventTag.getTagById(getInt(it)) }
+    private fun LifeJSONObject.getTags(): Set<EventTag> =
+        getJSONArray("tags").mapNotNullIndexed { EventTag.getTagById(getInt(it)) }.toSet()
 
     private fun LifeJSONObject.getVehicles(): List<TimedTagLikeContainer<Vehicle>> =
         getJSONArray("vehicles").getTimedTagLikeContainer {
@@ -91,7 +91,7 @@ object EventsFromJSON {
         mapJSONObjectsNotNull {
             TimedTagLikeContainer(
                 getType(it.getType()) ?: return@mapJSONObjectsNotNull null,
-                it.getLong("duration_ms")
+                it.getMillis("duration_ms")
             )
         }
 }

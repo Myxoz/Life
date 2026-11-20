@@ -37,12 +37,12 @@ import androidx.graphics.shapes.toPath
 import com.myxoz.life.R
 import com.myxoz.life.Theme
 import com.myxoz.life.ui.getMaxTabletScreenWidth
-import com.myxoz.life.ui.theme.FontFamily
-import com.myxoz.life.ui.theme.FontSize
-import com.myxoz.life.ui.theme.TypoStyle
-import com.myxoz.life.utils.MaterialShapes
+import com.myxoz.life.lifeui.theme.FontFamily
+import com.myxoz.life.lifeui.theme.FontSize
+import com.myxoz.life.lifeui.theme.TypoStyle
+import com.myxoz.life.lifeui.shapes.MaterialShapes
 import com.myxoz.life.utils.angledGradientBackground
-import com.myxoz.life.utils.toShape
+import com.myxoz.life.lifeui.shapes.toShape
 import com.myxoz.life.utils.windowPadding
 
 @Composable

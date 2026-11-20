@@ -1,24 +1,9 @@
 package com.myxoz.life
 
-import androidx.compose.material3.ColorScheme
-import androidx.compose.runtime.Composable
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.navigation.NavController
 import com.myxoz.life.ui.LocalScreensProvider
-import com.myxoz.life.viewmodels.Settings
 
-val LocalNavController = staticCompositionLocalOf<NavController> {
-    error("No NavController provided")
-}
-val LocalSettings = staticCompositionLocalOf<Settings.CompositionSettings> {
-    error("No Settings provided")
-}
 val LocalScreens = staticCompositionLocalOf<LocalScreensProvider> {
     error("No ScreenProvider provided")
 }
-val LocalColors = staticCompositionLocalOf<ColorScheme> {
-    error("No color scheme provided")
-}
-inline val Theme: ColorScheme
-    @Composable
-    inline get() = LocalColors.current

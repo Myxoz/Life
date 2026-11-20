@@ -9,5 +9,5 @@ internal data class VehicleEntity(
 
     @ColumnInfo(name = "type") val type: Int,
 
-    @ColumnInfo(name = "durationMs") val durationMs: Int,
+    @ColumnInfo(name = "durationMs") val durationMs: Long,
 )

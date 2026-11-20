@@ -1,0 +1,16 @@
+package com.myxoz.life.lifecore.android
+
+import android.content.Context
+import android.content.Intent
+import android.util.Log
+import androidx.annotation.MainThread
+import androidx.core.net.toUri
+
+@MainThread
+fun openLink(context: Context, link: String) {
+    Log.d("Activity","Opening link: $link")
+    val uri = link.toUri()
+    val intent = Intent(Intent.ACTION_VIEW, uri)
+    intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK
+    context.startActivity(intent)
+}

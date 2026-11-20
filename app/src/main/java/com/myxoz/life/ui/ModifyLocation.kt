@@ -26,11 +26,11 @@ import com.myxoz.life.LocalNavController
 import com.myxoz.life.Theme
 import com.myxoz.life.api.syncables.LocationSyncable
 import com.myxoz.life.api.API
-import com.myxoz.life.ui.theme.FontSize
-import com.myxoz.life.ui.theme.TypoStyle
+import com.myxoz.life.lifeui.theme.FontSize
+import com.myxoz.life.lifeui.theme.TypoStyle
 import com.myxoz.life.utils.rippleClick
 import com.myxoz.life.utils.windowPadding
-import com.myxoz.life.viewmodels.LocationEditingViewModel
+import com.myxoz.life.state.screenscoped.LocationEditingViewModel
 import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalLayoutApi::class)
@@ -54,42 +54,42 @@ fun ModifyLocation(locationEditingViewModel: LocationEditingViewModel){
             verticalArrangement = Arrangement.spacedBy(10.dp)
         ) {
             var name by remember { mutableStateOf(defaultLocation?.name?:"") }
-            _root_ide_package_.com.myxoz.life.ui.feed.fullscreenevent.InputField(name, "Name") {
+            com.myxoz.life.ui.feed.fullscreenevent.InputField(name, "Name") {
                 name = it
             }
             var lat by remember { mutableStateOf(defaultLocation?.lat?.toString()?:"") }
-            _root_ide_package_.com.myxoz.life.ui.feed.fullscreenevent.InputField(lat, "Lat") {
+            com.myxoz.life.ui.feed.fullscreenevent.InputField(lat, "Lat") {
                 lat = it
             }
             var long by remember { mutableStateOf(defaultLocation?.longitude?.toString()?:"") }
-            _root_ide_package_.com.myxoz.life.ui.feed.fullscreenevent.InputField(long, "Long") {
+            com.myxoz.life.ui.feed.fullscreenevent.InputField(long, "Long") {
                 long = it
             }
             var radiusM by remember { mutableStateOf(defaultLocation?.radiusM?.toString()?: "") }
-            _root_ide_package_.com.myxoz.life.ui.feed.fullscreenevent.InputField(
+            com.myxoz.life.ui.feed.fullscreenevent.InputField(
                 radiusM,
                 "RadiusM"
             ) {
                 radiusM = it
             }
             var ssid by remember { mutableStateOf(defaultLocation?.ssid ?: "") }
-            _root_ide_package_.com.myxoz.life.ui.feed.fullscreenevent.InputField(ssid, "SSID") {
+            com.myxoz.life.ui.feed.fullscreenevent.InputField(ssid, "SSID") {
                 ssid = it
             }
             var street by remember { mutableStateOf(defaultLocation?.street ?: "") }
-            _root_ide_package_.com.myxoz.life.ui.feed.fullscreenevent.InputField(street, "Street") {
+            com.myxoz.life.ui.feed.fullscreenevent.InputField(street, "Street") {
                 street = it
             }
             var number by remember { mutableStateOf(defaultLocation?.number ?: "") }
-            _root_ide_package_.com.myxoz.life.ui.feed.fullscreenevent.InputField(number, "Number") {
+            com.myxoz.life.ui.feed.fullscreenevent.InputField(number, "Number") {
                 number = it
             }
             var city by remember { mutableStateOf(defaultLocation?.city ?: "") }
-            _root_ide_package_.com.myxoz.life.ui.feed.fullscreenevent.InputField(city, "City") {
+            com.myxoz.life.ui.feed.fullscreenevent.InputField(city, "City") {
                 city = it
             }
             var country by remember { mutableStateOf(defaultLocation?.country ?: "") }
-            _root_ide_package_.com.myxoz.life.ui.feed.fullscreenevent.InputField(
+            com.myxoz.life.ui.feed.fullscreenevent.InputField(
                 country,
                 "Country"
             ) {

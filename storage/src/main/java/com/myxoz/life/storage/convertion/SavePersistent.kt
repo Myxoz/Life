@@ -2,7 +2,7 @@ package com.myxoz.life.storage.convertion
 
 import android.content.Context
 import android.util.Log
-import com.myxoz.life.storage.LocalEvent
+import com.myxoz.life.storage.AutoDetectLocalEvent
 import com.myxoz.life.storage.api.API
 import com.myxoz.life.storage.api.syncables.BankingSidecarSyncable
 import com.myxoz.life.storage.api.syncables.BankingSyncable
@@ -40,8 +40,8 @@ import com.myxoz.life.storage.dbwrapper.days.DaysEntity
 import com.myxoz.life.storage.dbwrapper.days.WriteDaysDao
 import com.myxoz.life.storage.dbwrapper.extension.ExtensionEntity
 import com.myxoz.life.storage.dbwrapper.extension.WriteExtensionDao
-import com.myxoz.life.storage.dbwrapper.localevent.LocalEventEntity
-import com.myxoz.life.storage.dbwrapper.localevent.LocalEventsDao
+import com.myxoz.life.storage.dbwrapper.localevent.AutoDetectLocalEventEntity
+import com.myxoz.life.storage.dbwrapper.localevent.AutoDetectLocalEventsDao
 import com.myxoz.life.storage.dbwrapper.locations.LocationEntity
 import com.myxoz.life.storage.dbwrapper.locations.WriteLocationsDao
 import com.myxoz.life.storage.dbwrapper.people.PersonEntity
@@ -88,11 +88,11 @@ internal object SavePersistent{
 
     suspend fun ManualTransactionSyncable.saveToDB(writeBankingDao: WriteBankingDao) {
         writeBankingDao.insertManualTransaction(
-            ManualTransactionEntity(id, digital, cashless, amountCents, name, timestamp, purpose)
+            ManualTransactionEntity(id, digital, cashless, amountCents, name, timestamp.toEpochMilli(), purpose)
         )
     }
     suspend fun FullDaySyncable.saveToDB(daysDao: WriteDaysDao) {
-        daysDao.insertDay(DaysEntity(id, screenTimeMs, steps, happyness, stress, successfulness))
+        daysDao.insertDay(DaysEntity(id, screenTimeMs.inWholeMilliseconds.toInt(), steps, happyness, stress, successfulness))
         daysDao.insertAllDayScreenTime(topApps.map {
             DayScreenTimeEntity(
                 id,
@@ -103,8 +103,8 @@ internal object SavePersistent{
     }
     suspend fun BankingSyncable.saveToDB(writeBankinngDao: WriteBankingDao) {
         writeBankinngDao.insertTransaction(
-            BankingEntity(id, card, transfer, amountCents, currency, bookingTime, valueDate,
-                fromName, fromIban, fromBic, purpose, saldoAfterCents, purposeDate, lastUpdate)
+            BankingEntity(id, card, transfer, amountCents, currency, bookingTime, valueDate.toEpochMilli(),
+                fromName, fromIban, fromBic, purpose, saldoAfterCents, purposeDate?.toEpochMilli(), lastUpdate.toEpochMilli())
         )
     }
 
@@ -117,16 +117,16 @@ internal object SavePersistent{
 
 
     suspend fun TodoSyncable.saveToDB(todosDao: WriteTodosDao) {
-        todosDao.insertTodo(TodoEntity(id, short, details, done, timestamp))
+        todosDao.insertTodo(TodoEntity(id, short, details, done, timestamp.toEpochMilli()))
     }
 
     suspend fun PersonSyncable.saveToDB(peopleDao: WritePeopleDao) {
         peopleDao.insertPerson(
-            PersonEntity(id, name, fullName, phoneNumber, iban, home, birthday)
+            PersonEntity(id, name, fullName, phoneNumber, iban, home, birthday?.toEpochDay())
         )
         peopleDao.insertAllSocials(
             socials.map {
-                SocialsEntity(id, it.platform.id, it.handle)
+                SocialsEntity(id, it.platform.id, it.handle ?: "")
             }
         )
     }
@@ -146,7 +146,7 @@ internal object SavePersistent{
                 commitMessage,
                 commitAuthor,
                 commitEmail,
-                commitDate,
+                commitDate?.toEpochMilli(),
                 additions,
                 deletions,
                 filesChanged,
@@ -158,7 +158,7 @@ internal object SavePersistent{
                     }
                     .toString(),
                 commitUrl,
-                updated,
+                updated.toEpochMilli(),
             )
         )
     }
@@ -182,7 +182,7 @@ internal object SavePersistent{
 
     suspend fun BankingSidecarSyncable.saveToDB(bankingDao: WriteBankingDao) {
         bankingDao.insertSidecar(
-            BankingSidecarEntity(id, transactionId, name, date)
+            BankingSidecarEntity(id, transactionId, name, date.toEpochMilli())
         )
     }
     suspend fun Syncable.saveAndRequestSync(waitingSyncDao: WaitingSyncDao, writeSyncableDaos: API.WriteSyncableDaos, readSyncableDaos: API.ReadSyncableDaos, context: Context) {
@@ -193,8 +193,8 @@ internal object SavePersistent{
         RemoveSyncableFromDatabase.removeSyncable(this, writeSyncableDaos, context, false)
         saveToPersistentStorage(this, writeSyncableDaos, readSyncableDaos, context)
     }
-    suspend fun LocalEvent.saveToDB(localEventsDao: LocalEventsDao) {
-        localEventsDao.insertLocalEvent(LocalEventEntity(
+    suspend fun AutoDetectLocalEvent.saveToDB(autoDetectLocalEventsDao: AutoDetectLocalEventsDao) {
+        autoDetectLocalEventsDao.insertAutoDetectLocalEvent(AutoDetectLocalEventEntity(
             localId,
             raw.getEventCalendarId(),
             raw.eventTime.start.toEpochMilli(),

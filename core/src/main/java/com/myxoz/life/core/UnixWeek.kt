@@ -19,4 +19,3 @@ class UnixWeek(val week: Long) {
         )
     }
 }
-

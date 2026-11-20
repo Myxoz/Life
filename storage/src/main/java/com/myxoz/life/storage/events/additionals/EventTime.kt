@@ -1,5 +1,6 @@
 package com.myxoz.life.storage.events.additionals
 
+import com.myxoz.life.core.minus
 import com.myxoz.life.core.toLocalDate
 import java.time.Instant
 import java.time.LocalDate
@@ -17,4 +18,7 @@ data class EventTime(
             .takeWhile { !it.isAfter(other) }
             .toList()
     }
+    fun length() = end - start
+    fun overlaps(other: EventTime) = other.start < end && other.end > start
+    fun overlaps(otherStart: Instant, otherEnd: Instant) = otherStart < end && otherEnd > start
 }

@@ -24,7 +24,7 @@ internal class SyncHelper(
             )
         }
 
-        suspend fun Syncable.deleteAndDoNotSync(syncHelper: SyncHelper, thoroughDeletion: Boolean) {
+        suspend fun Syncable.deleteAndDoNotSyncDeletion(syncHelper: SyncHelper, thoroughDeletion: Boolean) {
             deleteAndDoNotSync(
                 syncHelper.writeSyncableDaos,
                 syncHelper.context,

@@ -1,5 +1,6 @@
 package com.myxoz.life.storage.interfaces
 
+import com.myxoz.life.storage.api.extensions.RepeatingEventsExtendable
 import com.myxoz.life.storage.api.helper.SyncHelper
 import com.myxoz.life.storage.api.helper.SyncHelper.Companion.saveAndRequestSync
 import com.myxoz.life.storage.api.syncables.ExtensionSyncable
@@ -43,6 +44,26 @@ class ExtensionInterface internal constructor(
     }
     @PublishedApi
     internal suspend fun getRawValue(id: Long) = _cache.getValue(id)
+
+    suspend fun moveRepeatingLocalEvent(repeatingId: Long) {
+        acceptOrDeclineRepeatedEvent(repeatingId, null)
+    }
+
+    suspend fun addNewEventIdAndMoveRepeatingEvent(repeatingId: Long, newId: Long) {
+        acceptOrDeclineRepeatedEvent(repeatingId, newId)
+    }
+
+    private suspend fun acceptOrDeclineRepeatedEvent(repeatingId: Long, addedEventId: Long?) {
+        updateAndSyncWith(ExtensionSyncable.ExtensionSyncableType.RepeatingEvents) { old ->
+            val oldValue = old.value
+            if(oldValue?.events?.any { it.id == repeatingId } != true) return
+            val res = RepeatingEventsExtendable(oldValue.events.map {
+                if (it.id == repeatingId) it.next(addedEventId) else it
+            })
+            res
+        }
+    }
+
     companion object {
         inline fun <reified T: ExtensionSyncable.Extendable> ExtensionInterface.flowFor(type: ExtensionSyncable.ExtensionSyncableType<T>): Flow<T?> {
             return rawFlowFor(type).map { if(it?.value != null) it.value as? T else null }

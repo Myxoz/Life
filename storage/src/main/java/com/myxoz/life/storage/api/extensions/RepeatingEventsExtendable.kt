@@ -1,6 +1,5 @@
 package com.myxoz.life.storage.api.extensions
 
-import android.icu.util.Calendar
 import com.myxoz.life.storage.api.LifeJSONArray
 import com.myxoz.life.storage.api.LifeJSONObject
 import com.myxoz.life.storage.api.syncables.ExtensionSyncable
@@ -62,8 +61,7 @@ data class RepeatingEventsExtendable(
             .put("event", event.eventToJSONWithType())
             .put("associated", LifeJSONArray.fromLongs(associatedEvents))
 
-        fun next(newEventId: Long?): RepeatingEvent {
-            val calendar = Calendar.getInstance()
+        internal fun next(newEventId: Long?): RepeatingEvent {
             return RepeatingEvent(
                 id,
                 repeat,

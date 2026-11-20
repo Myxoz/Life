@@ -15,11 +15,10 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.unit.dp
 import com.myxoz.life.LocalScreens
 import com.myxoz.life.Theme
-import com.myxoz.life.ui.theme.FontSize
-import com.myxoz.life.ui.theme.TypoStyle
+import com.myxoz.life.lifeui.theme.FontSize
+import com.myxoz.life.lifeui.theme.TypoStyle
 import com.myxoz.life.utils.rippleClick
 import com.myxoz.life.utils.windowPadding
-import com.myxoz.life.ui.todo.TodoViewModel
 
 @Composable
 fun FullScreenTodo(todoViewModel: TodoViewModel){

@@ -1,8 +1,9 @@
 package com.myxoz.life
 
 import android.util.Log
+import com.myxoz.life.lifecore.settings.Feature
+import com.myxoz.life.lifecore.settings.Permission
 import com.myxoz.life.storage.api.API
-import com.myxoz.life.viewmodels.Settings
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -24,25 +25,30 @@ import kotlin.time.Duration.Companion.seconds
 
 class SyncEngine(
     val api: API,
-    val permissionChecker: Settings.Permission.PermissionChecker
+    val settingsChecker: Permission.SettingsChecker
 ) {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
     private var syncWorker: Job? = null
     private val resyncMutex = Mutex(false)
     private val _lastApiResponse = MutableStateFlow<API.SyncingResponse?>(null)
     private val resyncRequests = Channel<Unit>(Channel.CONFLATED)
-    private val lastApiResponse = _lastApiResponse.asStateFlow()
+    val lastApiResponse = _lastApiResponse.asStateFlow()
     fun suggestResync() {
-        if(!Settings.Feature.SyncWithServer.isEnabled(permissionChecker)) return
+        if(!Feature.SyncWithServer.enabledAssured(settingsChecker)) return
         resyncRequests.trySend(Unit)
         if (syncWorker?.isActive == true) return
 
         syncWorker = scope.launch {
             Log.d(LOGTAG, "Started resyncing loop")
+            launch {
+                API.lastSyncRequiredTimestamp.collect {
+                    resyncRequests.trySend(Unit)
+                }
+            }
             resyncLoop()
         }
     }
-    private fun stopResync(){
+    fun stopResync(){
         Log.d(LOGTAG, "Stoped resyncing loop")
         syncWorker?.cancel()
     }

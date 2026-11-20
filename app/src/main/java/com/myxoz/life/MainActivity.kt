@@ -2,14 +2,12 @@ package com.myxoz.life
 
 import android.content.Context
 import android.content.Intent
-import android.content.SharedPreferences
 import android.os.Bundle
 import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.SystemBarStyle
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
-import androidx.activity.viewModels
 import androidx.compose.animation.core.FiniteAnimationSpec
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
@@ -34,12 +32,16 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import com.myxoz.life.android.MainApplication
-import com.myxoz.life.android.notifications.createNotificationChannels
-import com.myxoz.life.storage.api.syncables.SyncedEvent
+import com.myxoz.life.background.notifications.createNotificationChannels
+import com.myxoz.life.background.permissions.ActualServiceController
+import com.myxoz.life.feature.socialgraph.SocialGraph
+import com.myxoz.life.lifecore.NavPath
+import com.myxoz.life.lifecore.settings.CompositionSettings
+import com.myxoz.life.lifecore.settings.Feature
+import com.myxoz.life.state.ActivityScopedState
 import com.myxoz.life.ui.AlarmUI
 import com.myxoz.life.ui.LocalScreensProvider
 import com.myxoz.life.ui.ModifyLocation
-import com.myxoz.life.ui.NavPath
 import com.myxoz.life.ui.alarm.screens.AlarmScreen
 import com.myxoz.life.ui.alarm.screens.AlarmSoundSettings
 import com.myxoz.life.ui.feed.commits.FullScreenCommit
@@ -72,8 +74,11 @@ import com.myxoz.life.ui.options.settings.SettingsPermissionComposable
 import com.myxoz.life.ui.person.Contacts
 import com.myxoz.life.ui.person.FullScreenDebt
 import com.myxoz.life.ui.person.PersonalDebtViewModel
-import com.myxoz.life.ui.socialgraph.SocialGraph
-import com.myxoz.life.ui.person.displayperson.PhotoPicker
+import com.myxoz.life.lifecore.android.image.ImagePicker
+import com.myxoz.life.lifecore.settings.LocalSettings
+import com.myxoz.life.lifecore.settings.LocalStore
+import com.myxoz.life.lifeui.providers.LocalColors
+import com.myxoz.life.lifeui.providers.LocalNavController
 import com.myxoz.life.ui.person.displayperson.ProfileFullScreen
 import com.myxoz.life.ui.pick.PickExistingLocation
 import com.myxoz.life.ui.quiz.BirthdayGuesser
@@ -89,41 +94,38 @@ import com.myxoz.life.ui.transactions.TransactionOverviewViewModel
 import com.myxoz.life.ui.wrapped.LifeWrappedScreen
 import com.myxoz.life.utils.rememberTextSelectionColors
 import com.myxoz.life.utils.systemColorScheme
-import com.myxoz.life.viewmodels.LocationEditingViewModel
-import com.myxoz.life.viewmodels.MainViewModelFactory
-import com.myxoz.life.viewmodels.ProfileInfoModel
-import com.myxoz.life.viewmodels.Settings
+import com.myxoz.life.state.ScreenScopedViewModelFactory
+import com.myxoz.life.state.screenscoped.ProfileInfoModel
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
-import org.json.JSONObject
 import kotlin.system.exitProcess
 
 class MainActivity : ComponentActivity() {
-    private lateinit var prefs: SharedPreferences
     private val lifeApplication by lazy { application as MainApplication }
     private val dbInterface by lazy { lifeApplication.dbInterface }
-    private val appRepos by lazy { lifeApplication.appRepos }
-    private lateinit var settings: Settings.CompositionSettings
-    private val factory by lazy{
-        MainViewModelFactory(lifeApplication.dbInterface, appRepos)
+    private val activityScopedState by lazy { ActivityScopedState(dbInterface, this) }
+    private val permissionChecker by lazy { lifeApplication.settingsChecker }
+    private val settings by lazy { CompositionSettings(
+        permissionChecker,
+        this,
+        ActualServiceController()
+    ) }
+    private val screenScopedViewModelFactory by lazy {
+        ScreenScopedViewModelFactory(lifeApplication.dbInterface, activityScopedState)
     }
-    private val locationEditingViewModel: LocationEditingViewModel by viewModels { factory }
-    private val photoPicker = PhotoPicker(this)
+    private val imagePicker = ImagePicker(this)
     private var stashedRoute: String? = null
     private var controller: NavController? = null
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        instance = this
-        prefs = getSharedPreferences(localClassName, MODE_PRIVATE)
-        settings = Settings.CompositionSettings(dbInterface.permissionChecker, this)
         CoroutineScope(Dispatchers.IO).launch {
-            if(settings.hasAssured(Settings.Feature.AddNewPerson))
-                appRepos.contactsRepo.requestRefetchDeviceContacts()
-            appRepos.calendarRepo.requireAllPeople()
-            appRepos.calendarRepo.loadRepeatingEvents()
-            appRepos.largeDataCache.preloadAll(applicationContext)
+            if(settings.hasAssured(Feature.AddNewPerson))
+                activityScopedState.contactsRepo.requestRefetchDeviceContacts()
+            activityScopedState.calendarRepo.requireAllPeople()
+            activityScopedState.calendarRepo.loadRepeatingEvents()
+            activityScopedState.largeDataCache.preloadAll(applicationContext)
         }
         createNotificationChannels(applicationContext)
         handleIntent(intent)
@@ -137,7 +139,7 @@ class MainActivity : ComponentActivity() {
                 LocalNavController provides navController,
                 LocalSettings provides settings,
                 LocalScreens provides LocalScreensProvider(
-                    appRepos,
+                    activityScopedState,
                     navController
                 ),
                 LocalColors provides colorScheme,
@@ -167,7 +169,7 @@ class MainActivity : ComponentActivity() {
                 var showHome by remember { mutableStateOf(stashedRoute==null) }
                 NavHost(
                     navController = navController,
-                    startDestination = NavPath.HOME,
+                    startDestination = NavPath.Home,
                     modifier = Modifier.fillMaxSize().background(Theme.background),
                     enterTransition = {
                         slideInHorizontally { it/2 } + fadeIn(navigationTransitionSpec)
@@ -183,34 +185,34 @@ class MainActivity : ComponentActivity() {
                     },
                 ) {
                     //  ---------- FEED ----------
-                    composable(NavPath.HOME) {
+                    composable<NavPath.Home> {
                         if(!showHome) return@composable
-                        val calenderViewModel = appRepos.calendarApplicationState
-                        HomeComposable(appRepos.calendarRepo, calenderViewModel)
+                        val calendarApplicationState = activityScopedState.calendarApplicationState
+                        HomeComposable(activityScopedState.calendarRepo, calendarApplicationState)
                     }
                     composable(
                         NavPath.FULLSCREEN_EVENT.asTemplate,
                         arguments = NavPath.FULLSCREEN_EVENT.asLongArg()
                     ) {
-                        val inspectedEventViewModel = viewModel<InspectedEventViewModel>(factory = factory)
+                        val inspectedEventViewModel = viewModel<InspectedEventViewModel>(factory = screenScopedViewModelFactory)
                         FullScreenEvent(inspectedEventViewModel)
                     }
                     composable(NavPath.SUMMARIZE_DAY) {
                         // This is not clean, summarizeDay doesnt need the DayOverviewContent
-                        val summarizeViewModel = viewModel<DayOverviewViewModel>(factory = factory)
+                        val summarizeViewModel = viewModel<DayOverviewViewModel>(factory = screenScopedViewModelFactory)
                         SummarizeDay(summarizeViewModel)
                     }
                     composable(NavPath.INSTANT_EVENT_SELECTION.asTemplate, NavPath.INSTANT_EVENT_SELECTION.asLongArg()) {
-                        val instantEventsViewModel = viewModel<InstantEventsViewModel>(factory = factory)
+                        val instantEventsViewModel = viewModel<InstantEventsViewModel>(factory = screenScopedViewModelFactory)
                         InstantEventsScreen(instantEventsViewModel)
                     }
                     composable(NavPath.ADVANCED_SEARCH) {
-                        AdvancedSearch(appRepos.calendarRepo)
+                        AdvancedSearch(activityScopedState.calendarRepo)
                     }
 
                         //  ---------- Pick -> ExistingLocation ----------
                         composable(NavPath.Pick.LOCATION) {
-                            PickExistingLocation(appRepos.crossRepoSuper)
+                            PickExistingLocation(activityScopedState.crossRepoSuper)
                         }
 
                         //  ---------- FEED -> Location ----------
@@ -220,27 +222,27 @@ class MainActivity : ComponentActivity() {
 
                         //  ---------- FEED -> Transaction ----------
                         composable(NavPath.Menu.TRANSACTION_FEED) {
-                            TransactionFeed(appRepos.transactionFeedRepo)
+                            TransactionFeed(activityScopedState.transactionFeedRepo)
                         }
                         composable(NavPath.Transaction.DETAILS.asTemplate, NavPath.Transaction.DETAILS.asStringArg()) {
-                            val transactionOverviewViewModel  = viewModel<TransactionOverviewViewModel>(factory = factory)
+                            val transactionOverviewViewModel  = viewModel<TransactionOverviewViewModel>(factory = screenScopedViewModelFactory)
                             TransactionOverview(transactionOverviewViewModel)
                         }
                         composable(NavPath.Transaction.ME) {
-                            MyCard(appRepos.largeDataCache, appRepos.transactionFeedRepo)
+                            MyCard(activityScopedState.largeDataCache, activityScopedState.transactionFeedRepo)
                         }
 
                         //  ---------- FEED -> DAY_OVERVIEW ----------
                         composable(NavPath.DAY_OVERVIEW.asTemplate, NavPath.DAY_OVERVIEW.asLongArg()) {
-                            val overviewModel: DayOverviewViewModel = viewModel(factory = factory)
+                            val overviewModel: DayOverviewViewModel = viewModel(factory = screenScopedViewModelFactory)
                             DayOverviewComposable(overviewModel)
                         }
                         composable(NavPath.DayOverview.SCREENTIME.asTemplate, NavPath.DayOverview.SCREENTIME.asLongArg()) {
-                            val screenTimeOverviewModel: ScreenTimeOverviewModel = viewModel(factory = factory)
+                            val screenTimeOverviewModel: ScreenTimeOverviewModel = viewModel(factory = screenScopedViewModelFactory)
                             ScreenTimeOverview(screenTimeOverviewModel)
                         }
                         composable(NavPath.DayOverview.TRANSACTIONS.asTemplate, NavPath.DayOverview.TRANSACTIONS.asLongArg()) {
-                            val overviewTransactitonModel: DayOverviewTransactionModel = viewModel(factory = factory)
+                            val overviewTransactitonModel: DayOverviewTransactionModel = viewModel(factory = screenScopedViewModelFactory)
                             TransactionList(overviewTransactitonModel)
                         }
 
@@ -249,13 +251,13 @@ class MainActivity : ComponentActivity() {
                         MenuComposable()
                     }
                     composable(NavPath.Menu.SOCIAL_GRAPH) {
-                        SocialGraph(appRepos.socialGraphRepo)
+                        SocialGraph(activityScopedState.socialGraphRepo)
                     }
                     composable(NavPath.Menu.BIRTHDAY_QUIZ) {
-                        BirthdayGuesser(appRepos.birthdayQuizRepo)
+                        BirthdayGuesser(activityScopedState.birthdayQuizRepo)
                     }
                     composable(NavPath.Menu.LIFE_WRAPPED) {
-                        LifeWrappedScreen(appRepos.wrappedRepo)
+                        LifeWrappedScreen(activityScopedState.wrappedActivityViewModel)
                     }
                     composable(
                         NavPath.Menu.MAP,
@@ -268,7 +270,7 @@ class MainActivity : ComponentActivity() {
 
                         )
                     {
-                        MapBoxMap(appRepos.mapRepo)
+                        MapBoxMap(activityScopedState.mapRepo)
                     }
 
                         //  ---------- Menu -> TODOS ----------
@@ -276,7 +278,7 @@ class MainActivity : ComponentActivity() {
                             // TODO
                         }
                         composable(NavPath.Menu.Todo.DETAILS.asTemplate, NavPath.Menu.Todo.DETAILS.asLongArg()) {
-                            val todoViewModel = viewModel<TodoViewModel>(factory = factory)
+                            val todoViewModel = viewModel<TodoViewModel>(factory = screenScopedViewModelFactory)
                             FullScreenTodo(todoViewModel)
                         }
 
@@ -288,53 +290,53 @@ class MainActivity : ComponentActivity() {
                             NavPath.Menu.Repos.COMMIT.asTemplate,
                             NavPath.Menu.Repos.COMMIT.asStringArg()
                         ) {
-                            val viewModel: FullScreenCommitViewModel = viewModel(factory = factory)
+                            val viewModel: FullScreenCommitViewModel = viewModel(factory = screenScopedViewModelFactory)
                             FullScreenCommit(viewModel)
                         }
                         composable(
                             NavPath.Menu.Repos.REPO.asTemplate,
                             arguments = NavPath.Menu.Repos.REPO.asStringArg()
                         ) {
-                            val viewModel: FullScreenRepoViewModel = viewModel(factory = factory)
+                            val viewModel: FullScreenRepoViewModel = viewModel(factory = screenScopedViewModelFactory)
                             FullScreenRepo(viewModel)
                         }
 
                         //  ---------- Menu -> Contacts ----------
                         composable(NavPath.Menu.CONTACTS) {
-                            Contacts(appRepos.contactsRepo)
+                            Contacts(activityScopedState.contactsRepo)
                         }
                         composable(
                             NavPath.Menu.Contacts.DISPLAY_PERSON.asTemplate,
                             NavPath.Menu.Contacts.DISPLAY_PERSON.asLongArg()
                         ) {
-                            val profileInfoModel = viewModel<ProfileInfoModel>(factory = factory)
-                            ProfileFullScreen(photoPicker, profileInfoModel)
+                            val profileInfoModel = viewModel<ProfileInfoModel>(factory = screenScopedViewModelFactory)
+                            ProfileFullScreen(imagePicker, profileInfoModel)
                         }
                         composable(NavPath.Menu.Contacts.DEBT_DISPLAY.asTemplate, NavPath.Menu.Contacts.DEBT_DISPLAY.asLongArg()) {
-                            val personalDebtViewModel = viewModel<PersonalDebtViewModel>(factory = factory)
+                            val personalDebtViewModel = viewModel<PersonalDebtViewModel>(factory = screenScopedViewModelFactory)
                             FullScreenDebt(personalDebtViewModel)
                         }
 
                         //  ---------- Menu -> Alarm ----------
                         composable(NavPath.Menu.ALARM) {
-                            AlarmUI.AlarmScreen(appRepos.alarmRepo)
+                            AlarmUI.AlarmScreen(activityScopedState.alarmRepo)
                         }
                         composable(NavPath.Menu.Alarm.ALARM_SOUND_SETTINGS) {
-                            AlarmUI.AlarmSoundSettings(appRepos.alarmRepo)
+                            AlarmUI.AlarmSoundSettings(activityScopedState.alarmRepo)
                         }
 
                         //  ---------- Menu -> Streak ----------
                         composable(NavPath.Menu.STREAK) {
-                            StreaksScreen(appRepos.streakRepo)
+                            StreaksScreen(activityScopedState.streakRepo)
                         }
                         composable(NavPath.Menu.Streak.FULL_SCREEN_STREAK.asTemplate, arguments = listOf(
                             navArgument(NavPath.Menu.Streak.FULL_SCREEN_STREAK.parameterName) { type = NavType.LongType }
                         )){
                             val streakId = it.arguments?.getLong(NavPath.Menu.Streak.FULL_SCREEN_STREAK.parameterName) ?: return@composable
-                            StreakFullScreen(appRepos.streakRepo, streakId)
+                            StreakFullScreen(activityScopedState.streakRepo, streakId)
                         }
                         composable(NavPath.Menu.Streak.EDIT_SCREEN_STREAK) {
-                            EditStreaksScreen(appRepos.streakRepo)
+                            EditStreaksScreen(activityScopedState.streakRepo)
                         }
 
                         //  ---------- Menu -> More ----------
@@ -345,14 +347,14 @@ class MainActivity : ComponentActivity() {
                             InformationComposable()
                         }
                         composable(NavPath.Menu.More.AI) {
-                            AISettings(appRepos.aiSettingsRepo)
+                            AISettings(activityScopedState.aiSettingsRepo)
                         }
                         composable(NavPath.Menu.More.DEBUG) {
                             DebugScreen(
-                                dbInterface.api.heyAPIAlmighlyGodEtcCanIPleaseOnlyForDebugHaveAllDaoAccessImReallyTheDebugOnlyPleasePleasePlease(),
+                                dbInterface.debugInterface,
                                 dbInterface.api,
                                 dbInterface,
-                                appRepos
+                                activityScopedState
                             )
                         }
 
@@ -382,7 +384,7 @@ class MainActivity : ComponentActivity() {
     }
     private fun handleIntent(intent: Intent){
         Log.w("Activity", "Might be an old intent")
-        handleSharingIntent(intent)
+        // TODO Handled via channel
         val route = intent.getStringExtra("targetRoute") ?: return
         val navController = controller
         if(navController!=null) {
@@ -400,39 +402,13 @@ class MainActivity : ComponentActivity() {
         super.onNewIntent(intent)
         handleIntent(intent)
     }
-    private fun handleSharingIntent(intent: Intent) {
-        intent.getStringExtra("shared_event")?.let { jsonString ->
-            try {
-                val event = _root_ide_package_.com.myxoz.life.storage.api.syncables.SyncedEvent.fromJSON(JSONObject(jsonString))
-                appRepos.calendarSuper.setInspectedEventTo(
-                    if (!event.isSynced()) {
-                        if(appRepos.calendarSuper.isEditing.value) {
-                            appRepos.calendarSuper.event.value.copy(rawEvent = event.raw)
-                        } else {
-                            appRepos.calendarSuper.setEditing(true)
-                            event
-                        }
-                    } else {
-                        appRepos.calendarSuper.setEditing(false)
-                        event
-                    }
-                )
-
-                // Clear the intent extra to avoid reprocessing
-                intent.removeExtra("shared_event")
-            } catch (e: Exception) {
-                Log.e("Activity", "Failed to parse travel event from intent", e)
-            }
-        }
-    }
-
     override fun onResume() {
         super.onResume()
-        dbInterface.syncEngine.suggestResync()
+        lifeApplication.syncEngine.suggestResync()
     }
     override fun onPause() {
         super.onPause()
-        dbInterface.syncEngine.stopResync()
+        lifeApplication.syncEngine.stopResync()
     }
     companion object {
         fun restartApp(context: Context) {
@@ -443,7 +419,5 @@ class MainActivity : ComponentActivity() {
             context.startActivity(mainIntent)
             exitProcess(0)
         }
-        private lateinit var instance: MainActivity
-        fun getAppContext(): Context { return instance.applicationContext }
     }
 }

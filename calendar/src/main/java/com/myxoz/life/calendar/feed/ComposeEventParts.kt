@@ -1,0 +1,122 @@
+package com.myxoz.life.calendar.feed
+
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.material3.Icon
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.dp
+import com.myxoz.life.storage.events.additionals.TagLike
+import com.myxoz.life.ui.theme.EventColors
+import com.myxoz.life.utils.toSp
+
+@Composable
+fun RenderTagAndTitleBar(tags: List<TagLike>, title: String?, oneHourDp: Dp, blockHeight: Int, color: EventColors) {
+    val tagColors = color.tagColors ?: return
+    Row {
+        val startPadding = when(blockHeight) {
+            1 -> 0.dp
+            2 -> 1.dp
+            else -> 2.dp
+        }
+        val height = when(blockHeight) {
+            1 -> oneHourDp/4f
+            2 -> oneHourDp/2f
+            3 -> oneHourDp/1.33f
+            4 -> oneHourDp/1.75f
+            else -> oneHourDp/1.5f
+        }
+        val fontHeight = (.7f*height).toSp()
+        var optimalScaling by remember { mutableFloatStateOf(1f) }
+        val displayTags = tags.filter { it!= com.myxoz.life.storage.events.additionals.EventTag.S }
+        if(displayTags.isNotEmpty()) {
+            Row(
+                Modifier
+                    .padding(start = startPadding)
+                    .height(height)
+                    .run {
+                        if (blockHeight != 1) {
+                            padding(vertical = if (blockHeight > 2) 2.dp else 1.dp)
+                                .background(tagColors.CONTAINER, CircleShape)
+                                .padding(horizontal = 8.dp, vertical = 1.dp)
+                        } else {
+                            this.padding(start = 2.dp)
+                        }
+                    },
+                horizontalArrangement = Arrangement.spacedBy(1.dp),
+            ) {
+                displayTags.forEach {
+                    Icon(
+                        painterResource(it.drawable),
+                        null,
+                        Modifier.height(height * optimalScaling),
+                        if(blockHeight == 1) color.textColor else tagColors.ICON
+                    )
+                }
+            }
+        }
+        Text(
+            title?:"",
+            Modifier
+                .padding(start = 4.dp, top = height*.1f, end = 4.dp)
+                .align(Alignment.CenterVertically)
+            ,
+            fontSize = fontHeight * optimalScaling,
+            color = color.textColor,
+            overflow = TextOverflow.Ellipsis
+        )
+    }
+}
+
+@Composable
+fun RenderBasicEventContent(
+    title: String,
+    details: String?,
+    smallText: String,
+    isSmall: Boolean,
+    tags: List<TagLike>?,
+    eventColors: EventColors,
+    oneHourDp: Dp,
+    blockHeight: Int,
+) {
+    if(isSmall){
+        Text(
+            smallText,
+            Modifier
+                .padding(all = 3.dp),
+            fontSize = (oneHourDp / 4f).toSp(),
+            color = eventColors.textColor,
+            overflow = TextOverflow.Ellipsis
+        )
+    } else Column(
+        Modifier
+            .fillMaxSize()
+    ) {
+        RenderTagAndTitleBar(tags?:listOf(), title, oneHourDp, blockHeight, eventColors)
+        if(blockHeight>3 && details != null) {
+            Text(
+                details,
+                Modifier
+                    .padding(start = 10.dp),
+                fontSize = (oneHourDp / 3f).toSp(),
+                color = eventColors.secondary,
+                overflow = TextOverflow.Ellipsis
+            )
+        }
+    }
+}

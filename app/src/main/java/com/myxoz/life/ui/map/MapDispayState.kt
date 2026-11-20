@@ -8,6 +8,9 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import com.myxoz.life.api.API
 import com.myxoz.life.api.syncables.LocationSyncable
+import com.myxoz.life.core.def
+import com.myxoz.life.core.nullIfEmpty
+import com.myxoz.life.storage.api.syncables.LocationSyncable
 import com.myxoz.life.storage.interfaces.LocationInterface
 import com.myxoz.life.ui.map.MapDisplayState.DisplayedLifeLocation
 import com.myxoz.life.ui.map.MapDisplayState.EditingLocation

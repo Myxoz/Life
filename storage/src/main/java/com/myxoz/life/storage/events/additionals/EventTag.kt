@@ -1,6 +1,6 @@
 package com.myxoz.life.storage.events.additionals
 
-enum class EventTag(override val id: Int): TagLike {
+enum class EventTag(internal val id: Int): TagLike {
     Party(1),
     Eat(2),
     Cards(3),

@@ -45,8 +45,8 @@ import com.myxoz.life.LocalSettings
 import com.myxoz.life.R
 import com.myxoz.life.Theme
 import com.myxoz.life.ui.map.MapRepo.Companion.circleRing
-import com.myxoz.life.ui.theme.OldColors
-import com.myxoz.life.viewmodels.Settings
+import com.myxoz.life.lifeui.theme.OldColors
+import com.myxoz.life.background.settings.Settings
 import kotlinx.coroutines.launch
 
 @OptIn(MapboxExperimental::class)

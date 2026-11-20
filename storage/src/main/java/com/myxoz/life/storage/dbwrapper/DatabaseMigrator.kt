@@ -26,6 +26,7 @@ internal class DatabaseMigrator(var version: Int, val builder: RoomDatabase.Buil
             val mig = DatabaseMigrator(37, this)
             return mig
                 .add { db ->
+                    // 38
                     db.execSQL("""
                     CREATE TABLE IF NOT EXISTS todos (
                         id INTEGER NOT NULL PRIMARY KEY,
@@ -36,9 +37,11 @@ internal class DatabaseMigrator(var version: Int, val builder: RoomDatabase.Buil
                     """.trimIndent())
                 }
                 .add { db ->
+                    // 39
                     db.execSQL("ALTER TABLE todos ADD COLUMN timestamp INTEGER NOT NULL")
                 }
                 .add { db ->
+                    // 40
                     db.execSQL("""
                     CREATE TABLE IF NOT EXISTS transaction_split (
                         id INTEGER NOT NULL PRIMARY KEY,
@@ -56,6 +59,7 @@ internal class DatabaseMigrator(var version: Int, val builder: RoomDatabase.Buil
                     )""".trimIndent())
                 }
                 .add { db ->
+                    // 41
                     db.execSQL("""
                     CREATE TABLE IF NOT EXISTS extension (
                         id INTEGER NOT NULL PRIMARY KEY,
@@ -64,12 +68,7 @@ internal class DatabaseMigrator(var version: Int, val builder: RoomDatabase.Buil
                     """.trimIndent())
                 }
                 .add { db ->
-                    db.execSQL("""
-                    CREATE TABLE IF NOT EXISTS keyvalue (
-                        key TEXT NOT NULL PRIMARY KEY,
-                        value TEXT NOT NULL
-                    )
-                    """.trimIndent())
+                    // 42
                     db.execSQL("""
                     CREATE TABLE IF NOT EXISTS localevent (
                         id INTEGER NOT NULL PRIMARY KEY,

@@ -1,7 +1,9 @@
 package com.myxoz.life.storage.convertion
 
 import android.content.Context
-import com.myxoz.life.storage.LocalEvent
+import com.myxoz.life.core.nullIfEmpty
+import com.myxoz.life.core.toInstant
+import com.myxoz.life.storage.AutoDetectLocalEvent
 import com.myxoz.life.storage.api.LifeJSONObject
 import com.myxoz.life.storage.api.syncables.BankingSidecarSyncable
 import com.myxoz.life.storage.api.syncables.BankingSyncable
@@ -30,42 +32,44 @@ import com.myxoz.life.storage.dbwrapper.commits.CommitEntity
 import com.myxoz.life.storage.dbwrapper.days.DayScreenTimeEntity
 import com.myxoz.life.storage.dbwrapper.days.DaysEntity
 import com.myxoz.life.storage.dbwrapper.days.ReadDaysDao
-import com.myxoz.life.storage.dbwrapper.localevent.LocalEventEntity
+import com.myxoz.life.storage.dbwrapper.localevent.AutoDetectLocalEventEntity
 import com.myxoz.life.storage.dbwrapper.locations.LocationEntity
 import com.myxoz.life.storage.dbwrapper.people.PersonEntity
 import com.myxoz.life.storage.dbwrapper.people.ProfilePictureStored
 import com.myxoz.life.storage.dbwrapper.people.ReadPeopleDao
 import com.myxoz.life.storage.dbwrapper.people.SocialsEntity
 import com.myxoz.life.storage.dbwrapper.todos.TodoEntity
+import java.time.LocalDate
 import kotlin.time.Duration.Companion.milliseconds
 
 internal object SyncableFromEntity {
     fun ManualTransactionEntity.fromEntity() =
-        ManualTransactionSyncable(id, digital, cashless, amountCents, name, timestamp, purpose)
+        ManualTransactionSyncable(id, digital, cashless, amountCents, name, timestamp.toInstant(), purpose)
 
     fun BankingEntity.fromEntity() =
-        BankingSyncable(id, card, transfer, amountCents, currency, bookingTime, valueDate, fromName, fromIban, fromBic, purpose, saldoAfterCents, purposeDate, lastUpdate)
+        BankingSyncable(id, card, transfer, amountCents, currency, bookingTime, valueDate.toInstant(),
+            fromName, fromIban, fromBic, purpose, saldoAfterCents, purposeDate?.toInstant(), lastUpdate.toInstant())
 
     fun CommitEntity.fromEntity() =
-        CommitSyncable(repoOwner, repoName, commitSha, commitMessage, commitAuthor, commitEmail, commitDate, additions, deletions, filesChanged,
-            commitModificationFromJSON(filesJson), commitUrl, updated)
+        CommitSyncable(repoOwner, repoName, commitSha, commitMessage, commitAuthor, commitEmail, commitDate?.toInstant(), additions, deletions, filesChanged,
+            commitModificationFromJSON(filesJson), commitUrl, updated.toInstant())
 
     fun TodoEntity.fromEntity() =
-        TodoSyncable(id, short, details, done, timestamp)
+        TodoSyncable(id, short, details, done, timestamp.toInstant())
 
     suspend fun PersonEntity.fromEntity(db: ReadPeopleDao) =
-        PersonSyncable(id, name, fullname, phoneNumber, iban, home, birthday,
+        PersonSyncable(id, name, fullname, phoneNumber, iban, home, birthday?.let { LocalDate.ofEpochDay(it) },
             db.getSocialsByPerson(id).mapNotNullTo(mutableSetOf()) { it.fromEntity() }
         )
 
     private fun SocialsEntity.fromEntity(): PersonSyncablePlatform? =
-        PersonSyncablePlatform(SocialEventPlatform.getById(platform) ?: return null, handle)
+        PersonSyncablePlatform(SocialEventPlatform.getById(platform) ?: return null, handle.nullIfEmpty())
 
     fun LocationEntity.fromEntity() =
         LocationSyncable(name, longitude, lat, radiusM, ssid, street, number, city, country, id)
 
     fun BankingSidecarEntity.fromEntity() =
-        BankingSidecarSyncable(id, transactionId, name, date)
+        BankingSidecarSyncable(id, transactionId, name, date.toInstant())
 
     suspend fun TransactionSplitEntity.fromEntity(db: ReadBankingDao) =
         TransactionSplitSyncable(id, syncableId, remoteId,
@@ -86,12 +90,12 @@ internal object SyncableFromEntity {
             stress,
             successfulness,
             steps,
-            screenTimeMs,
+            screenTimeMs.milliseconds,
             readDaysDao.getScreenTimesByDay(id).map { it.fromEntity() },
             id,
         )
     fun DayScreenTimeEntity.fromEntity() = DayScreenTime(packagename, duration.milliseconds)
-    fun LocalEventEntity.fromEntity(): LocalEvent? = LocalEvent(
+    fun AutoDetectLocalEventEntity.fromEntity(): AutoDetectLocalEvent? = AutoDetectLocalEvent(
         id,
         LifeJSONObject.safeFrom(content)?.getRawEventFromJSON() ?: return null
     )

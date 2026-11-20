@@ -21,6 +21,7 @@ import com.myxoz.life.storage.events.additionals.TimedTagLikeContainer
 import com.myxoz.life.storage.events.additionals.TimewastePlatform
 import com.myxoz.life.storage.events.additionals.Vehicle
 import java.time.Instant
+import kotlin.time.Duration.Companion.milliseconds
 
 internal object EventsFromDatabase {
     suspend fun getEventFromDatabaseUnbatched(id: Long, eventDetailsDao: ReadEventDetailsDao): SyncedEvent?{
@@ -29,6 +30,7 @@ internal object EventsFromDatabase {
     }
     suspend fun getEventsFromDatabse(ids: List<Long>, eventDetailsDao: ReadEventDetailsDao) =
         getBatchedEvents(eventDetailsDao.getEventsById(ids), eventDetailsDao)
+    suspend fun byEntity(entity: EventEntity?, db: ReadEventDetailsDao): SyncedEvent? = getBatchedEvents(listOf(entity ?: return null), db).first()
     suspend fun getBatchedEvents(events: List<EventEntity>, db: ReadEventDetailsDao): List<SyncedEvent> {
         if(events.isEmpty()) return emptyList()
         val ids = events.map { it.id }
@@ -37,7 +39,7 @@ internal object EventsFromDatabase {
         val containsSocialEvent = allTypes.any { allSocialEvents.contains(it) }
         val tags = if(containsTagEvent)
             db.getAllTagsFor(ids).groupBy { it.id }.mapValues { event ->
-                event.value.mapNotNull { EventTag.getTagById(it.tag) }
+                event.value.mapNotNull { EventTag.getTagById(it.tag) }.toSet()
             }
         else
             emptyMap()
@@ -49,15 +51,15 @@ internal object EventsFromDatabase {
         val digSoc = if(DigSocEvent.CALENDARID in allTypes) db.getAllDigSocFor(ids).associateBy { it.id } else emptyMap()
         val work = if(WorkEvent.CALENDARID in allTypes) db.getAllWorkFor(ids).associateBy { it.id } else emptyMap()
         val timewaste = if(TimewasteEvent.CALENDARID in allTypes) db.getAllTimewasteFor(ids).associateBy { it.id } else emptyMap()
-        val people = if(containsSocialEvent) db.getAllPeopleFor(ids).groupBy { it.eventId }.mapValues { event -> event.value.map { it.personId }} else emptyMap()
+        val people = if(containsSocialEvent) db.getAllPeopleFor(ids).groupBy { it.eventId }.mapValues { event -> event.value.map { it.personId }.toSet()} else emptyMap()
         val vehicle = if(TravelEvent.CALENDARID in allTypes) db.getAllVehiclesFor(ids).groupBy { it.id }.mapValues {
-            it.value.mapNotNull {TimedTagLikeContainer(Vehicle.getById(it.type) ?: return@mapNotNull null, it.durationMs.toLong())}
+            it.value.mapNotNull {TimedTagLikeContainer(Vehicle.getById(it.type) ?: return@mapNotNull null, it.durationMs.milliseconds)}
         } else emptyMap()
         val digSocMapping = if(DigSocEvent.CALENDARID in allTypes) db.getAllDigSocMappingFor(ids).groupBy { it.eventId }.mapValues {
-            it.value.mapNotNull {TimedTagLikeContainer(DigSocPlatform.getById(it.app) ?: return@mapNotNull null, it.durationMs)}
+            it.value.mapNotNull {TimedTagLikeContainer(DigSocPlatform.getById(it.app) ?: return@mapNotNull null, it.durationMs.milliseconds)}
         } else emptyMap()
         val twPlatform = if(TimewasteEvent.CALENDARID in allTypes) db.getAllTimewastePlatformsFor(ids).groupBy { it.eventId }.mapValues {
-            it.value.mapNotNull {TimedTagLikeContainer(TimewastePlatform.getById(it.timewastePlatform) ?: return@mapNotNull null, it.durationMs)}
+            it.value.mapNotNull {TimedTagLikeContainer(TimewastePlatform.getById(it.timewastePlatform) ?: return@mapNotNull null, it.durationMs.milliseconds)}
         }
         else emptyMap()
         return events.map {
@@ -73,26 +75,26 @@ internal object EventsFromDatabase {
                 SpontEvent.CALENDARID -> {
                     val event = spont[it.id]
                         ?: error("Tried to get spont event with no fields present in db")
-                    val tags = tags[it.id] ?: emptyList()
+                    val tags = tags[it.id] ?: setOf()
                     SpontEvent(eventTime, tags, event.title)
                 }
                 HobbyEvent.CALENDARID -> {
                     val event = hobby[it.id]
                         ?: error("Tried to get hobby event with no fields present in db")
-                    val tags = tags[it.id] ?: emptyList()
+                    val tags = tags[it.id] ?: setOf()
                     HobbyEvent(eventTime, tags, event.title, event.details)
                 }
                 LearnEvent.CALENDARID -> {
                     val event = learn[it.id]
                         ?: error("Tried to get learn event with no fields present in db")
-                    val tags = tags[it.id] ?: emptyList()
+                    val tags = tags[it.id] ?: setOf()
                     LearnEvent(eventTime, tags, event.title, event.details)
                 }
                 SocialEvent.CALENDARID -> {
                     val event = social[it.id]
                         ?: error("Tried to get social event with no fields present in db")
-                    val tags = tags[it.id] ?: emptyList()
-                    val people = people[it.id] ?: emptyList()
+                    val tags = tags[it.id] ?: setOf()
+                    val people = people[it.id] ?: setOf()
                     SocialEvent(eventTime, tags, event.title, people, event.more)
                 }
                 TravelEvent.CALENDARID -> {
@@ -105,13 +107,13 @@ internal object EventsFromDatabase {
                     val event = digSoc[it.id]
                         ?: error("Tried to get digsoc event with no fields present in db")
                     val digsocMapping = digSocMapping[it.id] ?: emptyList()
-                    val people = people[it.id] ?: emptyList()
+                    val people = people[it.id] ?: setOf()
                     DigSocEvent(eventTime, digsocMapping, event.title, people)
                 }
                 WorkEvent.CALENDARID -> {
                     val event = work[it.id]
                         ?: error("Tried to get work event with no fields present in db")
-                    val tags = tags[it.id] ?: emptyList()
+                    val tags = tags[it.id] ?: setOf()
                     WorkEvent(eventTime, tags, event.title, event.details)
                 }
                 TimewasteEvent.CALENDARID -> {
@@ -122,7 +124,7 @@ internal object EventsFromDatabase {
                 }
                 else -> error("Cannot reconstruct event from database")
             }
-            SyncedEvent(it.id, it.created.toInstant(), it.edited.toInstant(), rawEvent)
+            SyncedEvent(it.id, it.created.toInstant(), it.edited?.toInstant(), rawEvent)
         }
     }
     val allTagEvents = setOf(SpontEvent.CALENDARID, HobbyEvent.CALENDARID, LearnEvent.CALENDARID,

@@ -3,6 +3,7 @@ package com.myxoz.life.ui.transactions
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.myxoz.life.storage.api.helper.MixedBankingEntity
 import com.myxoz.life.storage.interfaces.BankingInterface.MixedBankingEntity
 import com.myxoz.life.storage.interfaces.DatabaseInterface
 import com.myxoz.life.subscribeToColdFlow

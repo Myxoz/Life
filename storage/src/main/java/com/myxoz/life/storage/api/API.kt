@@ -228,9 +228,7 @@ class API internal constructor(
     fun getBase64Public() = security.getBase64Public()
     suspend fun updateCaches(new: ServerSyncable) {
         when(new) {
-            is DeleteEntry -> {
-
-            }
+            is DeleteEntry -> { /* no-op */ }
             is FullDaySyncable -> daySummaryInterface.updateCache(new)
             is PersonSyncable -> peopleInterface.updateCache(new)
             is BankingSyncable -> bankingInterface.updateCachedTransaction(
@@ -256,14 +254,14 @@ class API internal constructor(
             is SyncedEvent -> calendarInterface.updateSyncedEventCached(new)
         }
     }
-    internal companion object {
+    companion object {
         const val LOGTAG = "API"
         internal fun generateId(): Long = Random.nextLong(0, Long.MAX_VALUE)
         private const val ELEMENTSPERREQUEST = 500
         private val keyValueStoreKey = KeyValueStorePrefix("API")
         private val lastUpdateKey = keyValueStoreKey.keyOfType("last_update", KeyValueType.InstantType)
         internal val requestSync = MutableStateFlow<Instant>(Instant.EPOCH)
-        fun requestSync() {
+        internal fun requestSync() {
             requestSync.value = Instant.now()
         }
         val lastSyncRequiredTimestamp = requestSync.asStateFlow()

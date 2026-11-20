@@ -3,7 +3,6 @@ package com.myxoz.life.storage.events
 import com.myxoz.life.storage.events.additionals.EventTime
 import com.myxoz.life.storage.events.additionals.TimedTagLikeContainer
 import com.myxoz.life.storage.events.additionals.TimewastePlatform
-import com.myxoz.life.storage.events.additionals.TitleEvent
 
 data class TimewasteEvent(
     override val eventTime: EventTime,

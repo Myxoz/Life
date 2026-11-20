@@ -1,6 +1,7 @@
 package com.myxoz.life.storage.dbwrapper.state
 
 import com.myxoz.life.storage.api.LifeJSONArray
+import com.myxoz.life.storage.api.LifeJSONObject
 import java.time.Instant
 import java.time.LocalDate
 
@@ -42,10 +43,20 @@ internal sealed interface KeyValueType<T> {
         override fun encode(value: Boolean): String = value.toString()
     }
 
-
     object StringListType: KeyValueType<List<String>> {
         override fun decode(value: String): List<String>? =
             LifeJSONArray.safeFrom(value)?.mapIndexed { getString(it) }
         override fun encode(value: List<String>): String = LifeJSONArray.fromStrings(value).asString()
+    }
+
+    object JSONObjectType: KeyValueType<LifeJSONObject> {
+        override fun decode(value: String): LifeJSONObject? = LifeJSONObject.safeFrom(value)
+        override fun encode(value: LifeJSONObject): String = value.asString()
+    }
+    abstract class MappedValueType<T>: KeyValueType<T> {
+        abstract fun decodeToType(json: LifeJSONObject): T
+        abstract fun encodeToJSON(value: T): LifeJSONObject
+        final override fun decode(value: String): T? = decodeToType(LifeJSONObject.safeFrom(value) ?: return null)
+        final override fun encode(value: T): String = encodeToJSON(value).asString()
     }
 }

@@ -1,7 +1,10 @@
 package com.myxoz.life.storage.interfaces
 
 import android.util.Log
-import com.myxoz.life.core.def
+import com.myxoz.life.core.Rangable
+import com.myxoz.life.core.Rangable.Companion.rangableTo
+import com.myxoz.life.core.Rangable.Companion.startAndEndInMs
+import com.myxoz.life.core.dif
 import com.myxoz.life.core.toLocalDate
 import com.myxoz.life.storage.api.API
 import com.myxoz.life.storage.api.helper.MixedBankingEntity
@@ -14,23 +17,23 @@ import com.myxoz.life.storage.api.syncables.additionals.TransactionSplitPart
 import com.myxoz.life.storage.caches.InterlockedCache
 import com.myxoz.life.storage.caches.InterlockedCache.Companion.overwrite
 import com.myxoz.life.storage.caches.InterlockedCache.Companion.remove
-import com.myxoz.life.storage.caches.RangedCache
-import com.myxoz.life.storage.caches.RangedCache.Rangable.Companion.rangableTo
-import com.myxoz.life.storage.caches.RangedCache.Rangable.Companion.startAndEndInMs
 import com.myxoz.life.storage.convertion.SyncableFromEntity.fromEntity
 import com.myxoz.life.storage.dbwrapper.banking.ReadBankingDao
 import com.myxoz.life.storage.interfaces.utils.Cached
 import com.myxoz.life.storage.interfaces.utils.Cached.Companion.cached
+import com.myxoz.life.storage.toLocalDate
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
+import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneId
-import kotlin.math.abs
+import kotlin.time.Duration.Companion.minutes
 
 class BankingInterface internal constructor(
     private val readBankingDao: ReadBankingDao,
@@ -121,15 +124,11 @@ class BankingInterface internal constructor(
     fun getBankTransactionsBetweenAt(start: LocalDate, end: LocalDate) = _transactions.flowByRange(start.rangableTo(end))
     fun getSortedTransactionsAt(date: LocalDate): Flow<List<MixedBankingEntity>> {
         return combine(
-            _transactions.getInterlockedFlowFor(date),
-            _manualTransactions.getInterlockedFlowFor(date)
+            _transactions.getInterlockedFlowFor(date).filterNotNull(),
+            _manualTransactions.getInterlockedFlowFor(date).filterNotNull()
         ) { transactions, manualTransactions ->
-            (
-                    transactions.def(listOf()) +
-                            manualTransactions.def(listOf())
-                                .map { MixedBankingEntity.from(it) }
-                    )
-                .sortedBy { it.timestamp }
+            val manualTransactions = manualTransactions.map(MixedBankingEntity::from)
+            (transactions + manualTransactions).sortedBy { it.timestamp }
         }
     }
     val sortedAllFlow = combine(
@@ -147,9 +146,9 @@ class BankingInterface internal constructor(
                 .ifEmpty { return@mapNotNull null }
         }
     }
-    internal suspend fun putFutureTransaction(
+    suspend fun putFutureTransaction(
         amount: Int,
-        timestamp: Long,
+        timestamp: Instant,
         digital: Boolean,
         cashless: Boolean,
         name: String?,
@@ -174,7 +173,7 @@ class BankingInterface internal constructor(
     }
     private suspend fun checkForExistingTransaction(future: ManualTransactionSyncable): Boolean {
         val day = future.timestamp.toLocalDate(zone)
-        val transactions = _transactions.fetchRange(RangedCache.Rangable.ofSingle(day))
+        val transactions = _transactions.fetchRange(Rangable.ofSingle(day))
         val found = transactions.any { real -> matches(real, future) }
         if(found) deleteManualTransaction(future)
         return found
@@ -245,7 +244,7 @@ class BankingInterface internal constructor(
     private fun matches(
         real: MixedBankingEntity,
         future: ManualTransactionSyncable
-    ) = abs(real.timestamp - future.timestamp) <= 5 * 60 * 1000
+    ) = dif(real.timestamp, future.timestamp) <= 5.minutes
             && real.amount == future.amountCents
 
     fun getDebtFor(person: Long): Flow<List<TransactionSplitSyncable>?> {

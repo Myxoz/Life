@@ -36,15 +36,9 @@ import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.ClipEntry
 import androidx.compose.ui.platform.Clipboard
 import androidx.compose.ui.platform.LocalDensity
-import androidx.compose.ui.platform.WindowInfo
-import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.Dp
-import androidx.compose.ui.unit.DpSize
-import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.core.content.edit
-import com.myxoz.life.utils.SharedPrefsUtils.put
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.FlowPreview
@@ -62,50 +56,11 @@ import kotlin.reflect.KClass
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.milliseconds
 
-@Composable
-fun Modifier.rippleClick(enabled: Boolean=true, run: ()->Unit): Modifier = this.clickable( remember { MutableInteractionSource() }, ripple(), onClick = run, enabled = enabled)
-
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun Modifier.combinedRippleClick(onHold: (()->Unit)?=null, enabled: Boolean = true, onClick: ()->Unit): Modifier = this.combinedClickable(
     remember { MutableInteractionSource() }, ripple(), onClick = onClick, onLongClick = onHold, enabled = enabled
 )
-
-@Composable
-fun TextUnit.toDp(): Dp = with(LocalDensity.current) { this@toDp.toDp() }
-fun TextUnit.toDp(density: Density): Dp = with(density) { this@toDp.toDp() }
-
-@Composable
-fun Dp.toSp() = with(LocalDensity.current) { this@toSp.toPx() / fontScale / density }.sp
-
-fun Dp.toSp(density: Density) = with(density) { this@toSp.toPx() / fontScale / this.density }.sp
-
-@Composable
-fun Dp.toPx() = with(LocalDensity.current) {this@toPx.toPx()}
-
-fun Dp.toPx(density: Density) = with(density) {this@toPx.toPx()}
-val WindowInfo.containerDpSize: DpSize
-    @Composable
-    get() {
-        val density = LocalDensity.current
-        val conf = this.containerSize
-        val (width, height) = with(density) { conf.width.toDp() to conf.height.toDp() }
-        return DpSize(width, height)
-    }
-val WindowInfo.dpWidth: Dp
-    @Composable
-    get() {
-        val density = LocalDensity.current
-        val conf = this.containerSize
-        return with(density) { conf.width.toDp() }
-    }
-val WindowInfo.dpHeight: Dp
-    @Composable
-    get() {
-        val density = LocalDensity.current
-        val conf = this.containerSize
-        return with(density) { conf.height.toDp() }
-    }
 data class Ref<T>(var value: T)
 
 @Composable
@@ -117,23 +72,6 @@ fun <T> MutableStateFlow<T>.collectAsMutableState(): MutableState<T> {
                 get() = state.value
                 set(value) {
                     this@collectAsMutableState.value = value
-                }
-
-            override fun component1(): T = value
-            override fun component2(): (T) -> Unit = { value = it }
-        }
-    }
-}
-@Composable
-fun <T> MutableStateFlow<T?>.collectAsMutableNonNullState(defValue: T): MutableState<T> {
-    val state = this.collectAsState()
-
-    return remember(this) {
-        object : MutableState<T> {
-            override var value: T
-                get() = state.value ?: defValue
-                set(value) {
-                    this@collectAsMutableNonNullState.value = value
                 }
 
             override fun component1(): T = value
@@ -180,10 +118,6 @@ fun <T: Any> Flow<T?>.syncNullableToPrefs(
             }
     }
 }
-
-
-val windowPadding: PaddingValues
-    @Composable get() = WindowInsets.systemBars.asPaddingValues(LocalDensity.current)
 
 suspend fun Clipboard.copy(text: String) {
     setClipEntry(ClipEntry(ClipData.newPlainText(text, text)))

@@ -65,10 +65,10 @@ import com.myxoz.life.ui.ThreeStateBottomSheetState.Companion.ThreeStateBottomSh
 import com.myxoz.life.ui.person.displayperson.ListEditingField
 import com.myxoz.life.ui.person.displayperson.ListEntry
 import com.myxoz.life.ui.person.displayperson.navigateForResult
-import com.myxoz.life.ui.theme.FontFamily
-import com.myxoz.life.ui.theme.FontSize
-import com.myxoz.life.ui.theme.OldColors
-import com.myxoz.life.ui.theme.TypoStyle
+import com.myxoz.life.lifeui.theme.FontFamily
+import com.myxoz.life.lifeui.theme.FontSize
+import com.myxoz.life.lifeui.theme.OldColors
+import com.myxoz.life.lifeui.theme.TypoStyle
 import com.myxoz.life.utils.nullIfEmpty
 import com.myxoz.life.utils.rippleClick
 import com.myxoz.life.utils.toDp

@@ -22,19 +22,17 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import com.myxoz.life.MainActivity
 import com.myxoz.life.api.syncables.SyncedEvent
-import com.myxoz.life.storage.events.DigSocEvent
-import com.myxoz.life.storage.events.TravelEvent
-import com.myxoz.life.storage.events.additionals.TagEvent
-import com.myxoz.life.storage.events.additionals.TitleEvent
-import com.myxoz.life.repositories.supermodule.CrossRepoSuper
+import com.myxoz.life.storage.events.TagEvent
+import com.myxoz.life.storage.events.TitleEvent
+import com.myxoz.life.state.activityscoped.supermodule.CrossRepoSuper
 import com.myxoz.life.ui.AlarmUI
 import com.myxoz.life.ui.ArrowDirection
 import com.myxoz.life.ui.LocalScreensProvider
 import com.myxoz.life.ui.NavPath
 import com.myxoz.life.ui.drawArrowBehind
 import com.myxoz.life.ui.feed.main.RenderTagAndTitleBar
-import com.myxoz.life.ui.theme.FontSize
-import com.myxoz.life.ui.theme.TypoStyle
+import com.myxoz.life.lifeui.theme.FontSize
+import com.myxoz.life.lifeui.theme.TypoStyle
 import com.myxoz.life.utils.rippleClick
 import com.myxoz.life.utils.toPx
 import kotlinx.coroutines.Dispatchers
@@ -71,9 +69,9 @@ fun AlarmUI.RenderEventPreview(syncedEvent: SyncedEvent, screens: LocalScreensPr
             .padding(5.dp, 5.dp, 10.dp, 5.dp)
     ) {
         when(val event = syncedEvent.raw) {
-            is com.myxoz.life.storage.events.additionals.TagEvent -> RenderTagAndTitleBar(
+            is TagEvent -> RenderTagAndTitleBar(
                 event.eventTags,
-                if (event is com.myxoz.life.storage.events.additionals.TitleEvent) event.title else null,
+                if (event is TitleEvent) event.title else null,
                 height,
                 3,
                 event.type.colors

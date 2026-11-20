@@ -1,18 +1,18 @@
 package com.myxoz.life.storage.dbwrapper.state
 
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.launch
+import android.content.Context
+import android.content.Context.MODE_PRIVATE
+import android.content.SharedPreferences
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlin.properties.ReadWriteProperty
 import kotlin.reflect.KProperty
 
-internal class KeyValueStore private constructor(
-    private val keyValueDao: KeyValueDao,
-    initialMap: Map<String, String>,
-    private val storeScope: CoroutineScope
+class KeyValueStore private constructor(
+    private val keyValuePrefs: SharedPreferences,
 ) {
-    private val map = initialMap.toMutableMap()
+    private val map = mutableMapOf<String, String>()
     fun <T> get(key: KeyValueStoreKey<T>): T? {
-        return map[key.combined]?.let(key.type::decode)
+        return (map[key.combined] ?: keyValuePrefs.getString(key.combined, null))?.let(key.type::decode)
     }
     fun <T> get(key: KeyValueStoreKey<T>, default: T): T {
         return get(key) ?: default
@@ -24,7 +24,13 @@ internal class KeyValueStore private constructor(
     fun <T> getAsState(key: KeyValueStoreKey<T>, default: T): KeyValueStateWithDefault<T> =
         KeyValueStateWithDefault(this, key, default)
 
-    fun <T> set(
+    fun <T> getAsWritableMutableState(key: KeyValueStoreKey<T>, default: T): MutableStateFlow<T> =
+        PersistedMutableStateFlow(MutableStateFlow(get(key, default))) { put(key, it) }
+
+    fun <T> getAsWritableMutableState(key: KeyValueStoreKey<T>): MutableStateFlow<T?> =
+        PersistedMutableStateFlow(MutableStateFlow(get(key))) { put(key, it ?: return@PersistedMutableStateFlow) }
+
+    fun <T> put(
         key: KeyValueStoreKey<T>,
         value: T
     ) {
@@ -32,32 +38,26 @@ internal class KeyValueStore private constructor(
 
         map[key.combined] = encoded
 
-        storeScope.launch {
-            keyValueDao.insert(
-                KeyValueEntity(
-                    key = key.combined,
-                    value = encoded
-                )
-            )
-        }
+        keyValuePrefs.edit().putString(
+            key.combined,
+            encoded
+        ).apply()
     }
     private fun storeMultiple(values: List<Pair<String, String>>) {
         if(values.isEmpty()) return
         map.putAll(values)
 
-        storeScope.launch {
-            keyValueDao.insertAll(
-                values.map {
-                    KeyValueEntity(it.first, it.second)
-                }
-            )
-        }
+        keyValuePrefs.edit().apply {
+            values.forEach { (key, encoded) ->
+                putString(key, encoded)
+            }
+        }.apply()
     }
     inline fun <T> map(
         key: KeyValueStoreKey<T>,
         remapping: (T?) -> T
     ) {
-        set(key, remapping(get(key)))
+        put(key, remapping(get(key)))
     }
     class StoreScope(private val storage: KeyValueStore) {
         private val values = mutableListOf<Pair<String, String>>()
@@ -76,7 +76,7 @@ internal class KeyValueStore private constructor(
             }
         }
     }
-    internal class KeyValueState<T> internal constructor(
+    class KeyValueState<T> internal constructor(
         private val keyValueStore: KeyValueStore,
         private val key: KeyValueStoreKey<T>,
     ) : ReadWriteProperty<Any?, T?> {
@@ -85,10 +85,10 @@ internal class KeyValueStore private constructor(
         }
 
         override fun setValue(thisRef: Any?, property: KProperty<*>, value: T?) {
-            keyValueStore.set(key, value ?: return)
+            keyValueStore.put(key, value ?: return)
         }
     }
-    internal class KeyValueStateWithDefault<T> internal constructor(
+    class KeyValueStateWithDefault<T> internal constructor(
         private val keyValueStore: KeyValueStore,
         private val key: KeyValueStoreKey<T>,
         private val default: T
@@ -98,18 +98,42 @@ internal class KeyValueStore private constructor(
         }
 
         override fun setValue(thisRef: Any?, property: KProperty<*>, value: T) {
-            keyValueStore.set(key, value ?: return)
+            keyValueStore.put(key, value ?: return)
+        }
+    }
+    private class PersistedMutableStateFlow<T>(
+        private val state: MutableStateFlow<T>,
+        private val persist: (T) -> Unit,
+    ) : MutableStateFlow<T> by state {
+        override var value: T
+            get() = state.value
+            set(newValue) {
+                state.value = newValue
+                persist(newValue)
+            }
+
+        override suspend fun emit(value: T) {
+            this.value = value
+        }
+
+        override fun tryEmit(value: T): Boolean {
+            this.value = value
+            return true
+        }
+
+        override fun compareAndSet(expect: T, update: T): Boolean {
+            val success = state.compareAndSet(expect, update)
+            if (success) persist(update)
+            return success
         }
     }
     companion object {
-        fun createAndQueryRoomOnMain(
-            keyValueDao: KeyValueDao,
-            storeScope: CoroutineScope
+        fun createWithContext(
+            context: Context,
         ): KeyValueStore {
-            val initialMap = keyValueDao.getAll()
-                .associate { it.key to it.value }
+            val prefs = context.getSharedPreferences("storage", MODE_PRIVATE)
 
-            return KeyValueStore(keyValueDao, initialMap, storeScope)
+            return KeyValueStore(prefs)
         }
     }
 }

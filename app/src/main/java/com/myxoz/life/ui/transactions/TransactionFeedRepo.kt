@@ -8,7 +8,7 @@ import com.myxoz.life.storage.interfaces.BankingDisplayEntityKey
 import com.myxoz.life.storage.interfaces.BankingInterface
 import com.myxoz.life.storage.interfaces.DatabaseInterface
 import com.myxoz.life.storage.interfaces.utils.Cached
-import com.myxoz.life.StateFlowCache
+import com.myxoz.life.lifecore.flows.StateFlowCache
 import com.myxoz.life.subscribeToColdFlow
 import com.myxoz.life.utils.syncToPrefs
 import com.myxoz.life.utils.toLocalDate

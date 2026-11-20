@@ -7,6 +7,7 @@ import com.myxoz.life.storage.caches.PerformantCache
 import com.myxoz.life.storage.convertion.SyncableFromEntity.fromEntity
 import com.myxoz.life.storage.dbwrapper.locations.ReadLocationsDao
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlin.math.atan2
@@ -17,33 +18,45 @@ import kotlin.math.sqrt
 
 class LocationInterface internal constructor(
     private val readLocationsDao: ReadLocationsDao,
-    appScope: CoroutineScope,
+    private val appScope: CoroutineScope,
     private val syncHelper: SyncHelper
 ) {
-    private var fetchedAllLocations = false
+    private var requestedAllLocations = false
+
     private val _cache = PerformantCache<Long, LocationSyncable>(appScope) {
         readLocationsDao.getLocationById(it)?.fromEntity()
             ?: throw Error("Location Syncable was fetched with an unknown id: $it. This is unsuported behavior. Check how you get the Location id.")
     }
+
     fun updateCached(location: LocationSyncable){
         _cache.overwrite(location.id, location)
     }
+
     suspend fun updateAndStage(location: LocationSyncable){
         location.saveAndRequestSync(syncHelper)
         updateCached(location)
     }
+
     fun getLocationById(id: Long) = _cache.flowByKey(id)
-    suspend fun requestFetchAllLocations(){
-        if(fetchedAllLocations) return
-        fetchedAllLocations = true
-        _cache.overwriteAll(
-            readLocationsDao.getAllLocations().map { it.id to it.fromEntity() }
-        )
+
+    fun getAllLocations(): Flow<List<LocationSyncable>> {
+        requestFetchAllLocations()
+        return _cache.allValuesFlow
     }
-    val getAllLocations = _cache.allValuesFlow
+
+    fun requestFetchAllLocations() {
+        if(requestedAllLocations) return
+        requestedAllLocations = true
+        appScope.launch {
+            _cache.overwriteAll(
+                readLocationsDao.getAllLocations().map { it.id to it.fromEntity() }
+            )
+        }
+    }
+
     suspend fun queryByCoordinate(targetLat: Double, targetLon: Double, allLocations: List<LocationSyncable>? = null): LocationSyncable? {
         val allLocations = if(allLocations != null) allLocations else {
-            requestFetchAllLocations()
+            getAllLocations()
             _cache.allValuesFlow.first()
         }
 
@@ -74,6 +87,8 @@ class LocationInterface internal constructor(
         return R * c
     }
     fun getCachedLocation(locationid: Long) = _cache.getCached(locationid)
+    suspend fun queryLocation(street: String, number: String, city: String) =
+        readLocationsDao.queryLocation(street, number, city)?.fromEntity()
     init {
         appScope.launch {
             _cache.overwriteAll(
@@ -81,7 +96,7 @@ class LocationInterface internal constructor(
                     it.id to it.fromEntity()
                 }
             )
-            fetchedAllLocations = true
+            requestedAllLocations = true
         }
     }
 }

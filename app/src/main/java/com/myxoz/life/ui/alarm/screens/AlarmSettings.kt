@@ -19,15 +19,15 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import com.myxoz.life.Theme
-import com.myxoz.life.repositories.supermodule.CrossRepoSuper
+import com.myxoz.life.state.activityscoped.supermodule.CrossRepoSuper
 import com.myxoz.life.storage.interfaces.DatabaseInterface
 import com.myxoz.life.ui.AlarmUI
 import com.myxoz.life.ui.alarm.AlarmRepo
 import com.myxoz.life.ui.alarm.screens.composables.NextEventInformation
 import com.myxoz.life.ui.setMaxTabletWidth
-import com.myxoz.life.ui.theme.FontFamily
-import com.myxoz.life.ui.theme.FontSize
-import com.myxoz.life.ui.theme.TypoStyle
+import com.myxoz.life.lifeui.theme.FontFamily
+import com.myxoz.life.lifeui.theme.FontSize
+import com.myxoz.life.lifeui.theme.TypoStyle
 import com.myxoz.life.utils.rippleClick
 import com.myxoz.life.utils.windowPadding
 

@@ -2,7 +2,6 @@ plugins {
     id("com.google.devtools.ksp")
     alias(libs.plugins.android.library)
     id("org.jetbrains.kotlin.plugin.serialization") version "2.4.20"
-
 }
 
 android {
@@ -12,7 +11,7 @@ android {
     }
 
     defaultConfig {
-        minSdk = 26
+        minSdk = 29
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }

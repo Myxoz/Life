@@ -1,6 +1,6 @@
 package com.myxoz.life.storage.api
 
-import com.myxoz.life.storage.LocalEvent
+import com.myxoz.life.storage.AutoDetectLocalEvent
 import com.myxoz.life.storage.api.extensions.RepeatingEventsExtendable
 import com.myxoz.life.storage.api.syncables.ExtensionSyncable
 import com.myxoz.life.storage.api.syncables.ExtensionSyncable.ExtensionSyncableType.FavoriteContacts
@@ -45,6 +45,10 @@ class UpdateHooks(
                 ?: return)
         }
     }
+
+    /**
+     * Updates the repeating events
+     */
     suspend fun updateRepeatingEvents(repeatingEvents: RepeatingEventsExtendable) {
         val newEvents = repeatingEvents.events
 
@@ -52,7 +56,7 @@ class UpdateHooks(
         // Yes I am, think about it, it may seam weird but, we don't harm anything and
         // allow easiest updating when proposing multiple LocalEvents.
         // In the future, we will likely switch to a similar approach just with adding or similar
-        calendarInterface.updateLocalEvents(newEvents.map { LocalEvent(it.id, it.event) })
+        calendarInterface.updateLocalEvents(newEvents.map { AutoDetectLocalEvent(it.id, it.event) })
 
         val old = extensionInterface.getExtension(RepeatingEvents)
         if(old != null) {

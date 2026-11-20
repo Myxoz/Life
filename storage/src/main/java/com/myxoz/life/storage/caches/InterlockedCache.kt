@@ -1,5 +1,6 @@
 package com.myxoz.life.storage.caches
 
+import com.myxoz.life.core.Rangable
 import com.myxoz.life.storage.interfaces.utils.Cached
 import com.myxoz.life.storage.interfaces.utils.Cached.Companion.cached
 import com.myxoz.life.storage.interfaces.utils.RangeInterlockedCache
@@ -167,7 +168,7 @@ internal open class InterlockedCache<K: Any, I: Any, V: Any, L: Any>(
             toInterlockedRange: (element: V) -> List<LocalDate>,
             keyBy: (item: V) -> K,
             fetchSingleContent: suspend (K) -> V,
-            nativeFetchRange: suspend (RangedCache.Rangable<LocalDate>) -> List<V>,
+            nativeFetchRange: suspend (Rangable<LocalDate>) -> List<V>,
             update: ((key: K, new: V) -> Unit)? = null,
         ) = RangeInterlockedCache(
             fetchScope,
@@ -186,7 +187,7 @@ internal open class InterlockedCache<K: Any, I: Any, V: Any, L: Any>(
             toInterlockedRange: (element: Cached<V>) -> List<LocalDate>,
             keyBy: (item: V) -> K,
             fetchSingleContent: suspend (K) -> Cached<V>,
-            nativeFetchRange: suspend (RangedCache.Rangable<LocalDate>) -> List<V>,
+            nativeFetchRange: suspend (Rangable<LocalDate>) -> List<V>,
             update: ((key: K, new: Cached<V>) -> Unit)? = null
         ) = RangeInterlockedCache<K, LocalDate, Cached<V>, V>(
             fetchScope,

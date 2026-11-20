@@ -5,12 +5,13 @@ plugins {
 
 android {
     namespace = "com.myxoz.life"
-    compileSdk = 37
+    compileSdk {
+        version = release(37)
+    }
 
     defaultConfig {
         applicationId = "com.myxoz.life"
         minSdk = 29
-        targetSdk = 36
         versionCode = 1
         versionName = "1.0"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
@@ -52,6 +53,11 @@ kotlin {
 dependencies {
     implementation(project(":core"))
     implementation(project(":storage"))
+    implementation(project(":socialgraph"))
+    implementation(project(":lifeui"))
+    implementation(project(":lifecore"))
+    implementation(project(":background"))
+    implementation(project(":presentation"))
     implementation(libs.androidx.compose.material3)
     implementation(libs.maps.compose.ndk27)
     implementation(libs.android.ndk27)

@@ -8,9 +8,6 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
-fun <T> Flow<T>.subscribeToColdFlow(viewModelScope: CoroutineScope, initial: T) =
-    this.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), initial)
-
 @OptIn(ExperimentalForInheritanceCoroutinesApi::class)
 interface WritableState<T> : StateFlow<T> {
     fun set(value: T)

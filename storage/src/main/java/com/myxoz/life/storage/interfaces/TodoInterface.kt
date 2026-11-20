@@ -1,5 +1,6 @@
 package com.myxoz.life.storage.interfaces
 
+import com.myxoz.life.core.Rangable.Companion.startAndEndInMs
 import com.myxoz.life.core.toLocalDate
 import com.myxoz.life.storage.api.helper.SyncHelper
 import com.myxoz.life.storage.api.helper.SyncHelper.Companion.deleteAndSync
@@ -7,7 +8,6 @@ import com.myxoz.life.storage.api.helper.SyncHelper.Companion.saveAndRequestSync
 import com.myxoz.life.storage.api.syncables.TodoSyncable
 import com.myxoz.life.storage.caches.InterlockedCache
 import com.myxoz.life.storage.caches.InterlockedCache.Companion.remove
-import com.myxoz.life.storage.caches.RangedCache.Rangable.Companion.startAndEndInMs
 import com.myxoz.life.storage.convertion.SyncableFromEntity.fromEntity
 import com.myxoz.life.storage.dbwrapper.todos.ReadTodosDao
 import com.myxoz.life.storage.interfaces.utils.Cached

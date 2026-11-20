@@ -53,16 +53,15 @@ import androidx.compose.ui.unit.times
 import androidx.graphics.shapes.Morph
 import androidx.graphics.shapes.toPath
 import com.myxoz.life.Theme
-import com.myxoz.life.api.syncables.ProfilePictureSyncable
-import com.myxoz.life.ui.SCREENMAXWIDTH
-import com.myxoz.life.ui.theme.FontFamily
-import com.myxoz.life.ui.theme.FontSize
-import com.myxoz.life.ui.theme.TypoStyle
-import com.myxoz.life.utils.MaterialShapes
-import com.myxoz.life.utils.containerDpSize
-import com.myxoz.life.utils.toShape
-import com.myxoz.life.viewmodels.ProfileInfoModel
-import kotlinx.coroutines.flow.drop
+import com.myxoz.life.lifecore.android.image.ImagePicker
+import com.myxoz.life.lifeui.reusedcompose.SCREENMAXWIDTH
+import com.myxoz.life.state.screenscoped.ProfileInfoModel
+import com.myxoz.life.storage.api.syncables.ProfilePictureSyncable
+import com.myxoz.life.lifeui.theme.FontFamily
+import com.myxoz.life.lifeui.theme.FontSize
+import com.myxoz.life.lifeui.theme.TypoStyle
+import com.myxoz.life.lifeui.shapes.MaterialShapes
+import com.myxoz.life.lifeui.shapes.toShape
 import kotlin.math.PI
 import kotlin.math.cos
 import kotlin.math.pow
@@ -70,7 +69,7 @@ import kotlin.math.sin
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
-fun ProfilePictureWithText(photoPicker: PhotoPicker, profileInfoViewModel: ProfileInfoModel, scrollLength: Dp, fontSize: Dp, topBarHeight: Dp){
+fun ProfilePictureWithText(imagePicker: ImagePicker, profileInfoViewModel: ProfileInfoModel, scrollLength: Dp, fontSize: Dp, topBarHeight: Dp){
     val smallPbPadding = 10.dp
     @Suppress("UnnecessaryVariable", "RedundantSuppression") // LOL
     val smallPbSize = fontSize
@@ -87,14 +86,10 @@ fun ProfilePictureWithText(photoPicker: PhotoPicker, profileInfoViewModel: Profi
         ).size.width.toDp()
     }
     LaunchedEffect(Unit) {
-        photoPicker.processedBitmap
-            .drop(1)
-            .collect {
-                Log.d("ImagePicker","Image selected / already passed bitmap, will be synced now $it")
-                profileInfoViewModel.updateProfilePicture(
-                    it?.let { ProfilePictureSyncable.bitmapToBase64(it) }
-                )
-            }
+        imagePicker.bitmap.collect {
+            Log.d("ImagePicker","Image selected / already passed bitmap, will be synced now $it")
+            profileInfoViewModel.updateProfilePicture(it ?: return@collect)
+        }
     }
     Box(
         Modifier
@@ -115,8 +110,8 @@ fun ProfilePictureWithText(photoPicker: PhotoPicker, profileInfoViewModel: Profi
         val radius = progress*(maxPbSize+fontPadding-smallPbPadding)+smallPbPadding
         val degree = PI/2*(progress.pow(.75f))
         val textOffsetY = sin(degree)*radius + topLeftPbY
-        val bitmap by profileInfoViewModel.profilePic.collectAsState()
-        val textOffsetX = cos(degree)*radius + topLeftPbX + (if(bitmap!=null) (1-progress)*pbSize else 0.dp) + progress*(pbSize - textWidth)/2
+        val profilePictureSyncable by profileInfoViewModel.profilePic.collectAsState()
+        val textOffsetX = cos(degree)*radius + topLeftPbX + (if(profilePictureSyncable!=null) (1-progress)*pbSize else 0.dp) + progress*(pbSize - textWidth)/2
         Box(
             Modifier
                 .offset(
@@ -125,7 +120,11 @@ fun ProfilePictureWithText(photoPicker: PhotoPicker, profileInfoViewModel: Profi
                 )
                 .size(pbSize)
         ){
-            val bitmap = bitmap?.asImageBitmap()
+            val bitmap = remember(profilePictureSyncable) {
+                ProfilePictureSyncable.base64ToBitmap(
+                    profilePictureSyncable?.bitmapBase64 ?: return@remember null
+                )?.asImageBitmap()
+            }
             val morph = remember {
                 Morph(MaterialShapes.Cookie9Sided, MaterialShapes.Square)
             }
@@ -161,7 +160,7 @@ fun ProfilePictureWithText(photoPicker: PhotoPicker, profileInfoViewModel: Profi
                     .background(Theme.secondaryContainer.copy(progress), shape)
                     .clip(shape)
                     .combinedClickable(null, null, true, onLongClick = {
-                        photoPicker.pickPhoto()
+                        imagePicker.pickPhoto()
                     }){
                         profileInfoViewModel.isProfilePictureFullScreen.value = !profileInfoViewModel.isProfilePictureFullScreen.value
                     }

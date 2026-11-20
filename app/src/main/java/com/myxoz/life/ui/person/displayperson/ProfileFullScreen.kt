@@ -68,16 +68,15 @@ import com.myxoz.life.LocalNavController
 import com.myxoz.life.LocalScreens
 import com.myxoz.life.R
 import com.myxoz.life.Theme
-import com.myxoz.life.storage.events.DigSocEvent
+import com.myxoz.life.lifecore.android.image.ImagePicker
 import com.myxoz.life.storage.events.additionals.EventType
 import com.myxoz.life.storage.dbwrapper.banking.formatCents
 import com.myxoz.life.ui.ActionBar
 import com.myxoz.life.ui.NavPath
 import com.myxoz.life.ui.SCREENMAXWIDTH
 import com.myxoz.life.ui.setMaxTabletWidth
-import com.myxoz.life.ui.theme.FontSize
-import com.myxoz.life.ui.theme.TypoStyle
-import com.myxoz.life.utils.containerDpSize
+import com.myxoz.life.lifeui.theme.FontSize
+import com.myxoz.life.lifeui.theme.TypoStyle
 import com.myxoz.life.utils.diagrams.PieChart
 import com.myxoz.life.utils.formatMsToDuration
 import com.myxoz.life.utils.formatPercent
@@ -85,7 +84,7 @@ import com.myxoz.life.utils.getAge
 import com.myxoz.life.utils.rippleClick
 import com.myxoz.life.utils.toDp
 import com.myxoz.life.utils.windowPadding
-import com.myxoz.life.viewmodels.ProfileInfoModel
+import com.myxoz.life.state.screenscoped.ProfileInfoModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.launch
 import java.time.Instant
@@ -95,7 +94,7 @@ import java.time.ZoneId
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
 fun ProfileFullScreen(
-    photoPicker: PhotoPicker,
+    imagePicker: ImagePicker,
     profileInfoModel: ProfileInfoModel
 ) {
     val screens = LocalScreens.current
@@ -328,7 +327,7 @@ fun ProfileFullScreen(
                 .padding(top = windowPadding.calculateTopPadding())
         ){
             ProfilePictureWithText(
-                photoPicker,
+                imagePicker,
                 profileInfoModel,
                 scrollLength,
                 fontSize,

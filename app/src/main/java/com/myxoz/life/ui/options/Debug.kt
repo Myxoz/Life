@@ -1,15 +1,12 @@
 package com.myxoz.life.ui.options
 
-import android.content.Context.MODE_PRIVATE
 import android.content.Intent
 import android.content.pm.ApplicationInfo
 import android.icu.util.Calendar
 import android.provider.CallLog
 import androidx.activity.compose.LocalActivity
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
@@ -17,7 +14,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
-import androidx.compose.material3.Icon
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -33,40 +29,33 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
-import androidx.core.content.edit
-import com.myxoz.life.LocalSettings
 import com.myxoz.life.MainActivity
-import com.myxoz.life.R
 import com.myxoz.life.Theme
 import com.myxoz.life.android.MainApplication
-import com.myxoz.life.android.livenotification.LiveEventRefreshReceiver
-import com.myxoz.life.api.API
-import com.myxoz.life.api.Syncable
-import com.myxoz.life.api.extensions.StreakExtendable
-import com.myxoz.life.api.syncables.ExtensionSyncable
-import com.myxoz.life.repositories.AppRepos
-import com.myxoz.life.storage.dbwrapper.Daos
+import com.myxoz.life.background.livenotification.LiveEventRefreshReceiver
+import com.myxoz.life.state.ActivityScopedState
+import com.myxoz.life.storage.api.API
 import com.myxoz.life.storage.interfaces.DatabaseInterface
+import com.myxoz.life.storage.interfaces.DebugInterface
 import com.myxoz.life.ui.alarm.screens.AlarmActivity
 import com.myxoz.life.ui.holdToCopy
-import com.myxoz.life.ui.theme.FontColor
-import com.myxoz.life.ui.theme.FontSize
-import com.myxoz.life.ui.theme.OldColors
-import com.myxoz.life.ui.theme.TypoStyle
-import com.myxoz.life.ui.theme.TypoStyleOld
+import com.myxoz.life.lifeui.theme.FontColor
+import com.myxoz.life.lifeui.theme.FontSize
+import com.myxoz.life.lifeui.theme.OldColors
+import com.myxoz.life.lifeui.theme.TypoStyle
+import com.myxoz.life.lifeui.theme.TypoStyleOld
 import com.myxoz.life.utils.formatTimeStamp
-import com.myxoz.life.viewmodels.Settings
 import kotlinx.coroutines.launch
 import java.io.File
+import java.time.Instant
 
 @Composable
 fun DebugScreen(
-    db: Daos,
+    db: DebugInterface,
     api: API,
     dbInterface: DatabaseInterface,
-    repos: AppRepos
+    repos: ActivityScopedState
 ) {
     Scaffold(
         Modifier.fillMaxSize(),
@@ -79,38 +68,14 @@ fun DebugScreen(
         ) {
             val context = LocalContext.current
             val coroutineScope = rememberCoroutineScope()
-            val prefs = remember { context.getSharedPreferences("steps", MODE_PRIVATE) }
-            val sprefs = remember { context.getSharedPreferences("MainActivity", MODE_PRIVATE) }
-            val settings = LocalSettings.current
-            var lastSavedSteps by remember { mutableLongStateOf(prefs.getLong("saved_steps", 0L)) }
-            var stepsAtMidnight by remember {
-                mutableLongStateOf(
-                    prefs.getLong(
-                        "steps_at_midnight",
-                        0L
-                    )
-                )
-            }
-            var lastDateSaved by remember {
-                mutableLongStateOf(
-                    prefs.getLong(
-                        "last_steps_date",
-                        0L
-                    )
-                )
-            }
-            var stepLog by remember {
-                mutableStateOf(
-                    prefs.getStringSet(
-                        "step_reset_log",
-                        setOf()
-                    ) ?: setOf()
-                )
-            }
-            Text(
-                sprefs.all.map { "${it.key}: ${it.value}\n" }.joinToString(""),
-                style = TypoStyleOld(FontColor.PRIMARY, FontSize.MEDIUM)
-            )
+            var lastSavedSteps by remember { mutableLongStateOf(db.lastStepAmountSaved()) }
+            var stepsAtMidnight by remember { mutableLongStateOf(db.stepsAtMidnight()) }
+            var lastDateSaved by remember { mutableStateOf( db.stepsLastSaved() ) }
+            var stepLog by db.stepResetLog
+            //Text(
+                //sprefs.all.map { "${it.key}: ${it.value}\n" }.joinToString(""),
+                //    style = TypoStyleOld(FontColor.PRIMARY, FontSize.MEDIUM)
+            //)
             val isDebuggable = 0 != context.applicationInfo.flags and ApplicationInfo.FLAG_DEBUGGABLE
             Text(
                 "The current build is: ${if(isDebuggable) "Debuggable" else "Release"}",
@@ -137,9 +102,9 @@ fun DebugScreen(
 //                }
 //            }
             Button({
-                lastSavedSteps = prefs.getLong("saved_steps", 0L)
-                stepsAtMidnight = prefs.getLong("steps_at_midnight", 0L)
-                lastDateSaved = prefs.getLong("last_steps_date", 0L)
+                lastSavedSteps = db.lastStepAmountSaved()
+                stepsAtMidnight = db.stepsAtMidnight()
+                lastDateSaved = db.stepsLastSaved()
             }) {
                 Text("Update steps")
             }
@@ -149,7 +114,7 @@ fun DebugScreen(
                 coroutineScope.launch {
                     repos.bankingInterface.putFutureTransaction(
                         100,
-                        System.currentTimeMillis(),
+                        Instant.now(),
                         false,
                         false,
                         "Debug",
@@ -181,14 +146,7 @@ fun DebugScreen(
                 shouldWipeDp += 1
                 if (shouldWipeDp == 10) {
                     shouldWipeDp = 0
-                    coroutineScope.launch {
-                        sprefs.edit {
-                            putLong("last_update", 0)
-                        }
-                        db.cleanupDb.clearAllExceptPersistent()
-                        File(context.filesDir, Syncable.SpecialSyncablesIds.PROFILEPICTURE.toString()).deleteRecursively() // Delete Profile Pics
-                        api.resetLastUpdateDebug()
-                    }
+                    coroutineScope.launch { db.resetAPI() }
                 }
             }) {
                 Text("Wipe whole db, click ${10 - shouldWipeDp} times")
@@ -206,111 +164,28 @@ fun DebugScreen(
                 style = TypoStyleOld(FontColor.PRIMARY, FontSize.MEDIUM)
             )
             val calendar = remember { Calendar.getInstance() }
-            val displayLog = stepLog.map{ it.split(";") }.sortedByDescending { it[2].toLong() }.joinToString("\n") {"From ${it[0]} to ${it[1]} at ${it[2]} (${it[2].toLong().formatTimeStamp(calendar)})" }
+            val displayLog = stepLog?.map{ it.split(";") }?.sortedByDescending { it[2].toLong() }?.joinToString("\n") {"From ${it[0]} to ${it[1]} at ${it[2]} (${it[2].toLong().formatTimeStamp(calendar)})" }
             Text(
-                displayLog,
+                displayLog ?: "none",
                 Modifier
                     .holdToCopy(displayLog, coroutineScope)
                 ,
                 style = TypoStyleOld(FontColor.PRIMARY, FontSize.MEDIUM)
             )
-            val steps by dbInterface.stepInterface.debugGetRawSteps().collectAsState()
+            val steps by dbInterface.stepInterface.steps.collectAsState(0L)
             Text("Steps live: $steps", style = TypoStyleOld(FontColor.PRIMARY, FontSize.MEDIUM))
             var renderCallLogs by remember { mutableStateOf(false) }
             Button({renderCallLogs = true}) {
                 Text("Render call logs")
             }
-            Button({
-                dbInterface.extensionInterface.overwriteCache(
-                    ExtensionSyncable.ExtensionSyncableType.Streak,
-                    StreakExtendable(
-                        listOf(
-                            StreakExtendable.StreakItem(
-                                API.generateId(),
-                                true,
-                                2,
-                                StreakExtendable.Timespan.Week,
-                                StreakExtendable.StreakTarget.EventTarget(
-                                    true,
-                                    _root_ide_package_.com.myxoz.life.storage.events.additionals.EventType.Social,
-                                    listOf(_root_ide_package_.com.myxoz.life.storage.events.additionals.EventTag.Sport),
-                                    listOf(),
-                                    "Gym"
-                                ),
-                                "2x Gym pro Woche",
-                                "2*Gym / Woche",
-                            ),
-                            StreakExtendable.StreakItem(
-                                API.generateId(),
-                                true,
-                                1000*3600*7,
-                                StreakExtendable.Timespan.Week,
-                                StreakExtendable.StreakTarget.EventTarget(
-                                    false,
-                                    _root_ide_package_.com.myxoz.life.storage.events.additionals.EventType.Hobby,
-                                    listOf(_root_ide_package_.com.myxoz.life.storage.events.additionals.EventTag.Code),
-                                    listOf(),
-                                    "Life"
-                                ),
-                                "7h Life-Coding in der Woche",
-                                "7h Life-Coding / Woche",
-                            ),
-                            StreakExtendable.StreakItem(
-                                API.generateId(),
-                                true,
-                                15*1000*60L,
-                                StreakExtendable.Timespan.Day,
-                                StreakExtendable.StreakTarget.EventTarget(
-                                    false,
-                                    _root_ide_package_.com.myxoz.life.storage.events.additionals.EventType.DigSoc,
-                                    listOf(),
-                                    listOf(5048114124350931236),
-                                    null
-                                ),
-                                "Mind 15m Call mit Soso am Tag",
-                                "15m Soso-Call / Tag",
-                            ),
-                            StreakExtendable.StreakItem(
-                                API.generateId(),
-                                false,
-                                4*3600*1000L,
-                                StreakExtendable.Timespan.Day,
-                                StreakExtendable.StreakTarget.DayTarget(
-                                    StreakExtendable.DayTargetType.Screentime
-                                ),
-                                "Weniger als 4h Screentime täglich",
-                                "< 4h Screentime/Tag",
-                            ),
-                            StreakExtendable.StreakItem(
-                                API.generateId(),
-                                true,
-                                42_000,
-                                StreakExtendable.Timespan.Week,
-                                StreakExtendable.StreakTarget.DayTarget(
-                                    StreakExtendable.DayTargetType.Steps
-                                ),
-                                "42.000 Scritte wöchentlich (6k täglich)",
-                                "42.000 Scritte / Woche",
-                            ),
-                        )
-                    )
-                )
-            }) {
-                Text("Create streak overwrite (likely no sync)")
-            }
-            if(renderCallLogs) {
-                if(settings.hasAssured(Settings.Feature.AutoDetectCalls)){
-                    CallLogDumpDebug()
-                }
-            }
             val allSharedPreferences = remember { File(context.dataDir, "shared_prefs").list() }
             allSharedPreferences?.forEach {
-                val pref = remember { context.getSharedPreferences(it.removeSuffix(".xml"), MODE_PRIVATE) }
                 Spacer(Modifier.height(10.dp))
                 Text(it, color = Theme.primary)
                 Column (
                     Modifier.background(Theme.surface)
                 ) {
+                    /*
                     pref.all.forEach { (key, any) ->
                         Row {
                             Text(key, color = Theme.primary)
@@ -328,6 +203,7 @@ fun DebugScreen(
                                 Theme.primary)
                         }
                     }
+                     */
                 }
             }
         }

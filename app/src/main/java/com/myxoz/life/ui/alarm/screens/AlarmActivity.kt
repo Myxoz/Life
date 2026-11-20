@@ -16,12 +16,12 @@ import androidx.compose.runtime.CompositionLocalProvider
 import androidx.core.content.edit
 import com.myxoz.life.LocalColors
 import com.myxoz.life.android.MainApplication
-import com.myxoz.life.android.alarm.AlarmScheduler
+import com.myxoz.life.background.alarm.AlarmScheduler
+import com.myxoz.life.storage.stored.AlarmSound
 import com.myxoz.life.ui.AlarmUI
 import com.myxoz.life.utils.systemColorScheme
 
-class AlarmActivity : ComponentActivity() {
-
+class AlarmActivity: ComponentActivity() {
     private var mediaPlayer: MediaPlayer? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -34,9 +34,9 @@ class AlarmActivity : ComponentActivity() {
                     WindowManager.LayoutParams.FLAG_SHOW_WHEN_LOCKED
         )
 
-        val repos = (this.application as? MainApplication)?.dbInterface ?: return
-        val appRepos = (this.application as? MainApplication)?.appRepos ?: return
-        startAlarmSound(AlarmScheduler.AlarmSound.fromPrefs(repos.prefs))
+        val repos = (application as? MainApplication)?.dbInterface ?: return
+        val aggregator = (application as? MainApplication)?.dbInterface?.aggregators?.alarmAggregators
+        startAlarmSound(aggregator?.currentSound?.value)
 
         setContent {
             val colorScheme = systemColorScheme()
@@ -53,7 +53,7 @@ class AlarmActivity : ComponentActivity() {
         }
     }
 
-    private fun startAlarmSound(preferedSound: AlarmScheduler.AlarmSound?) {
+    private fun startAlarmSound(preferedSound: AlarmSound?) {
         // Get default alarm URI
         val alertUri = resolveAlarmUri(application, preferedSound?.uri)
 

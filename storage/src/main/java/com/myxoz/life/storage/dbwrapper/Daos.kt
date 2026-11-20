@@ -26,6 +26,5 @@ internal class Daos(db: AppDatabase) {
 
     val waitingSync = db.waitingSyncDao()
     val proposedSteps = db.proposedStepsDao()
-    val keyValueDao = db.keyValueDao()
     val cleanupDb = db.databaseCleanupDao()
 }

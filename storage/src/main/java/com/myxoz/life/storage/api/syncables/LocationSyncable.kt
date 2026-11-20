@@ -1,6 +1,6 @@
 package com.myxoz.life.storage.api.syncables
 
-class LocationSyncable(
+data class LocationSyncable(
     val name: String,
     val longitude: Double,
     val lat: Double,

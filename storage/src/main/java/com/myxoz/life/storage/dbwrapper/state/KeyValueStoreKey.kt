@@ -1,6 +1,6 @@
 package com.myxoz.life.storage.dbwrapper.state
 
-internal class KeyValueStoreKey<T> internal constructor(
+class KeyValueStoreKey<T> internal constructor(
     prefix: String,
     suffix: String,
     internal val type: KeyValueType<T>

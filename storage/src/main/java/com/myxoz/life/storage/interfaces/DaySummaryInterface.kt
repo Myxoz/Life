@@ -1,12 +1,12 @@
 package com.myxoz.life.storage.interfaces
 
+import com.myxoz.life.core.Rangable.Companion.rangableTo
 import com.myxoz.life.core.UnixWeek
 import com.myxoz.life.storage.api.helper.SyncHelper
 import com.myxoz.life.storage.api.helper.SyncHelper.Companion.saveAndRequestSync
 import com.myxoz.life.storage.api.syncables.FullDaySyncable
 import com.myxoz.life.storage.caches.PerformantCache.Companion.overwrite
 import com.myxoz.life.storage.caches.RangedCache
-import com.myxoz.life.storage.caches.RangedCache.Rangable.Companion.rangableTo
 import com.myxoz.life.storage.convertion.SyncableFromDatabase.getFullDaySyncable
 import com.myxoz.life.storage.convertion.SyncableFromEntity.fromEntity
 import com.myxoz.life.storage.dbwrapper.days.ReadDaysDao

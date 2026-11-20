@@ -29,7 +29,10 @@ class StepInterface internal constructor(
     fun getStepsFor(day: LocalDate) = insertedSteps.flowByKey(day.toEpochDay())
     fun getStepsCached(day: LocalDate) = insertedSteps.getCached(day.toEpochDay())
     private val stepsAtMidnight = MutableStateFlow(keyValueStore.get(stepsAtMidnightKey, 0))
-    private var lastDateSaved = keyValueStore.get(lastStepsDateKey,LocalDate.now().minusDays(1))
+    internal fun debugGetSteps() = _steps.value
+    internal fun debugGetMidnightSteps() = stepsAtMidnight.value
+    private var lastDateSaved by keyValueStore.getAsState(lastStepsDateKey,LocalDate.now().minusDays(1))
+    internal fun debugLastSteps() = lastDateSaved
     val steps = _steps.combine(stepsAtMidnight) { steps, atMidnight ->  steps - atMidnight }
     fun initialSteps() = _steps.value - stepsAtMidnight.value
     /** Inserts steps as the last date where steps were saved */
@@ -45,7 +48,6 @@ class StepInterface internal constructor(
         stepsAtMidnight.value = midnightSteps ?: totalSteps ?: lastStepsAmount
         lastStepsAmount = totalSteps ?: lastStepsAmount
         keyValueStore.edit {
-            set(lastStepsDateKey, lastDateSaved)
             set(stepsAtMidnightKey, stepsAtMidnight.value)
             set(lastStepsAmountKey, lastStepsAmount)
         }
@@ -120,7 +122,6 @@ From 30681 to 30680 at 1773570464845 (15.03.2026 11:27:44)
     private fun savePersistentSteps(date: LocalDate) {
         keyValueStore.edit {
             set(lastStepsAmountKey, lastStepsAmount)
-            set(lastStepsDateKey, date)
         }
     }
     // internal fun debugGetRawSteps() = _steps

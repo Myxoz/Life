@@ -45,13 +45,13 @@ import androidx.compose.ui.zIndex
 import com.myxoz.life.R
 import com.myxoz.life.Theme
 import com.myxoz.life.ui.setMaxTabletWidth
-import com.myxoz.life.ui.theme.FontSize
-import com.myxoz.life.ui.theme.TypoStyle
+import com.myxoz.life.lifeui.theme.FontSize
+import com.myxoz.life.lifeui.theme.TypoStyle
 import com.myxoz.life.utils.matchInstrinsicHeight
 import com.myxoz.life.utils.rippleClick
 import com.myxoz.life.utils.toDp
 import com.myxoz.life.utils.windowPadding
-import com.myxoz.life.repositories.BirthdayQuizRepo
+import com.myxoz.life.state.activityscoped.BirthdayQuizRepo
 import kotlinx.coroutines.flow.drop
 
 const val animationSpeed = 700

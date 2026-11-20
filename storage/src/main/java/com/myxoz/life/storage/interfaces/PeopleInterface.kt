@@ -1,6 +1,7 @@
 package com.myxoz.life.storage.interfaces
 
 import android.content.Context
+import android.graphics.Bitmap
 import com.myxoz.life.storage.api.helper.SyncHelper
 import com.myxoz.life.storage.api.helper.SyncHelper.Companion.saveAndRequestSync
 import com.myxoz.life.storage.api.syncables.PersonSyncable
@@ -34,7 +35,7 @@ class PeopleInterface internal constructor(
         appScope,
         { first, other -> first.id == other.id },
         {
-            it.birthday?.let { birthday -> LocalDate.ofEpochDay(birthday).allFutureBirthdays() } ?: emptyList()
+            it.birthday?.allFutureBirthdays() ?: emptyList()
         },
         { it.id },
         { id ->
@@ -56,15 +57,15 @@ class PeopleInterface internal constructor(
         if(new.id == ME_ID) _meFlow.update { new }
     }
     fun getPerson(personId: Long) = _cachedPeople.flowFor(personId)
-    fun getPeople(personIds: List<Long>) = _cachedPeople.flowsFor(personIds)
+    fun getPeople(personIds: Set<Long>) = _cachedPeople.flowsFor(personIds.toList())
     private val _pps = PerformantCache<Long, ProfilePictureSyncable>(appScope) { id ->
         val pp = readPeopleDao.getPPById(id)
         ProfilePictureSyncable(id, if(pp != null && pp.hasPP) loadBase64ByPerson(context, id) else null)
     }
 
     fun updatePP(new: ProfilePictureSyncable) = _pps.overwrite(new.id, new)
-    suspend fun updatePP(personId: Long, base64: String?) {
-        val new = ProfilePictureSyncable(personId, base64)
+    suspend fun updatePP(personId: Long, newProfilePicture: Bitmap) {
+        val new = ProfilePictureSyncable(personId, ProfilePictureSyncable.bitmapToBase64(newProfilePicture))
         new.saveAndRequestSync(syncHelper)
         _pps.overwrite(personId, new)
     }
@@ -99,10 +100,9 @@ class PeopleInterface internal constructor(
     fun requireAllPeople(){
         if(requestedAllPeople) return
         requestedAllPeople = true
+        // We mark this before loading to avoid race conditions
+        _cachedPeople.markAllEntriesAsLoaded()
         appScope.launch {
-            // We mark this before loading to avoid race conditions
-            _cachedPeople.markAllEntriesAsLoaded()
-
             _cachedPeople.overwriteAll(
                 readPeopleDao.getAllPeople().map {
                     it.id to it.fromEntity(readPeopleDao)

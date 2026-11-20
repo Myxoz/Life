@@ -54,20 +54,20 @@ import com.myxoz.life.ui.feed.main.screenTimeGoal
 import com.myxoz.life.ui.feed.main.stepsGoal
 import com.myxoz.life.ui.getMaxTabletScreenWidth
 import com.myxoz.life.ui.setMaxTabletWidth
-import com.myxoz.life.ui.theme.FontFamily
-import com.myxoz.life.ui.theme.FontSize
-import com.myxoz.life.ui.theme.OldColors
-import com.myxoz.life.ui.theme.TypoStyle
-import com.myxoz.life.utils.MaterialShapes
+import com.myxoz.life.lifeui.theme.FontFamily
+import com.myxoz.life.lifeui.theme.FontSize
+import com.myxoz.life.lifeui.theme.OldColors
+import com.myxoz.life.lifeui.theme.TypoStyle
+import com.myxoz.life.lifeui.shapes.MaterialShapes
 import com.myxoz.life.utils.def
 import com.myxoz.life.utils.diagrams.PieChart
 import com.myxoz.life.utils.diagrams.chartBasedAnimation
 import com.myxoz.life.utils.formatMToDistance
 import com.myxoz.life.utils.formatMsToDuration
 import com.myxoz.life.utils.rippleClick
-import com.myxoz.life.utils.toShape
+import com.myxoz.life.lifeui.shapes.toShape
 import com.myxoz.life.utils.windowPadding
-import com.myxoz.life.viewmodels.Settings
+import com.myxoz.life.background.settings.Settings
 import java.time.LocalDate
 import java.time.temporal.ChronoUnit
 
@@ -396,10 +396,4 @@ private fun BankingBlock(bankingEntries: List<BankingInterface.MixedBankingEntit
             style = TypoStyle(if(sum >= 0) OldColors.Transactions.PLUS else OldColors.Transactions.MINUS, FontSize.XLARGE, FontFamily.Display),
         )
     }
-}
-fun getMonthByCalendarMonth(month: Int): String{
-    return listOf("Jan", "Feb", "Mär", "Apr", "Mai", "Juni", "Juli", "Aug", "Sep", "Okt", "Nov", "Dez")[month]
-}
-fun getWeekDayByInt(day: Int): String {
-    return listOf("Mo", "Di", "Mi", "Do", "Fr", "Sa", "So")[day]
 }

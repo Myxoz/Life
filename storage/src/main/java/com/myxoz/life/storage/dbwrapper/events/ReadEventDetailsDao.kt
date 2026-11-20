@@ -19,8 +19,8 @@ internal interface ReadEventDetailsDao {
         rangeEnd: Long
     ): List<EventEntity>
 
-    @Query("SELECT e.* FROM events e INNER JOIN people_mapping pm ON pm.event_id = e.id WHERE  pm.person_id = :personId")
-    suspend fun getEventsWithPerson(personId: Long): List<EventEntity>
+    @Query("SELECT e.* FROM events e INNER JOIN people_mapping pm ON pm.event_id = e.id WHERE pm.person_id = :personId AND e.start >= :after AND e.ends >= :until")
+    suspend fun getEventsWithPerson(personId: Long, after: Long, until: Long): List<EventEntity>
 
     @Query("SELECT * FROM events WHERE ends > :endsAfter AND start < :startsBefore AND type = ${SocialEvent.CALENDARID}")
     suspend fun getAllPeopleEvents(endsAfter: Long, startsBefore: Long): List<EventEntity>

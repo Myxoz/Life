@@ -9,6 +9,10 @@ import com.myxoz.life.storage.api.helper.SyncHelper
 import com.myxoz.life.storage.dbwrapper.Daos
 import com.myxoz.life.storage.dbwrapper.DatabaseProvider
 import com.myxoz.life.storage.dbwrapper.state.KeyValueStore
+import com.myxoz.life.storage.interfaces.aggregator.Aggregators
+import com.myxoz.life.storage.interfaces.aggregator.AlarmAggregator
+import com.myxoz.life.storage.interfaces.aggregator.LifeReschedulingAggregator
+import com.myxoz.life.storage.interfaces.aggregator.PeopleEventAggregator
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -17,6 +21,7 @@ import kotlin.time.Duration.Companion.milliseconds
 
 class DatabaseInterface internal constructor(
     val hooks: UpdateHooks,
+    val keyValueStore: KeyValueStore,
     val calendarInterface: CalendarInterface,
     val daySummaryInterface: DaySummaryInterface,
     val stepInterface: StepInterface,
@@ -26,7 +31,9 @@ class DatabaseInterface internal constructor(
     val locationInterface: LocationInterface,
     val todoInterface: TodoInterface,
     val extensionInterface: ExtensionInterface,
+    val debugInterface: DebugInterface,
     val api: API,
+    val aggregators: Aggregators,
     val context: Context,
     val appScope: CoroutineScope
 ) {
@@ -54,13 +61,9 @@ class DatabaseInterface internal constructor(
                 db.writeExtensionDao
             )
             val appScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
-            val keyValueDao = db.keyValueDao
             Log.d(LOGTAG, "Ran before blocking. Check time from now: ${System.currentTimeMillis()}")
             val start = Instant.now()
-            val keyValueStore = KeyValueStore.createAndQueryRoomOnMain(
-                keyValueDao,
-                appScope
-            )
+            val keyValueStore = KeyValueStore.createWithContext(applicationContext)
             val end = Instant.now()
             val duration = start - end
             Log.d(LOGTAG, "Inital keyvaluestore read "+when(duration) {
@@ -90,7 +93,8 @@ class DatabaseInterface internal constructor(
                 syncHelper
             )
             val calendarInterface = CalendarInterface(
-                readSyncableDaos,
+                readSyncableDaos.eventDetailsDao,
+                db.localEventsDao,
                 applicationContext,
                 appScope,
                 syncHelper
@@ -128,6 +132,24 @@ class DatabaseInterface internal constructor(
                 calendarInterface,
                 extensionInterface
             )
+            val peopleEventAggregator = PeopleEventAggregator(
+                calendarInterface,
+                readSyncableDaos.peopleDao,
+                readSyncableDaos.eventDetailsDao,
+            )
+            val lifeReschedulingAggregator = LifeReschedulingAggregator(
+                keyValueStore,
+                calendarInterface,
+                db.readEventDetailsDao,
+                locationInterface,
+                peopleInterface
+            )
+            val alarmScheduler = AlarmAggregator(keyValueStore)
+            val aggregators = Aggregators(
+                peopleEventAggregator,
+                lifeReschedulingAggregator,
+                alarmScheduler
+            )
             val api = API(
                 hooks,
                 calendarInterface,
@@ -145,8 +167,16 @@ class DatabaseInterface internal constructor(
                 db,
                 applicationContext
             )
+            val debugInterface = DebugInterface(
+                api,
+                keyValueStore,
+                stepInterface,
+                db,
+                applicationContext
+            )
             return DatabaseInterface(
                 hooks,
+                keyValueStore,
                 calendarInterface,
                 daySummaryInterface,
                 stepInterface,
@@ -156,7 +186,9 @@ class DatabaseInterface internal constructor(
                 locationInterface,
                 todoInterface,
                 extensionInterface,
+                debugInterface,
                 api,
+                aggregators,
                 applicationContext,
                 appScope
             )

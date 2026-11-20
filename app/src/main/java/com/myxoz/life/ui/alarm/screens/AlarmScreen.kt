@@ -47,15 +47,15 @@ import com.myxoz.life.ui.alarm.screens.composables.NextEventInformation
 import com.myxoz.life.ui.alarm.screens.composables.RenderClockVisual
 import com.myxoz.life.ui.feed.fullscreenevent.TimeBasedVisualTransformation
 import com.myxoz.life.ui.setMaxTabletWidth
-import com.myxoz.life.ui.theme.FontFamily
-import com.myxoz.life.ui.theme.FontSize
-import com.myxoz.life.ui.theme.TypoStyle
+import com.myxoz.life.lifeui.theme.FontFamily
+import com.myxoz.life.lifeui.theme.FontSize
+import com.myxoz.life.lifeui.theme.TypoStyle
 import com.myxoz.life.utils.collectAsMutableState
 import com.myxoz.life.utils.formatMinutesToVisual
 import com.myxoz.life.utils.rippleClick
 import com.myxoz.life.utils.toDp
 import com.myxoz.life.utils.windowPadding
-import com.myxoz.life.viewmodels.Settings
+import com.myxoz.life.background.settings.Settings
 
 @Composable
 fun AlarmUI.AlarmScreen(alarmRepo: AlarmRepo) {
@@ -77,7 +77,7 @@ fun AlarmUI.AlarmScreen(alarmRepo: AlarmRepo) {
             Text("Kein nächstes Event", style = TypoStyle(Theme.secondary, FontSize.MEDIUM))
             return@Column
         }
-        NextEventInformation(alarmRepo, nextEvent, LocalScreens.current, LocalScreens.current.appRepos.crossRepoSuper)
+        NextEventInformation(alarmRepo, nextEvent, LocalScreens.current, LocalScreens.current.activityScopedState.crossRepoSuper)
         Spacer(Modifier.weight(1f))
         AlarmUI.RenderClockVisual(alarmRepo, nextEvent.raw.start)
         Spacer(Modifier.weight(1f))

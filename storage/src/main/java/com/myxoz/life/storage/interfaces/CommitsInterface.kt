@@ -1,15 +1,16 @@
 package com.myxoz.life.storage.interfaces
 
+import com.myxoz.life.core.Rangable.Companion.startAndEndInMs
 import com.myxoz.life.core.toLocalDate
 import com.myxoz.life.storage.api.syncables.CommitSyncable
 import com.myxoz.life.storage.caches.InterlockedCache
 import com.myxoz.life.storage.caches.PerformantCache
-import com.myxoz.life.storage.caches.RangedCache.Rangable.Companion.startAndEndInMs
 import com.myxoz.life.storage.convertion.SyncableFromEntity.fromEntity
 import com.myxoz.life.storage.dbwrapper.commits.ReadCommitsDao
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
+import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneId
 
@@ -21,7 +22,7 @@ class CommitsInterface internal constructor(
     private val _repos = PerformantCache<String, CommitSyncable>(appScope) {
         error("Why tf was this called? If this errors you really did a lot wrong. Fetching a repo by key eventhough we dont even know the Repo, props. Ah and btw, you attempted to fetch $it.")
     }
-    val getAllRepos = _repos.allValuesFlow.map{ it.sortedByDescending { repo -> repo.commitDate ?: 0L } }
+    val getAllRepos = _repos.allValuesFlow.map{ it.sortedByDescending { repo -> repo.commitDate ?: Instant.now() } }
 
     private val _commits = InterlockedCache.dayedSame(
         appScope,
@@ -46,7 +47,8 @@ class CommitsInterface internal constructor(
             _repos.overwrite(new.toRepoKey(), new) // Make this commit represent the repo
         } else {
             val old = _repos.getCached(new.toRepoKey()) ?: return@dayedSame
-            if((old.commitDate ?: 0L) < (new.commitDate ?: 0L))
+            if(old.commitDate == null || new.commitDate == null) return@dayedSame
+            if(old.commitDate < new.commitDate)
                 _repos.overwrite(new.toRepoKey(), new)
                 // We got a new commit which is more recent than the last one. Replace!
         }

@@ -54,10 +54,10 @@ import com.myxoz.life.Theme
 import com.myxoz.life.ui.NavPath
 import com.myxoz.life.ui.options.SubOption.Companion.RenderSubOptions
 import com.myxoz.life.ui.setMaxTabletWidth
-import com.myxoz.life.ui.theme.FontFamily
-import com.myxoz.life.ui.theme.FontSize
-import com.myxoz.life.ui.theme.OldColors
-import com.myxoz.life.ui.theme.TypoStyle
+import com.myxoz.life.lifeui.theme.FontFamily
+import com.myxoz.life.lifeui.theme.FontSize
+import com.myxoz.life.lifeui.theme.OldColors
+import com.myxoz.life.lifeui.theme.TypoStyle
 import com.myxoz.life.utils.combinedRippleClick
 import com.myxoz.life.utils.toDp
 import com.myxoz.life.utils.windowPadding

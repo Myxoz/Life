@@ -59,17 +59,19 @@ import com.myxoz.life.LocalSettings
 import com.myxoz.life.R
 import com.myxoz.life.Theme
 import com.myxoz.life.api.syncables.FullDaySyncable
+import com.myxoz.life.background.screentime.getAccumulatedUsageDurationByPackagename
+import com.myxoz.life.background.screentime.getTotalForegroundBetween
 import com.myxoz.life.storage.dbwrapper.days.DayScreenTimeEntity
 import com.myxoz.life.ui.feed.dayoverview.DayOverviewViewModel
-import com.myxoz.life.ui.theme.FontColor
-import com.myxoz.life.ui.theme.FontSize
-import com.myxoz.life.ui.theme.OldColors
-import com.myxoz.life.ui.theme.TypoStyle
-import com.myxoz.life.ui.theme.TypoStyleOld
+import com.myxoz.life.lifeui.theme.FontColor
+import com.myxoz.life.lifeui.theme.FontSize
+import com.myxoz.life.lifeui.theme.OldColors
+import com.myxoz.life.lifeui.theme.TypoStyle
+import com.myxoz.life.lifeui.theme.TypoStyleOld
 import com.myxoz.life.utils.diagrams.PieChart
 import com.myxoz.life.utils.dpWidth
 import com.myxoz.life.utils.rippleClick
-import com.myxoz.life.viewmodels.Settings
+import com.myxoz.life.background.settings.Settings
 import java.time.LocalDate
 import java.time.ZoneId
 import kotlin.math.abs
@@ -389,12 +391,12 @@ fun SummarizeDay(dayOverviewViewModel: DayOverviewViewModel) {
                             recordedStress,
                             recordedSuccessfulness,
                             if(settings.hasAssured(Settings.Feature.StepCounting)) dayOverviewViewModel.getStepsFor(day)?.value ?: 0 else 0,
-                            if(settings.hasAssured(Settings.Feature.ScreenTime)) _root_ide_package_.com.myxoz.life.ui.options.getUsageDataBetween(
+                            if(settings.hasAssured(Settings.Feature.ScreenTime)) getTotalForegroundBetween(
                                 context,
                                 day.atStartOfDay(zone).toEpochSecond() * 1000L,
                                 day.plusDays(1).atStartOfDay(zone).toEpochSecond() * 1000L
                             ).toInt() else 0,
-                            _root_ide_package_.com.myxoz.life.ui.options.getMappedUsageDataBetween(
+                            getAccumulatedUsageDurationByPackagename(
                                 context,
                                 day.atStartOfDay(zone).toEpochSecond() * 1000L,
                                 day.plusDays(1).atStartOfDay(zone).toEpochSecond() * 1000L

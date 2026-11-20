@@ -53,7 +53,7 @@ internal object SyncableFromJSON {
             json.getInt("stress"),
             json.getInt("successfulness"),
             json.getInt("steps"),
-            json.getInt("screen_time_ms"),
+            json.getMillis("screen_time_ms"),
             json.getJSONArray("top").mapJSONObjects {
                 DayScreenTime(
                     it.getString("packagename"),
@@ -70,7 +70,7 @@ internal object SyncableFromJSON {
             json.getBoolean("cashless"),
             json.getInt("amount"),
             json.getString("name"),
-            json.getLong("timestamp"),
+            json.getInstant("timestamp"),
             json.getStringOrNull("purpose"),
         )
     fun bankingSyncableFromJSON(json: LifeJSONObject) =
@@ -81,14 +81,14 @@ internal object SyncableFromJSON {
             json.getString("amount_cents").toInt(),
             json.getString("currency"),
             json.getString("booking_time"),
-            json.getLong("value_date"),
+            json.getInstant("value_date"),
             json.getString("from_name"),
             json.getString("from_iban"),
             json.getString("from_bic"),
             json.getString("purpose"),
             json.getLong("saldo_after_cents"),
-            json.getString("purpose_date").toLongOrNull(),
-            json.getLong("last_update")
+            json.getInstantOrNull("purpose_date"),
+            json.getInstant("last_update")
         )
 
     fun commitModificationFromJSON(json: String?): List<CommitModification> =
@@ -107,7 +107,7 @@ internal object SyncableFromJSON {
         json.getString("short"),
         json.getStringOrNull("details"),
         json.getBoolean("done"),
-        json.getLong("timestamp")
+        json.getInstant("timestamp")
     )
 
     fun personSyncableFromJSON(json: LifeJSONObject): PersonSyncable {
@@ -117,12 +117,12 @@ internal object SyncableFromJSON {
         val phone = json.getStringOrNull("phone")
         val iban = json.getStringOrNull("iban")
         val home = json.getLongOrNull("home")
-        val birthday = json.getLongOrNull("birthday")
+        val birthday = json.getLocalDateOrNull("birthday")
         val socials = json.getJSONArray("socials").mapJSONObjectsNotNull {
             PersonSyncablePlatform(
                 SocialEventPlatform.getById(it.getInt("platform")) ?:
                     return@mapJSONObjectsNotNull null,
-                it.getString("handle")
+                it.getStringOrNull("handle")
             )
         }.toSet()
         return PersonSyncable(id, name, fullName, phone, iban, home, birthday, socials)
@@ -136,13 +136,13 @@ internal object SyncableFromJSON {
             json.getStringOrNull("commit_message"),
             json.getStringOrNull("commit_author"),
             json.getStringOrNull("commit_email"),
-            json.getLongOrNull("commit_date"),
+            json.getInstantOrNull("commit_date"),
             json.getIntOrNull("additions"),
             json.getIntOrNull("deletions"),
             json.getIntOrNull("files_changed"),
             commitModificationFromJSON(json.getStringOrNull("files_json")),
             json.getStringOrNull("commit_url"),
-            json.getLong("updated"),
+            json.getInstant("updated"),
         )
 
     fun locationSyncableFromJSON(json: LifeJSONObject) =
@@ -162,7 +162,7 @@ internal object SyncableFromJSON {
         json.getId(),
         json.getString("transactionId"),
         json.getString("name"),
-        json.getLong("date")
+        json.getInstant("date")
     )
 
     fun transactionSplitFromJSON(json: LifeJSONObject) = TransactionSplitSyncable(

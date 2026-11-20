@@ -41,13 +41,13 @@ import com.myxoz.life.Theme
 import com.myxoz.life.ui.feed.dayoverview.edgeToEdgeGradient
 import com.myxoz.life.ui.person.displayperson.switchColors
 import com.myxoz.life.ui.setMaxTabletWidth
-import com.myxoz.life.ui.theme.FontSize
-import com.myxoz.life.ui.theme.OldColors
-import com.myxoz.life.ui.theme.TypoStyle
+import com.myxoz.life.lifeui.theme.FontSize
+import com.myxoz.life.lifeui.theme.OldColors
+import com.myxoz.life.lifeui.theme.TypoStyle
 import com.myxoz.life.utils.copy
 import com.myxoz.life.utils.rippleClick
 import com.myxoz.life.utils.windowPadding
-import com.myxoz.life.viewmodels.Settings
+import com.myxoz.life.background.settings.Settings
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.launch
 
@@ -113,14 +113,14 @@ fun SettingsPermissionComposable() {
                 FeatureItem(settings, Settings.Feature.SyncWithServer) {
                     coroutineScope.launch {
                         if(it){
-                            val check = screens.appRepos.calendarRepo.testSign()
+                            val check = screens.activityScopedState.calendarRepo.testSign()
                             if(check != null) {
                                 Toast.makeText(context, "Verifiziert", Toast.LENGTH_SHORT).show()
                                 settings.set(Settings.Feature.SyncWithServer, true)
                             } else {
                                 Toast.makeText(context, check, Toast.LENGTH_LONG).show()
                                 coroutineScope.launch {
-                                    clipboard.copy(screens.appRepos.calendarRepo.getBase64Public())
+                                    clipboard.copy(screens.activityScopedState.calendarRepo.getBase64Public())
                                 }
                             }
                         } else {

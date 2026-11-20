@@ -1,5 +1,6 @@
 package com.myxoz.life.storage.caches
 
+import com.myxoz.life.core.Rangable
 import com.myxoz.life.core.UnixWeek
 import com.myxoz.life.core.atEndAsMillis
 import com.myxoz.life.core.atStartAsMillis
@@ -54,18 +55,6 @@ internal class RangedCache<K: Any, V: Any>(
                     }
                 }
             }
-        }
-    }
-    internal data class Rangable<T>(val from: T, val to: T, val between: Set<T>) {
-        companion object {
-            fun <T> ofSingle(single: T) = Rangable(single, single, setOf(single))
-            fun LocalDate.rangableTo(other: LocalDate): Rangable<LocalDate> = Rangable(this, other,
-                generateSequence(this) { it.plusDays(1) }
-                    .takeWhile { !it.isAfter(other) }
-                    .toSet()
-            )
-            fun UnixWeek.toRange() = start.rangableTo(end)
-            fun Rangable<LocalDate>.startAndEndInMs(zone: ZoneId) = from.atStartAsMillis(zone) to to.atEndAsMillis(zone)
         }
     }
 }

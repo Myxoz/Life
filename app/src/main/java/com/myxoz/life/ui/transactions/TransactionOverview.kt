@@ -62,7 +62,7 @@ import com.myxoz.life.R
 import com.myxoz.life.Theme
 import com.myxoz.life.api.syncables.ManualTransactionSyncable
 import com.myxoz.life.api.syncables.TransactionSplitSyncable
-import com.myxoz.life.repositories.LargeDataCache
+import com.myxoz.life.state.activityscoped.LargeDataCache
 import com.myxoz.life.storage.dbwrapper.banking.formatCents
 import com.myxoz.life.storage.interfaces.BankingInterface
 import com.myxoz.life.storage.interfaces.BankingInterface.MixedBankingEntity.Companion.finalDailyBalance
@@ -73,12 +73,12 @@ import com.myxoz.life.ui.SCREENMAXWIDTH
 import com.myxoz.life.ui.holdToCopy
 import com.myxoz.life.ui.rememberAsymmetricalVerticalCornerRadius
 import com.myxoz.life.ui.setMaxTabletWidth
-import com.myxoz.life.ui.theme.FontColor
-import com.myxoz.life.ui.theme.FontFamily
-import com.myxoz.life.ui.theme.FontSize
-import com.myxoz.life.ui.theme.OldColors
-import com.myxoz.life.ui.theme.TypoStyle
-import com.myxoz.life.ui.theme.TypoStyleOld
+import com.myxoz.life.lifeui.theme.FontColor
+import com.myxoz.life.lifeui.theme.FontFamily
+import com.myxoz.life.lifeui.theme.FontSize
+import com.myxoz.life.lifeui.theme.OldColors
+import com.myxoz.life.lifeui.theme.TypoStyle
+import com.myxoz.life.lifeui.theme.TypoStyleOld
 import com.myxoz.life.utils.collectAsMutableState
 import com.myxoz.life.utils.formatDayTime
 import com.myxoz.life.utils.formatTimeStamp
@@ -94,7 +94,7 @@ import kotlin.math.abs
 @Composable
 fun TransactionOverview(transactionOverviewViewModel: TransactionOverviewViewModel) {
     val nav = LocalNavController.current
-    val screens = LocalScreens.current.appRepos
+    val screens = LocalScreens.current.activityScopedState
     val transactionFeedRepo = screens.transactionFeedRepo
     val largeDataCache = screens.largeDataCache
     val transactionAtHand by transactionOverviewViewModel.inspectedTransaction.collectAsState()
@@ -596,7 +596,7 @@ private fun PaymentSplit(transactionFeedRepo: TransactionFeedRepo, transaction: 
                         horizontalArrangement = Arrangement.SpaceBetween,
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        val person by LocalScreens.current.appRepos.crossRepoSuper.getPerson(part.person).collectAsState(null)
+                        val person by LocalScreens.current.activityScopedState.crossRepoSuper.getPerson(part.person).collectAsState(null)
                         Row(
                             Modifier
                                 .height(IntrinsicSize.Min)

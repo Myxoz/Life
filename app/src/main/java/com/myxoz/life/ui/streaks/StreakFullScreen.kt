@@ -53,30 +53,30 @@ import com.myxoz.life.api.extensions.StreakExtendable
 import com.myxoz.life.storage.interfaces.utils.Cached
 import com.myxoz.life.ui.feed.dayoverview.edgeToEdgeGradient
 import com.myxoz.life.ui.setMaxTabletWidth
-import com.myxoz.life.ui.theme.FontFamily
-import com.myxoz.life.ui.theme.FontSize
-import com.myxoz.life.ui.theme.OldColors
-import com.myxoz.life.ui.theme.TypoStyle
-import com.myxoz.life.ui.theme.makeContrasty
+import com.myxoz.life.lifeui.theme.FontFamily
+import com.myxoz.life.lifeui.theme.FontSize
+import com.myxoz.life.lifeui.theme.OldColors
+import com.myxoz.life.lifeui.theme.TypoStyle
+import com.myxoz.life.lifeui.theme.makeContrasty
 import com.myxoz.life.utils.LayeredCircularProgressIndicator
-import com.myxoz.life.utils.MaterialShapes
+import com.myxoz.life.lifeui.shapes.MaterialShapes
 import com.myxoz.life.utils.UnixWeek
 import com.myxoz.life.utils.collectAsMutableState
 import com.myxoz.life.utils.def
 import com.myxoz.life.utils.matchInstrinsicHeight
 import com.myxoz.life.utils.rippleClick
 import com.myxoz.life.utils.toDp
-import com.myxoz.life.utils.toShape
+import com.myxoz.life.lifeui.shapes.toShape
 import com.myxoz.life.utils.toSp
 import com.myxoz.life.utils.windowPadding
-import com.myxoz.life.repositories.StreakRepo
+import com.myxoz.life.state.activityscoped.StreakRepo
 import kotlinx.coroutines.launch
 import java.time.LocalDate
 import kotlin.math.abs
 
 @Composable
 fun StreakFullScreen(streakRepo: StreakRepo, id: Long) {
-    val streakRaw by streakRepo.getStreak(id).collectAsState(null)
+    val streakRaw by streakRepo.getStreak(id).collectAsState()
     val streakR = streakRaw
     if(streakR == Cached.Null) {
         Text("No Streak with this ID")

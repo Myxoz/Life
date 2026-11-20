@@ -1,10 +1,11 @@
 package com.myxoz.life.storage.interfaces.utils
 
+import com.myxoz.life.core.Rangable
 import com.myxoz.life.storage.caches.InterlockedCache
-import com.myxoz.life.storage.caches.RangedCache
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.mapNotNull
 import kotlinx.coroutines.launch
 
@@ -16,7 +17,7 @@ internal class RangeInterlockedCache<K: Any, I: Any, V: Any, L: Any>(
     private val toInterlockedRange: (element: V) -> List<I>,
     private val keyBy: (item: L) -> K,
     fetchSingleContent: suspend (K) -> V,
-    private val nativeFetchRange: suspend (range: RangedCache.Rangable<I>) -> List<L>,
+    private val nativeFetchRange: suspend (range: Rangable<I>) -> List<L>,
     private val converter: (L) -> V,
     toListItem: (V) -> L?,
     update: ((key: K, new: V) -> Unit)? = null,
@@ -26,12 +27,12 @@ internal class RangeInterlockedCache<K: Any, I: Any, V: Any, L: Any>(
     toInterlockedRange,
     keyBy,
     fetchSingleContent,
-    {nativeFetchRange( RangedCache.Rangable.ofSingle(it)) },
+    {nativeFetchRange( Rangable.ofSingle(it)) },
     converter,
     toListItem,
     update
 ) {
-    suspend fun fetchRange(range: RangedCache.Rangable<I>): List<L> {
+    suspend fun fetchRange(range: Rangable<I>): List<L> {
         val between = range.between
         // All days marked as loaded / All days already cached
         if(allLoaded || between.all { interlockedContent.containsKey(it) }) return between
@@ -68,7 +69,7 @@ internal class RangeInterlockedCache<K: Any, I: Any, V: Any, L: Any>(
         }
         return fetchedRange
     }
-    fun flowByRange(range: RangedCache.Rangable<I>): Flow<List<L>> {
+    fun flowByRange(range: Rangable<I>): Flow<List<L>> {
         fetchScope.launch {
             fetchRange(range)
         }
@@ -85,6 +86,6 @@ internal class RangeInterlockedCache<K: Any, I: Any, V: Any, L: Any>(
                     }
                 }
             }
-        }
+        }.distinctUntilChanged()
     }
 }

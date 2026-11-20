@@ -1,13 +1,12 @@
 package com.myxoz.life.storage.api.helper
 
 import android.util.Log
-import com.myxoz.life.core.nullIfEmpty
+import com.myxoz.life.core.toInstant
 import com.myxoz.life.storage.api.syncables.BankingSyncable
 import com.myxoz.life.storage.api.syncables.ManualTransactionSyncable
 import com.myxoz.life.storage.convertion.SyncableFromEntity.fromEntity
 import com.myxoz.life.storage.dbwrapper.banking.BankingSidecarEntity
 import com.myxoz.life.storage.dbwrapper.banking.ReadBankingDao
-import com.myxoz.life.storage.interfaces.BankingDisplayEntityKey
 
 class MixedBankingEntity private constructor(
     private val entity: BankingSyncable?,
@@ -31,8 +30,8 @@ class MixedBankingEntity private constructor(
         else -> "Bar"
     }
     val key = manual?.id to entity?.id
-    val timestamp = manual?.timestamp ?: sidecar?.date ?: entity?.purposeDate ?: entity?.valueDate ?: throw Error("This cannot happen")
-    val displayTimestamp = manual?.timestamp ?: sidecar?.date ?: entity?.purposeDate
+    val displayTimestamp = manual?.timestamp ?: sidecar?.date?.toInstant() ?: entity?.purposeDate
+    val timestamp = displayTimestamp ?: entity?.valueDate ?: throw Error("This cannot happen")
     fun displayName(predicted: String?): String = when{
         predicted != null -> predicted
         !entity?.fromName.isNullOrEmpty() -> "${entity.fromName}${if (sidecar != null) " (${sidecar.name})" else ""}"
@@ -104,8 +103,6 @@ class MixedBankingEntity private constructor(
             Log.w("Transaction", "Could not determine transaction order $entites")
             return null
         }
-        internal fun parcel(key: BankingDisplayEntityKey) = "${key.first?:""}_${key.second?:""}"
-        internal fun unparcel(key: String): BankingDisplayEntityKey = key.substringBefore("_").toLongOrNull() to key.substringAfter("_").nullIfEmpty()
     }
 
     override fun hashCode(): Int {

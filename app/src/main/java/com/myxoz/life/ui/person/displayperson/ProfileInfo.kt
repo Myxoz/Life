@@ -82,14 +82,13 @@ import com.myxoz.life.ui.Chip
 import com.myxoz.life.ui.NavPath
 import com.myxoz.life.ui.feed.fullscreenevent.getId
 import com.myxoz.life.ui.holdToCopy
-import com.myxoz.life.ui.theme.FontSize
-import com.myxoz.life.ui.theme.TypoStyle
-import com.myxoz.life.utils.AndroidUtils
+import com.myxoz.life.lifeui.theme.FontSize
+import com.myxoz.life.lifeui.theme.TypoStyle
 import com.myxoz.life.utils.PhoneNumberParser
 import com.myxoz.life.utils.rippleClick
 import com.myxoz.life.utils.toDp
-import com.myxoz.life.viewmodels.ProfileInfoModel
-import com.myxoz.life.viewmodels.Settings
+import com.myxoz.life.state.screenscoped.ProfileInfoModel
+import com.myxoz.life.background.settings.Settings
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.launch
@@ -104,7 +103,7 @@ fun ProfileInfo(profileInfoModel: ProfileInfoModel){
     val screens = LocalScreens.current
     val nav = LocalNavController.current
     val phoneParser: PhoneNumberParser? by produceState(null) {
-        value = PhoneNumberParser(screens.appRepos.largeDataCache)
+        value = PhoneNumberParser(screens.activityScopedState.largeDataCache)
     }
     val isEditing by profileInfoModel.isEditing.collectAsState()
     val isExtendedFlow by profileInfoModel.isExtended.collectAsState()
@@ -261,7 +260,7 @@ fun ProfileInfo(profileInfoModel: ProfileInfoModel){
                         painterResource(R.drawable.pay_with_card)
                     ) {
                         val ibanInformation: String? =
-                            inspectedPerson?.iban?.let { if(it.length > 4) screens.appRepos.largeDataCache.getIbanInformation(it.substring(4)) else null }
+                            inspectedPerson?.iban?.let { if(it.length > 4) screens.activityScopedState.largeDataCache.getIbanInformation(it.substring(4)) else null }
                         ListEditingField(
                             isEditing,
                             inspectedPerson?.iban?.chunked(4)?.joinToString(" ") ?: "???",
@@ -395,7 +394,7 @@ fun ProfileInfo(profileInfoModel: ProfileInfoModel){
                         }
                     }
                 }
-                val displayLocation by screens.appRepos.crossRepoSuper.getLocationById(inspectedPerson?.home).collectAsState()
+                val displayLocation by screens.activityScopedState.crossRepoSuper.getLocationById(inspectedPerson?.home).collectAsState()
                 Spacer(Modifier.height(20.dp))
                 ListEntry(
                     "Adresse",

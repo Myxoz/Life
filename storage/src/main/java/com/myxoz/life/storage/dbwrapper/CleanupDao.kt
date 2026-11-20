@@ -78,7 +78,7 @@ internal interface DatabaseCleanupDao {
     @Query("DELETE FROM timewasteplatform")
     suspend fun clearTimewastePlatform()
 
-    @Query("DELETE FROM localevent")
+    @Query("DELETE FROM autodetectlocalevent")
     suspend fun clearLocalEvents()
 
     @Query("DELETE FROM todos")

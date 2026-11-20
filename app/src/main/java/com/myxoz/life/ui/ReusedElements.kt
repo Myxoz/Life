@@ -36,7 +36,6 @@ import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Icon
@@ -67,27 +66,24 @@ import androidx.compose.ui.layout.Layout
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalClipboard
 import androidx.compose.ui.platform.LocalDensity
-import androidx.compose.ui.platform.LocalWindowInfo
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.min
 import androidx.compose.ui.unit.times
 import androidx.graphics.shapes.Morph
 import androidx.graphics.shapes.toPath
 import com.myxoz.life.R
 import com.myxoz.life.Theme
 import com.myxoz.life.ui.feed.fullscreenevent.InputField
-import com.myxoz.life.ui.theme.FontSize
-import com.myxoz.life.utils.MaterialShapes
+import com.myxoz.life.lifeui.theme.FontSize
+import com.myxoz.life.lifeui.shapes.MaterialShapes
 import com.myxoz.life.utils.combinedRippleClick
 import com.myxoz.life.utils.copy
-import com.myxoz.life.utils.dpWidth
 import com.myxoz.life.utils.rippleClick
 import com.myxoz.life.utils.toDp
-import com.myxoz.life.utils.toShape
-import com.myxoz.life.utils.transformed
+import com.myxoz.life.lifeui.shapes.toShape
+import com.myxoz.life.lifeui.shapes.transformed
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.launch
@@ -528,13 +524,6 @@ object ToggleButton {
     }
 }
 
-val SCREENMAXWIDTH = 700.dp
-@Composable
-fun getMaxTabletScreenWidth(): Dp = min(LocalWindowInfo.current.dpWidth * .95f, SCREENMAXWIDTH)
-fun Modifier.setMaxTabletWidth() =
-    this
-        .widthIn(max = SCREENMAXWIDTH)
-        .fillMaxWidth(.95f)
 
 @Composable
 fun LifeProgressIndicator(modifier: Modifier, color: Color){

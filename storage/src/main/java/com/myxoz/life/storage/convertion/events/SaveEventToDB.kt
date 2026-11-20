@@ -18,15 +18,15 @@ import com.myxoz.life.storage.events.DigSocEvent
 import com.myxoz.life.storage.events.EmptyEvent
 import com.myxoz.life.storage.events.HobbyEvent
 import com.myxoz.life.storage.events.LearnEvent
+import com.myxoz.life.storage.events.PeopleEvent
 import com.myxoz.life.storage.events.RawEvent
 import com.myxoz.life.storage.events.SleepEvent
 import com.myxoz.life.storage.events.SocialEvent
 import com.myxoz.life.storage.events.SpontEvent
+import com.myxoz.life.storage.events.TagEvent
 import com.myxoz.life.storage.events.TimewasteEvent
 import com.myxoz.life.storage.events.TravelEvent
 import com.myxoz.life.storage.events.WorkEvent
-import com.myxoz.life.storage.events.additionals.PeopleEvent
-import com.myxoz.life.storage.events.additionals.TagEvent
 
 internal object SaveEventToDB {
     suspend fun RawEvent.saveToDB(eventId: Long, writeEventDao: WriteEventDetailsDao) {
@@ -65,7 +65,7 @@ internal object SaveEventToDB {
         db.insertDicSoc(DigSocEntity(eventId, title))
         db.insertAllDigSocMappings(
             digSocEntries.map {
-                DigSocMappingEntity(eventId, it.type.id, it.durationMs)
+                DigSocMappingEntity(eventId, it.type.id, it.duration.inWholeMilliseconds)
             }
         )
     }
@@ -74,7 +74,7 @@ internal object SaveEventToDB {
         db.insertTimewaste(TimewasteEntity(eventId, title))
         db.insertTimewastePlatforms(
             timewastePlatforms.map {
-                TimewastePlatformEntity(eventId, it.type.id, it.durationMs)
+                TimewastePlatformEntity(eventId, it.type.id, it.duration.inWholeMilliseconds)
             }
         )
     }
@@ -83,7 +83,7 @@ internal object SaveEventToDB {
         db.insertTravel(TravelEntity(eventId, from, to))
         vehicles.forEach {
             db.insertVehicle(
-                VehicleEntity(eventId, it.type.id, it.durationMs.toInt())
+                VehicleEntity(eventId, it.type.id, it.duration.inWholeMilliseconds)
             )
         }
     }

@@ -2,7 +2,7 @@ package com.myxoz.life.storage.events.additionals
 
 import android.util.Log
 
-enum class TimewastePlatform(override val id: Int): TagLike {
+enum class TimewastePlatform(internal val id: Int): TagLike {
     Youtube(1),
     Instagram(2),
     ;

@@ -31,8 +31,8 @@ import com.myxoz.life.storage.events.SpontEvent
 import com.myxoz.life.storage.events.TimewasteEvent
 import com.myxoz.life.storage.events.TravelEvent
 import com.myxoz.life.storage.events.WorkEvent
-import com.myxoz.life.storage.events.additionals.PeopleEvent
-import com.myxoz.life.storage.events.additionals.TagEvent
+import com.myxoz.life.storage.events.PeopleEvent
+import com.myxoz.life.storage.events.TagEvent
 
 internal object RemoveSyncableFromDatabase {
     /**

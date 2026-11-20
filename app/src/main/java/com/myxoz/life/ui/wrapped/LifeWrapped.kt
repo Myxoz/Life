@@ -41,14 +41,9 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalHapticFeedback
 import com.myxoz.life.api.syncables.PersonSyncable
-import com.myxoz.life.storage.events.RawEvent
-import com.myxoz.life.storage.events.SocialEvent
-import com.myxoz.life.storage.events.TravelEvent
-import com.myxoz.life.storage.events.additionals.EventTag
 import com.myxoz.life.storage.events.additionals.EventType
-import com.myxoz.life.storage.events.additionals.PeopleEvent
-import com.myxoz.life.storage.events.additionals.TagEvent
-import com.myxoz.life.storage.events.additionals.Vehicle
+import com.myxoz.life.storage.events.PeopleEvent
+import com.myxoz.life.storage.events.TagEvent
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -58,12 +53,12 @@ import java.time.ZoneId
 const val PAGELOADDELAY = 300L
 const val DAYSINYEAR = 75
 @Composable
-fun LifeWrappedScreen(wrappedRepo: WrappedRepo) {
+fun LifeWrappedScreen(wrappedActivityViewModel: WrappedActivityViewModel) {
     var pages by remember {
         mutableStateOf(listOf<WrappedPage>(IntroTitlePage()))
     }
     val contextObject = remember {
-        WrappedPage.LifeWrappedCallContext(wrappedRepo)
+        WrappedPage.LifeWrappedCallContext(wrappedActivityViewModel)
     }
     val context = LocalContext.current
     LaunchedEffect(Unit) {
@@ -76,12 +71,12 @@ fun LifeWrappedScreen(wrappedRepo: WrappedRepo) {
             val endOfYearDate = LocalDate.ofYearDay(year + 1, 1)
             val startOfYear = startOfYearDate.atStartOfDay(zone).toEpochSecond() * 1000L
             val endOfYear = endOfYearDate.atStartOfDay(zone).toEpochSecond() * 1000L
-            val allYearEventsRaw = wrappedRepo.readDaos.eventDetailsDao.getEventsBetween(
+            val allYearEventsRaw = wrappedActivityViewModel.readDaos.eventDetailsDao.getEventsBetween(
                 startOfYear,
                 endOfYear
             )
             val allYearEvents = _root_ide_package_.com.myxoz.life.storage.events.RawEvent.PreparedEventContent.prepareContentFor(
-                allYearEventsRaw, wrappedRepo.readDaos.eventDetailsDao
+                allYearEventsRaw, wrappedActivityViewModel.readDaos.eventDetailsDao
             ).mapNotNull {
                 _root_ide_package_.com.myxoz.life.storage.events.RawEvent.from(it)
             }
@@ -94,10 +89,10 @@ fun LifeWrappedScreen(wrappedRepo: WrappedRepo) {
             var insertedTagsPage = false
             fun getMostUsedTagList(eventType: com.myxoz.life.storage.events.additionals.EventType): List<MostUsedTagsForFavActivity.Companion.MUTag>?{
                 val filteredList = allYearEvents.filter { it.type == eventType }
-                if(filteredList[0] !is com.myxoz.life.storage.events.additionals.TagEvent) return null
+                if(filteredList[0] !is TagEvent) return null
                 val mostUsedTags = mutableMapOf<com.myxoz.life.storage.events.additionals.EventTag, MostUsedTagsForFavActivity.Companion.MUTag>()
                 filteredList.forEach {
-                    for (tag in (it as? com.myxoz.life.storage.events.additionals.TagEvent)?.eventTags ?: return@forEach) {
+                    for (tag in (it as? TagEvent)?.eventTags ?: return@forEach) {
                         mostUsedTags[tag] = mostUsedTags
                             .getOrDefault(
                                 tag,
@@ -126,18 +121,18 @@ fun LifeWrappedScreen(wrappedRepo: WrappedRepo) {
                     futurePages.add(MostUsedTagsForFavActivity(mostUsedTags, false))
                 }
             }
-            val allPeople = wrappedRepo.readDaos.peopleDao.getAllPeople().map { PersonSyncable.from(wrappedRepo.readDaos.peopleDao, it) }
+            val allPeople = wrappedActivityViewModel.readDaos.peopleDao.getAllPeople().map { PersonSyncable.from(wrappedActivityViewModel.readDaos.peopleDao, it) }
 
             // This will only do 4 database queries, the world is efficient
-            val pec = _root_ide_package_.com.myxoz.life.storage.events.RawEvent.PreparedEventContent.prepareContentFor(wrappedRepo.readDaos.peopleDao.getFirstEventsFor(allPeople.map { it.id }), wrappedRepo.readDaos.eventDetailsDao)
+            val pec = _root_ide_package_.com.myxoz.life.storage.events.RawEvent.PreparedEventContent.prepareContentFor(wrappedActivityViewModel.readDaos.peopleDao.getFirstEventsFor(allPeople.map { it.id }), wrappedActivityViewModel.readDaos.eventDetailsDao)
             val firstPeopleEvents = pec.mapNotNull {
-                _root_ide_package_.com.myxoz.life.storage.events.RawEvent.from(it) as? com.myxoz.life.storage.events.additionals.PeopleEvent
+                _root_ide_package_.com.myxoz.life.storage.events.RawEvent.from(it) as? PeopleEvent
             }
             val newPeople = allPeople.filter { e -> firstPeopleEvents.find { e.id in it.people }?.let { it is com.myxoz.life.storage.events.RawEvent && it.start >= startOfYear && it.end <= endOfYear } == true }
             futurePages.add(NewSocialContact(newPeople.size))
             val mostInteractedPeople = mutableMapOf<Long, Long>()
             allYearEvents.forEach {
-                for (person in (it as? com.myxoz.life.storage.events.additionals.PeopleEvent)?.people ?: return@forEach) {
+                for (person in (it as? PeopleEvent)?.people ?: return@forEach) {
                     mostInteractedPeople[person] = mostInteractedPeople.getOrDefault(person, 0L) + it.length()
                 }
             }
@@ -173,7 +168,7 @@ fun LifeWrappedScreen(wrappedRepo: WrappedRepo) {
                     mostTagedSocialEvent.values.sortedByDescending { it.duration }
                 )
             )
-            val commits = wrappedRepo.readDaos.commitsDao.getCommitsForDay(startOfYear, endOfYear)
+            val commits = wrappedActivityViewModel.readDaos.commitsDao.getCommitsForDay(startOfYear, endOfYear)
             val additions = commits.sumOf { it.additions ?: 0 }
             val deletions = commits.sumOf { it.deletions ?: 0 }
             val changes = additions + deletions
@@ -196,7 +191,7 @@ fun LifeWrappedScreen(wrappedRepo: WrappedRepo) {
             val mostUsedVehicles = mutableMapOf<com.myxoz.life.storage.events.additionals.Vehicle, Long>()
             allYearEvents.forEach {
                 for (vehicle in (it as? com.myxoz.life.storage.events.TravelEvent)?.vehicles ?: return@forEach) {
-                    mostUsedVehicles[vehicle.type] = mostUsedVehicles.getOrDefault(vehicle.type, 0L) + vehicle.durationMs
+                    mostUsedVehicles[vehicle.type] = mostUsedVehicles.getOrDefault(vehicle.type, 0L) + vehicle.duration
                 }
             }
             val mostUsedVehicle = mostUsedVehicles.toList().sortedByDescending { it.second }.getOrNull(0)
@@ -209,7 +204,7 @@ fun LifeWrappedScreen(wrappedRepo: WrappedRepo) {
                     )
                 )
             }
-            val allDays = wrappedRepo.readDaos.daysDao.getDaysBetween(startOfYearDate.toEpochDay() - 1, endOfYearDate.toEpochDay()) // Between non inclusive
+            val allDays = wrappedActivityViewModel.readDaos.daysDao.getDaysBetween(startOfYearDate.toEpochDay() - 1, endOfYearDate.toEpochDay()) // Between non inclusive
             val totalSteps = allDays.sumOf { it.steps }
             futurePages.add(
                 WalkingStats(
@@ -218,7 +213,7 @@ fun LifeWrappedScreen(wrappedRepo: WrappedRepo) {
                 )
             )
             val totalScreenTime = allDays.sumOf { it.screenTimeMs / 1000 }
-            val mostUsedApp = wrappedRepo.readDaos.daysDao.getScreenTimesByRange(startOfYearDate.toEpochDay() - 1, endOfYearDate.toEpochDay())
+            val mostUsedApp = wrappedActivityViewModel.readDaos.daysDao.getScreenTimesByRange(startOfYearDate.toEpochDay() - 1, endOfYearDate.toEpochDay())
                 .groupBy { it.packagename }
                 .map { it.key to it.value.sumOf { it.duration / 1000 } }
                 .sortedByDescending { it.second }

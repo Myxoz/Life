@@ -35,14 +35,14 @@ import com.myxoz.life.R
 import com.myxoz.life.Theme
 import com.myxoz.life.api.extensions.StreakExtendable
 import com.myxoz.life.storage.events.additionals.EventType
-import com.myxoz.life.repositories.StreakRepo
+import com.myxoz.life.state.activityscoped.StreakRepo
 import com.myxoz.life.ui.NavPath
 import com.myxoz.life.ui.getMaxTabletScreenWidth
 import com.myxoz.life.ui.person.displayperson.ButtonGroup
 import com.myxoz.life.ui.setMaxTabletWidth
-import com.myxoz.life.ui.theme.FontFamily
-import com.myxoz.life.ui.theme.FontSize
-import com.myxoz.life.ui.theme.TypoStyle
+import com.myxoz.life.lifeui.theme.FontFamily
+import com.myxoz.life.lifeui.theme.FontSize
+import com.myxoz.life.lifeui.theme.TypoStyle
 import com.myxoz.life.utils.collectAsMutableState
 import com.myxoz.life.utils.nullIfEmpty
 import com.myxoz.life.utils.rippleClick
@@ -75,13 +75,13 @@ fun EditStreaksScreen(streakRepo: StreakRepo){
                 verticalArrangement = Arrangement.spacedBy(10.dp)
             ) {
                 Spacer(Modifier.height(windowPadding.calculateTopPadding()))
-                _root_ide_package_.com.myxoz.life.ui.feed.fullscreenevent.InputField(
+                com.myxoz.life.ui.feed.fullscreenevent.InputField(
                     streak.title.nullIfEmpty(),
                     "Titel"
                 ) {
                     rawStreak = rawStreak?.copy(title = it) ?: return@InputField
                 }
-                _root_ide_package_.com.myxoz.life.ui.feed.fullscreenevent.InputField(
+                com.myxoz.life.ui.feed.fullscreenevent.InputField(
                     streak.smallTitle?.nullIfEmpty(),
                     "Kurzer Titel (Widgets)"
                 ) {
@@ -102,7 +102,7 @@ fun EditStreaksScreen(streakRepo: StreakRepo){
                 ) {
                     rawStreak = rawStreak?.copy(atLeast = it == 0)
                 }
-                _root_ide_package_.com.myxoz.life.ui.feed.fullscreenevent.InputField(
+                com.myxoz.life.ui.feed.fullscreenevent.InputField(
                     streak.target.thresholdToString(streak.threshold),
                     "Grenze",
                     visualTransformation = streak.target.visualTransformation.value,
@@ -156,7 +156,7 @@ fun EditStreaksScreen(streakRepo: StreakRepo){
                             horizontalArrangement = Arrangement.spacedBy(10.dp),
                         ) {
                             for (type in _root_ide_package_.com.myxoz.life.storage.events.additionals.EventType.order) {
-                                _root_ide_package_.com.myxoz.life.ui.feed.fullscreenevent.CalendarChip(
+                                com.myxoz.life.ui.feed.fullscreenevent.CalendarChip(
                                     type,
                                     streak.target.type == type
                                 ) {
@@ -165,10 +165,10 @@ fun EditStreaksScreen(streakRepo: StreakRepo){
                                 }
                             }
                         }
-                        _root_ide_package_.com.myxoz.life.ui.feed.fullscreenevent.TagsBar(streak.target.tags) {
+                        com.myxoz.life.ui.feed.fullscreenevent.TagsBar(streak.target.tags) {
                             rawStreak = rawStreak?.copy(target = streak.target.copy(tags = it))
                         }
-                        _root_ide_package_.com.myxoz.life.ui.feed.fullscreenevent.PersonBar(
+                        com.myxoz.life.ui.feed.fullscreenevent.PersonBar(
                             streak.target.people,
                             false,
                             false,
@@ -177,7 +177,7 @@ fun EditStreaksScreen(streakRepo: StreakRepo){
                             rawStreak =
                                 rawStreak?.copy(target = streak.target.copy(people = people))
                         }
-                        _root_ide_package_.com.myxoz.life.ui.feed.fullscreenevent.InputField(
+                        com.myxoz.life.ui.feed.fullscreenevent.InputField(
                             streak.target.title,
                             "Eventtitel"
                         ) {
